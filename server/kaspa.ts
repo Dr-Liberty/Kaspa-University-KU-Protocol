@@ -58,6 +58,12 @@ class KaspaService {
       const kaspa = await import("kaspa");
       this.kaspaModule = kaspa;
 
+      // Initialize WASM runtime if needed
+      if (typeof kaspa.default === "function") {
+        await kaspa.default();
+        console.log("[Kaspa] WASM runtime initialized");
+      }
+
       // Check if treasury mnemonic is available
       const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
       
@@ -68,17 +74,21 @@ class KaspaService {
         return true;
       }
 
-      // Initialize RPC client
+      // Initialize RPC client with explicit URL or resolver
       const { RpcClient, Encoding, Resolver } = kaspa;
       
+      // Use resolver for automatic node discovery on the network
+      const resolver = new Resolver();
+      
       this.rpcClient = new RpcClient({
-        resolver: new Resolver(),
+        resolver,
+        url: this.config.rpcUrl,
         encoding: Encoding.Borsh,
         networkId: this.config.network,
       });
 
       await this.rpcClient.connect();
-      console.log(`[Kaspa] Connected to ${this.config.network}`);
+      console.log(`[Kaspa] Connected to ${this.config.network} via ${this.config.rpcUrl}`);
 
       // Initialize treasury wallet from mnemonic
       const { Mnemonic, XPrv, PublicKeyGenerator, Address } = kaspa;
@@ -202,7 +212,7 @@ class KaspaService {
         entries: utxos.entries,
         outputs: [payment],
         changeAddress: new Address(this.treasuryWallet.address),
-        priorityFee: 0n,
+        priorityFee: BigInt(0),
         payload: opReturnBytes, // Embedded quiz completion data
       });
 
