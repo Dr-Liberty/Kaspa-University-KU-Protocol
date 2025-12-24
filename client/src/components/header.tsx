@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/lib/wallet-context";
 import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play, ExternalLink, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import kuLogo from "@assets/generated_images/kaspa_university_ku_logo.png";
+import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import {
   Tooltip,
   TooltipContent,

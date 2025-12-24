@@ -12,7 +12,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-import kuLogo from "@assets/generated_images/kaspa_university_ku_logo.png";
+import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 
 export default function Landing() {
   const { wallet, isDemoMode, connect, enterDemoMode, isConnecting } = useWallet();
