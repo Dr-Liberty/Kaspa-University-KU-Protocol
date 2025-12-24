@@ -42,11 +42,21 @@ Preferred communication style: Simple, everyday language.
 - PostgreSQL (configured via `DATABASE_URL` environment variable)
 - Drizzle Kit for migrations (`npm run db:push`)
 
-### Third-Party Services
-- None currently integrated; designed for future Kaspa blockchain integration for:
-  - KAS token reward distribution
-  - KRC-721 NFT certificate minting
-  - On-chain Q&A storage
+### Kaspa Blockchain Integration
+- **Network**: Mainnet (production)
+- **RPC**: Uses `kaspa-rpc-client` for network operations (pure TypeScript, reliable in Node.js)
+- **Signing**: Uses Kaspa WASM module for transaction signing
+- **Treasury Secret**: `KASPA_TREASURY_PRIVATE_KEY` - 64-character hex private key for the treasury wallet
+  - Also supports BIP39 mnemonic phrases (12/24 words)
+  - Legacy name `KASPA_TREASURY_MNEMONIC` still works as fallback
+
+### Features Implemented
+- KAS token reward distribution on quiz completion
+- Wallet-based authentication (wallet address tracking)
+
+### Planned Features
+- KRC-721 NFT certificate minting
+- On-chain Q&A storage
 
 ### UI Dependencies
 - Radix UI primitives for accessible components

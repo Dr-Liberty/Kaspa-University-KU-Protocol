@@ -11,7 +11,8 @@
  * Network: MAINNET (production)
  * 
  * SECURITY NOTE: This service manages a treasury wallet for reward distribution.
- * The mnemonic must be stored as a secret (KASPA_TREASURY_MNEMONIC).
+ * The private key must be stored as a secret (KASPA_TREASURY_PRIVATE_KEY).
+ * Supports both 64-character hex private keys and BIP39 mnemonic phrases.
  */
 
 import { createHash } from "crypto";
@@ -79,12 +80,12 @@ class KaspaService {
     if (this.initialized) return true;
 
     try {
-      // Check if treasury mnemonic is available
-      const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
+      // Check if treasury private key is available
+      const privateKeyOrMnemonic = process.env.KASPA_TREASURY_PRIVATE_KEY || process.env.KASPA_TREASURY_MNEMONIC;
       
-      if (!mnemonic) {
-        console.log("[Kaspa] No treasury mnemonic configured - running in demo mode");
-        console.log("[Kaspa] Set KASPA_TREASURY_MNEMONIC secret to enable real rewards");
+      if (!privateKeyOrMnemonic) {
+        console.log("[Kaspa] No treasury private key configured - running in demo mode");
+        console.log("[Kaspa] Set KASPA_TREASURY_PRIVATE_KEY secret to enable real rewards");
         this.initialized = true;
         return true;
       }
@@ -92,8 +93,8 @@ class KaspaService {
       // Load kaspa module with K-Kluster approach
       await this.loadKaspaModule();
 
-      // Derive treasury address from mnemonic using BIP44
-      await this.deriveKeysFromMnemonic(mnemonic);
+      // Derive treasury address from private key or mnemonic
+      await this.deriveKeysFromMnemonic(privateKeyOrMnemonic);
 
       // Try kaspa-rpc-client first (pure TypeScript, most reliable in Node.js)
       await this.tryRpcClientConnection();
