@@ -20,11 +20,13 @@ import HDKey from "hdkey";
 import bs58check from "bs58check";
 import { bech32 } from "bech32";
 
-// K-Kluster Fix #1: Load WebSocket shim BEFORE importing kaspa
+// K-Kluster Fix #1: Load W3C-compatible WebSocket shim BEFORE importing kaspa
+// Use createRequire for CommonJS modules in ESM context
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { w3cwebsocket: W3CWebSocket } = require("websocket");
 // @ts-ignore
-import WebSocket from "ws";
-// @ts-ignore
-globalThis.WebSocket = WebSocket;
+globalThis.WebSocket = W3CWebSocket;
 
 interface KaspaConfig {
   network: "mainnet" | "testnet-10" | "testnet-11";
@@ -63,6 +65,7 @@ class KaspaService {
   private rpcConnected: boolean = false;
   private rpcClient: any = null;
   private kaspaModule: any = null;
+  private treasuryMnemonic: string | null = null;
 
   constructor(config: Partial<KaspaConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -92,10 +95,15 @@ class KaspaService {
       // Derive treasury address from mnemonic using BIP44
       await this.deriveKeysFromMnemonic(mnemonic);
 
-      // Try WASM RPC connection with Resolver (K-Kluster approach)
-      await this.tryWasmRpcConnection();
+      // Try kaspa-rpc-client first (pure TypeScript, most reliable in Node.js)
+      await this.tryRpcClientConnection();
 
-      // Fallback to REST API if RPC failed
+      // Fallback to WASM RPC if pure client failed
+      if (!this.rpcConnected) {
+        await this.tryWasmRpcConnection();
+      }
+
+      // Fallback to REST API if all RPC methods failed
       if (!this.rpcConnected) {
         await this.tryRestApiConnection();
       }
@@ -217,6 +225,12 @@ class KaspaService {
         console.log(`[Kaspa] Treasury address (bech32): ${this.treasuryAddress}`);
       }
 
+      // Store mnemonic for kaspa-rpc-client (if it's a valid BIP39 phrase)
+      if (bip39.validateMnemonic(mnemonicPhrase)) {
+        this.treasuryMnemonic = mnemonicPhrase;
+        console.log(`[Kaspa] Valid BIP39 mnemonic stored for transaction signing`);
+      }
+
       console.log(`[Kaspa] Using BIP44 path: ${derivationPath}`);
       console.log(`[Kaspa] Private key available: YES (${this.treasuryPrivateKey.length} bytes)`);
 
@@ -280,7 +294,38 @@ class KaspaService {
   }
 
   /**
-   * Try to connect via kaspa-wasm RPC
+   * Try to connect via kaspa-rpc-client (pure TypeScript library)
+   * This is more reliable than WASM in Node.js/tsx environment
+   */
+  private async tryRpcClientConnection(): Promise<void> {
+    try {
+      console.log("[Kaspa] Trying kaspa-rpc-client connection...");
+      
+      // Dynamic import to handle CommonJS module
+      const { ClientWrapper } = require("kaspa-rpc-client");
+      
+      const wrapper = new ClientWrapper({
+        hosts: ["seeder2.kaspad.net:16110"],
+        verbose: false
+      });
+
+      await wrapper.initialize();
+      this.rpcClient = await wrapper.getClient();
+      
+      // Test connection
+      const info = await this.rpcClient.getBlockDagInfo();
+      console.log(`[Kaspa] RPC connected! Block count: ${info?.blockCount || 'unknown'}`);
+      console.log(`[Kaspa] Network: ${info?.networkName || 'kaspa-mainnet'}`);
+      this.rpcConnected = true;
+
+    } catch (error: any) {
+      console.log(`[Kaspa] kaspa-rpc-client failed: ${error.message}`);
+      this.rpcConnected = false;
+    }
+  }
+
+  /**
+   * Try to connect via kaspa-wasm RPC (legacy, often fails in Node.js)
    * Note: Resolver is not exported from npm kaspa package, using direct URL
    */
   private async tryWasmRpcConnection(): Promise<void> {
@@ -465,7 +510,17 @@ class KaspaService {
       return { success: true, txHash: demoTxHash };
     }
 
-    // Check if we have RPC connection and private key for signing
+    // Try kaspa-rpc-client first (most reliable in Node.js)
+    if (this.rpcConnected && this.rpcClient && this.treasuryMnemonic) {
+      try {
+        return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score);
+      } catch (error: any) {
+        console.error("[Kaspa] kaspa-rpc-client transaction failed:", error.message);
+        // Fall through to WASM attempt
+      }
+    }
+
+    // Fallback to WASM SDK (often fails in Node.js)
     if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
       try {
         return await this.sendTransactionViaWasm(recipientAddress, amountKas, lessonId, score);
@@ -493,6 +548,47 @@ class KaspaService {
     console.log(`[Kaspa] Pending txHash: ${pendingTxHash}`);
     
     return { success: true, txHash: pendingTxHash };
+  }
+
+  /**
+   * Send transaction via kaspa-rpc-client (pure TypeScript)
+   * More reliable in Node.js/tsx environment than WASM
+   */
+  private async sendTransactionViaRpcClient(
+    recipientAddress: string,
+    amountKas: number,
+    lessonId: string,
+    score: number
+  ): Promise<TransactionResult> {
+    const { Wallet } = require("kaspa-rpc-client");
+
+    if (!this.treasuryMnemonic) {
+      throw new Error("No valid BIP39 mnemonic for transaction signing");
+    }
+
+    console.log(`[Kaspa] Sending ${amountKas} KAS via kaspa-rpc-client...`);
+
+    // Create wallet from treasury mnemonic
+    const wallet = Wallet.fromPhrase(this.rpcClient, this.treasuryMnemonic);
+    const account = await wallet.account();
+
+    // Convert KAS to sompi (1 KAS = 100,000,000 sompi)
+    const amountSompi = BigInt(Math.floor(amountKas * 100_000_000));
+
+    // Send transaction
+    const txIds = await account.send({
+      outputs: [{
+        address: recipientAddress,
+        amount: amountSompi
+      }],
+      priorityFee: BigInt(10000), // 0.0001 KAS priority fee
+    });
+
+    const txHash = txIds[0] || "";
+    console.log(`[Kaspa] Transaction sent! TxHash: ${txHash}`);
+    console.log(`[Kaspa] Reward: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
+
+    return { success: true, txHash };
   }
 
   /**
