@@ -33,11 +33,12 @@ function QuizSection({
   courseId: string;
   onComplete: () => void;
 }) {
-  const { wallet } = useWallet();
+  const { wallet, isDemoMode } = useWallet();
   const { toast } = useToast();
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [demoResult, setDemoResult] = useState<{ score: number; passed: boolean } | null>(null);
 
   const { data: questions, isLoading } = useQuery<QuizQuestion[]>({
     queryKey: ["/api/quiz", lessonId],
@@ -79,9 +80,36 @@ function QuizSection({
     },
   });
 
+  const handleDemoSubmit = () => {
+    if (!questions) return;
+    const answerArray = questions.map((q) => answers[q.id] ?? -1);
+    let correct = 0;
+    questions.forEach((q, i) => {
+      if (answerArray[i] === q.correctIndex) {
+        correct++;
+      }
+    });
+    const score = Math.round((correct / questions.length) * 100);
+    const passed = score >= 70;
+    setDemoResult({ score, passed });
+    setSubmitted(true);
+    if (passed) {
+      toast({
+        title: "Quiz Passed! (Demo)",
+        description: "Connect a wallet to earn real KAS rewards.",
+      });
+    } else {
+      toast({
+        title: "Quiz Not Passed",
+        description: "Review the material and try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const allAnswered = questions?.every((q) => answers[q.id] !== undefined);
 
-  if (!wallet) {
+  if (!wallet && !isDemoMode) {
     return (
       <Card className="border-border/50">
         <CardContent className="p-6 text-center">
@@ -114,22 +142,39 @@ function QuizSection({
     );
   }
 
-  if (submitted && result) {
+  if (submitted && (result || demoResult)) {
+    const displayResult = result || demoResult;
+    const passed = displayResult?.passed ?? false;
+    const score = displayResult?.score ?? 0;
+    const kasRewarded = result?.kasRewarded ?? 0;
+    
     return (
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-6 text-center">
-          {result.passed ? (
+          {passed ? (
             <>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-bold">Congratulations!</h3>
+              <h3 className="text-xl font-bold">
+                {isDemoMode ? "Great Job! (Demo Mode)" : "Congratulations!"}
+              </h3>
               <p className="mt-2 text-muted-foreground">
-                You scored {result.score}% and earned{" "}
-                <span className="font-semibold text-primary">
-                  +{result.kasRewarded} KAS
-                </span>
+                You scored {score}%
+                {!isDemoMode && kasRewarded > 0 && (
+                  <>
+                    {" "}and earned{" "}
+                    <span className="font-semibold text-primary">
+                      +{kasRewarded} KAS
+                    </span>
+                  </>
+                )}
               </p>
+              {isDemoMode && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Connect a wallet to earn real KAS rewards and NFT certificates
+                </p>
+              )}
               <Button className="mt-4 gap-2" onClick={onComplete} data-testid="button-continue">
                 Continue
                 <ChevronRight className="h-4 w-4" />
@@ -142,7 +187,7 @@ function QuizSection({
               </div>
               <h3 className="text-xl font-bold">Not Quite</h3>
               <p className="mt-2 text-muted-foreground">
-                You scored {result.score}%. Review the material and try again.
+                You scored {score}%. Review the material and try again.
               </p>
               <Button
                 variant="outline"
@@ -150,6 +195,7 @@ function QuizSection({
                 onClick={() => {
                   setSubmitted(false);
                   setResult(null);
+                  setDemoResult(null);
                   setAnswers({});
                 }}
                 data-testid="button-retry"
@@ -200,13 +246,19 @@ function QuizSection({
           </div>
         ))}
 
+        {isDemoMode && (
+          <div className="rounded-md bg-muted/50 p-3 text-center text-sm text-muted-foreground">
+            Demo Mode: No KAS rewards or certificates will be issued
+          </div>
+        )}
+
         <Button
           className="w-full gap-2"
           disabled={!allAnswered || submitQuiz.isPending}
-          onClick={() => submitQuiz.mutate()}
+          onClick={() => isDemoMode ? handleDemoSubmit() : submitQuiz.mutate()}
           data-testid="button-submit-quiz"
         >
-          {submitQuiz.isPending ? "Submitting..." : "Submit Quiz"}
+          {submitQuiz.isPending ? "Submitting..." : isDemoMode ? "Submit Quiz (Demo)" : "Submit Quiz"}
         </Button>
       </CardContent>
     </Card>
@@ -216,9 +268,10 @@ function QuizSection({
 export default function CourseDetail() {
   const params = useParams<{ id: string }>();
   const courseId = params.id ?? "";
-  const { wallet } = useWallet();
+  const { wallet, isDemoMode } = useWallet();
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
+  const isAuthenticated = wallet || isDemoMode;
 
   const { data: course, isLoading: courseLoading } = useQuery<Course>({
     queryKey: ["/api/courses", courseId],

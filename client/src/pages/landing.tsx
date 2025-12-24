@@ -15,7 +15,7 @@ import {
 import kuLogo from "@assets/generated_images/kaspa_university_ku_logo.png";
 
 export default function Landing() {
-  const { wallet, connect, isConnecting } = useWallet();
+  const { wallet, isDemoMode, connect, enterDemoMode, isConnecting } = useWallet();
 
   const features = [
     {
@@ -119,7 +119,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {wallet ? (
+            {wallet || isDemoMode ? (
               <Link href="/courses">
                 <Button size="lg" className="gap-2 text-base" data-testid="button-start-learning">
                   Start Learning
@@ -127,16 +127,28 @@ export default function Landing() {
                 </Button>
               </Link>
             ) : (
-              <Button
-                size="lg"
-                onClick={connect}
-                disabled={isConnecting}
-                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
-                data-testid="button-connect-hero"
-              >
-                <Wallet className="h-5 w-5" />
-                {isConnecting ? "Connecting..." : "Connect Wallet to Start"}
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  onClick={connect}
+                  disabled={isConnecting}
+                  className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
+                  data-testid="button-connect-hero"
+                >
+                  <Wallet className="h-5 w-5" />
+                  {isConnecting ? "Connecting..." : "Connect Wallet to Start"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={enterDemoMode}
+                  className="gap-2 text-base"
+                  data-testid="button-try-demo-hero"
+                >
+                  <Zap className="h-5 w-5" />
+                  Try Demo
+                </Button>
+              </>
             )}
             <Link href="/courses">
               <Button

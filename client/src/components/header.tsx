@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/lib/wallet-context";
-import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard } from "lucide-react";
+import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play } from "lucide-react";
 import { useState } from "react";
 import kuLogo from "@assets/generated_images/kaspa_university_ku_logo.png";
 
 export function Header() {
-  const { wallet, isConnecting, connect, disconnect, truncatedAddress } = useWallet();
+  const { wallet, isConnecting, isDemoMode, connect, disconnect, enterDemoMode, exitDemoMode, truncatedAddress } = useWallet();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -68,16 +69,54 @@ export function Header() {
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
+          ) : isDemoMode ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="gap-1.5">
+                <Play className="h-3 w-3" />
+                Demo Mode
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={connect}
+                disabled={isConnecting}
+                className="hidden gap-2 sm:flex"
+                data-testid="button-connect-wallet-demo"
+              >
+                <Wallet className="h-4 w-4" />
+                {isConnecting ? "Connecting..." : "Connect Wallet"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={exitDemoMode}
+                data-testid="button-exit-demo"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           ) : (
-            <Button
-              onClick={connect}
-              disabled={isConnecting}
-              className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
-              data-testid="button-connect-wallet"
-            >
-              <Wallet className="h-4 w-4" />
-              {isConnecting ? "Connecting..." : "Connect Wallet"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={enterDemoMode}
+                className="gap-2"
+                data-testid="button-try-demo"
+              >
+                <Play className="h-4 w-4" />
+                <span className="hidden sm:inline">Try Demo</span>
+              </Button>
+              <Button
+                onClick={connect}
+                disabled={isConnecting}
+                className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                data-testid="button-connect-wallet"
+              >
+                <Wallet className="h-4 w-4" />
+                {isConnecting ? "Connecting..." : "Connect Wallet"}
+              </Button>
+            </div>
           )}
 
           <Button
