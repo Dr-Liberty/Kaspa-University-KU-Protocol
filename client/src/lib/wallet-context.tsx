@@ -2,21 +2,50 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { WalletConnection } from "@shared/schema";
 import { setWalletAddress, queryClient } from "@/lib/queryClient";
 
+declare global {
+  interface Window {
+    kasware?: {
+      requestAccounts: () => Promise<string[]>;
+      getAccounts: () => Promise<string[]>;
+      getNetwork: () => Promise<number>;
+      switchNetwork: (network: string) => Promise<void>;
+      disconnect: (origin: string) => Promise<void>;
+      getVersion: () => Promise<string>;
+      on: (event: string, callback: (...args: any[]) => void) => void;
+      removeListener: (event: string, callback: (...args: any[]) => void) => void;
+    };
+  }
+}
+
 interface WalletContextType {
   wallet: WalletConnection | null;
   isConnecting: boolean;
   isDemoMode: boolean;
+  walletType: "kasware" | "mock" | null;
+  isWalletInstalled: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
   enterDemoMode: () => void;
   exitDemoMode: () => void;
   truncatedAddress: string;
+  connectionError: string | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 const WALLET_STORAGE_KEY = "kaspa-university-wallet";
 const DEMO_MODE_KEY = "kaspa-university-demo";
+
+type KaspaNetwork = "mainnet" | "testnet-10" | "testnet-11";
+
+function getNetworkName(networkId: number): KaspaNetwork {
+  switch (networkId) {
+    case 0: return "mainnet";
+    case 1: return "testnet-10";
+    case 2: return "testnet-11";
+    default: return "mainnet";
+  }
+}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [wallet, setWallet] = useState<WalletConnection | null>(() => {
@@ -41,6 +70,50 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
+  const [walletType, setWalletType] = useState<"kasware" | "mock" | null>(null);
+  const [isWalletInstalled, setIsWalletInstalled] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkWalletInstalled = () => {
+      const installed = typeof window !== "undefined" && typeof window.kasware !== "undefined";
+      setIsWalletInstalled(installed);
+    };
+    
+    checkWalletInstalled();
+    
+    const timer = setTimeout(checkWalletInstalled, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isWalletInstalled || !window.kasware) return;
+
+    const handleAccountsChanged = async (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setWallet(null);
+        setWalletAddress(null);
+        setWalletType(null);
+      } else {
+        const networkId = await window.kasware!.getNetwork();
+        const newWallet: WalletConnection = {
+          address: accounts[0],
+          connected: true,
+          network: getNetworkName(networkId),
+        };
+        setWallet(newWallet);
+        setWalletAddress(accounts[0]);
+        setWalletType("kasware");
+      }
+      queryClient.invalidateQueries();
+    };
+
+    window.kasware.on("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      window.kasware?.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, [isWalletInstalled]);
 
   useEffect(() => {
     if (wallet) {
@@ -69,36 +142,80 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(async () => {
     setIsConnecting(true);
     setIsDemoMode(false);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const mockAddress = `kaspa:qr${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
-    const newWallet: WalletConnection = {
-      address: mockAddress,
-      connected: true,
-      network: "testnet-11",
-    };
-    setWallet(newWallet);
-    setWalletAddress(mockAddress);
-    queryClient.invalidateQueries();
-    setIsConnecting(false);
+    setConnectionError(null);
+
+    try {
+      if (typeof window.kasware !== "undefined") {
+        const accounts = await window.kasware.requestAccounts();
+        
+        if (accounts && accounts.length > 0) {
+          const networkId = await window.kasware.getNetwork();
+          const networkName = getNetworkName(networkId);
+          
+          const newWallet: WalletConnection = {
+            address: accounts[0],
+            connected: true,
+            network: networkName,
+          };
+          
+          setWallet(newWallet);
+          setWalletAddress(accounts[0]);
+          setWalletType("kasware");
+          queryClient.invalidateQueries();
+          
+          console.log(`[Wallet] Connected via KasWare: ${accounts[0]} (${networkName})`);
+        } else {
+          throw new Error("No accounts returned from wallet");
+        }
+      } else {
+        setConnectionError("KasWare wallet not installed. Please install it from the Chrome Web Store.");
+        console.log("[Wallet] KasWare not detected, prompting user to install");
+      }
+    } catch (error: any) {
+      console.error("[Wallet] Connection failed:", error);
+      
+      if (error.message?.includes("User rejected")) {
+        setConnectionError("Connection rejected. Please approve the connection request in your wallet.");
+      } else if (error.message?.includes("No accounts")) {
+        setConnectionError("No accounts found. Please unlock your wallet and try again.");
+      } else {
+        setConnectionError(error.message || "Failed to connect wallet. Please try again.");
+      }
+    } finally {
+      setIsConnecting(false);
+    }
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    try {
+      if (walletType === "kasware" && window.kasware) {
+        await window.kasware.disconnect(window.location.origin);
+      }
+    } catch (error) {
+      console.error("[Wallet] Disconnect error:", error);
+    }
+    
     setWallet(null);
     setWalletAddress(null);
+    setWalletType(null);
     setIsDemoMode(false);
+    setConnectionError(null);
     queryClient.invalidateQueries();
-  }, []);
+  }, [walletType]);
 
   const enterDemoMode = useCallback(() => {
     setWallet(null);
+    setWalletType(null);
     setIsDemoMode(true);
     setWalletAddress("demo:guest");
+    setConnectionError(null);
     queryClient.invalidateQueries();
   }, []);
 
   const exitDemoMode = useCallback(() => {
     setIsDemoMode(false);
     setWalletAddress(null);
+    setConnectionError(null);
     queryClient.invalidateQueries();
   }, []);
 
@@ -108,7 +225,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   return (
     <WalletContext.Provider
-      value={{ wallet, isConnecting, isDemoMode, connect, disconnect, enterDemoMode, exitDemoMode, truncatedAddress }}
+      value={{ 
+        wallet, 
+        isConnecting, 
+        isDemoMode, 
+        walletType,
+        isWalletInstalled,
+        connect, 
+        disconnect, 
+        enterDemoMode, 
+        exitDemoMode, 
+        truncatedAddress,
+        connectionError
+      }}
     >
       {children}
     </WalletContext.Provider>

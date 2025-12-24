@@ -29,8 +29,10 @@ Preferred communication style: Simple, everyday language.
 - **Current State**: Using in-memory storage; PostgreSQL integration ready via Drizzle configuration
 
 ### Authentication Pattern
-- **Wallet-based auth**: Users authenticate by connecting Kaspa wallets (currently mocked)
+- **Wallet-based auth**: Users authenticate by connecting Kaspa wallets via KasWare browser extension
+- **KasWare Integration**: Uses `window.kasware` API for real wallet connection
 - **Session tracking**: Wallet address passed via `x-wallet-address` header
+- **Demo mode**: Available for users without wallet extension installed
 - **No traditional auth**: No username/password, purely wallet-connected
 
 ### Key Data Models
