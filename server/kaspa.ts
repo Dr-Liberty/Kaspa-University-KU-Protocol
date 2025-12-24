@@ -2,19 +2,18 @@
  * Kaspa Blockchain Integration Service
  * 
  * Handles KAS reward distribution and on-chain verification for Kaspa University.
- * Uses kaspa-rpc-client for RPC operations (gRPC-based, no WASM issues in Node.js).
+ * Uses the official Kaspa REST API for node communication.
  * 
  * SECURITY NOTE: This service manages a treasury wallet for reward distribution.
  * The mnemonic must be stored as a secret (KASPA_TREASURY_MNEMONIC).
  * For production, use a dedicated hot wallet with limited funds.
  */
 
-import { ClientWrapper } from "kaspa-rpc-client";
 import { createHash } from "crypto";
 
 interface KaspaConfig {
   network: "mainnet" | "testnet-10" | "testnet-11";
-  rpcHost: string;
+  apiUrl: string;
   treasuryMnemonic?: string;
 }
 
@@ -33,25 +32,25 @@ interface TransactionResult {
   error?: string;
 }
 
-// Default configuration - uses testnet for hackathon demo
+// Default configuration - uses testnet-10 for hackathon demo (more stable than TN-11)
 const DEFAULT_CONFIG: KaspaConfig = {
-  network: "testnet-11",
-  rpcHost: "seeder2.kaspad.net:16210", // Testnet-11 RPC
+  network: "testnet-10",
+  apiUrl: "https://api-tn10.kaspa.org", // Official Kaspa testnet-10 REST API
 };
 
 class KaspaService {
   private config: KaspaConfig;
   private initialized: boolean = false;
-  private rpcClient: any = null;
   private treasuryAddress: string | null = null;
   private isLiveMode: boolean = false;
+  private apiConnected: boolean = false;
 
   constructor(config: Partial<KaspaConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
   /**
-   * Initialize the Kaspa RPC client and connect to the network
+   * Initialize the Kaspa service and verify API connectivity
    */
   async initialize(): Promise<boolean> {
     if (this.initialized) return true;
@@ -67,32 +66,70 @@ class KaspaService {
         return true;
       }
 
-      // For hackathon demo: derive address from mnemonic using simple BIP39 approach
-      // In production, this would use proper Kaspa key derivation
+      // Derive treasury address from mnemonic
       this.treasuryAddress = this.deriveAddressFromMnemonic(mnemonic);
       console.log(`[Kaspa] Treasury address derived: ${this.treasuryAddress}`);
 
-      // For hackathon demo: skip RPC connection (kaspa-rpc-client has connection issues)
-      // Rewards will be queued as pending transactions for batch processing
-      // Full on-chain integration would use either:
-      // 1. Local kaspad node with properly configured kaspa-wasm
-      // 2. Backend transaction signing service  
-      console.log(`[Kaspa] Running in pending transaction mode for ${this.config.network}`);
-      console.log("[Kaspa] Rewards will be queued and can be batch processed later");
-      this.isLiveMode = true;
+      // Test API connectivity
+      try {
+        console.log(`[Kaspa] Testing API connection to ${this.config.apiUrl}...`);
+        const info = await this.apiCall("/info/blockreward");
+        console.log(`[Kaspa] API connected! Current block reward: ${info?.blockreward || 'unknown'} KAS`);
+        this.apiConnected = true;
+        this.isLiveMode = true;
+      } catch (apiError: any) {
+        console.log(`[Kaspa] API connection failed: ${apiError.message}`);
+        console.log("[Kaspa] Running in pending transaction mode");
+        this.isLiveMode = true; // Still allow pending transactions
+      }
 
       this.initialized = true;
       return true;
-    } catch (error) {
-      console.error("[Kaspa] Failed to initialize:", error);
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to initialize:", error.message);
       this.initialized = true; // Allow demo mode on error
       return false;
     }
   }
 
   /**
+   * Make an API call to the Kaspa REST API
+   */
+  private async apiCall(endpoint: string, options: RequestInit = {}): Promise<any> {
+    const url = `${this.config.apiUrl}${endpoint}`;
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          ...options.headers,
+        },
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      clearTimeout(timeout);
+      if (error.name === 'AbortError') {
+        throw new Error('API request timeout');
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Derive a Kaspa address from mnemonic (simplified for hackathon)
-   * In production, use proper BIP44 derivation with kaspa-wasm
+   * In production, use proper BIP44 derivation with kaspa-wasm Mnemonic class
    */
   private deriveAddressFromMnemonic(mnemonic: string): string {
     // For hackathon demo: create a deterministic pseudo-address from mnemonic
@@ -110,6 +147,13 @@ class KaspaService {
   }
 
   /**
+   * Check if API is connected
+   */
+  isConnected(): boolean {
+    return this.apiConnected;
+  }
+
+  /**
    * Get the treasury wallet address (for funding)
    */
   getTreasuryAddress(): string | null {
@@ -120,17 +164,24 @@ class KaspaService {
    * Get balance for an address in KAS
    */
   async getBalance(address: string): Promise<number> {
-    if (!this.rpcClient) return 0;
+    if (!this.apiConnected) return 0;
 
     try {
-      // Note: getBalanceByAddress may not be available on all nodes
-      const result = await this.rpcClient.getBalanceByAddress({ address });
-      // Convert from sompi (1 KAS = 100,000,000 sompi)
-      return Number(result.balance) / 100_000_000;
+      const result = await this.apiCall(`/addresses/${address}/balance`);
+      // Balance is returned in sompi (1 KAS = 100,000,000 sompi)
+      return Number(result.balance || 0) / 100_000_000;
     } catch (error) {
       console.error("[Kaspa] Failed to get balance:", error);
       return 0;
     }
+  }
+
+  /**
+   * Get treasury balance
+   */
+  async getTreasuryBalance(): Promise<number> {
+    if (!this.treasuryAddress) return 0;
+    return this.getBalance(this.treasuryAddress);
   }
 
   /**
@@ -166,7 +217,7 @@ class KaspaService {
     }
 
     try {
-      // For hackathon demo with live connection:
+      // For hackathon demo with API connection:
       // Generate a pending transaction record that can be verified
       // Full transaction signing would require WASM-based private key operations
       
@@ -214,13 +265,13 @@ class KaspaService {
       return true;
     }
 
-    if (!this.rpcClient) {
+    if (!this.apiConnected) {
       return false;
     }
 
     try {
-      // Query transaction from node
-      const result = await this.rpcClient.getTransaction({ transactionId: txHash });
+      // Query transaction from API
+      const result = await this.apiCall(`/transactions/${txHash}`);
       return !!result;
     } catch (error) {
       console.error("[Kaspa] Failed to verify transaction:", error);
@@ -232,34 +283,40 @@ class KaspaService {
    * Get network info
    */
   async getNetworkInfo(): Promise<any> {
-    if (!this.rpcClient) {
-      return { network: this.config.network, status: "demo" };
+    const baseInfo = {
+      network: this.config.network,
+      treasuryAddress: this.treasuryAddress,
+      isLive: this.isLive(),
+      isConnected: this.isConnected(),
+    };
+
+    if (!this.apiConnected) {
+      return { ...baseInfo, status: this.isLiveMode ? "pending" : "demo" };
     }
 
     try {
-      const info = await this.rpcClient.getInfo();
+      const [blockReward, hashrate] = await Promise.all([
+        this.apiCall("/info/blockreward").catch(() => null),
+        this.apiCall("/info/hashrate").catch(() => null),
+      ]);
+      
       return {
-        network: this.config.network,
-        status: "live",
-        ...info,
+        ...baseInfo,
+        status: "connected",
+        blockReward: blockReward?.blockreward,
+        hashrate: hashrate?.hashrate,
       };
     } catch (error) {
-      return { network: this.config.network, status: this.isLiveMode ? "connected" : "demo" };
+      return { ...baseInfo, status: "pending" };
     }
   }
 
   /**
-   * Disconnect from the network
+   * Disconnect (no-op for REST API)
    */
   async disconnect(): Promise<void> {
-    if (this.rpcClient) {
-      try {
-        await this.rpcClient.disconnect();
-      } catch (e) {
-        // Ignore disconnect errors
-      }
-      console.log("[Kaspa] Disconnected");
-    }
+    this.apiConnected = false;
+    console.log("[Kaspa] Disconnected");
   }
 }
 
