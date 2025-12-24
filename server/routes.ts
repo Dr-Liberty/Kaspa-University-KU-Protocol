@@ -18,12 +18,15 @@ export async function registerRoutes(
       const kaspaService = await getKaspaService();
       const networkInfo = await kaspaService.getNetworkInfo();
       const treasuryAddress = kaspaService.getTreasuryAddress();
+      const balanceInfo = await kaspaService.getTreasuryBalance();
       
       res.json({
         isLive: kaspaService.isLive(),
         network: networkInfo.network,
         status: networkInfo.status,
         treasuryAddress: treasuryAddress ?? "Not configured - running in demo mode",
+        treasuryBalance: balanceInfo.balance,
+        utxoCount: balanceInfo.utxoCount,
       });
     } catch (error) {
       res.json({
@@ -31,6 +34,8 @@ export async function registerRoutes(
         network: "testnet-11",
         status: "error",
         treasuryAddress: "Not configured",
+        treasuryBalance: 0,
+        utxoCount: 0,
       });
     }
   });

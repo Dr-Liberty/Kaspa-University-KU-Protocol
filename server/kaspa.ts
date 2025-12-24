@@ -865,6 +865,38 @@ class KaspaService {
   }
 
   /**
+   * Get treasury balance
+   */
+  async getTreasuryBalance(): Promise<{ balance: number; utxoCount: number }> {
+    if (!this.rpcConnected || !this.rpcClient || !this.treasuryAddress) {
+      return { balance: 0, utxoCount: 0 };
+    }
+
+    try {
+      const utxoResult = await this.rpcClient.getUtxosByAddresses({
+        addresses: [this.treasuryAddress]
+      });
+
+      const entries = utxoResult?.entries || [];
+      if (entries.length === 0) {
+        return { balance: 0, utxoCount: 0 };
+      }
+
+      const totalSompi = entries.reduce((sum: bigint, e: any) => {
+        return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
+      }, BigInt(0));
+
+      const balanceKas = Number(totalSompi) / 100_000_000;
+      console.log(`[Kaspa] Treasury balance: ${balanceKas} KAS (${entries.length} UTXOs)`);
+
+      return { balance: balanceKas, utxoCount: entries.length };
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to get balance:", error.message);
+      return { balance: 0, utxoCount: 0 };
+    }
+  }
+
+  /**
    * Disconnect from the network
    */
   async disconnect(): Promise<void> {
