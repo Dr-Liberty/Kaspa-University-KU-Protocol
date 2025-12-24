@@ -146,11 +146,25 @@ class KaspaService {
    * Kaspa BIP44 coin type: 111111
    * Path: m/44'/111111'/0'/0/0
    * Uses standard bip39/hdkey libraries for reliable derivation
+   * 
+   * Also supports raw private keys (64 hex characters)
    */
   private async deriveKeysFromMnemonic(mnemonicPhrase: string): Promise<void> {
     try {
-      // Clean up mnemonic - trim and normalize spaces
-      const cleanMnemonic = mnemonicPhrase.trim().replace(/\s+/g, " ");
+      // Clean up input - trim whitespace
+      const cleanInput = mnemonicPhrase.trim();
+      
+      // Check if this is a raw private key (64 hex characters)
+      const isRawPrivateKey = /^[0-9a-fA-F]{64}$/.test(cleanInput);
+      
+      if (isRawPrivateKey) {
+        console.log("[Kaspa] Detected raw private key (64 hex chars) - using directly");
+        await this.useRawPrivateKey(cleanInput);
+        return;
+      }
+      
+      // Otherwise treat as mnemonic
+      const cleanMnemonic = cleanInput.replace(/\s+/g, " ");
       const wordCount = cleanMnemonic.split(" ").length;
       
       console.log(`[Kaspa] Mnemonic word count: ${wordCount}`);
@@ -241,6 +255,66 @@ class KaspaService {
       this.treasuryPrivateKey = null;
       console.log(`[Kaspa] Fallback treasury address: ${this.treasuryAddress}`);
       console.log(`[Kaspa] WARNING: No signing capability with fallback address`);
+    }
+  }
+
+  /**
+   * Use a raw private key directly (no derivation)
+   * This is for when the user provides a 64-character hex private key
+   */
+  private async useRawPrivateKey(privateKeyHex: string): Promise<void> {
+    try {
+      // Store the raw private key
+      this.treasuryPrivateKey = Buffer.from(privateKeyHex, 'hex');
+      console.log(`[Kaspa] Private key loaded: ${this.treasuryPrivateKey.length} bytes`);
+
+      // Use WASM to derive the address from private key
+      if (this.kaspaModule && this.kaspaModule.PrivateKey) {
+        const { PrivateKey, PublicKey, Address } = this.kaspaModule;
+        const privKey = new PrivateKey(privateKeyHex);
+        
+        // Try different API methods to get public key
+        let publicKey;
+        if (typeof privKey.toPublicKey === 'function') {
+          publicKey = privKey.toPublicKey();
+        } else if (typeof privKey.getPublicKey === 'function') {
+          publicKey = privKey.getPublicKey();
+        } else if (privKey.publicKey) {
+          publicKey = privKey.publicKey;
+        } else {
+          // Use secp256k1 derivation manually
+          const secp256k1Module = await import('secp256k1');
+          const secp = secp256k1Module.default || secp256k1Module;
+          const pubKeyBytes = secp.publicKeyCreate(this.treasuryPrivateKey, true);
+          const pubKeyHex = Buffer.from(pubKeyBytes).toString('hex');
+          console.log(`[Kaspa] Derived public key via secp256k1: ${pubKeyHex.slice(0, 16)}...`);
+          publicKey = new PublicKey(pubKeyHex);
+        }
+        
+        // Get address from public key
+        let address;
+        if (typeof publicKey.toAddress === 'function') {
+          address = publicKey.toAddress("mainnet");
+        } else if (typeof publicKey.toAddressECDSA === 'function') {
+          address = publicKey.toAddressECDSA("mainnet");
+        } else {
+          // Try creating address from public key string
+          const pubKeyStr = publicKey.toString ? publicKey.toString() : publicKey;
+          address = Address.fromPublicKey(pubKeyStr, "mainnet");
+        }
+        
+        this.treasuryAddress = address.toString();
+        console.log(`[Kaspa] Treasury address (from raw key): ${this.treasuryAddress}`);
+      } else {
+        throw new Error("WASM module not available for address derivation");
+      }
+
+      console.log(`[Kaspa] Raw private key mode - no BIP44 derivation`);
+      console.log(`[Kaspa] Private key available: YES (${this.treasuryPrivateKey.length} bytes)`);
+
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to use raw private key:", error.message);
+      throw error;
     }
   }
 
