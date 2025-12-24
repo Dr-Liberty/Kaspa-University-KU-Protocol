@@ -510,22 +510,22 @@ class KaspaService {
       return { success: true, txHash: demoTxHash };
     }
 
-    // Try kaspa-rpc-client first (most reliable in Node.js)
+    // Try hybrid approach: kaspa-rpc-client for RPC + WASM for signing
+    if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
+      try {
+        return await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score);
+      } catch (error: any) {
+        console.error("[Kaspa] Hybrid transaction failed:", error.message);
+        // Fall through to pending mode
+      }
+    }
+
+    // Fallback: If we have a BIP39 mnemonic, try kaspa-rpc-client's Wallet
     if (this.rpcConnected && this.rpcClient && this.treasuryMnemonic) {
       try {
         return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score);
       } catch (error: any) {
-        console.error("[Kaspa] kaspa-rpc-client transaction failed:", error.message);
-        // Fall through to WASM attempt
-      }
-    }
-
-    // Fallback to WASM SDK (often fails in Node.js)
-    if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
-      try {
-        return await this.sendTransactionViaWasm(recipientAddress, amountKas, lessonId, score);
-      } catch (error: any) {
-        console.error("[Kaspa] WASM transaction failed:", error.message);
+        console.error("[Kaspa] kaspa-rpc-client wallet failed:", error.message);
         // Fall through to pending mode
       }
     }
@@ -548,6 +548,85 @@ class KaspaService {
     console.log(`[Kaspa] Pending txHash: ${pendingTxHash}`);
     
     return { success: true, txHash: pendingTxHash };
+  }
+
+  /**
+   * Hybrid transaction: kaspa-rpc-client for RPC + WASM for signing
+   * Uses the private key directly for signing (when mnemonic isn't available)
+   */
+  private async sendTransactionHybrid(
+    recipientAddress: string,
+    amountKas: number,
+    lessonId: string,
+    score: number
+  ): Promise<TransactionResult> {
+    console.log(`[Kaspa] Hybrid transaction: ${amountKas} KAS to ${recipientAddress}`);
+
+    const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
+
+    // Get UTXOs via kaspa-rpc-client
+    const utxoResult = await this.rpcClient.getUtxosByAddresses({
+      addresses: [this.treasuryAddress]
+    });
+
+    const entries = utxoResult?.entries || [];
+    if (entries.length === 0) {
+      throw new Error("No UTXOs available in treasury wallet - please fund the treasury address");
+    }
+
+    console.log(`[Kaspa] Found ${entries.length} UTXOs in treasury`);
+
+    // Calculate total balance
+    const totalBalance = entries.reduce((sum: bigint, e: any) => {
+      return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
+    }, BigInt(0));
+    const balanceKas = Number(totalBalance) / 100_000_000;
+    console.log(`[Kaspa] Treasury balance: ${balanceKas} KAS`);
+
+    if (balanceKas < amountKas + 0.0001) {
+      throw new Error(`Insufficient balance: ${balanceKas} KAS available, need ${amountKas + 0.0001} KAS`);
+    }
+
+    // Create private key object from our derived key
+    const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+    const privateKey = new PrivateKey(privateKeyHex);
+
+    // Convert amount to sompi
+    const amountSompi = kaspaToSompi(amountKas);
+    const priorityFee = kaspaToSompi(0.0001);
+
+    // Create and sign transaction using WASM
+    const { transactions, summary } = await createTransactions({
+      entries,
+      outputs: [{
+        address: recipientAddress,
+        amount: amountSompi
+      }],
+      changeAddress: this.treasuryAddress,
+      priorityFee,
+    });
+
+    console.log(`[Kaspa] Created ${transactions.length} transaction(s)`);
+
+    // Sign and submit each transaction
+    let finalTxHash = "";
+    for (const tx of transactions) {
+      // Sign transaction
+      tx.sign([privateKey]);
+      
+      // Submit via kaspa-rpc-client
+      const submitResult = await this.rpcClient.submitTransaction({
+        transaction: tx.toRpcTransaction()
+      });
+      
+      finalTxHash = submitResult?.transactionId || tx.id;
+      console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+    }
+
+    console.log(`[Kaspa] Reward sent: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
+    console.log(`[Kaspa] Summary:`, summary);
+
+    return { success: true, txHash: finalTxHash };
   }
 
   /**
