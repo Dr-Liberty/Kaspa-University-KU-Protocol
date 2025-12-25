@@ -16,6 +16,7 @@ import { createHash } from "crypto";
 import { storage } from "./storage";
 import * as bip39 from "bip39";
 import HDKey from "hdkey";
+import { getUTXOManager, type UTXO } from "./utxo-manager.js";
 
 // WebSocket shim must be loaded before kaspa module
 import { createRequire } from "module";
@@ -316,6 +317,30 @@ class KRC721Service {
   }
 
   /**
+   * Validate a Kaspa address format for mainnet
+   */
+  private validateAddress(address: string): { valid: boolean; error?: string } {
+    if (!address || typeof address !== "string") {
+      return { valid: false, error: "Address is required" };
+    }
+    const normalized = address.toLowerCase().trim();
+    if (!normalized.startsWith("kaspa:")) {
+      if (normalized.startsWith("kaspatest:") || normalized.startsWith("kaspasim:")) {
+        return { valid: false, error: "Testnet/simnet addresses not allowed on mainnet" };
+      }
+      return { valid: false, error: "Invalid Kaspa address prefix" };
+    }
+    const dataPart = normalized.slice(6);
+    if (dataPart.length < 32 || dataPart.length > 100) {
+      return { valid: false, error: "Invalid address length" };
+    }
+    if (!dataPart.startsWith("q") && !dataPart.startsWith("p")) {
+      return { valid: false, error: "Invalid address type" };
+    }
+    return { valid: true };
+  }
+
+  /**
    * Mint a certificate NFT for a course completion
    * 
    * @param recipientAddress - The wallet address to receive the certificate
@@ -331,6 +356,13 @@ class KRC721Service {
     completionDate: Date,
     imageUrl: string
   ): Promise<MintResult> {
+    // SECURITY: Validate recipient address before minting
+    const validation = this.validateAddress(recipientAddress);
+    if (!validation.valid) {
+      console.error(`[KRC721] Invalid recipient address: ${validation.error}`);
+      return { success: false, error: `Invalid recipient address: ${validation.error}` };
+    }
+
     // Get token ID from storage (will be incremented after certificate is created)
     const tokenId = await this.getNextTokenId();
 
@@ -413,6 +445,9 @@ class KRC721Service {
    * 
    * 1. Commit: Send KAS to P2SH address (locks the inscription)
    * 2. Reveal: Spend from P2SH, revealing the inscription data
+   * 
+   * SECURITY: Uses UTXO manager to prevent race conditions with concurrent
+   * quiz reward transactions. All UTXOs are reserved before use.
    */
   private async executeCommitReveal(
     script: any,
@@ -420,12 +455,14 @@ class KRC721Service {
     commitAmountKas: string
   ): Promise<DeployResult> {
     const { createTransactions, kaspaToSompi } = this.kaspaModule;
+    const utxoManager = getUTXOManager();
 
     // Subscribe to UTXO changes for confirmation
     await this.rpcClient.subscribeUtxosChanged([this.address!]);
 
     let commitTxHash: string | undefined;
     let revealTxHash: string | undefined;
+    let commitReservation: { selected: UTXO[]; total: bigint } | null = null;
 
     try {
       // Step 1: Commit Transaction
@@ -439,9 +476,48 @@ class KRC721Service {
         throw new Error("No UTXOs available for transaction");
       }
 
+      // Convert entries to UTXO format for manager
+      const utxos: UTXO[] = entries.map((e: any) => ({
+        txId: e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "",
+        index: e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0,
+        amount: BigInt(e.utxoEntry?.amount || e.entry?.utxoEntry?.amount || 0),
+        scriptPublicKey: e.utxoEntry?.scriptPublicKey?.scriptPublicKey || 
+                        e.entry?.utxoEntry?.scriptPublicKey?.scriptPublicKey || "",
+      }));
+
+      // Calculate required amount (commit + fee buffer)
+      const commitSompi = kaspaToSompi(commitAmountKas)!;
+      const feeBuffer = kaspaToSompi("3")!; // Extra for fees
+      const requiredAmount = BigInt(commitSompi) + BigInt(feeBuffer);
+
+      // Reserve UTXOs through the manager to prevent race conditions
+      commitReservation = await utxoManager.selectAndReserve(
+        utxos,
+        requiredAmount,
+        `KRC721_commit_${P2SHAddress.toString().slice(0, 16)}`
+      );
+
+      if (!commitReservation) {
+        throw new Error(`Insufficient unreserved UTXOs for ${commitAmountKas} KAS NFT mint`);
+      }
+
+      // Build a Set of reserved UTXO keys for filtering
+      const reservedKeys = new Set(
+        commitReservation.selected.map(u => `${u.txId}:${u.index}`)
+      );
+
+      // Filter original entries to only include reserved UTXOs
+      const reservedEntries = entries.filter((e: any) => {
+        const txId = e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "";
+        const index = e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0;
+        return reservedKeys.has(`${txId}:${index}`);
+      });
+
+      console.log(`[KRC721] Using ${reservedEntries.length} reserved entries for commit`);
+
       const { transactions: commitTxs } = await createTransactions({
         priorityEntries: [],
-        entries,
+        entries: reservedEntries, // Use only reserved entries to prevent race conditions
         outputs: [{
           address: P2SHAddress.toString(),
           amount: kaspaToSompi(commitAmountKas)!,
@@ -458,12 +534,18 @@ class KRC721Service {
         console.log(`[KRC721] Commit tx: ${commitTxHash}`);
       }
 
+      // Mark UTXOs as spent in the manager
+      if (commitTxHash && commitReservation) {
+        await utxoManager.markAsSpent(commitReservation.selected, commitTxHash);
+      }
+
       // Wait for commit to confirm (poll for UTXO at P2SH address)
       await this.waitForUtxo(P2SHAddress.toString(), 60000);
 
       // Step 2: Reveal Transaction
       console.log("[KRC721] Creating reveal transaction...");
 
+      // Get fresh UTXOs after commit (change outputs)
       const { entries: newEntries } = await this.rpcClient.getUtxosByAddresses({
         addresses: [this.address!],
       });
@@ -476,12 +558,14 @@ class KRC721Service {
         throw new Error("P2SH UTXO not found after commit");
       }
 
+      // For reveal, we need fresh UTXOs (change from commit) + P2SH UTXO
+      // The P2SH UTXO doesn't need reservation as it's unique to this mint
       const { transactions: revealTxs } = await createTransactions({
         priorityEntries: [revealUTXOs.entries[0]],
         entries: newEntries,
         outputs: [],
         changeAddress: this.address!,
-        priorityFee: kaspaToSompi("110")!, // Higher fee for reveal
+        priorityFee: kaspaToSompi("0.5")!, // Higher fee for reveal inscription
         networkId: this.config.network,
       });
 
@@ -516,6 +600,13 @@ class KRC721Service {
       };
     } catch (error: any) {
       console.error("[KRC721] Commit-reveal failed:", error.message);
+      
+      // Release reservation if commit failed before broadcast
+      if (commitReservation && !commitTxHash) {
+        await utxoManager.releaseReservation(commitReservation.selected);
+        console.log("[KRC721] Released UTXO reservation after failure");
+      }
+      
       return {
         success: false,
         commitTxHash,
