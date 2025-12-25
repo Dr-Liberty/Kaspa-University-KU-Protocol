@@ -55,10 +55,22 @@ Preferred communication style: Simple, everyday language.
 ### Features Implemented
 - KAS token reward distribution on quiz completion
 - Wallet-based authentication (wallet address tracking)
+- On-chain Q&A storage with KU Protocol (inspired by Kasia)
+- Verifiable quiz results embedded in transaction payloads
+- Verification page for on-chain content (/verify/:txHash)
+
+### KU Protocol (On-Chain Data)
+- **Format**: `ku:{version}:{type}:{data}`
+- **Types**:
+  - `quiz`: Quiz completion proof with score, answers hash
+  - `qa_q`: Q&A question with content hash
+  - `qa_a`: Q&A answer referencing parent question tx
+- **Files**: `server/ku-protocol.ts` for encoding/decoding, `server/kaspa.ts` for blockchain integration
+- **Verification**: `/api/verify/:txHash` endpoint decodes and validates on-chain payloads
 
 ### Planned Features
 - KRC-721 NFT certificate minting
-- On-chain Q&A storage
+- Certificate downloads
 
 ### UI Dependencies
 - Radix UI primitives for accessible components

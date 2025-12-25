@@ -256,6 +256,8 @@ export async function registerRoutes(
     }
 
     let txHash: string | undefined;
+    let onChainStatus: "success" | "failed" | "not_requested" = "not_requested";
+    let onChainError: string | undefined;
 
     // Post on-chain if requested
     if (postOnChain) {
@@ -268,9 +270,15 @@ export async function registerRoutes(
         );
         if (result.success) {
           txHash = result.txHash;
+          onChainStatus = "success";
+        } else {
+          onChainStatus = "failed";
+          onChainError = "Transaction failed";
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("[Q&A] On-chain posting failed:", error);
+        onChainStatus = "failed";
+        onChainError = error?.message || "Unknown error";
       }
     }
 
@@ -282,7 +290,12 @@ export async function registerRoutes(
       txHash,
     });
 
-    res.json(post);
+    res.json({
+      ...post,
+      onChainStatus,
+      onChainError,
+      isDemo: txHash?.startsWith("demo_") ?? false,
+    });
   });
 
   // Reply to a Q&A post (answer)
@@ -305,6 +318,8 @@ export async function registerRoutes(
     }
 
     let txHash: string | undefined;
+    let onChainStatus: "success" | "failed" | "not_requested" = "not_requested";
+    let onChainError: string | undefined;
 
     // Post on-chain if requested
     if (postOnChain && parentPost.txHash) {
@@ -317,10 +332,19 @@ export async function registerRoutes(
         );
         if (result.success) {
           txHash = result.txHash;
+          onChainStatus = "success";
+        } else {
+          onChainStatus = "failed";
+          onChainError = "Transaction failed";
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("[Q&A] On-chain answer posting failed:", error);
+        onChainStatus = "failed";
+        onChainError = error?.message || "Unknown error";
       }
+    } else if (postOnChain && !parentPost.txHash) {
+      onChainStatus = "failed";
+      onChainError = "Parent question not on-chain";
     }
 
     const reply = await storage.createQAPost({
@@ -332,7 +356,12 @@ export async function registerRoutes(
       txHash,
     });
 
-    res.json(reply);
+    res.json({
+      ...reply,
+      onChainStatus,
+      onChainError,
+      isDemo: txHash?.startsWith("demo_") ?? false,
+    });
   });
 
   // Verify on-chain Q&A or quiz result

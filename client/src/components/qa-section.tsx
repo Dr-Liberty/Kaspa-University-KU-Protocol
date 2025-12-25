@@ -126,22 +126,41 @@ export function QASection({ lessonId }: QASectionProps) {
 
   const createPost = useMutation({
     mutationFn: async (data: { content: string; isQuestion: boolean; postOnChain: boolean }) => {
-      return apiRequest("POST", `/api/qa/${lessonId}`, {
+      const response = await apiRequest("POST", `/api/qa/${lessonId}`, {
         ...data,
         authorAddress: wallet?.address,
         lessonId,
       });
+      return response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: (data: { onChainStatus: string; onChainError?: string; isDemo?: boolean; txHash?: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/qa", lessonId] });
       setContent("");
-      const wasOnChain = postOnChain;
-      toast({
-        title: wasOnChain ? "Posted on-chain!" : "Posted!",
-        description: wasOnChain 
-          ? "Your message has been recorded on the Kaspa blockchain." 
-          : "Your message has been saved.",
-      });
+      
+      if (data.onChainStatus === "success") {
+        if (data.isDemo) {
+          toast({
+            title: "Posted (Demo Mode)",
+            description: "Your message was saved. Real on-chain storage requires treasury funding.",
+          });
+        } else {
+          toast({
+            title: "Posted on-chain!",
+            description: "Your message has been permanently recorded on the Kaspa blockchain.",
+          });
+        }
+      } else if (data.onChainStatus === "failed") {
+        toast({
+          title: "Posted (off-chain only)",
+          description: data.onChainError || "On-chain posting failed, but your message was saved locally.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Posted!",
+          description: "Your message has been saved.",
+        });
+      }
     },
     onError: () => {
       toast({

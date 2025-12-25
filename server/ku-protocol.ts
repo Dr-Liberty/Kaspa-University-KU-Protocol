@@ -114,16 +114,18 @@ export function createQuizPayload(data: Omit<QuizPayload, "contentHash">, answer
   const payload: QuizPayload = { ...data, contentHash };
   
   // Format: ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{hash}
-  const payloadStr = [
-    KU_PROTOCOL.headers.QUIZ.string,
-    payload.walletAddress.slice(0, 20), // Truncate address for payload size
+  // Note: header already includes trailing ":" so we join remaining fields with ":"
+  const dataFields = [
+    payload.walletAddress, // Full address for verification
     payload.courseId,
     payload.lessonId,
     payload.score.toString(),
     payload.maxScore.toString(),
     payload.timestamp.toString(),
     payload.contentHash,
-  ].join("");
+  ].join(KU_DELIM);
+  
+  const payloadStr = KU_PROTOCOL.headers.QUIZ.string + dataFields;
 
   return stringToHex(payloadStr);
 }
@@ -137,18 +139,17 @@ export function createQAQuestionPayload(data: Omit<QAQuestionPayload, "contentHa
   // Truncate content for on-chain storage (max ~2KB to stay within transaction limits)
   const truncatedContent = data.content.slice(0, 500);
   
-  const payloadStr = [
-    KU_PROTOCOL.headers.QA_QUESTION.string,
+  // Format: ku:1:qa_q:{lessonId}:{authorAddress}:{timestamp}:{contentHash}:{content}
+  // Note: header already includes trailing ":" so we join remaining fields with ":"
+  const dataFields = [
     data.lessonId,
-    KU_DELIM,
-    data.authorAddress.slice(0, 20),
-    KU_DELIM,
+    data.authorAddress, // Full address for verification
     data.timestamp.toString(),
-    KU_DELIM,
     contentHash,
-    KU_DELIM,
     truncatedContent,
-  ].join("");
+  ].join(KU_DELIM);
+  
+  const payloadStr = KU_PROTOCOL.headers.QA_QUESTION.string + dataFields;
 
   return stringToHex(payloadStr);
 }
@@ -162,18 +163,17 @@ export function createQAAnswerPayload(data: Omit<QAAnswerPayload, "contentHash">
   // Truncate content for on-chain storage
   const truncatedContent = data.content.slice(0, 500);
   
-  const payloadStr = [
-    KU_PROTOCOL.headers.QA_ANSWER.string,
-    data.questionTxId.slice(0, 20),
-    KU_DELIM,
-    data.authorAddress.slice(0, 20),
-    KU_DELIM,
+  // Format: ku:1:qa_a:{questionTxId}:{authorAddress}:{timestamp}:{contentHash}:{content}
+  // Note: header already includes trailing ":" so we join remaining fields with ":"
+  const dataFields = [
+    data.questionTxId, // Full txId for cross-reference
+    data.authorAddress, // Full address for verification
     data.timestamp.toString(),
-    KU_DELIM,
     contentHash,
-    KU_DELIM,
     truncatedContent,
-  ].join("");
+  ].join(KU_DELIM);
+  
+  const payloadStr = KU_PROTOCOL.headers.QA_ANSWER.string + dataFields;
 
   return stringToHex(payloadStr);
 }
