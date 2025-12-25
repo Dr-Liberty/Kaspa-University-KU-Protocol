@@ -6,6 +6,7 @@ import { getKaspaService } from "./kaspa";
 import { createQuizPayload } from "./ku-protocol.js";
 import { getKRC721Service } from "./krc721";
 import { getPinataService } from "./pinata";
+import { getAntiSybilService } from "./anti-sybil";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -126,6 +127,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/quiz/:lessonId", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
     const questions = await storage.getQuizQuestionsByLesson(req.params.lessonId);
     const safeQuestions = questions.map((q) => ({
       id: q.id,
@@ -133,7 +135,37 @@ export async function registerRoutes(
       question: q.question,
       options: q.options,
     }));
+    
+    if (walletAddress && !walletAddress.startsWith("demo:")) {
+      const antiSybil = getAntiSybilService();
+      antiSybil.recordQuizStart(walletAddress, req.params.lessonId);
+    }
+    
     res.json(safeQuestions);
+  });
+
+  app.get("/api/quiz/:lessonId/status", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.json({ canAttempt: false, reason: "Wallet not connected" });
+    }
+    
+    if (walletAddress.startsWith("demo:")) {
+      return res.json({ canAttempt: true, isDemo: true });
+    }
+    
+    const antiSybil = getAntiSybilService();
+    const cooldown = antiSybil.getCooldownStatus(walletAddress, req.params.lessonId);
+    const stats = antiSybil.getWalletStats(walletAddress);
+    
+    res.json({
+      canAttempt: !cooldown.onCooldown && cooldown.attemptsRemaining > 0,
+      onCooldown: cooldown.onCooldown,
+      hoursRemaining: cooldown.hoursRemaining,
+      attemptsRemaining: cooldown.attemptsRemaining,
+      dailyRewardsRemaining: stats.dailyRewardsRemaining,
+      trustScore: stats.trustScore,
+    });
   });
 
   app.post("/api/quiz/:lessonId/submit", async (req: Request, res: Response) => {
@@ -145,10 +177,19 @@ export async function registerRoutes(
       return res.status(401).json({ error: "Wallet not connected" });
     }
 
-    // Skip blockchain operations for demo users
     const isDemoUser = walletAddress.startsWith("demo:");
     if (isDemoUser) {
       return res.status(400).json({ error: "Demo mode - connect wallet for real rewards" });
+    }
+
+    const antiSybil = getAntiSybilService();
+    const validation = antiSybil.validateQuizSubmission(walletAddress, lessonId);
+    
+    if (!validation.allowed) {
+      return res.status(429).json({ 
+        error: validation.reason,
+        flags: validation.flags,
+      });
     }
 
     let user = await storage.getUserByWalletAddress(walletAddress);
@@ -180,12 +221,12 @@ export async function registerRoutes(
     }
 
     const kasPerLesson = course.kasReward / course.lessonCount;
-    const kasRewarded = passed ? kasPerLesson : 0;
+    const baseKasReward = passed ? kasPerLesson : 0;
+    const kasRewarded = baseKasReward * validation.rewardMultiplier;
 
     let txHash: string | undefined;
     let actualKasRewarded = 0;
 
-    // Send KAS reward via Kaspa blockchain if quiz passed
     if (passed && kasRewarded > 0) {
       const kaspaService = await getKaspaService();
       const txResult = await kaspaService.sendReward(
@@ -218,6 +259,8 @@ export async function registerRoutes(
       kasRewarded: actualKasRewarded,
       txHash,
     });
+
+    antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, actualKasRewarded);
 
     // Only update user KAS and progress if transaction succeeded (or demo mode)
     if (passed && actualKasRewarded > 0) {

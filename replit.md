@@ -89,6 +89,19 @@ Preferred communication style: Simple, everyday language.
 - **Fallback**: If Pinata not configured, uses base64 data URIs for certificate images
 - **Upload Flow**: SVG image uploaded first, then metadata JSON with image reference
 
+### Anti-Sybil Protection
+- **Service**: `server/anti-sybil.ts` - Prevents farming and Sybil attacks
+- **Quiz Cooldowns**: 24-hour wait between retaking passed quizzes
+- **Minimum Completion Time**: 30 seconds minimum (flags bots completing too fast)
+- **Daily Reward Caps**: Maximum 5 KAS per wallet per day
+- **Quiz Attempt Limits**: Maximum 3 attempts per quiz
+- **Wallet Trust Scoring**: New wallets start at 0.5, increases with legitimate activity
+- **New Wallet Penalty**: First 7 days get reduced reward multiplier (50% minimum)
+- **API Endpoints**:
+  - `GET /api/quiz/:lessonId/status` - Check cooldown and attempt status
+  - Quiz start time recorded when fetching questions
+  - Validation applied before quiz submission
+
 ### Planned Features
 - Collection deployment on mainnet (one-time setup)
 
