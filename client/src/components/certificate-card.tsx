@@ -36,23 +36,21 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     mutationFn: async () => {
       if (!feeInfo) throw new Error("Fee info not loaded");
       
-      let paymentTxHash: string | undefined;
-      
-      if (!isDemoMode) {
-        toast({
-          title: "Minting NFT Certificate",
-          description: `Sending ${feeInfo.mintingFee} KAS to cover minting fees...`,
-        });
-        
-        paymentTxHash = await sendKaspa(feeInfo.treasuryAddress, feeInfo.mintingFee);
-        
-        toast({
-          title: "Payment Sent",
-          description: "Waiting for NFT to be minted...",
-        });
-      } else {
-        paymentTxHash = `demo_payment_${Date.now()}`;
+      if (isDemoMode) {
+        throw new Error("Connect a real Kaspa wallet to claim your NFT certificate");
       }
+      
+      toast({
+        title: "Minting NFT Certificate",
+        description: `Sending ${feeInfo.mintingFee} KAS to cover minting fees...`,
+      });
+      
+      const paymentTxHash = await sendKaspa(feeInfo.treasuryAddress, feeInfo.mintingFee);
+      
+      toast({
+        title: "Payment Sent",
+        description: "Waiting for NFT to be minted...",
+      });
       
       const response = await apiRequest("POST", `/api/certificates/${certificate.id}/claim`, {
         paymentTxHash,
@@ -60,12 +58,10 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
       
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "NFT Claimed Successfully",
-        description: isDemoMode 
-          ? "Demo: Certificate would be minted on mainnet" 
-          : `Your NFT certificate has been minted!`,
+        description: "Your NFT certificate has been minted on the Kaspa blockchain!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
     },
@@ -192,15 +188,24 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
         {showActions && (
           <div className="flex flex-col gap-2 border-t border-border/50 p-3">
             {isPending && !isMinting && (
-              <Button
-                className="w-full gap-2"
-                onClick={() => claimMutation.mutate()}
-                disabled={claimMutation.isPending || !feeInfo}
-                data-testid={`button-claim-${certificate.id}`}
-              >
-                <Sparkles className="h-4 w-4" />
-                Claim NFT ({feeInfo?.mintingFee || "..."} KAS)
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => claimMutation.mutate()}
+                  disabled={claimMutation.isPending || !feeInfo || isDemoMode}
+                  data-testid={`button-claim-${certificate.id}`}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {isDemoMode 
+                    ? "Connect Wallet to Claim" 
+                    : `Claim NFT (${feeInfo?.mintingFee || "..."} KAS)`}
+                </Button>
+                {isDemoMode && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Connect a real Kaspa wallet to claim your NFT
+                  </p>
+                )}
+              </div>
             )}
             
             <div className="flex items-center justify-between gap-2">

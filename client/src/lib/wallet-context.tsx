@@ -225,11 +225,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const sendKaspa = useCallback(async (toAddress: string, amountKas: number): Promise<string> => {
     if (isDemoMode) {
-      return `demo_payment_${Date.now()}`;
+      throw new Error("Payment not available in demo mode. Please connect a real wallet.");
     }
     
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
+    }
+    
+    if (typeof window.kasware.sendKaspa !== "function") {
+      throw new Error("Your KasWare wallet version does not support sending KAS. Please update your wallet.");
     }
     
     const sompi = Math.floor(amountKas * 100000000);
@@ -240,11 +244,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const getBalance = useCallback(async (): Promise<number> => {
     if (isDemoMode) {
-      return 100;
+      return 0;
     }
     
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
+    }
+    
+    if (typeof window.kasware.getBalance !== "function") {
+      console.warn("[Wallet] getBalance not supported by this KasWare version");
+      return 0;
     }
     
     const balance = await window.kasware.getBalance();

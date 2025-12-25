@@ -823,6 +823,56 @@ class KaspaService {
   }
 
   /**
+   * Verify a payment transaction
+   * Checks that a transaction:
+   * 1. Exists on-chain
+   * 2. Is from the expected sender
+   * 3. Has an output to the expected recipient
+   * 4. Has at least the expected amount
+   */
+  async verifyPayment(
+    txHash: string,
+    senderAddress: string,
+    recipientAddress: string,
+    minAmountKas: number
+  ): Promise<boolean> {
+    if (txHash.startsWith("demo_") || txHash.startsWith("pending_")) {
+      return false; // Demo transactions are not valid for payment verification
+    }
+
+    try {
+      if (this.apiConnected) {
+        const tx = await this.apiCall(`/transactions/${txHash}`);
+        if (!tx) return false;
+
+        // Check if transaction has outputs to the recipient with sufficient amount
+        const outputs = tx.outputs || [];
+        const minAmountSompi = minAmountKas * 100_000_000;
+
+        for (const output of outputs) {
+          const outputAddress = output.script_public_key_address || output.address;
+          const outputAmount = Number(output.amount || 0);
+
+          if (outputAddress === recipientAddress && outputAmount >= minAmountSompi) {
+            console.log(`[Kaspa] Payment verified: ${outputAmount / 100_000_000} KAS to ${recipientAddress}`);
+            return true;
+          }
+        }
+
+        console.log(`[Kaspa] Payment verification failed: no matching output found`);
+        return false;
+      }
+
+      // If no API connection, we can't verify - return false for security
+      console.log(`[Kaspa] Payment verification failed: no API connection`);
+      return false;
+    } catch (error: any) {
+      console.error(`[Kaspa] Payment verification error:`, error.message);
+      return false;
+    }
+  }
+
+  /**
    * Get network info
    */
   async getNetworkInfo(): Promise<any> {

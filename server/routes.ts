@@ -404,8 +404,26 @@ export async function registerRoutes(
       return res.status(401).json({ error: "Wallet not connected" });
     }
 
+    // Reject demo mode - NFT claiming requires real payment
+    if (walletAddress.startsWith("demo:")) {
+      return res.status(403).json({ 
+        error: "Demo mode not supported for NFT claiming",
+        message: "Connect a real Kaspa wallet to claim your NFT certificate"
+      });
+    }
+
     const { id } = req.params;
     const { paymentTxHash } = req.body;
+
+    // Payment transaction hash is required
+    if (!paymentTxHash) {
+      return res.status(400).json({ error: "Payment transaction hash is required" });
+    }
+
+    // Reject demo payment hashes
+    if (paymentTxHash.startsWith("demo_")) {
+      return res.status(400).json({ error: "Invalid payment transaction" });
+    }
 
     // Get certificate
     const certificate = await storage.getCertificate(id);
@@ -418,9 +436,13 @@ export async function registerRoutes(
       return res.status(403).json({ error: "You don't own this certificate" });
     }
 
-    // Check if already claimed
+    // Check if already claimed or minting in progress
     if (certificate.nftStatus === "claimed") {
       return res.status(400).json({ error: "NFT already claimed", nftTxHash: certificate.nftTxHash });
+    }
+    
+    if (certificate.nftStatus === "minting") {
+      return res.status(400).json({ error: "NFT minting already in progress" });
     }
 
     // Mark as minting
@@ -429,12 +451,27 @@ export async function registerRoutes(
     try {
       const krc721Service = await getKRC721Service();
       const kaspaService = await getKaspaService();
+      const collectionInfo = await krc721Service.getCollectionInfo();
+      const MINTING_FEE = 3.5; // KAS
 
-      // Verify payment transaction if provided (optional verification)
-      if (paymentTxHash && !paymentTxHash.startsWith("demo_")) {
-        console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
-        // In production, you'd verify the payment amount and recipient here
+      // Verify payment transaction
+      console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
+      const paymentVerified = await kaspaService.verifyPayment(
+        paymentTxHash,
+        walletAddress,
+        collectionInfo.address,
+        MINTING_FEE
+      );
+
+      if (!paymentVerified) {
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+        return res.status(400).json({ 
+          error: "Payment verification failed",
+          message: "Could not verify payment to treasury. Please ensure you sent at least 3.5 KAS."
+        });
       }
+
+      console.log(`[Claim] Payment verified for certificate ${id}`);
 
       // Generate certificate image if not already present
       let imageUrl = certificate.imageUrl;
