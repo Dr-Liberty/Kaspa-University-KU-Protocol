@@ -129,6 +129,79 @@ export function checkVpnBasic(ip: string): { isVpn: boolean; reason?: string } {
   return { isVpn: false };
 }
 
+const vpnCheckCache: Map<string, { isVpn: boolean; score: number; checkedAt: number }> = new Map();
+const VPN_CACHE_TTL = 6 * 60 * 60 * 1000;
+const VPN_THRESHOLD = 0.90;
+const GETIPINTEL_CONTACT = process.env.GETIPINTEL_CONTACT || "kaspauniversity@proton.me";
+
+export async function checkVpnGetIPIntel(ip: string): Promise<{ isVpn: boolean; score: number; cached: boolean }> {
+  if (ip === "unknown" || ip === "::1" || ip === "127.0.0.1" || isDatacenterIP(ip)) {
+    return { isVpn: isDatacenterIP(ip), score: isDatacenterIP(ip) ? 1.0 : 0, cached: false };
+  }
+  
+  const cached = vpnCheckCache.get(ip);
+  if (cached && Date.now() - cached.checkedAt < VPN_CACHE_TTL) {
+    return { isVpn: cached.isVpn, score: cached.score, cached: true };
+  }
+  
+  try {
+    const url = `https://check.getipintel.net/check.php?ip=${encodeURIComponent(ip)}&contact=${encodeURIComponent(GETIPINTEL_CONTACT)}&flags=f&format=json`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, { 
+      signal: controller.signal,
+      headers: { "User-Agent": "KaspaUniversity/1.0" }
+    });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      console.log(`[VPN Check] GetIPIntel returned ${response.status} for ${ip}`);
+      return { isVpn: false, score: 0, cached: false };
+    }
+    
+    const data = await response.json() as { result: string; status: string };
+    const score = parseFloat(data.result);
+    
+    if (isNaN(score) || score < 0) {
+      console.log(`[VPN Check] Invalid score for ${ip}: ${data.result}`);
+      return { isVpn: false, score: 0, cached: false };
+    }
+    
+    const isVpn = score >= VPN_THRESHOLD;
+    
+    vpnCheckCache.set(ip, { isVpn, score, checkedAt: Date.now() });
+    
+    if (isVpn) {
+      console.log(`[VPN Check] VPN/Proxy detected for ${ip} (score: ${score.toFixed(2)})`);
+    }
+    
+    return { isVpn, score, cached: false };
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.log(`[VPN Check] Timeout checking ${ip}`);
+    } else {
+      console.log(`[VPN Check] Error checking ${ip}: ${error.message}`);
+    }
+    return { isVpn: false, score: 0, cached: false };
+  }
+}
+
+export async function checkVpnAsync(ip: string): Promise<{ isVpn: boolean; score: number; source: string }> {
+  const basicCheck = checkVpnBasic(ip);
+  if (basicCheck.isVpn) {
+    return { isVpn: true, score: 1.0, source: "basic" };
+  }
+  
+  const apiCheck = await checkVpnGetIPIntel(ip);
+  return { 
+    isVpn: apiCheck.isVpn, 
+    score: apiCheck.score, 
+    source: apiCheck.cached ? "cache" : "getipintel" 
+  };
+}
+
 export function getWalletIPStats(walletAddress: string): {
   ipCount: number;
   primaryIp?: string;
@@ -265,5 +338,5 @@ export function getSecurityFlags(req: Request): string[] {
     if (walletStats.flagged) flags.push("MULTI_IP_WALLET");
   }
   
-  return [...new Set(flags)];
+  return Array.from(new Set(flags));
 }

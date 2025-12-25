@@ -16,6 +16,8 @@ import {
   isPaymentTxUsed,
   markPaymentTxUsed,
   getSecurityFlags,
+  checkVpnAsync,
+  getClientIP,
 } from "./security";
 
 export async function registerRoutes(
@@ -216,10 +218,20 @@ export async function registerRoutes(
       });
     }
 
+    const clientIP = getClientIP(req);
+    const vpnCheck = await checkVpnAsync(clientIP);
+    if (vpnCheck.isVpn) {
+      const activity = (req as any).ipActivity;
+      if (activity && !activity.flags.includes("VPN_DETECTED")) {
+        activity.isVpn = true;
+        activity.flags.push("VPN_DETECTED");
+      }
+    }
+
     const securityFlags = getSecurityFlags(req);
-    if (securityFlags.includes("MULTI_WALLET_IP") || securityFlags.includes("VPN_SUSPECTED")) {
+    if (securityFlags.includes("MULTI_WALLET_IP") || securityFlags.includes("VPN_DETECTED") || securityFlags.includes("VPN_SUSPECTED")) {
       validation.rewardMultiplier *= 0.5;
-      console.log(`[Security] Reduced rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}`);
+      console.log(`[Security] Reduced rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
     }
 
     let user = await storage.getUserByWalletAddress(walletAddress);

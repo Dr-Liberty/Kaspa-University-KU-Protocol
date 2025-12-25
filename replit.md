@@ -107,10 +107,13 @@ Preferred communication style: Simple, everyday language.
 - **Rate Limiting**: Global (100/min), Quiz (10/min), Rewards (5/min) per IP+wallet
 - **IP Tracking**: Tracks wallet-IP bindings, flags multi-wallet IPs (3+ wallets)
 - **Multi-IP Detection**: Flags wallets using 5+ different IPs
-- **VPN Detection**: Basic datacenter IP range detection (private IPs flagged)
+- **VPN Detection**: GetIPIntel API integration with 6-hour cache, 90% threshold
+  - Free tier: 1000 queries/day, 15/minute
+  - Contact email: configurable via `GETIPINTEL_CONTACT` env var
+  - Fallback: Basic datacenter IP range detection
 - **Quiz Answer Validation**: Server-side validation of answer arrays
 - **Payment TX Deduplication**: Prevents reusing same tx hash for NFT claims
-- **Security Flags**: Reduce rewards for flagged wallets (VPN, multi-account)
+- **Security Flags**: Reduce rewards by 50% for flagged wallets (VPN_DETECTED, MULTI_WALLET_IP, MULTI_IP_WALLET)
 
 ### Planned Features
 - Collection deployment on mainnet (one-time setup)
