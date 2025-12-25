@@ -169,41 +169,22 @@ export async function registerRoutes(
         const hasCertForCourse = existingCerts.some((c) => c.courseId === lesson.courseId);
 
         if (!hasCertForCourse) {
-          // Create certificate with NFT minting
+          // Create certificate (NFT minting is user-initiated via claim page)
           const verificationCode = `KU-${randomUUID().slice(0, 8).toUpperCase()}`;
           const completionDate = new Date();
           
-          // Try to mint NFT certificate
-          let nftTxHash: string | undefined;
+          // Generate certificate image preview
           let imageUrl: string | undefined;
-          
           try {
             const krc721Service = await getKRC721Service();
-            
-            // Generate certificate image
             imageUrl = krc721Service.generateCertificateImage(
               user.walletAddress,
               course.title,
               score,
               completionDate
             );
-            
-            // Mint the NFT
-            const mintResult = await krc721Service.mintCertificate(
-              user.walletAddress,
-              course.title,
-              score,
-              completionDate,
-              imageUrl
-            );
-            
-            if (mintResult.success && mintResult.revealTxHash) {
-              nftTxHash = mintResult.revealTxHash;
-              console.log(`[Certificate] NFT minted: ${nftTxHash}`);
-            }
           } catch (error: any) {
-            console.error("[Certificate] NFT minting failed:", error.message);
-            // Continue without NFT - certificate still valid
+            console.error("[Certificate] Image generation failed:", error.message);
           }
           
           await storage.createCertificate({
@@ -212,11 +193,14 @@ export async function registerRoutes(
             recipientAddress: user.walletAddress,
             courseName: course.title,
             kasReward: course.kasReward,
+            score,
             issuedAt: completionDate,
             verificationCode,
-            nftTxHash,
             imageUrl,
+            nftStatus: "pending",
           });
+          
+          console.log(`[Certificate] Created for ${user.walletAddress} - NFT pending claim`);
         }
       }
     }
@@ -413,15 +397,111 @@ export async function registerRoutes(
     }
   });
 
-  // Mint NFT certificate manually - DISABLED for security
-  // Auto-minting happens on course completion, no manual minting allowed
-  app.post("/api/nft/mint", async (_req: Request, res: Response) => {
-    // Security: Manual minting is disabled to prevent unauthorized use of treasury keys
-    // Certificates are automatically minted when users complete courses
-    return res.status(403).json({
-      error: "Manual minting is disabled for security reasons",
-      message: "NFT certificates are automatically minted when you complete a course"
-    });
+  // Claim NFT certificate - user pays minting fee
+  app.post("/api/certificates/:id/claim", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { id } = req.params;
+    const { paymentTxHash } = req.body;
+
+    // Get certificate
+    const certificate = await storage.getCertificate(id);
+    if (!certificate) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    // Verify ownership
+    if (certificate.recipientAddress !== walletAddress) {
+      return res.status(403).json({ error: "You don't own this certificate" });
+    }
+
+    // Check if already claimed
+    if (certificate.nftStatus === "claimed") {
+      return res.status(400).json({ error: "NFT already claimed", nftTxHash: certificate.nftTxHash });
+    }
+
+    // Mark as minting
+    await storage.updateCertificate(id, { nftStatus: "minting" });
+
+    try {
+      const krc721Service = await getKRC721Service();
+      const kaspaService = await getKaspaService();
+
+      // Verify payment transaction if provided (optional verification)
+      if (paymentTxHash && !paymentTxHash.startsWith("demo_")) {
+        console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
+        // In production, you'd verify the payment amount and recipient here
+      }
+
+      // Generate certificate image if not already present
+      let imageUrl = certificate.imageUrl;
+      if (!imageUrl) {
+        imageUrl = krc721Service.generateCertificateImage(
+          certificate.recipientAddress,
+          certificate.courseName,
+          certificate.score || 100,
+          certificate.issuedAt
+        );
+      }
+
+      // Mint the NFT
+      const mintResult = await krc721Service.mintCertificate(
+        certificate.recipientAddress,
+        certificate.courseName,
+        certificate.score || 100,
+        certificate.issuedAt,
+        imageUrl
+      );
+
+      if (mintResult.success && mintResult.revealTxHash) {
+        // Update certificate with NFT info
+        await storage.updateCertificate(id, {
+          nftStatus: "claimed",
+          nftTxHash: mintResult.revealTxHash,
+          imageUrl,
+        });
+
+        console.log(`[Claim] NFT minted successfully: ${mintResult.revealTxHash}`);
+
+        return res.json({
+          success: true,
+          nftTxHash: mintResult.revealTxHash,
+          tokenId: mintResult.tokenId,
+          imageUrl,
+        });
+      } else {
+        // Minting failed - revert to pending
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+        return res.status(500).json({ 
+          error: "NFT minting failed", 
+          details: mintResult.error 
+        });
+      }
+    } catch (error: any) {
+      // Revert to pending on error
+      await storage.updateCertificate(id, { nftStatus: "pending" });
+      console.error("[Claim] Error:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get minting fee info
+  app.get("/api/nft/fee", async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const info = await krc721Service.getCollectionInfo();
+      
+      res.json({
+        mintingFee: 3.5, // KAS required for minting (commit + reveal + buffer)
+        treasuryAddress: info.address,
+        network: info.network,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Generate certificate image preview

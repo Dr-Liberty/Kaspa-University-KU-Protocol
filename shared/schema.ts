@@ -76,11 +76,13 @@ export const certificateSchema = z.object({
   recipientAddress: z.string(),
   courseName: z.string(),
   kasReward: z.number(),
+  score: z.number().optional(),
   issuedAt: z.date(),
   verificationCode: z.string(),
   ipfsHash: z.string().optional(),
   nftTxHash: z.string().optional(),
   imageUrl: z.string().optional(),
+  nftStatus: z.enum(["pending", "minting", "claimed"]).default("pending"),
 });
 
 export type Certificate = z.infer<typeof certificateSchema>;
