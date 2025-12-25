@@ -14,6 +14,8 @@
 
 import { createHash } from "crypto";
 import { storage } from "./storage";
+import * as bip39 from "bip39";
+import HDKey from "hdkey";
 
 // WebSocket shim must be loaded before kaspa module
 import { createRequire } from "module";
@@ -89,9 +91,10 @@ class KRC721Service {
     if (this.initialized) return true;
 
     try {
-      const privateKeyHex = process.env.KASPA_TREASURY_PRIVATE_KEY;
+      // Support raw private key (new name) or legacy mnemonic
+      const privateKeyOrMnemonic = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY || process.env.KASPA_TREASURY_MNEMONIC;
       
-      if (!privateKeyHex) {
+      if (!privateKeyOrMnemonic) {
         console.log("[KRC721] No private key configured - running in demo mode");
         this.initialized = true;
         return true;
@@ -104,11 +107,8 @@ class KRC721Service {
         this.kaspaModule.initConsolePanicHook();
       }
 
-      // Initialize private key and derive address
-      const { PrivateKey } = this.kaspaModule;
-      this.privateKey = new PrivateKey(privateKeyHex);
-      this.publicKey = this.privateKey.toPublicKey();
-      this.address = this.publicKey.toAddress(this.config.network).toString();
+      // Derive keys from private key or mnemonic
+      await this.deriveKeys(privateKeyOrMnemonic.trim());
 
       console.log(`[KRC721] Service initialized`);
       console.log(`[KRC721] Address: ${this.address}`);
@@ -128,23 +128,88 @@ class KRC721Service {
   }
 
   /**
-   * Connect to Kaspa RPC
+   * Derive keys from raw private key or mnemonic phrase
+   */
+  private async deriveKeys(input: string): Promise<void> {
+    const { PrivateKey, PublicKey, Address } = this.kaspaModule;
+    
+    // Check if this is a raw private key (64 hex characters)
+    const isRawPrivateKey = /^[0-9a-fA-F]{64}$/.test(input);
+    let privateKeyHex: string;
+    
+    if (isRawPrivateKey) {
+      console.log("[KRC721] Using raw private key");
+      privateKeyHex = input;
+    } else {
+      // Treat as BIP39 mnemonic
+      console.log("[KRC721] Deriving keys from mnemonic...");
+      const cleanMnemonic = input.replace(/\s+/g, " ");
+      
+      // Derive seed from mnemonic
+      const seed = await bip39.mnemonicToSeed(cleanMnemonic);
+      
+      // Create HD key and derive using Kaspa BIP44 path: m/44'/111111'/0'/0/0
+      const hdkey = HDKey.fromMasterSeed(seed);
+      const derivedKey = hdkey.derive("m/44'/111111'/0'/0/0");
+      
+      if (!derivedKey.privateKey) {
+        throw new Error("Failed to derive private key from mnemonic");
+      }
+      
+      privateKeyHex = derivedKey.privateKey.toString("hex");
+    }
+
+    // Store raw private key buffer for transaction signing
+    const privateKeyBuffer = Buffer.from(privateKeyHex, "hex");
+    
+    // Use secp256k1 to derive public key (more reliable than WASM methods)
+    const secp256k1Module = await import("secp256k1");
+    const secp = secp256k1Module.default || secp256k1Module;
+    const pubKeyBytes = secp.publicKeyCreate(privateKeyBuffer, true);
+    const pubKeyHex = Buffer.from(pubKeyBytes).toString("hex");
+    console.log(`[KRC721] Derived public key: ${pubKeyHex.slice(0, 16)}...`);
+    
+    // Create Kaspa PrivateKey and PublicKey objects for transaction signing
+    this.privateKey = new PrivateKey(privateKeyHex);
+    this.publicKey = new PublicKey(pubKeyHex);
+    
+    // Get address from public key
+    let address;
+    if (typeof this.publicKey.toAddress === "function") {
+      address = this.publicKey.toAddress(this.config.network);
+    } else if (typeof this.publicKey.toAddressECDSA === "function") {
+      address = this.publicKey.toAddressECDSA(this.config.network);
+    } else {
+      // Try alternative methods
+      const pubKeyStr = this.publicKey.toString ? this.publicKey.toString() : pubKeyHex;
+      address = Address.fromPublicKey(pubKeyStr, this.config.network);
+    }
+    
+    this.address = address.toString();
+    console.log("[KRC721] Keys derived successfully");
+  }
+
+  /**
+   * Connect to Kaspa RPC using kaspa-rpc-client (pure TypeScript, more reliable in Node.js)
    */
   private async connectRpc(): Promise<void> {
     try {
-      const { RpcClient, Encoding, Resolver } = this.kaspaModule;
-
-      // Use Resolver for automatic node discovery
-      this.rpcClient = new RpcClient({
-        resolver: new Resolver(),
-        encoding: Encoding.Borsh,
-        networkId: this.config.network,
+      console.log("[KRC721] Connecting to RPC via kaspa-rpc-client...");
+      
+      // Use kaspa-rpc-client (pure TypeScript) instead of WASM RpcClient
+      const { ClientWrapper } = require("kaspa-rpc-client");
+      
+      const wrapper = new ClientWrapper({
+        hosts: ["seeder1.kaspad.net:16110"],
+        verbose: false,
       });
-
-      await this.rpcClient.disconnect();
-      await this.rpcClient.connect();
-
-      console.log("[KRC721] RPC connected");
+      
+      await wrapper.initialize();
+      this.rpcClient = wrapper;
+      
+      // Get block count to verify connection
+      const blockCount = await wrapper.call("getBlockCountRequest", {});
+      console.log(`[KRC721] RPC connected! Block count: ${blockCount?.blockCount || "unknown"}`);
     } catch (error: any) {
       console.log(`[KRC721] RPC connection failed: ${error.message}`);
       // Continue without RPC - will use demo mode

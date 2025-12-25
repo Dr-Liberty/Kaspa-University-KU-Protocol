@@ -48,9 +48,8 @@ Preferred communication style: Simple, everyday language.
 - **Network**: Mainnet (production)
 - **RPC**: Uses `kaspa-rpc-client` for network operations (pure TypeScript, reliable in Node.js)
 - **Signing**: Uses Kaspa WASM module for transaction signing
-- **Treasury Secret**: `KASPA_TREASURY_PRIVATE_KEY` - 64-character hex private key for the treasury wallet
-  - Also supports BIP39 mnemonic phrases (12/24 words)
-  - Legacy name `KASPA_TREASURY_MNEMONIC` still works as fallback
+- **Treasury Secret**: `KASPA_TREASURY_PRIVATEKEY` - 64-character hex private key for the treasury wallet
+  - Legacy names `KASPA_TREASURY_PRIVATE_KEY` and `KASPA_TREASURY_MNEMONIC` still work as fallback
 
 ### Features Implemented
 - KAS token reward distribution on quiz completion

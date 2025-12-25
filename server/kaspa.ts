@@ -92,8 +92,8 @@ class KaspaService {
     if (this.initialized) return true;
 
     try {
-      // Check if treasury private key is available
-      const privateKeyOrMnemonic = process.env.KASPA_TREASURY_PRIVATE_KEY || process.env.KASPA_TREASURY_MNEMONIC;
+      // Check if treasury private key is available (supports new and legacy names)
+      const privateKeyOrMnemonic = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY || process.env.KASPA_TREASURY_MNEMONIC;
       
       if (!privateKeyOrMnemonic) {
         console.log("[Kaspa] No treasury private key configured - running in demo mode");
