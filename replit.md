@@ -74,9 +74,13 @@ Preferred communication style: Simple, everyday language.
 - **Implementation**: `server/krc721.ts` for minting, `server/routes.ts` for API
 - **Endpoints**:
   - `GET /api/nft/collection` - Collection info and status
-  - `POST /api/nft/mint` - Manual certificate minting
+  - `GET /api/nft/fee` - Get minting fee info (3.5 KAS)
+  - `POST /api/certificates/:id/claim` - User-initiated NFT claiming with payment
   - `GET /api/nft/preview` - Generate certificate image preview
-- **Auto-minting**: NFT certificates automatically minted on course completion
+- **User-pays model**: Users claim NFTs by paying ~3.5 KAS minting fee
+- **Certificate states**: `pending` -> `minting` -> `claimed`
+- **Payment verification**: Server verifies payment to treasury before minting
+- **Demo mode**: NFT claiming disabled in demo mode (requires real wallet)
 - **Certificate Image**: SVG generated server-side with course details, score, and recipient
 
 ### Planned Features
