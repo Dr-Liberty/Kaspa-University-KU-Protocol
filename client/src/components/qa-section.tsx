@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { QAPost } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
-import { MessageSquare, Send, ExternalLink, User } from "lucide-react";
+import { MessageSquare, Send, ExternalLink, User, Link as LinkIcon, Shield, CheckCircle2 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +28,8 @@ function generateJazzicon(address: string): string {
 function PostCard({ post }: { post: QAPost }) {
   const avatarColor = generateJazzicon(post.authorAddress);
   const truncatedAddress = `${post.authorAddress.slice(0, 10)}...${post.authorAddress.slice(-4)}`;
+  const isOnChain = post.txHash && !post.txHash.startsWith("demo_");
+  const isDemo = post.txHash?.startsWith("demo_");
 
   const formatTime = (date: Date) => {
     const d = new Date(date);
@@ -66,48 +70,77 @@ function PostCard({ post }: { post: QAPost }) {
               Question
             </Badge>
           )}
+          {isOnChain && (
+            <Badge variant="secondary" className="gap-1 text-[10px]">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              On-Chain
+            </Badge>
+          )}
+          {isDemo && (
+            <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+              <Shield className="h-2.5 w-2.5" />
+              Demo
+            </Badge>
+          )}
         </div>
         <p className="text-sm leading-relaxed">{post.content}</p>
-        {post.txHash && (
-          <a
-            href={`https://explorer.kaspa.org/txs/${post.txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity hover:underline group-hover:opacity-100"
-          >
-            <ExternalLink className="h-3 w-3" />
-            View on chain
-          </a>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {isOnChain && post.txHash && (
+            <a
+              href={`https://explorer.kaspa.org/txs/${post.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity hover:underline group-hover:opacity-100"
+              data-testid={`link-explorer-${post.id}`}
+            >
+              <ExternalLink className="h-3 w-3" />
+              View on Explorer
+            </a>
+          )}
+          {post.txHash && (
+            <a
+              href={`/verify/${post.txHash}`}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-primary hover:underline group-hover:opacity-100"
+              data-testid={`link-verify-${post.id}`}
+            >
+              <Shield className="h-3 w-3" />
+              Verify
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 export function QASection({ lessonId }: QASectionProps) {
-  const { wallet } = useWallet();
+  const { wallet, isDemoMode } = useWallet();
   const { toast } = useToast();
   const [content, setContent] = useState("");
   const [isQuestion, setIsQuestion] = useState(true);
+  const [postOnChain, setPostOnChain] = useState(true);
 
   const { data: posts, isLoading } = useQuery<QAPost[]>({
     queryKey: ["/api/qa", lessonId],
   });
 
   const createPost = useMutation({
-    mutationFn: async (data: { content: string; isQuestion: boolean }) => {
+    mutationFn: async (data: { content: string; isQuestion: boolean; postOnChain: boolean }) => {
       return apiRequest("POST", `/api/qa/${lessonId}`, {
         ...data,
         authorAddress: wallet?.address,
         lessonId,
       });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/qa", lessonId] });
       setContent("");
+      const wasOnChain = postOnChain;
       toast({
-        title: "Posted to blockchain!",
-        description: "Your message has been recorded on Kaspa.",
+        title: wasOnChain ? "Posted on-chain!" : "Posted!",
+        description: wasOnChain 
+          ? "Your message has been recorded on the Kaspa blockchain." 
+          : "Your message has been saved.",
       });
     },
     onError: () => {
@@ -121,7 +154,7 @@ export function QASection({ lessonId }: QASectionProps) {
 
   const handleSubmit = () => {
     if (!content.trim() || !wallet) return;
-    createPost.mutate({ content: content.trim(), isQuestion });
+    createPost.mutate({ content: content.trim(), isQuestion, postOnChain });
   };
 
   return (
@@ -142,24 +175,41 @@ export function QASection({ lessonId }: QASectionProps) {
               className="min-h-[80px] resize-none border-border/50 bg-background focus:border-primary"
               data-testid="input-qa-content"
             />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex gap-2">
-                <Button
-                  variant={isQuestion ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setIsQuestion(true)}
-                  data-testid="button-question-type"
-                >
-                  Question
-                </Button>
-                <Button
-                  variant={!isQuestion ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setIsQuestion(false)}
-                  data-testid="button-answer-type"
-                >
-                  Answer / Comment
-                </Button>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex gap-2">
+                  <Button
+                    variant={isQuestion ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsQuestion(true)}
+                    data-testid="button-question-type"
+                  >
+                    Question
+                  </Button>
+                  <Button
+                    variant={!isQuestion ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsQuestion(false)}
+                    data-testid="button-answer-type"
+                  >
+                    Answer / Comment
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="post-on-chain"
+                    checked={postOnChain}
+                    onCheckedChange={setPostOnChain}
+                    data-testid="switch-post-on-chain"
+                  />
+                  <Label 
+                    htmlFor="post-on-chain" 
+                    className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <LinkIcon className="h-3 w-3" />
+                    Record on blockchain
+                  </Label>
+                </div>
               </div>
               <Button
                 onClick={handleSubmit}
@@ -168,9 +218,15 @@ export function QASection({ lessonId }: QASectionProps) {
                 data-testid="button-post-qa"
               >
                 <Send className="h-4 w-4" />
-                {createPost.isPending ? "Posting..." : "Post to Blockchain"}
+                {createPost.isPending ? "Posting..." : postOnChain ? "Post On-Chain" : "Post"}
               </Button>
             </div>
+            {postOnChain && (
+              <p className="text-xs text-muted-foreground">
+                Your post will be permanently stored on the Kaspa blockchain and can be verified by anyone.
+                {isDemoMode && " (Demo mode - no actual transaction)"}
+              </p>
+            )}
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
