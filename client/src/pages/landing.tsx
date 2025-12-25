@@ -1,21 +1,22 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/stats-bar";
+import { BlockDAGBackground } from "@/components/blockdag-background";
 import { useWallet } from "@/lib/wallet-context";
 import {
-  Wallet,
   Coins,
   Award,
   MessageSquare,
   Zap,
-  Shield,
   ArrowRight,
   CheckCircle2,
+  LayoutDashboard,
+  Shield,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 
 export default function Landing() {
-  const { wallet, isDemoMode, connect, enterDemoMode, isConnecting } = useWallet();
+  const { wallet, isDemoMode, enterDemoMode } = useWallet();
 
   const features = [
     {
@@ -72,17 +73,12 @@ export default function Landing() {
 
   return (
     <div className="flex flex-col">
+      <BlockDAGBackground />
       <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-20">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
           <div className="absolute left-1/2 top-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-[100px]" />
           <div className="absolute right-1/4 top-1/2 h-[300px] w-[300px] rounded-full bg-accent/10 blur-[80px]" />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2370C7BA' fill-opacity='1'%3E%3Cpath d='M30 30m-2 0a2 2 0 1 0 4 0 2 2 0 1 0 -4 0'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
         </div>
 
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-8 text-center">
@@ -119,47 +115,34 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {wallet || isDemoMode ? (
-              <Link href="/courses">
-                <Button size="lg" className="gap-2 text-base" data-testid="button-start-learning">
-                  Start Learning
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Button
-                  size="lg"
-                  onClick={connect}
-                  disabled={isConnecting}
-                  className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
-                  data-testid="button-connect-hero"
-                >
-                  <Wallet className="h-5 w-5" />
-                  {isConnecting ? "Connecting..." : "Connect Wallet to Start"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={enterDemoMode}
-                  className="gap-2 text-base"
-                  data-testid="button-try-demo-hero"
-                >
-                  <Zap className="h-5 w-5" />
-                  Try Demo
-                </Button>
-              </>
-            )}
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
+                data-testid="button-dashboard-hero"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+                Dashboard
+              </Button>
+            </Link>
             <Link href="/courses">
+              <Button size="lg" className="gap-2 text-base" data-testid="button-start-learning">
+                Start Learning
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+            {!wallet && !isDemoMode && (
               <Button
                 variant="outline"
                 size="lg"
+                onClick={enterDemoMode}
                 className="gap-2 text-base"
-                data-testid="button-browse-courses"
+                data-testid="button-try-demo-hero"
               >
-                Browse Courses
+                <Zap className="h-5 w-5" />
+                Try Demo
               </Button>
-            </Link>
+            )}
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
@@ -253,25 +236,22 @@ export default function Landing() {
               </p>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                {wallet ? (
-                  <Link href="/courses">
-                    <Button size="lg" className="gap-2" data-testid="button-cta-courses">
-                      Explore Courses
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                ) : (
+                <Link href="/dashboard">
                   <Button
                     size="lg"
-                    onClick={connect}
-                    disabled={isConnecting}
                     className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
-                    data-testid="button-cta-connect"
+                    data-testid="button-cta-dashboard"
                   >
-                    <Wallet className="h-5 w-5" />
-                    {isConnecting ? "Connecting..." : "Connect Wallet"}
+                    <LayoutDashboard className="h-5 w-5" />
+                    Go to Dashboard
                   </Button>
-                )}
+                </Link>
+                <Link href="/courses">
+                  <Button size="lg" className="gap-2" data-testid="button-cta-courses">
+                    Explore Courses
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
