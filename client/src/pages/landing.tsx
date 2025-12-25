@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/stats-bar";
 import { BlockDAGBackground } from "@/components/blockdag-background";
 import { useWallet } from "@/lib/wallet-context";
+import { useQuery } from "@tanstack/react-query";
 import {
   Coins,
   Award,
@@ -12,11 +13,26 @@ import {
   CheckCircle2,
   LayoutDashboard,
   Shield,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 
+interface SecurityCheck {
+  isFlagged: boolean;
+  isVpn: boolean;
+  vpnScore: number;
+  flags: string[];
+  rewardsBlocked: boolean;
+}
+
 export default function Landing() {
   const { wallet, isDemoMode, enterDemoMode } = useWallet();
+
+  const { data: securityCheck } = useQuery<SecurityCheck>({
+    queryKey: ["/api/security/check"],
+    staleTime: 60000,
+  });
 
   const features = [
     {
@@ -74,6 +90,23 @@ export default function Landing() {
   return (
     <div className="flex flex-col">
       <BlockDAGBackground />
+      
+      {securityCheck?.isFlagged && (
+        <div 
+          className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-destructive px-4 py-3 text-destructive-foreground"
+          data-testid="banner-vpn-warning"
+        >
+          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
+          <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-2">
+            <span className="font-semibold">VPN/Proxy Detected</span>
+            <span className="hidden sm:inline">-</span>
+            <span>
+              Rewards are disabled while using VPN or proxy services. Please disable your VPN to earn KAS rewards.
+            </span>
+          </div>
+        </div>
+      )}
+      
       <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-20">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />

@@ -124,6 +124,24 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/security/check", async (req: Request, res: Response) => {
+    const clientIP = getClientIP(req);
+    const vpnCheck = await checkVpnAsync(clientIP);
+    const securityFlags = getSecurityFlags(req);
+    
+    const isFlagged = securityFlags.length > 0 || vpnCheck.isVpn;
+    
+    res.json({
+      isFlagged,
+      isVpn: vpnCheck.isVpn,
+      vpnScore: vpnCheck.score,
+      flags: vpnCheck.isVpn && !securityFlags.includes("VPN_DETECTED") 
+        ? [...securityFlags, "VPN_DETECTED"] 
+        : securityFlags,
+      rewardsBlocked: isFlagged,
+    });
+  });
+
   app.get("/api/courses", async (_req: Request, res: Response) => {
     const courses = await storage.getCourses();
     res.json(courses);
@@ -229,9 +247,14 @@ export async function registerRoutes(
     }
 
     const securityFlags = getSecurityFlags(req);
-    if (securityFlags.includes("MULTI_WALLET_IP") || securityFlags.includes("VPN_DETECTED") || securityFlags.includes("VPN_SUSPECTED")) {
-      validation.rewardMultiplier *= 0.5;
-      console.log(`[Security] Reduced rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
+    const isFlagged = securityFlags.includes("MULTI_WALLET_IP") || 
+                      securityFlags.includes("VPN_DETECTED") || 
+                      securityFlags.includes("VPN_SUSPECTED") ||
+                      securityFlags.includes("MULTI_IP_WALLET");
+    
+    if (isFlagged) {
+      validation.rewardMultiplier = 0;
+      console.log(`[Security] Blocked rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
     }
 
     let user = await storage.getUserByWalletAddress(walletAddress);

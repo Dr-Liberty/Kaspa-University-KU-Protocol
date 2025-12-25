@@ -17,11 +17,25 @@ import {
   ChevronRight,
   Wallet,
   ArrowRight,
+  ShieldAlert,
 } from "lucide-react";
 import { useMemo } from "react";
 
+interface SecurityCheck {
+  isFlagged: boolean;
+  isVpn: boolean;
+  vpnScore: number;
+  flags: string[];
+  rewardsBlocked: boolean;
+}
+
 export default function Dashboard() {
   const { wallet, connect, isConnecting, truncatedAddress } = useWallet();
+
+  const { data: securityCheck } = useQuery<SecurityCheck>({
+    queryKey: ["/api/security/check"],
+    staleTime: 60000,
+  });
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -91,6 +105,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen pt-20">
+      {securityCheck?.isFlagged && (
+        <div 
+          className="sticky top-16 z-50 flex items-center justify-center gap-3 bg-destructive px-4 py-3 text-destructive-foreground"
+          data-testid="banner-vpn-warning"
+        >
+          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
+          <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-2">
+            <span className="font-semibold">VPN/Proxy Detected</span>
+            <span className="hidden sm:inline">-</span>
+            <span>
+              Rewards are disabled while using VPN or proxy services. Please disable your VPN to earn KAS rewards.
+            </span>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3">
