@@ -21,6 +21,8 @@ import {
   validatePayloadLength,
   sanitizePayloadContent,
 } from "./security";
+import { getSecurityMetrics } from "./security-metrics";
+import { checkVpn } from "./vpn-detection";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -128,20 +130,55 @@ export async function registerRoutes(
 
   app.get("/api/security/check", async (req: Request, res: Response) => {
     const clientIP = getClientIP(req);
-    const vpnCheck = await checkVpnAsync(clientIP);
+    const metrics = getSecurityMetrics();
+    
+    // Use new multi-source VPN detection
+    const vpnCheck = await checkVpn(clientIP);
     const securityFlags = getSecurityFlags(req);
     
     const isFlagged = securityFlags.length > 0 || vpnCheck.isVpn;
+    
+    // Record metrics
+    metrics.recordRequest(clientIP, req.headers["x-wallet-address"] as string);
+    if (vpnCheck.isVpn) {
+      metrics.recordVpnDetection(clientIP, vpnCheck.score);
+    }
     
     res.json({
       isFlagged,
       isVpn: vpnCheck.isVpn,
       vpnScore: vpnCheck.score,
+      vpnSource: vpnCheck.source,
       flags: vpnCheck.isVpn && !securityFlags.includes("VPN_DETECTED") 
         ? [...securityFlags, "VPN_DETECTED"] 
         : securityFlags,
       rewardsBlocked: isFlagged,
     });
+  });
+
+  app.get("/api/security/metrics", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const metrics = getSecurityMetrics();
+    res.json(metrics.getSnapshot());
+  });
+
+  app.get("/api/security/metrics/summary", async (req: Request, res: Response) => {
+    const metrics = getSecurityMetrics();
+    res.json(metrics.getSummary());
+  });
+
+  app.get("/api/security/metrics/alerts", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const metrics = getSecurityMetrics();
+    res.json(metrics.getAlerts());
   });
 
   app.get("/api/courses", async (_req: Request, res: Response) => {

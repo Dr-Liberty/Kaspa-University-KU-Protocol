@@ -32,6 +32,7 @@ import {
   type QAQuestionPayload,
   type QAAnswerPayload,
 } from "./ku-protocol.js";
+import { getUTXOManager, type UTXO } from "./utxo-manager.js";
 
 // K-Kluster Fix #1: Load W3C-compatible WebSocket shim BEFORE importing kaspa
 // Use createRequire for CommonJS modules in ESM context
@@ -632,6 +633,7 @@ class KaspaService {
   /**
    * Hybrid transaction: kaspa-rpc-client for RPC + WASM for signing
    * Uses the private key directly for signing (when mnemonic isn't available)
+   * Integrates UTXOManager for concurrent transaction safety
    */
   private async sendTransactionHybrid(
     recipientAddress: string,
@@ -642,6 +644,7 @@ class KaspaService {
     console.log(`[Kaspa] Hybrid transaction: ${amountKas} KAS to ${recipientAddress}`);
 
     const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
+    const utxoManager = getUTXOManager();
 
     // Get UTXOs via kaspa-rpc-client
     const utxoResult = await this.rpcClient.getUtxosByAddresses({
@@ -655,57 +658,94 @@ class KaspaService {
 
     console.log(`[Kaspa] Found ${entries.length} UTXOs in treasury`);
 
-    // Calculate total balance
-    const totalBalance = entries.reduce((sum: bigint, e: any) => {
-      return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
-    }, BigInt(0));
-    const balanceKas = Number(totalBalance) / 100_000_000;
-    console.log(`[Kaspa] Treasury balance: ${balanceKas} KAS`);
+    // Convert RPC entries to UTXO format for the manager
+    const availableUtxos: UTXO[] = entries.map((e: any) => ({
+      txId: e.outpoint?.transactionId || e.transactionId || "",
+      index: e.outpoint?.index || e.index || 0,
+      amount: BigInt(e.utxoEntry?.amount || e.amount || 0),
+      scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
+    }));
 
-    if (balanceKas < amountKas + 0.0001) {
-      throw new Error(`Insufficient balance: ${balanceKas} KAS available, need ${amountKas + 0.0001} KAS`);
+    // Calculate required amount in sompi (including fee)
+    const requiredSompi = BigInt(Math.floor((amountKas + 0.0001) * 100_000_000));
+
+    // Reserve UTXOs through manager to prevent race conditions
+    const reservation = await utxoManager.selectAndReserve(
+      availableUtxos,
+      requiredSompi,
+      `reward:${lessonId}:${recipientAddress.slice(-8)}`
+    );
+
+    if (!reservation) {
+      throw new Error(`Insufficient unreserved UTXOs for ${amountKas + 0.0001} KAS`);
     }
 
-    // Create private key object from our derived key
-    const privateKeyHex = this.treasuryPrivateKey.toString('hex');
-    const privateKey = new PrivateKey(privateKeyHex);
+    console.log(`[Kaspa] Reserved ${reservation.selected.length} UTXOs (${Number(reservation.total) / 100_000_000} KAS)`);
 
-    // Convert amount to sompi
-    const amountSompi = kaspaToSompi(amountKas);
-    const priorityFee = kaspaToSompi(0.0001);
+    // Build a Set of reserved UTXO keys for filtering
+    const reservedKeys = new Set(
+      reservation.selected.map(u => `${u.txId}:${u.index}`)
+    );
 
-    // Create and sign transaction using WASM
-    const { transactions, summary } = await createTransactions({
-      entries,
-      outputs: [{
-        address: recipientAddress,
-        amount: amountSompi
-      }],
-      changeAddress: this.treasuryAddress,
-      priorityFee,
+    // Filter original entries to only include reserved UTXOs
+    const reservedEntries = entries.filter((e: any) => {
+      const txId = e.outpoint?.transactionId || e.transactionId || "";
+      const index = e.outpoint?.index || e.index || 0;
+      return reservedKeys.has(`${txId}:${index}`);
     });
 
-    console.log(`[Kaspa] Created ${transactions.length} transaction(s)`);
+    console.log(`[Kaspa] Using ${reservedEntries.length} reserved entries for transaction`);
 
-    // Sign and submit each transaction
-    let finalTxHash = "";
-    for (const tx of transactions) {
-      // Sign transaction
-      tx.sign([privateKey]);
-      
-      // Submit via kaspa-rpc-client
-      const submitResult = await this.rpcClient.submitTransaction({
-        transaction: tx.toRpcTransaction()
+    try {
+      // Create private key object from our derived key
+      const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+      const privateKey = new PrivateKey(privateKeyHex);
+
+      // Convert amount to sompi
+      const amountSompi = kaspaToSompi(amountKas);
+      const priorityFee = kaspaToSompi(0.0001);
+
+      // Create and sign transaction using WASM with ONLY reserved entries
+      const { transactions, summary } = await createTransactions({
+        entries: reservedEntries, // Use only reserved entries to prevent race conditions
+        outputs: [{
+          address: recipientAddress,
+          amount: amountSompi
+        }],
+        changeAddress: this.treasuryAddress,
+        priorityFee,
       });
-      
-      finalTxHash = submitResult?.transactionId || tx.id;
-      console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+
+      console.log(`[Kaspa] Created ${transactions.length} transaction(s)`);
+
+      // Sign and submit each transaction
+      let finalTxHash = "";
+      for (const tx of transactions) {
+        // Sign transaction
+        tx.sign([privateKey]);
+        
+        // Submit via kaspa-rpc-client
+        const submitResult = await this.rpcClient.submitTransaction({
+          transaction: tx.toRpcTransaction()
+        });
+        
+        finalTxHash = submitResult?.transactionId || tx.id;
+        console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+      }
+
+      // Mark UTXOs as spent with txHash
+      await utxoManager.markAsSpent(reservation.selected, finalTxHash);
+
+      console.log(`[Kaspa] Reward sent: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
+      console.log(`[Kaspa] Summary:`, summary);
+
+      return { success: true, txHash: finalTxHash };
+    } catch (error: any) {
+      // Release reservation on failure
+      await utxoManager.releaseReservation(reservation.selected);
+      console.error(`[Kaspa] Transaction failed, released ${reservation.selected.length} UTXOs`);
+      throw error;
     }
-
-    console.log(`[Kaspa] Reward sent: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
-    console.log(`[Kaspa] Summary:`, summary);
-
-    return { success: true, txHash: finalTxHash };
   }
 
   /**
@@ -1044,6 +1084,7 @@ class KaspaService {
   /**
    * Send a transaction with a custom payload (for on-chain data storage)
    * Sends minimal amount to self or treasury to embed the payload
+   * Integrates UTXOManager for concurrent transaction safety
    */
   private async sendPayloadTransaction(
     payloadHex: string,
@@ -1054,6 +1095,7 @@ class KaspaService {
     }
 
     const { PrivateKey, createTransactions, kaspaToSompi, Transaction } = this.kaspaModule;
+    const utxoManager = getUTXOManager();
 
     // Get UTXOs via kaspa-rpc-client
     const utxoResult = await this.rpcClient.getUtxosByAddresses({
@@ -1065,42 +1107,85 @@ class KaspaService {
       throw new Error("No UTXOs available for payload transaction");
     }
 
-    // Create private key object
-    const privateKeyHex = this.treasuryPrivateKey.toString('hex');
-    const privateKey = new PrivateKey(privateKeyHex);
+    // Convert RPC entries to UTXO format for the manager
+    const availableUtxos: UTXO[] = entries.map((e: any) => ({
+      txId: e.outpoint?.transactionId || e.transactionId || "",
+      index: e.outpoint?.index || e.index || 0,
+      amount: BigInt(e.utxoEntry?.amount || e.amount || 0),
+      scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
+    }));
 
-    // Minimal transaction - send dust amount to self
-    const dustAmount = kaspaToSompi(0.00001); // 1000 sompi minimum
-    const priorityFee = kaspaToSompi(0.0001);
+    // Required amount: dust + fee
+    const requiredSompi = BigInt(Math.floor(0.00011 * 100_000_000));
 
-    // Create transaction with payload
-    const { transactions } = await createTransactions({
-      entries,
-      outputs: [{
-        address: this.treasuryAddress, // Send to self
-        amount: dustAmount
-      }],
-      changeAddress: this.treasuryAddress,
-      priorityFee,
-      payload: payloadHex, // Embed the KU protocol payload
-    });
+    // Reserve UTXOs through manager
+    const reservation = await utxoManager.selectAndReserve(
+      availableUtxos,
+      requiredSompi,
+      `payload:${payloadHex.slice(0, 16)}`
+    );
 
-    console.log(`[Kaspa] Created payload transaction with ${payloadHex.length / 2} bytes`);
-
-    // Sign and submit
-    let finalTxHash = "";
-    for (const tx of transactions) {
-      tx.sign([privateKey]);
-      
-      const submitResult = await this.rpcClient.submitTransaction({
-        transaction: tx.toRpcTransaction()
-      });
-      
-      finalTxHash = submitResult?.transactionId || tx.id;
-      console.log(`[Kaspa] Payload transaction submitted: ${finalTxHash}`);
+    if (!reservation) {
+      throw new Error("Insufficient unreserved UTXOs for payload transaction");
     }
 
-    return finalTxHash;
+    // Build a Set of reserved UTXO keys for filtering
+    const reservedKeys = new Set(
+      reservation.selected.map(u => `${u.txId}:${u.index}`)
+    );
+
+    // Filter original entries to only include reserved UTXOs
+    const reservedEntries = entries.filter((e: any) => {
+      const txId = e.outpoint?.transactionId || e.transactionId || "";
+      const index = e.outpoint?.index || e.index || 0;
+      return reservedKeys.has(`${txId}:${index}`);
+    });
+
+    try {
+      // Create private key object
+      const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+      const privateKey = new PrivateKey(privateKeyHex);
+
+      // Minimal transaction - send dust amount to self
+      const dustAmount = kaspaToSompi(0.00001); // 1000 sompi minimum
+      const priorityFee = kaspaToSompi(0.0001);
+
+      // Create transaction with payload using ONLY reserved entries
+      const { transactions } = await createTransactions({
+        entries: reservedEntries,
+        outputs: [{
+          address: this.treasuryAddress, // Send to self
+          amount: dustAmount
+        }],
+        changeAddress: this.treasuryAddress,
+        priorityFee,
+        payload: payloadHex, // Embed the KU protocol payload
+      });
+
+      console.log(`[Kaspa] Created payload transaction with ${payloadHex.length / 2} bytes`);
+
+      // Sign and submit
+      let finalTxHash = "";
+      for (const tx of transactions) {
+        tx.sign([privateKey]);
+        
+        const submitResult = await this.rpcClient.submitTransaction({
+          transaction: tx.toRpcTransaction()
+        });
+        
+        finalTxHash = submitResult?.transactionId || tx.id;
+        console.log(`[Kaspa] Payload transaction submitted: ${finalTxHash}`);
+      }
+
+      // Mark UTXOs as spent
+      await utxoManager.markAsSpent(reservation.selected, finalTxHash);
+
+      return finalTxHash;
+    } catch (error: any) {
+      // Release reservation on failure
+      await utxoManager.releaseReservation(reservation.selected);
+      throw error;
+    }
   }
 
   /**
