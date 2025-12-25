@@ -2,19 +2,81 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Copy, CheckCircle2, Image as ImageIcon } from "lucide-react";
+import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/lib/wallet-context";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CertificateCardProps {
   certificate: Certificate;
   showActions?: boolean;
 }
 
+interface NftFeeInfo {
+  mintingFee: number;
+  treasuryAddress: string;
+  network: string;
+}
+
 export function CertificateCard({ certificate, showActions = true }: CertificateCardProps) {
   const { toast } = useToast();
+  const { sendKaspa, isDemoMode } = useWallet();
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showImage, setShowImage] = useState(false);
+
+  const { data: feeInfo } = useQuery<NftFeeInfo>({
+    queryKey: ["/api/nft/fee"],
+    staleTime: 60000,
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      if (!feeInfo) throw new Error("Fee info not loaded");
+      
+      let paymentTxHash: string | undefined;
+      
+      if (!isDemoMode) {
+        toast({
+          title: "Minting NFT Certificate",
+          description: `Sending ${feeInfo.mintingFee} KAS to cover minting fees...`,
+        });
+        
+        paymentTxHash = await sendKaspa(feeInfo.treasuryAddress, feeInfo.mintingFee);
+        
+        toast({
+          title: "Payment Sent",
+          description: "Waiting for NFT to be minted...",
+        });
+      } else {
+        paymentTxHash = `demo_payment_${Date.now()}`;
+      }
+      
+      const response = await apiRequest("POST", `/api/certificates/${certificate.id}/claim`, {
+        paymentTxHash,
+      });
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "NFT Claimed Successfully",
+        description: isDemoMode 
+          ? "Demo: Certificate would be minted on mainnet" 
+          : `Your NFT certificate has been minted!`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Claim Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/certificates/${certificate.id}`;
@@ -45,6 +107,11 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
       day: "numeric",
     });
   };
+
+  const nftStatus = certificate.nftStatus || (certificate.nftTxHash ? "claimed" : "pending");
+  const isPending = nftStatus === "pending";
+  const isMinting = nftStatus === "minting" || claimMutation.isPending;
+  const isClaimed = nftStatus === "claimed";
 
   return (
     <Card
@@ -79,6 +146,9 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                 <p className="font-mono text-[10px]">
                   {certificate.verificationCode}
                 </p>
+                {certificate.score && (
+                  <p className="font-medium">Score: {certificate.score}%</p>
+                )}
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
                 <span className="text-sm font-semibold text-primary">
@@ -91,7 +161,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             </div>
           )}
 
-          {certificate.nftTxHash && (
+          {isClaimed && (
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
@@ -100,61 +170,85 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             </div>
           )}
           
-          {!certificate.nftTxHash && certificate.imageUrl && (
+          {isPending && (
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
-                Pending NFT Mint
+                <Sparkles className="h-3 w-3" />
+                Claim NFT
+              </Badge>
+            </div>
+          )}
+          
+          {isMinting && (
+            <div className="absolute right-2 top-2">
+              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-primary">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Minting...
               </Badge>
             </div>
           )}
         </div>
 
         {showActions && (
-          <div className="flex items-center justify-between gap-2 border-t border-border/50 p-3">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col gap-2 border-t border-border/50 p-3">
+            {isPending && !isMinting && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
-                onClick={handleCopyLink}
-                data-testid={`button-copy-${certificate.id}`}
+                className="w-full gap-2"
+                onClick={() => claimMutation.mutate()}
+                disabled={claimMutation.isPending || !feeInfo}
+                data-testid={`button-claim-${certificate.id}`}
               >
-                {copied ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                <span className="text-xs">Copy Link</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
-                onClick={handleDownload}
-                data-testid={`button-download-${certificate.id}`}
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span className="text-xs">Download</span>
-              </Button>
-            </div>
-            {certificate.nftTxHash && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-primary"
-                asChild
-                data-testid={`button-view-${certificate.id}`}
-              >
-                <a
-                  href={`https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span className="text-xs">View on Chain</span>
-                </a>
+                <Sparkles className="h-4 w-4" />
+                Claim NFT ({feeInfo?.mintingFee || "..."} KAS)
               </Button>
             )}
+            
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleCopyLink}
+                  data-testid={`button-copy-${certificate.id}`}
+                >
+                  {copied ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  <span className="text-xs">Copy Link</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleDownload}
+                  data-testid={`button-download-${certificate.id}`}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span className="text-xs">Download</span>
+                </Button>
+              </div>
+              {isClaimed && certificate.nftTxHash && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-primary"
+                  asChild
+                  data-testid={`button-view-${certificate.id}`}
+                >
+                  <a
+                    href={`https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span className="text-xs">View on Chain</span>
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>

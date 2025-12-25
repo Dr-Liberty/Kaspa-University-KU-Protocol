@@ -11,6 +11,8 @@ declare global {
       switchNetwork: (network: string) => Promise<void>;
       disconnect: (origin: string) => Promise<void>;
       getVersion: () => Promise<string>;
+      sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number }) => Promise<string>;
+      getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       on: (event: string, callback: (...args: any[]) => void) => void;
       removeListener: (event: string, callback: (...args: any[]) => void) => void;
     };
@@ -29,6 +31,8 @@ interface WalletContextType {
   exitDemoMode: () => void;
   truncatedAddress: string;
   connectionError: string | null;
+  sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
+  getBalance: () => Promise<number>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -219,6 +223,34 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries();
   }, []);
 
+  const sendKaspa = useCallback(async (toAddress: string, amountKas: number): Promise<string> => {
+    if (isDemoMode) {
+      return `demo_payment_${Date.now()}`;
+    }
+    
+    if (!window.kasware) {
+      throw new Error("KasWare wallet not installed");
+    }
+    
+    const sompi = Math.floor(amountKas * 100000000);
+    const txHash = await window.kasware.sendKaspa(toAddress, sompi);
+    console.log(`[Wallet] Sent ${amountKas} KAS to ${toAddress}, txHash: ${txHash}`);
+    return txHash;
+  }, [isDemoMode]);
+
+  const getBalance = useCallback(async (): Promise<number> => {
+    if (isDemoMode) {
+      return 100;
+    }
+    
+    if (!window.kasware) {
+      throw new Error("KasWare wallet not installed");
+    }
+    
+    const balance = await window.kasware.getBalance();
+    return balance.total / 100000000;
+  }, [isDemoMode]);
+
   const truncatedAddress = wallet?.address
     ? `${wallet.address.slice(0, 12)}...${wallet.address.slice(-6)}`
     : "";
@@ -236,7 +268,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         enterDemoMode, 
         exitDemoMode, 
         truncatedAddress,
-        connectionError
+        connectionError,
+        sendKaspa,
+        getBalance,
       }}
     >
       {children}
