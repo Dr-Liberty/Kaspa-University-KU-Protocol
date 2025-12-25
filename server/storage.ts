@@ -32,6 +32,7 @@ export interface IStorage {
   getCertificatesByUser(userId: string): Promise<Certificate[]>;
   getCertificate(id: string): Promise<Certificate | undefined>;
   createCertificate(cert: Omit<Certificate, "id">): Promise<Certificate>;
+  getCertificateCount(): Promise<number>;
 
   getUserProgress(userId: string): Promise<UserProgress[]>;
   getOrCreateProgress(userId: string, courseId: string): Promise<UserProgress>;
@@ -667,6 +668,10 @@ const balances = await indexer.getKRC20Balances({
     const certificate: Certificate = { ...cert, id };
     this.certificates.set(id, certificate);
     return certificate;
+  }
+
+  async getCertificateCount(): Promise<number> {
+    return this.certificates.size;
   }
 
   async getUserProgress(userId: string): Promise<UserProgress[]> {

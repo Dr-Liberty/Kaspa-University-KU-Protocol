@@ -68,9 +68,21 @@ Preferred communication style: Simple, everyday language.
 - **Files**: `server/ku-protocol.ts` for encoding/decoding, `server/kaspa.ts` for blockchain integration
 - **Verification**: `/api/verify/:txHash` endpoint decodes and validates on-chain payloads
 
+### KRC-721 NFT Certificates
+- **Standard**: KRC-721 (based on coinchimp/kaspa-krc721-apps)
+- **Collection**: KUCERT (Kaspa University Certificates)
+- **Pattern**: Commit-and-Reveal transaction for NFT inscriptions
+- **Implementation**: `server/krc721.ts` for minting, `server/routes.ts` for API
+- **Endpoints**:
+  - `GET /api/nft/collection` - Collection info and status
+  - `POST /api/nft/mint` - Manual certificate minting
+  - `GET /api/nft/preview` - Generate certificate image preview
+- **Auto-minting**: NFT certificates automatically minted on course completion
+- **Certificate Image**: SVG generated server-side with course details, score, and recipient
+
 ### Planned Features
-- KRC-721 NFT certificate minting
-- Certificate downloads
+- Collection deployment on mainnet (one-time setup)
+- IPFS integration for certificate metadata storage
 
 ### UI Dependencies
 - Radix UI primitives for accessible components

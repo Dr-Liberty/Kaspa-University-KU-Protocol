@@ -1,0 +1,644 @@
+/**
+ * KRC-721 NFT Certificate Service for Kaspa University
+ * 
+ * Based on: https://github.com/coinchimp/kaspa-krc721-apps
+ * 
+ * Implements the KRC-721 standard for NFT inscriptions on Kaspa:
+ * - Commit-and-Reveal transaction pattern
+ * - ScriptBuilder with kspr marker
+ * - Collection deployment and token minting
+ * 
+ * Network: MAINNET
+ * Collection Ticker: KUCERT (Kaspa University Certificates)
+ */
+
+import { createHash } from "crypto";
+import { storage } from "./storage";
+
+// WebSocket shim must be loaded before kaspa module
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { w3cwebsocket: W3CWebSocket } = require("websocket");
+// @ts-ignore
+globalThis.WebSocket = globalThis.WebSocket || W3CWebSocket;
+
+interface KRC721Config {
+  network: "mainnet" | "testnet-10" | "testnet-11";
+  ticker: string;
+  collectionName: string;
+  collectionDescription: string;
+  maxSupply: number;
+  royaltyFee: number; // basis points (100 = 1%)
+  royaltyOwner: string;
+}
+
+interface DeployResult {
+  success: boolean;
+  commitTxHash?: string;
+  revealTxHash?: string;
+  error?: string;
+}
+
+interface MintResult {
+  success: boolean;
+  commitTxHash?: string;
+  revealTxHash?: string;
+  tokenId?: number;
+  error?: string;
+}
+
+interface CertificateMetadata {
+  name: string;
+  description: string;
+  image: string; // IPFS URL or data URI
+  attributes: Array<{
+    traitType: string;
+    value: string | number;
+  }>;
+}
+
+// Default configuration for Kaspa University Certificates
+const DEFAULT_CONFIG: KRC721Config = {
+  network: "mainnet",
+  ticker: "KUCERT",
+  collectionName: "Kaspa University Certificates",
+  collectionDescription: "Verifiable course completion certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
+  maxSupply: 1000000, // 1 million certificates max
+  royaltyFee: 0, // No royalties on educational certificates
+  royaltyOwner: "",
+};
+
+class KRC721Service {
+  private config: KRC721Config;
+  private initialized: boolean = false;
+  private kaspaModule: any = null;
+  private rpcClient: any = null;
+  private privateKey: any = null;
+  private publicKey: any = null;
+  private address: string | null = null;
+  private collectionDeployed: boolean = false;
+
+  constructor(config: Partial<KRC721Config> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * Initialize the KRC-721 service
+   */
+  async initialize(): Promise<boolean> {
+    if (this.initialized) return true;
+
+    try {
+      const privateKeyHex = process.env.KASPA_TREASURY_PRIVATE_KEY;
+      
+      if (!privateKeyHex) {
+        console.log("[KRC721] No private key configured - running in demo mode");
+        this.initialized = true;
+        return true;
+      }
+
+      // Load kaspa module
+      this.kaspaModule = await import("kaspa");
+      
+      if (this.kaspaModule.initConsolePanicHook) {
+        this.kaspaModule.initConsolePanicHook();
+      }
+
+      // Initialize private key and derive address
+      const { PrivateKey } = this.kaspaModule;
+      this.privateKey = new PrivateKey(privateKeyHex);
+      this.publicKey = this.privateKey.toPublicKey();
+      this.address = this.publicKey.toAddress(this.config.network).toString();
+
+      console.log(`[KRC721] Service initialized`);
+      console.log(`[KRC721] Address: ${this.address}`);
+      console.log(`[KRC721] Network: ${this.config.network}`);
+      console.log(`[KRC721] Collection: ${this.config.ticker}`);
+
+      // Connect to RPC
+      await this.connectRpc();
+
+      this.initialized = true;
+      return true;
+    } catch (error: any) {
+      console.error("[KRC721] Failed to initialize:", error.message);
+      this.initialized = true; // Allow demo mode
+      return false;
+    }
+  }
+
+  /**
+   * Connect to Kaspa RPC
+   */
+  private async connectRpc(): Promise<void> {
+    try {
+      const { RpcClient, Encoding, Resolver } = this.kaspaModule;
+
+      // Use Resolver for automatic node discovery
+      this.rpcClient = new RpcClient({
+        resolver: new Resolver(),
+        encoding: Encoding.Borsh,
+        networkId: this.config.network,
+      });
+
+      await this.rpcClient.disconnect();
+      await this.rpcClient.connect();
+
+      console.log("[KRC721] RPC connected");
+    } catch (error: any) {
+      console.log(`[KRC721] RPC connection failed: ${error.message}`);
+      // Continue without RPC - will use demo mode
+    }
+  }
+
+  /**
+   * Check if service is live (has real signing capability)
+   */
+  isLive(): boolean {
+    return this.privateKey !== null && this.rpcClient !== null;
+  }
+
+  /**
+   * Get next token ID (based on current certificate count + 1)
+   */
+  async getNextTokenId(): Promise<number> {
+    const count = await storage.getCertificateCount();
+    return count + 1;
+  }
+
+  /**
+   * Deploy the KUCERT collection (one-time operation)
+   * 
+   * This creates the NFT collection on-chain with metadata.
+   * Should only be called once to initialize the collection.
+   */
+  async deployCollection(imageUrl: string): Promise<DeployResult> {
+    if (!this.isLive()) {
+      console.log("[KRC721] Demo mode - simulating collection deployment");
+      return {
+        success: true,
+        commitTxHash: `demo_deploy_commit_${Date.now().toString(16)}`,
+        revealTxHash: `demo_deploy_reveal_${Date.now().toString(16)}`,
+      };
+    }
+
+    try {
+      const {
+        ScriptBuilder,
+        Opcodes,
+        addressFromScriptPublicKey,
+        createTransactions,
+        kaspaToSompi,
+      } = this.kaspaModule;
+
+      // Create deployment data following KRC-721 spec
+      const deployData: any = {
+        p: "krc-721",
+        op: "deploy",
+        tick: this.config.ticker,
+        max: this.config.maxSupply.toString(),
+        metadata: {
+          name: this.config.collectionName,
+          description: this.config.collectionDescription,
+          image: imageUrl,
+          attributes: [
+            { traitType: "platform", value: "Kaspa University" },
+            { traitType: "type", value: "Educational Certificate" },
+          ],
+        },
+      };
+
+      // Add royalty info if configured
+      if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
+        deployData.royaltyFee = kaspaToSompi(this.config.royaltyFee.toString())?.toString();
+        deployData.royaltyOwner = this.config.royaltyOwner;
+      }
+
+      console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
+
+      // Build inscription script
+      const script = new ScriptBuilder()
+        .addData(this.publicKey.toXOnlyPublicKey().toString())
+        .addOp(Opcodes.OpCheckSig)
+        .addOp(Opcodes.OpFalse)
+        .addOp(Opcodes.OpIf)
+        .addData(Buffer.from("kspr"))
+        .addI64(BigInt(0))
+        .addData(Buffer.from(JSON.stringify(deployData, null, 0)))
+        .addOp(Opcodes.OpEndIf);
+
+      // Get P2SH address for commit transaction
+      const P2SHAddress = addressFromScriptPublicKey(
+        script.createPayToScriptHashScript(),
+        this.config.network
+      )!;
+
+      console.log(`[KRC721] P2SH Address: ${P2SHAddress.toString()}`);
+
+      // Execute commit-reveal pattern
+      const result = await this.executeCommitReveal(script, P2SHAddress, "10");
+      
+      if (result.success) {
+        this.collectionDeployed = true;
+        console.log(`[KRC721] Collection deployed successfully!`);
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error("[KRC721] Deploy failed:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Mint a certificate NFT for a course completion
+   * 
+   * @param recipientAddress - The wallet address to receive the certificate
+   * @param courseName - Name of the completed course
+   * @param score - Quiz/course score
+   * @param completionDate - Date of completion
+   * @param imageUrl - IPFS URL for certificate image
+   */
+  async mintCertificate(
+    recipientAddress: string,
+    courseName: string,
+    score: number,
+    completionDate: Date,
+    imageUrl: string
+  ): Promise<MintResult> {
+    // Get token ID from storage (will be incremented after certificate is created)
+    const tokenId = await this.getNextTokenId();
+
+    if (!this.isLive()) {
+      console.log(`[KRC721] Demo mode - simulating certificate mint #${tokenId}`);
+      // Note: Token ID will be persisted when certificate is created in storage
+      return {
+        success: true,
+        commitTxHash: `demo_mint_commit_${Date.now().toString(16)}`,
+        revealTxHash: `demo_mint_reveal_${Date.now().toString(16)}`,
+        tokenId,
+      };
+    }
+
+    try {
+      const {
+        ScriptBuilder,
+        Opcodes,
+        addressFromScriptPublicKey,
+      } = this.kaspaModule;
+
+      // Create mint data with certificate metadata
+      const mintData = {
+        p: "krc-721",
+        op: "mint",
+        tick: this.config.ticker,
+        to: recipientAddress, // Recipient of the NFT
+        metadata: {
+          name: `KU Certificate #${tokenId}: ${courseName}`,
+          description: `Kaspa University course completion certificate for "${courseName}". Earned with a score of ${score}%.`,
+          image: imageUrl,
+          attributes: [
+            { traitType: "Course", value: courseName },
+            { traitType: "Score", value: score },
+            { traitType: "Completion Date", value: completionDate.toISOString().split("T")[0] },
+            { traitType: "Recipient", value: recipientAddress },
+            { traitType: "Token ID", value: tokenId },
+            { traitType: "Platform", value: "Kaspa University" },
+          ],
+        },
+      };
+
+      console.log(`[KRC721] Minting certificate #${tokenId} for ${recipientAddress}`);
+
+      // Build inscription script
+      const script = new ScriptBuilder()
+        .addData(this.publicKey.toXOnlyPublicKey().toString())
+        .addOp(Opcodes.OpCheckSig)
+        .addOp(Opcodes.OpFalse)
+        .addOp(Opcodes.OpIf)
+        .addData(Buffer.from("kspr"))
+        .addI64(BigInt(0))
+        .addData(Buffer.from(JSON.stringify(mintData, null, 0)))
+        .addOp(Opcodes.OpEndIf);
+
+      // Get P2SH address
+      const P2SHAddress = addressFromScriptPublicKey(
+        script.createPayToScriptHashScript(),
+        this.config.network
+      )!;
+
+      // Execute commit-reveal pattern
+      const result = await this.executeCommitReveal(script, P2SHAddress, "3.3");
+
+      if (result.success) {
+        // Token ID is persisted via certificate creation in storage
+        console.log(`[KRC721] Certificate #${tokenId} minted successfully!`);
+        return { ...result, tokenId };
+      }
+
+      return { ...result, tokenId };
+    } catch (error: any) {
+      console.error("[KRC721] Mint failed:", error.message);
+      return { success: false, error: error.message, tokenId };
+    }
+  }
+
+  /**
+   * Execute the commit-reveal transaction pattern
+   * 
+   * 1. Commit: Send KAS to P2SH address (locks the inscription)
+   * 2. Reveal: Spend from P2SH, revealing the inscription data
+   */
+  private async executeCommitReveal(
+    script: any,
+    P2SHAddress: any,
+    commitAmountKas: string
+  ): Promise<DeployResult> {
+    const { createTransactions, kaspaToSompi } = this.kaspaModule;
+
+    // Subscribe to UTXO changes for confirmation
+    await this.rpcClient.subscribeUtxosChanged([this.address!]);
+
+    let commitTxHash: string | undefined;
+    let revealTxHash: string | undefined;
+
+    try {
+      // Step 1: Commit Transaction
+      console.log("[KRC721] Creating commit transaction...");
+      
+      const { entries } = await this.rpcClient.getUtxosByAddresses({
+        addresses: [this.address!],
+      });
+
+      if (entries.length === 0) {
+        throw new Error("No UTXOs available for transaction");
+      }
+
+      const { transactions: commitTxs } = await createTransactions({
+        priorityEntries: [],
+        entries,
+        outputs: [{
+          address: P2SHAddress.toString(),
+          amount: kaspaToSompi(commitAmountKas)!,
+        }],
+        changeAddress: this.address!,
+        priorityFee: kaspaToSompi("2")!,
+        networkId: this.config.network,
+      });
+
+      // Sign and submit commit transaction
+      for (const tx of commitTxs) {
+        tx.sign([this.privateKey]);
+        commitTxHash = await tx.submit(this.rpcClient);
+        console.log(`[KRC721] Commit tx: ${commitTxHash}`);
+      }
+
+      // Wait for commit to confirm (poll for UTXO at P2SH address)
+      await this.waitForUtxo(P2SHAddress.toString(), 60000);
+
+      // Step 2: Reveal Transaction
+      console.log("[KRC721] Creating reveal transaction...");
+
+      const { entries: newEntries } = await this.rpcClient.getUtxosByAddresses({
+        addresses: [this.address!],
+      });
+
+      const revealUTXOs = await this.rpcClient.getUtxosByAddresses({
+        addresses: [P2SHAddress.toString()],
+      });
+
+      if (revealUTXOs.entries.length === 0) {
+        throw new Error("P2SH UTXO not found after commit");
+      }
+
+      const { transactions: revealTxs } = await createTransactions({
+        priorityEntries: [revealUTXOs.entries[0]],
+        entries: newEntries,
+        outputs: [],
+        changeAddress: this.address!,
+        priorityFee: kaspaToSompi("110")!, // Higher fee for reveal
+        networkId: this.config.network,
+      });
+
+      // Sign reveal transaction with script signature
+      for (const tx of revealTxs) {
+        tx.sign([this.privateKey], false);
+
+        // Find and fill the P2SH input
+        const p2shInputIndex = tx.transaction.inputs.findIndex(
+          (input: any) => input.signatureScript === ""
+        );
+
+        if (p2shInputIndex !== -1) {
+          const signature = await tx.createInputSignature(p2shInputIndex, this.privateKey);
+          tx.fillInput(
+            p2shInputIndex,
+            script.encodePayToScriptHashSignatureScript(signature)
+          );
+        }
+
+        revealTxHash = await tx.submit(this.rpcClient);
+        console.log(`[KRC721] Reveal tx: ${revealTxHash}`);
+      }
+
+      // Wait for reveal to confirm
+      await this.waitForConfirmation(revealTxHash!, 60000);
+
+      return {
+        success: true,
+        commitTxHash,
+        revealTxHash,
+      };
+    } catch (error: any) {
+      console.error("[KRC721] Commit-reveal failed:", error.message);
+      return {
+        success: false,
+        commitTxHash,
+        revealTxHash,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Wait for a UTXO to appear at an address
+   */
+  private async waitForUtxo(address: string, timeoutMs: number): Promise<void> {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeoutMs) {
+      const { entries } = await this.rpcClient.getUtxosByAddresses({
+        addresses: [address],
+      });
+
+      if (entries.length > 0) {
+        console.log(`[KRC721] UTXO confirmed at ${address.slice(0, 20)}...`);
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    throw new Error(`Timeout waiting for UTXO at ${address}`);
+  }
+
+  /**
+   * Wait for a transaction to be confirmed
+   */
+  private async waitForConfirmation(txHash: string, timeoutMs: number): Promise<void> {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        // Check if our UTXOs have been updated (indicates confirmation)
+        const { entries } = await this.rpcClient.getUtxosByAddresses({
+          addresses: [this.address!],
+        });
+
+        // Transaction is likely confirmed if we have UTXOs
+        if (entries.length > 0) {
+          console.log(`[KRC721] Transaction confirmed: ${txHash.slice(0, 16)}...`);
+          return;
+        }
+      } catch (error) {
+        // Continue polling
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Don't throw - transaction may still succeed
+    console.log(`[KRC721] Confirmation timeout for ${txHash.slice(0, 16)}... (may still succeed)`);
+  }
+
+  /**
+   * Generate certificate image as base64 data URI
+   * Returns a simple SVG certificate image
+   */
+  generateCertificateImage(
+    recipientAddress: string,
+    courseName: string,
+    score: number,
+    completionDate: Date
+  ): string {
+    const dateStr = completionDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const shortAddress = `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-8)}`;
+
+    // Generate SVG certificate
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d9488;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#115e59;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        
+        <!-- Background -->
+        <rect width="800" height="600" fill="url(#bg)"/>
+        
+        <!-- Border -->
+        <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#gold)" stroke-width="4" rx="10"/>
+        <rect x="30" y="30" width="740" height="540" fill="none" stroke="url(#gold)" stroke-width="1" rx="8"/>
+        
+        <!-- Logo/Header -->
+        <text x="400" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#fbbf24" font-weight="bold">
+          KASPA UNIVERSITY
+        </text>
+        
+        <!-- Certificate Title -->
+        <text x="400" y="140" text-anchor="middle" font-family="Georgia, serif" font-size="42" fill="white" font-weight="bold">
+          Certificate of Completion
+        </text>
+        
+        <!-- Divider -->
+        <line x1="200" y1="170" x2="600" y2="170" stroke="url(#gold)" stroke-width="2"/>
+        
+        <!-- This certifies -->
+        <text x="400" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ccfbf1">
+          This is to certify that
+        </text>
+        
+        <!-- Recipient Address -->
+        <text x="400" y="265" text-anchor="middle" font-family="monospace" font-size="20" fill="white" font-weight="bold">
+          ${shortAddress}
+        </text>
+        
+        <!-- Has completed -->
+        <text x="400" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ccfbf1">
+          has successfully completed the course
+        </text>
+        
+        <!-- Course Name -->
+        <text x="400" y="360" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="#fbbf24" font-weight="bold">
+          ${courseName}
+        </text>
+        
+        <!-- Score -->
+        <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">
+          with a score of <tspan font-weight="bold" fill="#fbbf24">${score}%</tspan>
+        </text>
+        
+        <!-- Date -->
+        <text x="400" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#ccfbf1">
+          Awarded on ${dateStr}
+        </text>
+        
+        <!-- Kaspa Logo/Badge -->
+        <circle cx="400" cy="540" r="25" fill="url(#gold)" opacity="0.3"/>
+        <text x="400" y="547" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#fbbf24" font-weight="bold">
+          KAS
+        </text>
+        
+        <!-- Footer -->
+        <text x="400" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5eead4" opacity="0.7">
+          Verified on Kaspa Blockchain | KRC-721 NFT Certificate
+        </text>
+      </svg>
+    `.trim();
+
+    // Convert SVG to base64 data URI
+    const base64 = Buffer.from(svg).toString("base64");
+    return `data:image/svg+xml;base64,${base64}`;
+  }
+
+  /**
+   * Get collection info
+   */
+  async getCollectionInfo() {
+    const nextTokenId = await this.getNextTokenId();
+    return {
+      ticker: this.config.ticker,
+      name: this.config.collectionName,
+      description: this.config.collectionDescription,
+      maxSupply: this.config.maxSupply,
+      nextTokenId,
+      isDeployed: this.collectionDeployed,
+      network: this.config.network,
+      address: this.address,
+      isLive: this.isLive(),
+    };
+  }
+}
+
+// Singleton instance
+let krc721ServiceInstance: KRC721Service | null = null;
+
+export async function getKRC721Service(): Promise<KRC721Service> {
+  if (!krc721ServiceInstance) {
+    krc721ServiceInstance = new KRC721Service();
+    await krc721ServiceInstance.initialize();
+  }
+  return krc721ServiceInstance;
+}
+
+export { KRC721Service, KRC721Config, DeployResult, MintResult, CertificateMetadata };

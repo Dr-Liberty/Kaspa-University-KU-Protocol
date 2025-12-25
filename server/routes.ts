@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import { getKaspaService } from "./kaspa";
 import { createQuizPayload } from "./ku-protocol.js";
+import { getKRC721Service } from "./krc721";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -168,16 +169,53 @@ export async function registerRoutes(
         const hasCertForCourse = existingCerts.some((c) => c.courseId === lesson.courseId);
 
         if (!hasCertForCourse) {
-          // Create certificate (NFT minting will be Phase 2)
+          // Create certificate with NFT minting
+          const verificationCode = `KU-${randomUUID().slice(0, 8).toUpperCase()}`;
+          const completionDate = new Date();
+          
+          // Try to mint NFT certificate
+          let nftTxHash: string | undefined;
+          let imageUrl: string | undefined;
+          
+          try {
+            const krc721Service = await getKRC721Service();
+            
+            // Generate certificate image
+            imageUrl = krc721Service.generateCertificateImage(
+              user.walletAddress,
+              course.title,
+              score,
+              completionDate
+            );
+            
+            // Mint the NFT
+            const mintResult = await krc721Service.mintCertificate(
+              user.walletAddress,
+              course.title,
+              score,
+              completionDate,
+              imageUrl
+            );
+            
+            if (mintResult.success && mintResult.revealTxHash) {
+              nftTxHash = mintResult.revealTxHash;
+              console.log(`[Certificate] NFT minted: ${nftTxHash}`);
+            }
+          } catch (error: any) {
+            console.error("[Certificate] NFT minting failed:", error.message);
+            // Continue without NFT - certificate still valid
+          }
+          
           await storage.createCertificate({
             courseId: lesson.courseId,
             userId: user.id,
             recipientAddress: user.walletAddress,
             courseName: course.title,
             kasReward: course.kasReward,
-            issuedAt: new Date(),
-            verificationCode: `KU-${randomUUID().slice(0, 8).toUpperCase()}`,
-            nftTxHash: undefined, // NFT minting is Phase 2
+            issuedAt: completionDate,
+            verificationCode,
+            nftTxHash,
+            imageUrl,
           });
         }
       }
@@ -362,6 +400,51 @@ export async function registerRoutes(
       onChainError,
       isDemo: txHash?.startsWith("demo_") ?? false,
     });
+  });
+
+  // KRC-721 NFT Collection Info
+  app.get("/api/nft/collection", async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const info = await krc721Service.getCollectionInfo();
+      res.json(info);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mint NFT certificate manually - DISABLED for security
+  // Auto-minting happens on course completion, no manual minting allowed
+  app.post("/api/nft/mint", async (_req: Request, res: Response) => {
+    // Security: Manual minting is disabled to prevent unauthorized use of treasury keys
+    // Certificates are automatically minted when users complete courses
+    return res.status(403).json({
+      error: "Manual minting is disabled for security reasons",
+      message: "NFT certificates are automatically minted when you complete a course"
+    });
+  });
+
+  // Generate certificate image preview
+  app.get("/api/nft/preview", async (req: Request, res: Response) => {
+    const { address, course, score } = req.query;
+    
+    if (!address || !course) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    try {
+      const krc721Service = await getKRC721Service();
+      const imageUrl = krc721Service.generateCertificateImage(
+        address as string,
+        course as string,
+        parseInt(score as string) || 100,
+        new Date()
+      );
+      
+      res.json({ imageUrl });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Verify on-chain Q&A or quiz result

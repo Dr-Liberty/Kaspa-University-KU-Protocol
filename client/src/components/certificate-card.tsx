@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Copy, Share2, CheckCircle2 } from "lucide-react";
+import { Download, ExternalLink, Copy, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +14,7 @@ interface CertificateCardProps {
 export function CertificateCard({ certificate, showActions = true }: CertificateCardProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [showImage, setShowImage] = useState(false);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/certificates/${certificate.id}`;
@@ -21,6 +22,20 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     setCopied(true);
     toast({ title: "Link copied!", description: "Certificate link copied to clipboard" });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    if (certificate.imageUrl) {
+      const link = document.createElement("a");
+      link.href = certificate.imageUrl;
+      link.download = `kaspa-university-certificate-${certificate.verificationCode}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Download started!", description: "Your certificate is being downloaded" });
+    } else {
+      toast({ title: "No image available", description: "Certificate image not yet generated", variant: "destructive" });
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -38,34 +53,57 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     >
       <CardContent className="p-0">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-background via-card to-background">
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+          {certificate.imageUrl && showImage ? (
+            <img
+              src={certificate.imageUrl}
+              alt={`Certificate for ${certificate.courseName}`}
+              className="h-full w-full object-cover"
+              onClick={() => setShowImage(false)}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center cursor-pointer"
+              onClick={() => certificate.imageUrl && setShowImage(true)}
+            >
+              <div className="rounded-full bg-primary/10 p-3">
+                <CheckCircle2 className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <Badge className="bg-primary/10 text-primary border-primary/20">
+                  Certificate of Completion
+                </Badge>
+                <h3 className="mt-2 font-semibold leading-tight">{certificate.courseName}</h3>
+              </div>
+              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                <p>Issued on {formatDate(certificate.issuedAt)}</p>
+                <p className="font-mono text-[10px]">
+                  {certificate.verificationCode}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+                <span className="text-sm font-semibold text-primary">
+                  +{certificate.kasReward} KAS
+                </span>
+              </div>
+              {certificate.imageUrl && (
+                <p className="text-xs text-muted-foreground/60 mt-1">Click to view certificate</p>
+              )}
             </div>
-            <div className="space-y-1">
-              <Badge className="bg-primary/10 text-primary border-primary/20">
-                Certificate of Completion
-              </Badge>
-              <h3 className="mt-2 font-semibold leading-tight">{certificate.courseName}</h3>
-            </div>
-            <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-              <p>Issued on {formatDate(certificate.issuedAt)}</p>
-              <p className="font-mono text-[10px]">
-                {certificate.verificationCode}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
-              <span className="text-sm font-semibold text-primary">
-                +{certificate.kasReward} KAS
-              </span>
-            </div>
-          </div>
+          )}
 
           {certificate.nftTxHash && (
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                NFT Minted
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                KRC-721 NFT
+              </Badge>
+            </div>
+          )}
+          
+          {!certificate.nftTxHash && certificate.imageUrl && (
+            <div className="absolute right-2 top-2">
+              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
+                Pending NFT Mint
               </Badge>
             </div>
           )}
@@ -92,6 +130,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                 variant="ghost"
                 size="sm"
                 className="gap-1.5"
+                onClick={handleDownload}
                 data-testid={`button-download-${certificate.id}`}
               >
                 <Download className="h-3.5 w-3.5" />
