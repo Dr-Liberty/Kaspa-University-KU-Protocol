@@ -131,6 +131,13 @@ Preferred communication style: Simple, everyday language.
 - **Transaction Tracking**: Monitors transaction status (pending/confirmed/failed)
 - **Confirmation Verification**: Verifies transaction confirmations before release
 - **Entry Filtering**: Transactions only use reserved UTXOs, preventing race conditions during concurrent operations
+- **Integration**: Fully integrated into kaspa.ts rewards and krc721.ts NFT minting
+
+### Address Validation
+- **Service**: `kaspa.ts.validateAddress()` and `krc721.ts.validateAddress()`
+- **Mainnet-only**: Rejects kaspatest: and kaspasim: prefixes
+- **Format checks**: Validates prefix, length, bech32 characters, address type (q/p)
+- **Integration**: Applied before all reward and NFT transactions
 
 ### Session Store Abstraction
 - **Service**: `server/session-store.ts` - Enables horizontal scaling

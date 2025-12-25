@@ -12,7 +12,7 @@
 
 Kaspa University is a decentralized Learn-to-Earn educational platform built on the Kaspa L1 blockchain. This audit evaluates the security posture, code quality, and operational readiness of the platform's core security mechanisms including wallet authentication, anti-Sybil protection, reward distribution, NFT certificate claiming, and on-chain data integrity.
 
-### Overall Security Rating: **B+ (Good)**
+### Overall Security Rating: **A- (Excellent)**
 
 | Category | Rating | Status |
 |----------|--------|--------|
@@ -23,7 +23,8 @@ Kaspa University is a decentralized Learn-to-Earn educational platform built on 
 | Input Validation | A | Comprehensive Sanitization |
 | Rate Limiting | A | Multi-tier Protection |
 | Database Persistence | B+ | Fallback Mechanism Active |
-| UTXO Management | B | Implemented (Integration Pending) |
+| UTXO Management | A | Fully Integrated |
+| Address Validation | A | Mainnet-only Verification |
 
 ---
 
@@ -58,21 +59,31 @@ The following components were reviewed:
 
 ### 2.2 HIGH SEVERITY FINDINGS
 
-**FINDING H-1: UTXO Manager Not Integrated Into Transaction Flow** (ACKNOWLEDGED)
+**All high severity issues have been resolved.**
+
+~~**FINDING H-1: UTXO Manager Not Integrated Into Transaction Flow**~~ (RESOLVED)
 
 | Attribute | Value |
 |-----------|-------|
 | Severity | High |
-| Status | Acknowledged |
-| Component | `server/kaspa.ts`, `server/utxo-manager.ts` |
+| Status | **RESOLVED** (December 25, 2025) |
+| Component | `server/kaspa.ts`, `server/krc721.ts`, `server/utxo-manager.ts` |
 
-**Description:** The UTXO Manager (`utxo-manager.ts`) implements mutex-based UTXO locking to prevent race conditions during concurrent transactions. However, it is not yet integrated into the main `kaspa.ts` transaction flow.
+**Resolution:** UTXO Manager is now fully integrated:
+- `kaspa.ts` uses `selectAndReserve()` before sending quiz rewards
+- `krc721.ts` uses `selectAndReserve()` and `markAsSpent()` for NFT commit-reveal
+- Concurrent transactions safely use separate UTXO sets
+- Failed transactions release reserved UTXOs back to the pool
 
-**Risk:** Concurrent reward transactions could potentially attempt to spend the same UTXOs, leading to transaction failures or double-spend attempts (which would be rejected by the network but cause operational issues).
+**Additional Security Fixes Applied (December 25, 2025):**
 
-**Recommendation:** Integrate `UTXOManager.selectAndReserve()` into `kaspa.ts` before sending transactions.
+1. **Address Validation Added**: Both `kaspa.ts` and `krc721.ts` now validate recipient addresses before transactions:
+   - Mainnet prefix check (`kaspa:`)
+   - Rejects testnet/simnet addresses
+   - Length and format validation
+   - Address type verification (P2PK `q` or P2SH `p`)
 
-**Mitigation:** Network-level rejection prevents actual double-spending. Current single-threaded Node.js execution reduces practical risk.
+2. **KRC-721 Reveal Fee Corrected**: Reduced from excessive 110 KAS to appropriate 0.5 KAS
 
 ---
 
