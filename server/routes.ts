@@ -62,11 +62,11 @@ export async function registerRoutes(
 
       res.json({
         overview: {
-          totalUsers: stats.totalUsers || 0,
-          totalCourses: stats.totalCourses || 0,
-          totalCertificates: stats.totalCertificates || 0,
+          totalUsers: stats.activeLearners || 0,
+          totalCourses: stats.coursesAvailable || 0,
+          totalCertificates: stats.certificatesMinted || 0,
           totalKasDistributed: stats.totalKasDistributed || 0,
-          totalQuizzes: Math.floor((stats.totalCertificates || 0) * 2.5),
+          totalQuizzes: Math.floor((stats.certificatesMinted || 0) * 2.5),
           avgScore: 78,
         },
         activityData,
@@ -561,6 +561,11 @@ export async function registerRoutes(
       const kaspaService = await getKaspaService();
       const collectionInfo = await krc721Service.getCollectionInfo();
       const MINTING_FEE = 3.5; // KAS
+
+      if (!collectionInfo.address) {
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+        return res.status(500).json({ error: "Treasury address not configured" });
+      }
 
       // Verify payment transaction
       console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
