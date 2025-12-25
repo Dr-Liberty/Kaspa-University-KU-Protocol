@@ -5,11 +5,13 @@
  * - Rate limiting per IP and wallet
  * - IP tracking and multi-accounting detection
  * - VPN/Proxy detection (basic and optional API-based)
+ * - Payment TX deduplication (persistent)
  * - Request fingerprinting
  */
 
 import type { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
+import { getSecurityStorage } from "./security-storage.js";
 
 interface IPActivity {
   firstSeen: Date;
@@ -19,6 +21,7 @@ interface IPActivity {
   flagged: boolean;
   flags: string[];
   isVpn: boolean;
+  vpnScore?: number;
   vpnCheckTime?: number;
 }
 
@@ -29,22 +32,21 @@ interface WalletIPBinding {
   flagged: boolean;
 }
 
-const ipActivity: Map<string, IPActivity> = new Map();
-const walletIpBindings: Map<string, WalletIPBinding> = new Map();
-const usedPaymentTxHashes: Set<string> = new Set();
+const ipActivityCache: Map<string, IPActivity> = new Map();
+const walletIpBindingsCache: Map<string, WalletIPBinding> = new Map();
 
 const MULTI_WALLET_THRESHOLD = 3;
 const MULTI_IP_THRESHOLD = 5;
 
 const KNOWN_VPN_ASN_PREFIXES = [
-  "AS9009",   // M247
-  "AS16509", // Amazon
-  "AS14061", // DigitalOcean
-  "AS20473", // Vultr
-  "AS14618", // Amazon AWS
-  "AS396982", // Google Cloud
-  "AS45102", // Alibaba
-  "AS8075",  // Microsoft Azure
+  "AS9009",
+  "AS16509",
+  "AS14061",
+  "AS20473",
+  "AS14618",
+  "AS396982",
+  "AS45102",
+  "AS8075",
 ];
 
 const DATACENTER_IP_RANGES = [
@@ -67,11 +69,11 @@ export function isDatacenterIP(ip: string): boolean {
   return DATACENTER_IP_RANGES.some(regex => regex.test(ip));
 }
 
-export function trackIPActivity(req: Request): IPActivity {
+export async function trackIPActivity(req: Request): Promise<IPActivity> {
   const ip = getClientIP(req);
   const walletAddress = req.headers["x-wallet-address"] as string;
   
-  let activity = ipActivity.get(ip);
+  let activity = ipActivityCache.get(ip);
   if (!activity) {
     activity = {
       firstSeen: new Date(),
@@ -82,29 +84,39 @@ export function trackIPActivity(req: Request): IPActivity {
       flags: [],
       isVpn: false,
     };
-    ipActivity.set(ip, activity);
+    ipActivityCache.set(ip, activity);
   }
   
   activity.lastSeen = new Date();
   activity.requestCount++;
   
   if (walletAddress && !walletAddress.startsWith("demo:")) {
-    activity.wallets.add(walletAddress.toLowerCase());
+    const normalizedWallet = walletAddress.toLowerCase();
+    activity.wallets.add(normalizedWallet);
     
     if (activity.wallets.size >= MULTI_WALLET_THRESHOLD && !activity.flags.includes("MULTI_WALLET_IP")) {
       activity.flagged = true;
       activity.flags.push("MULTI_WALLET_IP");
       console.log(`[Security] IP ${ip} flagged: ${activity.wallets.size} wallets detected`);
+      
+      const storage = await getSecurityStorage();
+      await storage.logSecurityEvent({
+        walletAddress: normalizedWallet,
+        ipAddress: ip,
+        action: "MULTI_WALLET_DETECTED",
+        flags: ["MULTI_WALLET_IP"],
+        metadata: { walletCount: activity.wallets.size },
+      });
     }
     
-    let binding = walletIpBindings.get(walletAddress.toLowerCase());
+    let binding = walletIpBindingsCache.get(normalizedWallet);
     if (!binding) {
       binding = {
-        walletAddress: walletAddress.toLowerCase(),
+        walletAddress: normalizedWallet,
         ips: new Set(),
         flagged: false,
       };
-      walletIpBindings.set(walletAddress.toLowerCase(), binding);
+      walletIpBindingsCache.set(normalizedWallet, binding);
     }
     
     binding.ips.add(ip);
@@ -115,6 +127,37 @@ export function trackIPActivity(req: Request): IPActivity {
     if (binding.ips.size >= MULTI_IP_THRESHOLD && !binding.flagged) {
       binding.flagged = true;
       console.log(`[Security] Wallet ${walletAddress.slice(0, 20)}... flagged: ${binding.ips.size} IPs detected`);
+      
+      const storage = await getSecurityStorage();
+      await storage.logSecurityEvent({
+        walletAddress: normalizedWallet,
+        ipAddress: ip,
+        action: "MULTI_IP_DETECTED",
+        flags: ["MULTI_IP_WALLET"],
+        metadata: { ipCount: binding.ips.size },
+      });
+    }
+    
+    try {
+      const storage = await getSecurityStorage();
+      await storage.upsertIpActivity({
+        ipAddress: ip,
+        wallets: Array.from(activity.wallets),
+        requestCount: activity.requestCount,
+        flagged: activity.flagged,
+        flags: activity.flags,
+        isVpn: activity.isVpn,
+        vpnScore: activity.vpnScore,
+      });
+      
+      await storage.upsertWalletIpBinding({
+        walletAddress: normalizedWallet,
+        ips: Array.from(binding.ips),
+        primaryIp: binding.primaryIp,
+        flagged: binding.flagged,
+      });
+    } catch (error: any) {
+      console.error("[Security] Failed to persist activity:", error.message);
     }
   }
   
@@ -207,7 +250,7 @@ export function getWalletIPStats(walletAddress: string): {
   primaryIp?: string;
   flagged: boolean;
 } {
-  const binding = walletIpBindings.get(walletAddress.toLowerCase());
+  const binding = walletIpBindingsCache.get(walletAddress.toLowerCase());
   if (!binding) {
     return { ipCount: 0, flagged: false };
   }
@@ -225,7 +268,7 @@ export function getIPStats(ip: string): {
   flagged: boolean;
   flags: string[];
 } {
-  const activity = ipActivity.get(ip);
+  const activity = ipActivityCache.get(ip);
   if (!activity) {
     return { walletCount: 0, requestCount: 0, flagged: false, flags: [] };
   }
@@ -238,12 +281,24 @@ export function getIPStats(ip: string): {
   };
 }
 
-export function isPaymentTxUsed(txHash: string): boolean {
-  return usedPaymentTxHashes.has(txHash.toLowerCase());
+export async function isPaymentTxUsed(txHash: string): Promise<boolean> {
+  try {
+    const storage = await getSecurityStorage();
+    return await storage.isPaymentTxUsed(txHash);
+  } catch (error: any) {
+    console.error("[Security] Check payment TX failed:", error.message);
+    return false;
+  }
 }
 
-export function markPaymentTxUsed(txHash: string): void {
-  usedPaymentTxHashes.add(txHash.toLowerCase());
+export async function markPaymentTxUsed(txHash: string, walletAddress: string, purpose: string, amount?: number): Promise<void> {
+  try {
+    const storage = await getSecurityStorage();
+    await storage.markPaymentTxUsed(txHash, walletAddress, purpose, amount);
+    console.log(`[Security] Marked payment TX as used: ${txHash.slice(0, 16)}... for ${purpose}`);
+  } catch (error: any) {
+    console.error("[Security] Mark payment TX failed:", error.message);
+  }
 }
 
 export const generalRateLimiter = rateLimit({
@@ -285,9 +340,9 @@ export const rewardRateLimiter = rateLimit({
   },
 });
 
-export function securityMiddleware(req: Request, res: Response, next: NextFunction) {
-  const activity = trackIPActivity(req);
+export async function securityMiddleware(req: Request, res: Response, next: NextFunction) {
   const ip = getClientIP(req);
+  const activity = await trackIPActivity(req);
   
   (req as any).clientIP = ip;
   (req as any).ipActivity = activity;
@@ -339,4 +394,27 @@ export function getSecurityFlags(req: Request): string[] {
   }
   
   return Array.from(new Set(flags));
+}
+
+export function validatePayloadLength(content: string, maxLength: number = 500): { valid: boolean; error?: string } {
+  if (!content || typeof content !== "string") {
+    return { valid: false, error: "Content must be a non-empty string" };
+  }
+  
+  if (content.length > maxLength) {
+    return { valid: false, error: `Content exceeds maximum length of ${maxLength} characters` };
+  }
+  
+  const invalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F]/;
+  if (invalidChars.test(content)) {
+    return { valid: false, error: "Content contains invalid control characters" };
+  }
+  
+  return { valid: true };
+}
+
+export function sanitizePayloadContent(content: string): string {
+  return content
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .trim();
 }

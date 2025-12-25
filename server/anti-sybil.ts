@@ -8,7 +8,11 @@
  * - Quiz attempt limits
  * - Wallet trust scoring
  * - Rate limiting
+ * 
+ * Now with persistent storage via PostgreSQL.
  */
+
+import { getSecurityStorage } from "./security-storage.js";
 
 interface QuizAttempt {
   lessonId: string;
@@ -54,7 +58,7 @@ const DEFAULT_CONFIG: AntiSybilConfig = {
 
 class AntiSybilService {
   private config: AntiSybilConfig;
-  private walletActivity: Map<string, WalletActivity> = new Map();
+  private walletActivityCache: Map<string, WalletActivity> = new Map();
   private quizStartTimes: Map<string, number> = new Map();
 
   constructor(config: Partial<AntiSybilConfig> = {}) {
@@ -67,32 +71,6 @@ class AntiSybilService {
     });
   }
 
-  private getOrCreateWalletActivity(address: string): WalletActivity {
-    const normalizedAddress = address.toLowerCase();
-    
-    if (!this.walletActivity.has(normalizedAddress)) {
-      this.walletActivity.set(normalizedAddress, {
-        address: normalizedAddress,
-        firstSeen: new Date(),
-        totalQuizzes: 0,
-        totalRewardsToday: 0,
-        todayDate: this.getTodayDate(),
-        quizAttempts: new Map(),
-        flags: [],
-        trustScore: 0.5,
-      });
-    }
-
-    const activity = this.walletActivity.get(normalizedAddress)!;
-    
-    if (activity.todayDate !== this.getTodayDate()) {
-      activity.totalRewardsToday = 0;
-      activity.todayDate = this.getTodayDate();
-    }
-
-    return activity;
-  }
-
   private getTodayDate(): string {
     return new Date().toISOString().split("T")[0];
   }
@@ -101,23 +79,133 @@ class AntiSybilService {
     return `${walletAddress.toLowerCase()}:${lessonId}`;
   }
 
+  private async getOrCreateWalletActivity(address: string): Promise<WalletActivity> {
+    const normalizedAddress = address.toLowerCase();
+    
+    const cached = this.walletActivityCache.get(normalizedAddress);
+    if (cached) {
+      if (cached.todayDate !== this.getTodayDate()) {
+        cached.totalRewardsToday = 0;
+        cached.todayDate = this.getTodayDate();
+      }
+      return cached;
+    }
+    
+    try {
+      const storage = await getSecurityStorage();
+      const stored = await storage.getAntiSybilData(normalizedAddress);
+      
+      if (stored) {
+        const attempts = await storage.getQuizAttempts(normalizedAddress, "");
+        const attemptsMap = new Map<string, QuizAttempt[]>();
+        
+        for (const attempt of attempts) {
+          const key = attempt.lessonId;
+          if (!attemptsMap.has(key)) {
+            attemptsMap.set(key, []);
+          }
+          attemptsMap.get(key)!.push({
+            lessonId: attempt.lessonId,
+            walletAddress: attempt.walletAddress,
+            startedAt: attempt.startedAt.getTime(),
+            completedAt: attempt.completedAt.getTime(),
+            score: attempt.score,
+            passed: attempt.passed,
+            flagged: attempt.flagged,
+            flagReason: attempt.flagReason,
+          });
+        }
+        
+        const activity: WalletActivity = {
+          address: normalizedAddress,
+          firstSeen: stored.firstSeen,
+          totalQuizzes: stored.totalQuizzes,
+          totalRewardsToday: stored.todayDate === this.getTodayDate() ? stored.totalRewardsToday : 0,
+          todayDate: this.getTodayDate(),
+          quizAttempts: attemptsMap,
+          flags: stored.flags,
+          trustScore: stored.trustScore,
+        };
+        
+        this.walletActivityCache.set(normalizedAddress, activity);
+        return activity;
+      }
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to load wallet activity:", error.message);
+    }
+    
+    const activity: WalletActivity = {
+      address: normalizedAddress,
+      firstSeen: new Date(),
+      totalQuizzes: 0,
+      totalRewardsToday: 0,
+      todayDate: this.getTodayDate(),
+      quizAttempts: new Map(),
+      flags: [],
+      trustScore: 0.5,
+    };
+    
+    this.walletActivityCache.set(normalizedAddress, activity);
+    
+    try {
+      const storage = await getSecurityStorage();
+      await storage.upsertAntiSybilData({
+        walletAddress: normalizedAddress,
+        totalQuizzes: 0,
+        totalRewardsToday: 0,
+        trustScore: 0.5,
+        flags: [],
+      });
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to persist new wallet activity:", error.message);
+    }
+    
+    return activity;
+  }
+
   recordQuizStart(walletAddress: string, lessonId: string): void {
     const key = this.getQuizKey(walletAddress, lessonId);
     this.quizStartTimes.set(key, Date.now());
   }
 
-  validateQuizSubmission(walletAddress: string, lessonId: string): {
+  async validateQuizSubmission(walletAddress: string, lessonId: string): Promise<{
     allowed: boolean;
     reason?: string;
     rewardMultiplier: number;
     flags: string[];
-  } {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
+  }> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
     const key = this.getQuizKey(walletAddress, lessonId);
     const flags: string[] = [];
     let rewardMultiplier = 1.0;
 
     const attempts = activity.quizAttempts.get(lessonId) || [];
+    
+    try {
+      const storage = await getSecurityStorage();
+      const dbAttempts = await storage.getQuizAttempts(walletAddress, lessonId);
+      if (dbAttempts.length > attempts.length) {
+        for (const dbAttempt of dbAttempts) {
+          const exists = attempts.some(a => a.completedAt === dbAttempt.completedAt.getTime());
+          if (!exists) {
+            attempts.push({
+              lessonId: dbAttempt.lessonId,
+              walletAddress: dbAttempt.walletAddress,
+              startedAt: dbAttempt.startedAt.getTime(),
+              completedAt: dbAttempt.completedAt.getTime(),
+              score: dbAttempt.score,
+              passed: dbAttempt.passed,
+              flagged: dbAttempt.flagged,
+              flagReason: dbAttempt.flagReason,
+            });
+          }
+        }
+        activity.quizAttempts.set(lessonId, attempts);
+      }
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to load quiz attempts:", error.message);
+    }
+
     if (attempts.length >= this.config.maxQuizAttemptsPerLesson) {
       return {
         allowed: false,
@@ -181,14 +269,14 @@ class AntiSybilService {
     };
   }
 
-  recordQuizCompletion(
+  async recordQuizCompletion(
     walletAddress: string,
     lessonId: string,
     score: number,
     passed: boolean,
     kasRewarded: number
-  ): QuizAttempt {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
+  ): Promise<QuizAttempt> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
     const key = this.getQuizKey(walletAddress, lessonId);
     
     const startTime = this.quizStartTimes.get(key) || Date.now() - 60000;
@@ -230,6 +318,31 @@ class AntiSybilService {
 
     this.quizStartTimes.delete(key);
 
+    try {
+      const storage = await getSecurityStorage();
+      
+      await storage.recordQuizAttempt({
+        walletAddress: walletAddress.toLowerCase(),
+        lessonId,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        score,
+        passed,
+        flagged,
+        flagReason: attempt.flagReason,
+      });
+      
+      await storage.upsertAntiSybilData({
+        walletAddress: walletAddress.toLowerCase(),
+        totalQuizzes: activity.totalQuizzes,
+        totalRewardsToday: activity.totalRewardsToday,
+        trustScore: activity.trustScore,
+        flags: activity.flags,
+      });
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to persist quiz completion:", error.message);
+    }
+
     console.log(`[AntiSybil] Quiz completed:`, {
       wallet: walletAddress.slice(0, 20) + "...",
       lesson: lessonId,
@@ -244,43 +357,87 @@ class AntiSybilService {
     return attempt;
   }
 
-  getDailyRewardsRemaining(walletAddress: string): number {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
+  async getDailyRewardsRemaining(walletAddress: string): Promise<number> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
     return Math.max(0, this.config.maxDailyRewardKas - activity.totalRewardsToday);
   }
 
-  getQuizAttemptsRemaining(walletAddress: string, lessonId: string): number {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
-    const attempts = activity.quizAttempts.get(lessonId) || [];
+  async getQuizAttemptsRemaining(walletAddress: string, lessonId: string): Promise<number> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
+    
+    let attempts = activity.quizAttempts.get(lessonId) || [];
+    
+    try {
+      const storage = await getSecurityStorage();
+      const dbAttempts = await storage.getQuizAttempts(walletAddress, lessonId);
+      if (dbAttempts.length > attempts.length) {
+        attempts = dbAttempts.map(a => ({
+          lessonId: a.lessonId,
+          walletAddress: a.walletAddress,
+          startedAt: a.startedAt.getTime(),
+          completedAt: a.completedAt.getTime(),
+          score: a.score,
+          passed: a.passed,
+          flagged: a.flagged,
+          flagReason: a.flagReason,
+        }));
+        activity.quizAttempts.set(lessonId, attempts);
+      }
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to load quiz attempts:", error.message);
+    }
+    
     return Math.max(0, this.config.maxQuizAttemptsPerLesson - attempts.length);
   }
 
-  getWalletStats(walletAddress: string): {
+  async getWalletStats(walletAddress: string): Promise<{
     trustScore: number;
     totalQuizzes: number;
     dailyRewardsRemaining: number;
     walletAgeDays: number;
     flags: string[];
-  } {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
+  }> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
     const walletAgeDays = (Date.now() - activity.firstSeen.getTime()) / (24 * 60 * 60 * 1000);
     
     return {
       trustScore: activity.trustScore,
       totalQuizzes: activity.totalQuizzes,
-      dailyRewardsRemaining: this.getDailyRewardsRemaining(walletAddress),
+      dailyRewardsRemaining: await this.getDailyRewardsRemaining(walletAddress),
       walletAgeDays: Math.floor(walletAgeDays),
       flags: activity.flags.slice(-10),
     };
   }
 
-  getCooldownStatus(walletAddress: string, lessonId: string): {
+  async getCooldownStatus(walletAddress: string, lessonId: string): Promise<{
     onCooldown: boolean;
     hoursRemaining?: number;
     attemptsRemaining: number;
-  } {
-    const activity = this.getOrCreateWalletActivity(walletAddress);
-    const attempts = activity.quizAttempts.get(lessonId) || [];
+  }> {
+    const activity = await this.getOrCreateWalletActivity(walletAddress);
+    
+    let attempts = activity.quizAttempts.get(lessonId) || [];
+    
+    try {
+      const storage = await getSecurityStorage();
+      const dbAttempts = await storage.getQuizAttempts(walletAddress, lessonId);
+      if (dbAttempts.length > attempts.length) {
+        attempts = dbAttempts.map(a => ({
+          lessonId: a.lessonId,
+          walletAddress: a.walletAddress,
+          startedAt: a.startedAt.getTime(),
+          completedAt: a.completedAt.getTime(),
+          score: a.score,
+          passed: a.passed,
+          flagged: a.flagged,
+          flagReason: a.flagReason,
+        }));
+        activity.quizAttempts.set(lessonId, attempts);
+      }
+    } catch (error: any) {
+      console.error("[AntiSybil] Failed to load quiz attempts:", error.message);
+    }
+    
     const attemptsRemaining = Math.max(0, this.config.maxQuizAttemptsPerLesson - attempts.length);
     
     const passedAttempt = attempts.find(a => a.passed);

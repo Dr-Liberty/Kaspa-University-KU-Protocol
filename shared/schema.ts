@@ -132,3 +132,82 @@ export const statsSchema = z.object({
 });
 
 export type Stats = z.infer<typeof statsSchema>;
+
+export const securityLogSchema = z.object({
+  id: z.string(),
+  walletAddress: z.string(),
+  ipAddress: z.string(),
+  action: z.string(),
+  flags: z.array(z.string()).default([]),
+  vpnScore: z.number().optional(),
+  metadata: z.record(z.any()).optional(),
+  createdAt: z.date(),
+});
+
+export type SecurityLog = z.infer<typeof securityLogSchema>;
+export const insertSecurityLogSchema = securityLogSchema.omit({ id: true, createdAt: true });
+export type InsertSecurityLog = z.infer<typeof insertSecurityLogSchema>;
+
+export const usedPaymentTxSchema = z.object({
+  txHash: z.string(),
+  walletAddress: z.string(),
+  purpose: z.string(),
+  amount: z.number().optional(),
+  usedAt: z.date(),
+});
+
+export type UsedPaymentTx = z.infer<typeof usedPaymentTxSchema>;
+
+export const antiSybilDataSchema = z.object({
+  id: z.string(),
+  walletAddress: z.string(),
+  firstSeen: z.date(),
+  totalQuizzes: z.number().default(0),
+  totalRewardsToday: z.number().default(0),
+  todayDate: z.string(),
+  trustScore: z.number().default(0.5),
+  flags: z.array(z.string()).default([]),
+  updatedAt: z.date(),
+});
+
+export type AntiSybilData = z.infer<typeof antiSybilDataSchema>;
+
+export const quizAttemptSchema = z.object({
+  id: z.string(),
+  walletAddress: z.string(),
+  lessonId: z.string(),
+  startedAt: z.date(),
+  completedAt: z.date(),
+  score: z.number(),
+  passed: z.boolean(),
+  flagged: z.boolean().default(false),
+  flagReason: z.string().optional(),
+});
+
+export type QuizAttemptRecord = z.infer<typeof quizAttemptSchema>;
+
+export const ipActivitySchema = z.object({
+  id: z.string(),
+  ipAddress: z.string(),
+  firstSeen: z.date(),
+  lastSeen: z.date(),
+  wallets: z.array(z.string()).default([]),
+  requestCount: z.number().default(0),
+  flagged: z.boolean().default(false),
+  flags: z.array(z.string()).default([]),
+  isVpn: z.boolean().default(false),
+  vpnScore: z.number().optional(),
+  vpnCheckedAt: z.date().optional(),
+});
+
+export type IpActivity = z.infer<typeof ipActivitySchema>;
+
+export const walletIpBindingSchema = z.object({
+  id: z.string(),
+  walletAddress: z.string(),
+  ips: z.array(z.string()).default([]),
+  primaryIp: z.string().optional(),
+  flagged: z.boolean().default(false),
+});
+
+export type WalletIpBinding = z.infer<typeof walletIpBindingSchema>;

@@ -91,6 +91,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Anti-Sybil Protection
 - **Service**: `server/anti-sybil.ts` - Prevents farming and Sybil attacks
+- **Storage**: Database persistence via `server/security-storage.ts` with in-memory fallback
 - **Quiz Cooldowns**: 24-hour wait between retaking passed quizzes
 - **Minimum Completion Time**: 30 seconds minimum (flags bots completing too fast)
 - **Daily Reward Caps**: Maximum 5 KAS per wallet per day
@@ -112,8 +113,29 @@ Preferred communication style: Simple, everyday language.
   - Contact email: configurable via `GETIPINTEL_CONTACT` env var
   - Fallback: Basic datacenter IP range detection
 - **Quiz Answer Validation**: Server-side validation of answer arrays
-- **Payment TX Deduplication**: Prevents reusing same tx hash for NFT claims
-- **Security Flags**: Reduce rewards by 50% for flagged wallets (VPN_DETECTED, MULTI_WALLET_IP, MULTI_IP_WALLET)
+- **Payment TX Deduplication**: Persistent storage prevents reusing same tx hash for NFT claims
+- **Security Flags**: Complete reward blocking for flagged wallets (VPN_DETECTED, MULTI_WALLET_IP, MULTI_IP_WALLET)
+- **Input Sanitization**: Q&A content validated and sanitized before storage/on-chain posting
+
+### Security Database Tables
+- **security_logs**: Audit log of security events
+- **used_payment_txs**: Prevents payment transaction reuse
+- **anti_sybil_data**: Per-wallet trust scores and daily limits
+- **quiz_attempts**: Full history of quiz attempts for cooldown enforcement
+- **ip_activity**: IP address tracking with VPN scores
+- **wallet_ip_bindings**: Maps wallets to IPs for multi-account detection
+
+### UTXO Management
+- **Service**: `server/utxo-manager.ts` - Prevents UTXO race conditions
+- **UTXO Locking**: Mutex-based locking prevents double-spending
+- **Transaction Tracking**: Monitors transaction status (pending/confirmed/failed)
+- **Confirmation Verification**: Verifies transaction confirmations before release
+
+### Cryptographic Utilities
+- **Service**: `server/crypto.ts` - Wallet authentication and quiz integrity
+- **Challenge-Response Auth**: ECDSA signature verification for wallet authentication
+- **Quiz Session Tokens**: Signed tokens ensure quiz integrity
+- **Answer Hashing**: SHA-256 hashes of answers for verification
 
 ### Planned Features
 - Collection deployment on mainnet (one-time setup)

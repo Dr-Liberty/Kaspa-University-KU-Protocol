@@ -18,6 +18,8 @@ import {
   getSecurityFlags,
   checkVpnAsync,
   getClientIP,
+  validatePayloadLength,
+  sanitizePayloadContent,
 } from "./security";
 
 export async function registerRoutes(
@@ -189,8 +191,8 @@ export async function registerRoutes(
     }
     
     const antiSybil = getAntiSybilService();
-    const cooldown = antiSybil.getCooldownStatus(walletAddress, req.params.lessonId);
-    const stats = antiSybil.getWalletStats(walletAddress);
+    const cooldown = await antiSybil.getCooldownStatus(walletAddress, req.params.lessonId);
+    const stats = await antiSybil.getWalletStats(walletAddress);
     
     res.json({
       canAttempt: !cooldown.onCooldown && cooldown.attemptsRemaining > 0,
@@ -227,7 +229,7 @@ export async function registerRoutes(
     }
 
     const antiSybil = getAntiSybilService();
-    const validation = antiSybil.validateQuizSubmission(walletAddress, lessonId);
+    const validation = await antiSybil.validateQuizSubmission(walletAddress, lessonId);
     
     if (!validation.allowed) {
       return res.status(429).json({ 
@@ -252,8 +254,9 @@ export async function registerRoutes(
                       securityFlags.includes("VPN_SUSPECTED") ||
                       securityFlags.includes("MULTI_IP_WALLET");
     
+    let rewardMultiplier = validation.rewardMultiplier;
     if (isFlagged) {
-      validation.rewardMultiplier = 0;
+      rewardMultiplier = 0;
       console.log(`[Security] Blocked rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
     }
 
@@ -282,7 +285,7 @@ export async function registerRoutes(
 
     const kasPerLesson = course.kasReward / course.lessonCount;
     const baseKasReward = passed ? kasPerLesson : 0;
-    const kasRewarded = baseKasReward * validation.rewardMultiplier;
+    const kasRewarded = baseKasReward * rewardMultiplier;
 
     let txHash: string | undefined;
     let actualKasRewarded = 0;
@@ -320,7 +323,7 @@ export async function registerRoutes(
       txHash,
     });
 
-    antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, actualKasRewarded);
+    await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, actualKasRewarded);
 
     // Only update user KAS and progress if transaction succeeded (or demo mode)
     if (passed && actualKasRewarded > 0) {
@@ -445,6 +448,13 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Content is required" });
     }
 
+    const contentValidation = validatePayloadLength(content, 500);
+    if (!contentValidation.valid) {
+      return res.status(400).json({ error: contentValidation.error });
+    }
+
+    const sanitizedContent = sanitizePayloadContent(content);
+
     let txHash: string | undefined;
     let onChainStatus: "success" | "failed" | "not_requested" = "not_requested";
     let onChainError: string | undefined;
@@ -456,7 +466,7 @@ export async function registerRoutes(
         const result = await kaspaService.postQAQuestion(
           lessonId,
           authorAddress,
-          content.trim()
+          sanitizedContent
         );
         if (result.success) {
           txHash = result.txHash;
@@ -475,7 +485,7 @@ export async function registerRoutes(
     const post = await storage.createQAPost({
       lessonId,
       authorAddress,
-      content: content.trim(),
+      content: sanitizedContent,
       isQuestion: isQuestion ?? true,
       txHash,
     });
@@ -501,6 +511,13 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Content is required" });
     }
 
+    const contentValidation = validatePayloadLength(content, 500);
+    if (!contentValidation.valid) {
+      return res.status(400).json({ error: contentValidation.error });
+    }
+
+    const sanitizedContent = sanitizePayloadContent(content);
+
     // Get the parent post to get its txHash for on-chain reference
     const parentPost = await storage.getQAPost(postId);
     if (!parentPost) {
@@ -518,7 +535,7 @@ export async function registerRoutes(
         const result = await kaspaService.postQAAnswer(
           parentPost.txHash,
           authorAddress,
-          content.trim()
+          sanitizedContent
         );
         if (result.success) {
           txHash = result.txHash;
@@ -540,7 +557,7 @@ export async function registerRoutes(
     const reply = await storage.createQAPost({
       lessonId,
       authorAddress,
-      content: content.trim(),
+      content: sanitizedContent,
       isQuestion: false,
       parentId: postId,
       txHash,
@@ -594,7 +611,8 @@ export async function registerRoutes(
     }
 
     // Check if payment tx has already been used (prevent double-claiming)
-    if (isPaymentTxUsed(paymentTxHash)) {
+    const txAlreadyUsed = await isPaymentTxUsed(paymentTxHash);
+    if (txAlreadyUsed) {
       return res.status(400).json({ 
         error: "Payment transaction already used",
         message: "This transaction has already been used to claim an NFT"
@@ -701,7 +719,7 @@ export async function registerRoutes(
 
       if (mintResult.success && mintResult.revealTxHash) {
         // Mark payment tx as used to prevent double-claiming
-        markPaymentTxUsed(paymentTxHash);
+        await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 3.5);
         
         // Update certificate with NFT info
         await storage.updateCertificate(id, {
