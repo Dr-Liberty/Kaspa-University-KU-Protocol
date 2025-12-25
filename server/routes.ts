@@ -7,11 +7,25 @@ import { createQuizPayload } from "./ku-protocol.js";
 import { getKRC721Service } from "./krc721";
 import { getPinataService } from "./pinata";
 import { getAntiSybilService } from "./anti-sybil";
+import { 
+  securityMiddleware, 
+  generalRateLimiter, 
+  quizRateLimiter,
+  rewardRateLimiter,
+  validateQuizAnswers,
+  isPaymentTxUsed,
+  markPaymentTxUsed,
+  getSecurityFlags,
+} from "./security";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Apply security middleware globally for API routes
+  app.use("/api", securityMiddleware);
+  app.use("/api", generalRateLimiter);
+
   app.get("/api/stats", async (_req: Request, res: Response) => {
     const stats = await storage.getStats();
     res.json(stats);
@@ -168,7 +182,7 @@ export async function registerRoutes(
     });
   });
 
-  app.post("/api/quiz/:lessonId/submit", async (req: Request, res: Response) => {
+  app.post("/api/quiz/:lessonId/submit", quizRateLimiter, async (req: Request, res: Response) => {
     const { lessonId } = req.params;
     const { answers } = req.body;
 
@@ -182,6 +196,16 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Demo mode - connect wallet for real rewards" });
     }
 
+    const questions = await storage.getQuizQuestionsByLesson(lessonId);
+    if (questions.length === 0) {
+      return res.status(404).json({ error: "No quiz found for this lesson" });
+    }
+
+    const answerValidation = validateQuizAnswers(answers, questions.length);
+    if (!answerValidation.valid) {
+      return res.status(400).json({ error: answerValidation.error });
+    }
+
     const antiSybil = getAntiSybilService();
     const validation = antiSybil.validateQuizSubmission(walletAddress, lessonId);
     
@@ -192,14 +216,15 @@ export async function registerRoutes(
       });
     }
 
+    const securityFlags = getSecurityFlags(req);
+    if (securityFlags.includes("MULTI_WALLET_IP") || securityFlags.includes("VPN_SUSPECTED")) {
+      validation.rewardMultiplier *= 0.5;
+      console.log(`[Security] Reduced rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}`);
+    }
+
     let user = await storage.getUserByWalletAddress(walletAddress);
     if (!user) {
       user = await storage.createUser({ walletAddress });
-    }
-
-    const questions = await storage.getQuizQuestionsByLesson(lessonId);
-    if (questions.length === 0) {
-      return res.status(404).json({ error: "No quiz found for this lesson" });
     }
 
     let correct = 0;
@@ -533,6 +558,14 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Invalid payment transaction" });
     }
 
+    // Check if payment tx has already been used (prevent double-claiming)
+    if (isPaymentTxUsed(paymentTxHash)) {
+      return res.status(400).json({ 
+        error: "Payment transaction already used",
+        message: "This transaction has already been used to claim an NFT"
+      });
+    }
+
     // Get certificate
     const certificate = await storage.getCertificate(id);
     if (!certificate) {
@@ -632,6 +665,9 @@ export async function registerRoutes(
       );
 
       if (mintResult.success && mintResult.revealTxHash) {
+        // Mark payment tx as used to prevent double-claiming
+        markPaymentTxUsed(paymentTxHash);
+        
         // Update certificate with NFT info
         await storage.updateCertificate(id, {
           nftStatus: "claimed",
