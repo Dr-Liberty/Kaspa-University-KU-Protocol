@@ -20,6 +20,18 @@ import * as bip39 from "bip39";
 import HDKey from "hdkey";
 import bs58check from "bs58check";
 import { bech32 } from "bech32";
+import {
+  createQuizPayload,
+  createQAQuestionPayload,
+  createQAAnswerPayload,
+  parseKUPayload,
+  isKUTransaction,
+  hexToString,
+  stringToHex,
+  type QuizPayload,
+  type QAQuestionPayload,
+  type QAAnswerPayload,
+} from "./ku-protocol.js";
 
 // K-Kluster Fix #1: Load W3C-compatible WebSocket shim BEFORE importing kaspa
 // Use createRequire for CommonJS modules in ESM context
@@ -910,6 +922,203 @@ class KaspaService {
     this.rpcConnected = false;
     this.apiConnected = false;
     console.log("[Kaspa] Disconnected");
+  }
+
+  /**
+   * Post a Q&A question on-chain
+   * Sends a minimal transaction with the question embedded in payload
+   */
+  async postQAQuestion(
+    lessonId: string,
+    authorAddress: string,
+    content: string
+  ): Promise<TransactionResult> {
+    const timestamp = Date.now();
+    
+    // Create the on-chain payload
+    const payload = createQAQuestionPayload({
+      lessonId,
+      authorAddress,
+      timestamp,
+      content,
+    });
+
+    console.log(`[Kaspa] Posting Q&A question for lesson ${lessonId}`);
+    console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
+
+    if (!this.isLive()) {
+      // Demo mode - simulate transaction
+      const demoTxHash = `demo_qa_q_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
+      console.log(`[Kaspa] Demo mode - simulated Q&A question post`);
+      return { success: true, txHash: demoTxHash };
+    }
+
+    // In live mode, send a self-transaction with the Q&A payload
+    // This stores the question on-chain with minimal cost
+    try {
+      const txHash = await this.sendPayloadTransaction(payload, authorAddress);
+      return { success: true, txHash };
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to post Q&A question:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Post a Q&A answer on-chain
+   */
+  async postQAAnswer(
+    questionTxId: string,
+    authorAddress: string,
+    content: string
+  ): Promise<TransactionResult> {
+    const timestamp = Date.now();
+    
+    const payload = createQAAnswerPayload({
+      questionTxId,
+      authorAddress,
+      timestamp,
+      content,
+    });
+
+    console.log(`[Kaspa] Posting Q&A answer for question ${questionTxId}`);
+    console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
+
+    if (!this.isLive()) {
+      const demoTxHash = `demo_qa_a_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
+      console.log(`[Kaspa] Demo mode - simulated Q&A answer post`);
+      return { success: true, txHash: demoTxHash };
+    }
+
+    try {
+      const txHash = await this.sendPayloadTransaction(payload, authorAddress);
+      return { success: true, txHash };
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to post Q&A answer:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Send a transaction with a custom payload (for on-chain data storage)
+   * Sends minimal amount to self or treasury to embed the payload
+   */
+  private async sendPayloadTransaction(
+    payloadHex: string,
+    fromAddress: string
+  ): Promise<string> {
+    if (!this.rpcConnected || !this.rpcClient || !this.treasuryPrivateKey || !this.kaspaModule) {
+      throw new Error("Not connected to Kaspa network or missing treasury keys");
+    }
+
+    const { PrivateKey, createTransactions, kaspaToSompi, Transaction } = this.kaspaModule;
+
+    // Get UTXOs via kaspa-rpc-client
+    const utxoResult = await this.rpcClient.getUtxosByAddresses({
+      addresses: [this.treasuryAddress]
+    });
+
+    const entries = utxoResult?.entries || [];
+    if (entries.length === 0) {
+      throw new Error("No UTXOs available for payload transaction");
+    }
+
+    // Create private key object
+    const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+    const privateKey = new PrivateKey(privateKeyHex);
+
+    // Minimal transaction - send dust amount to self
+    const dustAmount = kaspaToSompi(0.00001); // 1000 sompi minimum
+    const priorityFee = kaspaToSompi(0.0001);
+
+    // Create transaction with payload
+    const { transactions } = await createTransactions({
+      entries,
+      outputs: [{
+        address: this.treasuryAddress, // Send to self
+        amount: dustAmount
+      }],
+      changeAddress: this.treasuryAddress,
+      priorityFee,
+      payload: payloadHex, // Embed the KU protocol payload
+    });
+
+    console.log(`[Kaspa] Created payload transaction with ${payloadHex.length / 2} bytes`);
+
+    // Sign and submit
+    let finalTxHash = "";
+    for (const tx of transactions) {
+      tx.sign([privateKey]);
+      
+      const submitResult = await this.rpcClient.submitTransaction({
+        transaction: tx.toRpcTransaction()
+      });
+      
+      finalTxHash = submitResult?.transactionId || tx.id;
+      console.log(`[Kaspa] Payload transaction submitted: ${finalTxHash}`);
+    }
+
+    return finalTxHash;
+  }
+
+  /**
+   * Verify a quiz result from an on-chain transaction
+   */
+  async verifyQuizResult(txHash: string): Promise<QuizPayload | null> {
+    try {
+      // Fetch transaction from API
+      const txData = await this.apiCall(`/transactions/${txHash}`);
+      
+      if (!txData?.outputs?.[0]?.script_public_key_type) {
+        return null;
+      }
+
+      // Extract payload from transaction
+      const payloadHex = txData.payload;
+      if (!payloadHex) {
+        return null;
+      }
+
+      // Parse the KU protocol message
+      const parsed = parseKUPayload(payloadHex);
+      if (!parsed || parsed.type !== "quiz") {
+        return null;
+      }
+
+      return parsed.quiz || null;
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to verify quiz result:", error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Verify Q&A content from an on-chain transaction
+   */
+  async verifyQAContent(txHash: string): Promise<QAQuestionPayload | QAAnswerPayload | null> {
+    try {
+      const txData = await this.apiCall(`/transactions/${txHash}`);
+      
+      if (!txData?.payload) {
+        return null;
+      }
+
+      const parsed = parseKUPayload(txData.payload);
+      if (!parsed) {
+        return null;
+      }
+
+      if (parsed.type === "qa_q") {
+        return parsed.question || null;
+      } else if (parsed.type === "qa_a") {
+        return parsed.answer || null;
+      }
+
+      return null;
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to verify Q&A content:", error.message);
+      return null;
+    }
   }
 }
 
