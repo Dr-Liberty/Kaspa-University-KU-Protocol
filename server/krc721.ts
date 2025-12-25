@@ -62,9 +62,9 @@ interface CertificateMetadata {
 // Default configuration for Kaspa University Certificates
 const DEFAULT_CONFIG: KRC721Config = {
   network: "mainnet",
-  ticker: "KUCERT",
-  collectionName: "Kaspa University Certificates",
-  collectionDescription: "Verifiable course completion certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
+  ticker: "KPROOF",
+  collectionName: "Kaspa Proof of Learning",
+  collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
   maxSupply: 1000000, // 1 million certificates max
   royaltyFee: 0, // No royalties on educational certificates
   royaltyOwner: "",

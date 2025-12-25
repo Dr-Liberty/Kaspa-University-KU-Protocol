@@ -69,7 +69,7 @@ Preferred communication style: Simple, everyday language.
 
 ### KRC-721 NFT Certificates
 - **Standard**: KRC-721 (based on coinchimp/kaspa-krc721-apps)
-- **Collection**: KUCERT (Kaspa University Certificates)
+- **Collection**: KPROOF (Kaspa Proof of Learning)
 - **Pattern**: Commit-and-Reveal transaction for NFT inscriptions
 - **Implementation**: `server/krc721.ts` for minting, `server/routes.ts` for API
 - **Endpoints**:
