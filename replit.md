@@ -83,9 +83,14 @@ Preferred communication style: Simple, everyday language.
 - **Demo mode**: NFT claiming disabled in demo mode (requires real wallet)
 - **Certificate Image**: SVG generated server-side with course details, score, and recipient
 
+### Pinata IPFS Integration
+- **Service**: `server/pinata.ts` - Uploads certificate images and metadata to IPFS
+- **Environment Variables**: `PINATA_API_KEY`, `PINATA_SECRET_KEY`, `PINATA_GATEWAY` (optional)
+- **Fallback**: If Pinata not configured, uses base64 data URIs for certificate images
+- **Upload Flow**: SVG image uploaded first, then metadata JSON with image reference
+
 ### Planned Features
 - Collection deployment on mainnet (one-time setup)
-- IPFS integration for certificate metadata storage
 
 ### UI Dependencies
 - Radix UI primitives for accessible components

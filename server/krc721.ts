@@ -577,10 +577,10 @@ class KRC721Service {
   }
 
   /**
-   * Generate certificate image as base64 data URI
-   * Returns a simple SVG certificate image
+   * Generate certificate image as raw SVG string
+   * Used for IPFS upload
    */
-  generateCertificateImage(
+  generateCertificateImageSvg(
     recipientAddress: string,
     courseName: string,
     score: number,
@@ -594,8 +594,7 @@ class KRC721Service {
 
     const shortAddress = `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-8)}`;
 
-    // Generate SVG certificate
-    const svg = `
+    return `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -670,8 +669,19 @@ class KRC721Service {
         </text>
       </svg>
     `.trim();
+  }
 
-    // Convert SVG to base64 data URI
+  /**
+   * Generate certificate image as base64 data URI
+   * Returns a simple SVG certificate image
+   */
+  generateCertificateImage(
+    recipientAddress: string,
+    courseName: string,
+    score: number,
+    completionDate: Date
+  ): string {
+    const svg = this.generateCertificateImageSvg(recipientAddress, courseName, score, completionDate);
     const base64 = Buffer.from(svg).toString("base64");
     return `data:image/svg+xml;base64,${base64}`;
   }

@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { getKaspaService } from "./kaspa";
 import { createQuizPayload } from "./ku-protocol.js";
 import { getKRC721Service } from "./krc721";
+import { getPinataService } from "./pinata";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -537,15 +538,40 @@ export async function registerRoutes(
 
       console.log(`[Claim] Payment verified for certificate ${id}`);
 
-      // Generate certificate image if not already present
+      // Generate certificate image and upload to IPFS if configured
       let imageUrl = certificate.imageUrl;
       if (!imageUrl) {
-        imageUrl = krc721Service.generateCertificateImage(
+        const svgImage = krc721Service.generateCertificateImageSvg(
           certificate.recipientAddress,
           certificate.courseName,
           certificate.score || 100,
           certificate.issuedAt
         );
+        
+        // Try to upload to Pinata IPFS
+        const pinataService = getPinataService();
+        if (pinataService.isConfigured()) {
+          console.log(`[Claim] Uploading certificate to IPFS...`);
+          const uploadResult = await pinataService.uploadCertificate(
+            svgImage,
+            id,
+            certificate.courseName,
+            certificate.score || 100,
+            certificate.recipientAddress,
+            certificate.issuedAt
+          );
+          
+          if (uploadResult.success && uploadResult.ipfsUrl) {
+            imageUrl = uploadResult.ipfsUrl;
+            console.log(`[Claim] Certificate uploaded to IPFS: ${imageUrl}`);
+          } else {
+            console.log(`[Claim] IPFS upload failed, using data URI fallback`);
+            imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+          }
+        } else {
+          // Fallback to data URI
+          imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+        }
       }
 
       // Mint the NFT
