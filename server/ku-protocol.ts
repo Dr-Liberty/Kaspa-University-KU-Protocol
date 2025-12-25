@@ -199,6 +199,7 @@ export function isKUTransaction(payloadHex: string): boolean {
 
 /**
  * Parse a KU protocol message from transaction payload
+ * Uses reverse indexing for trailing fields to handle colons in wallet addresses
  */
 export function parseKUPayload(payloadHex: string): ParsedKUMessage | null {
   if (!isKUTransaction(payloadHex)) {
@@ -219,33 +220,111 @@ export function parseKUPayload(payloadHex: string): ParsedKUMessage | null {
 
     const result: ParsedKUMessage = { type, version, rawData };
 
-    // Parse based on message type
+    // Parse based on message type using reverse indexing for trailing fixed fields
+    // This handles wallet addresses that contain ":" (e.g., kaspa:address)
     if (type === "quiz" && parts.length >= 10) {
+      // Format: ku:1:quiz:{walletAddress}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}
+      // Last 4 parts are always: score, maxScore, timestamp, contentHash
+      const n = parts.length;
+      const contentHash = parts[n - 1];
+      const timestamp = parseInt(parts[n - 2], 10);
+      const maxScore = parseInt(parts[n - 3], 10);
+      const score = parseInt(parts[n - 4], 10);
+      const lessonId = parts[n - 5];
+      const courseId = parts[n - 6];
+      // Wallet address may contain ":" so join all remaining parts
+      const walletAddress = parts.slice(3, n - 6).join(KU_DELIM);
+      
       result.quiz = {
-        walletAddress: parts[3],
-        courseId: parts[4],
-        lessonId: parts[5],
-        score: parseInt(parts[6], 10),
-        maxScore: parseInt(parts[7], 10),
-        timestamp: parseInt(parts[8], 10),
-        contentHash: parts[9],
+        walletAddress,
+        courseId,
+        lessonId,
+        score,
+        maxScore,
+        timestamp,
+        contentHash,
       };
     } else if (type === "qa_q" && parts.length >= 7) {
-      result.question = {
-        lessonId: parts[3],
-        authorAddress: parts[4],
-        timestamp: parseInt(parts[5], 10),
-        contentHash: parts[6],
-        content: parts.slice(7).join(KU_DELIM),
-      };
+      // Format: ku:1:qa_q:{lessonId}:{authorAddress}:{timestamp}:{contentHash}:{content}
+      // Parse from end: content is everything after contentHash, 
+      // but contentHash and timestamp are fixed positions
+      const n = parts.length;
+      // Find contentHash position - it's 16 chars hex
+      // We need at least: ku:1:qa_q:lessonId:author:timestamp:hash:content
+      // But author may have ":" so use reverse indexing
+      // Last part(s) = content, then contentHash (16 chars), then timestamp, then author, then lessonId
+      // Content can contain ":" too, so we need to be clever
+      
+      // Try to find contentHash by looking for 16-char hex pattern from position 6 onward
+      let hashIdx = -1;
+      for (let i = 6; i < n; i++) {
+        if (parts[i].length === 16 && /^[0-9a-f]+$/.test(parts[i])) {
+          hashIdx = i;
+          break;
+        }
+      }
+      
+      if (hashIdx >= 6) {
+        const contentHash = parts[hashIdx];
+        const timestamp = parseInt(parts[hashIdx - 1], 10);
+        const authorAddress = parts.slice(4, hashIdx - 1).join(KU_DELIM);
+        const lessonId = parts[3];
+        const content = parts.slice(hashIdx + 1).join(KU_DELIM);
+        
+        result.question = {
+          lessonId,
+          authorAddress,
+          timestamp,
+          contentHash,
+          content,
+        };
+      } else {
+        // Fallback to simple parsing
+        result.question = {
+          lessonId: parts[3],
+          authorAddress: parts.slice(4, n - 3).join(KU_DELIM),
+          timestamp: parseInt(parts[n - 3], 10),
+          contentHash: parts[n - 2],
+          content: parts[n - 1] || "",
+        };
+      }
     } else if (type === "qa_a" && parts.length >= 7) {
-      result.answer = {
-        questionTxId: parts[3],
-        authorAddress: parts[4],
-        timestamp: parseInt(parts[5], 10),
-        contentHash: parts[6],
-        content: parts.slice(7).join(KU_DELIM),
-      };
+      // Format: ku:1:qa_a:{questionTxId}:{authorAddress}:{timestamp}:{contentHash}:{content}
+      const n = parts.length;
+      
+      // Find contentHash by looking for 16-char hex pattern
+      let hashIdx = -1;
+      for (let i = 6; i < n; i++) {
+        if (parts[i].length === 16 && /^[0-9a-f]+$/.test(parts[i])) {
+          hashIdx = i;
+          break;
+        }
+      }
+      
+      if (hashIdx >= 6) {
+        const contentHash = parts[hashIdx];
+        const timestamp = parseInt(parts[hashIdx - 1], 10);
+        const authorAddress = parts.slice(4, hashIdx - 1).join(KU_DELIM);
+        const questionTxId = parts[3];
+        const content = parts.slice(hashIdx + 1).join(KU_DELIM);
+        
+        result.answer = {
+          questionTxId,
+          authorAddress,
+          timestamp,
+          contentHash,
+          content,
+        };
+      } else {
+        // Fallback to simple parsing
+        result.answer = {
+          questionTxId: parts[3],
+          authorAddress: parts.slice(4, n - 3).join(KU_DELIM),
+          timestamp: parseInt(parts[n - 3], 10),
+          contentHash: parts[n - 2],
+          content: parts[n - 1] || "",
+        };
+      }
     }
 
     return result;

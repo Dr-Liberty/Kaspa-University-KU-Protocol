@@ -828,6 +828,40 @@ export async function registerRoutes(
     }
   });
 
+  // Get recent verified transactions for the explorer
+  app.get("/api/verify/recent", async (_req: Request, res: Response) => {
+    try {
+      // Get recent quiz results and Q&A posts from storage
+      const quizResults = await storage.getRecentQuizResults(10);
+      const qaPosts = await storage.getRecentQAPosts(10);
+      
+      const recentTxs = [
+        ...quizResults.map(r => ({
+          txHash: r.txHash || `demo_quiz_${r.id}`,
+          type: "quiz" as const,
+          timestamp: new Date(r.completedAt).getTime(),
+          walletAddress: r.userId,
+          courseId: r.lessonId.split("-")[0],
+          score: r.score,
+          maxScore: 100,
+        })),
+        ...qaPosts.map(p => ({
+          txHash: p.txHash || `demo_qa_${p.id}`,
+          type: p.isQuestion ? "qa_question" as const : "qa_answer" as const,
+          timestamp: new Date(p.createdAt).getTime(),
+          walletAddress: p.authorAddress,
+        })),
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10);
+
+      res.json(recentTxs);
+    } catch (error: any) {
+      console.error("[API] Error fetching recent verifications:", error);
+      res.json([]);
+    }
+  });
+
   // Verify on-chain Q&A or quiz result
   app.get("/api/verify/:txHash", async (req: Request, res: Response) => {
     const { txHash } = req.params;

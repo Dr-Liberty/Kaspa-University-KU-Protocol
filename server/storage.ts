@@ -44,6 +44,9 @@ export interface IStorage {
   createQAPost(post: InsertQAPost): Promise<QAPost>;
 
   getStats(): Promise<Stats>;
+
+  getRecentQuizResults(limit: number): Promise<QuizResult[]>;
+  getRecentQAPosts(limit: number): Promise<QAPost[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -746,6 +749,20 @@ const balances = await indexer.getKRC20Balances({
       activeLearners: this.users.size || 156,
       coursesAvailable: this.courses.size,
     };
+  }
+
+  async getRecentQuizResults(limit: number): Promise<QuizResult[]> {
+    const results = Array.from(this.quizResults.values());
+    return results
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+      .slice(0, limit);
+  }
+
+  async getRecentQAPosts(limit: number): Promise<QAPost[]> {
+    const posts = Array.from(this.qaPosts.values());
+    return posts
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
   }
 }
 
