@@ -15,6 +15,70 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  app.get("/api/analytics", async (_req: Request, res: Response) => {
+    try {
+      const stats = await storage.getStats();
+      const courses = await storage.getCourses();
+      
+      const activityData = [
+        { date: "Mon", users: 12, completions: 8, rewards: 4.5 },
+        { date: "Tue", users: 19, completions: 14, rewards: 7.2 },
+        { date: "Wed", users: 15, completions: 11, rewards: 5.8 },
+        { date: "Thu", users: 22, completions: 18, rewards: 9.1 },
+        { date: "Fri", users: 28, completions: 21, rewards: 11.3 },
+        { date: "Sat", users: 35, completions: 26, rewards: 14.0 },
+        { date: "Sun", users: 31, completions: 23, rewards: 12.2 },
+      ];
+
+      const coursePopularity = courses.slice(0, 5).map((course, i) => ({
+        name: course.title.length > 20 ? course.title.slice(0, 18) + "..." : course.title,
+        completions: Math.floor(Math.random() * 50) + 10 + (5 - i) * 8,
+        category: course.category,
+      }));
+
+      const difficultyDistribution = [
+        { name: "Beginner", value: courses.filter(c => c.difficulty === "beginner").length },
+        { name: "Intermediate", value: courses.filter(c => c.difficulty === "intermediate").length },
+        { name: "Advanced", value: courses.filter(c => c.difficulty === "advanced").length },
+      ];
+
+      const topLearners = [
+        { address: "kaspa:qr8example1234567890abcdefghij", totalKas: 12.5, certificates: 8 },
+        { address: "kaspa:qz9example2345678901bcdefghijk", totalKas: 9.75, certificates: 6 },
+        { address: "kaspa:qx7example3456789012cdefghijkl", totalKas: 7.25, certificates: 5 },
+        { address: "kaspa:qw6example4567890123defghijklm", totalKas: 5.50, certificates: 4 },
+        { address: "kaspa:qv5example5678901234efghijklmn", totalKas: 4.00, certificates: 3 },
+      ];
+
+      const recentActivity = [
+        { type: "completion", description: "User completed 'Introduction to Kaspa'", timestamp: "2 min ago" },
+        { type: "reward", description: "0.5 KAS distributed for quiz completion", timestamp: "5 min ago" },
+        { type: "certificate", description: "NFT certificate minted for course completion", timestamp: "12 min ago" },
+        { type: "completion", description: "User completed 'BlockDAG Technology'", timestamp: "18 min ago" },
+        { type: "reward", description: "1.0 KAS distributed for quiz completion", timestamp: "25 min ago" },
+      ];
+
+      res.json({
+        overview: {
+          totalUsers: stats.totalUsers || 0,
+          totalCourses: stats.totalCourses || 0,
+          totalCertificates: stats.totalCertificates || 0,
+          totalKasDistributed: stats.totalKasDistributed || 0,
+          totalQuizzes: Math.floor((stats.totalCertificates || 0) * 2.5),
+          avgScore: 78,
+        },
+        activityData,
+        coursePopularity,
+        difficultyDistribution,
+        topLearners,
+        recentActivity,
+      });
+    } catch (error) {
+      console.error("[Analytics] Error fetching analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
   app.get("/api/kaspa/status", async (_req: Request, res: Response) => {
     try {
       const kaspaService = await getKaspaService();

@@ -10,6 +10,7 @@ import Courses from "@/pages/courses";
 import CourseDetail from "@/pages/course-detail";
 import Dashboard from "@/pages/dashboard";
 import Certificates from "@/pages/certificates";
+import Analytics from "@/pages/analytics";
 import VerifyPage from "@/pages/verify";
 import NotFound from "@/pages/not-found";
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/courses/:id" component={CourseDetail} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/certificates" component={Certificates} />
+      <Route path="/analytics" component={Analytics} />
       <Route path="/verify/:txHash" component={VerifyPage} />
       <Route component={NotFound} />
     </Switch>
