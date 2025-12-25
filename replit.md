@@ -130,6 +130,36 @@ Preferred communication style: Simple, everyday language.
 - **UTXO Locking**: Mutex-based locking prevents double-spending
 - **Transaction Tracking**: Monitors transaction status (pending/confirmed/failed)
 - **Confirmation Verification**: Verifies transaction confirmations before release
+- **Entry Filtering**: Transactions only use reserved UTXOs, preventing race conditions during concurrent operations
+
+### Session Store Abstraction
+- **Service**: `server/session-store.ts` - Enables horizontal scaling
+- **In-memory**: Default storage for single-instance deployments
+- **Redis**: Activated when `REDIS_URL` environment variable is set
+- **Stores**: Wallet sessions, auth challenges, quiz sessions with TTL support
+
+### Security Metrics & Monitoring
+- **Service**: `server/security-metrics.ts` - Comprehensive security event tracking
+- **Hourly Stats**: VPN detections, rewards blocked/distributed, unique wallets
+- **Alerting**: Automatic alerts for high VPN detection rate (>10%), reward blocking (>5%), suspicious activity spikes
+- **API Endpoints**:
+  - `GET /api/security/metrics` - Full metrics with 24-hour hourly breakdown
+  - `GET /api/security/metrics/summary` - Quick summary of current security status
+  - `GET /api/security/metrics/alerts` - Active security alerts
+- **Admin Protection**: Endpoints require `ADMIN_API_KEY` in production
+
+### VPN Detection (Multi-Source)
+- **Service**: `server/vpn-detection.ts` - Robust VPN/proxy detection
+- **Primary**: GetIPIntel API with 6-hour cache (free tier: 1000/day)
+- **Backup**: IP-API.com for VPN field detection
+- **Fallback**: Basic datacenter IP range detection (10.x, 172.16-31.x, 192.168.x)
+- **Caching**: 6-hour TTL reduces API calls and improves response time
+
+### Test Suite
+- **Framework**: Vitest with TypeScript support
+- **Test File**: `server/__tests__/security.test.ts`
+- **Coverage**: 27 tests covering input validation, IP detection, VPN detection, UTXO manager, security metrics, session store, anti-sybil service
+- **Run**: `npx vitest run`
 
 ### Cryptographic Utilities
 - **Service**: `server/crypto.ts` - Wallet authentication and quiz integrity
