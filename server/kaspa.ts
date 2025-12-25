@@ -571,14 +571,6 @@ class KaspaService {
   }
 
   /**
-   * Get treasury balance
-   */
-  async getTreasuryBalance(): Promise<number> {
-    if (!this.treasuryAddress) return 0;
-    return this.getBalance(this.treasuryAddress);
-  }
-
-  /**
    * Send KAS reward to a user's wallet
    * Uses Generator for transaction creation and signing
    */

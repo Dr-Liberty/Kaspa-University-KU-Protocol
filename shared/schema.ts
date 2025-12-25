@@ -9,7 +9,7 @@ export const userSchema = z.object({
   createdAt: z.date(),
 });
 
-export const insertUserSchema = userSchema.omit({ id: true, createdAt: true });
+export const insertUserSchema = userSchema.omit({ id: true, createdAt: true }).partial({ totalKasEarned: true, displayName: true });
 
 export type User = z.infer<typeof userSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -111,7 +111,7 @@ export const qaPostSchema = z.object({
 
 export type QAPost = z.infer<typeof qaPostSchema>;
 
-export const insertQAPostSchema = qaPostSchema.omit({ id: true, createdAt: true, txHash: true });
+export const insertQAPostSchema = qaPostSchema.omit({ id: true, createdAt: true }).partial({ txHash: true });
 export type InsertQAPost = z.infer<typeof insertQAPostSchema>;
 
 export const walletConnectionSchema = z.object({

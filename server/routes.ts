@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import { getKaspaService } from "./kaspa";
+import { createQuizPayload } from "./ku-protocol.js";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -244,7 +245,7 @@ export async function registerRoutes(
 
   app.post("/api/qa/:lessonId", async (req: Request, res: Response) => {
     const { lessonId } = req.params;
-    const { content, isQuestion, authorAddress } = req.body;
+    const { content, isQuestion, authorAddress, postOnChain } = req.body;
 
     if (!authorAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
@@ -254,14 +255,134 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Content is required" });
     }
 
+    let txHash: string | undefined;
+
+    // Post on-chain if requested
+    if (postOnChain) {
+      try {
+        const kaspaService = await getKaspaService();
+        const result = await kaspaService.postQAQuestion(
+          lessonId,
+          authorAddress,
+          content.trim()
+        );
+        if (result.success) {
+          txHash = result.txHash;
+        }
+      } catch (error) {
+        console.error("[Q&A] On-chain posting failed:", error);
+      }
+    }
+
     const post = await storage.createQAPost({
       lessonId,
       authorAddress,
       content: content.trim(),
       isQuestion: isQuestion ?? true,
+      txHash,
     });
 
     res.json(post);
+  });
+
+  // Reply to a Q&A post (answer)
+  app.post("/api/qa/:lessonId/:postId/reply", async (req: Request, res: Response) => {
+    const { lessonId, postId } = req.params;
+    const { content, authorAddress, postOnChain } = req.body;
+
+    if (!authorAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ error: "Content is required" });
+    }
+
+    // Get the parent post to get its txHash for on-chain reference
+    const parentPost = await storage.getQAPost(postId);
+    if (!parentPost) {
+      return res.status(404).json({ error: "Parent post not found" });
+    }
+
+    let txHash: string | undefined;
+
+    // Post on-chain if requested
+    if (postOnChain && parentPost.txHash) {
+      try {
+        const kaspaService = await getKaspaService();
+        const result = await kaspaService.postQAAnswer(
+          parentPost.txHash,
+          authorAddress,
+          content.trim()
+        );
+        if (result.success) {
+          txHash = result.txHash;
+        }
+      } catch (error) {
+        console.error("[Q&A] On-chain answer posting failed:", error);
+      }
+    }
+
+    const reply = await storage.createQAPost({
+      lessonId,
+      authorAddress,
+      content: content.trim(),
+      isQuestion: false,
+      parentId: postId,
+      txHash,
+    });
+
+    res.json(reply);
+  });
+
+  // Verify on-chain Q&A or quiz result
+  app.get("/api/verify/:txHash", async (req: Request, res: Response) => {
+    const { txHash } = req.params;
+
+    // Check if it's a demo transaction
+    if (txHash.startsWith("demo_")) {
+      return res.json({
+        verified: true,
+        type: txHash.startsWith("demo_qa_q") ? "qa_question" : 
+              txHash.startsWith("demo_qa_a") ? "qa_answer" : "quiz",
+        demo: true,
+        message: "Demo transaction - would be verified on mainnet"
+      });
+    }
+
+    try {
+      const kaspaService = await getKaspaService();
+
+      // Try to verify as quiz result first
+      const quizResult = await kaspaService.verifyQuizResult(txHash);
+      if (quizResult) {
+        return res.json({
+          verified: true,
+          type: "quiz",
+          data: quizResult
+        });
+      }
+
+      // Try to verify as Q&A content
+      const qaContent = await kaspaService.verifyQAContent(txHash);
+      if (qaContent) {
+        return res.json({
+          verified: true,
+          type: "questionTxId" in qaContent ? "qa_answer" : "qa_question",
+          data: qaContent
+        });
+      }
+
+      return res.json({
+        verified: false,
+        message: "Transaction not found or not a KU protocol transaction"
+      });
+    } catch (error) {
+      return res.json({
+        verified: false,
+        message: "Failed to verify transaction"
+      });
+    }
   });
 
   return httpServer;

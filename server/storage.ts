@@ -38,6 +38,7 @@ export interface IStorage {
   updateProgress(progressId: string, lessonId: string): Promise<UserProgress>;
 
   getQAPostsByLesson(lessonId: string): Promise<QAPost[]>;
+  getQAPost(id: string): Promise<QAPost | undefined>;
   createQAPost(post: InsertQAPost): Promise<QAPost>;
 
   getStats(): Promise<Stats>;
@@ -707,13 +708,17 @@ const balances = await indexer.getKRC20Balances({
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
+  async getQAPost(id: string): Promise<QAPost | undefined> {
+    return this.qaPosts.get(id);
+  }
+
   async createQAPost(post: InsertQAPost): Promise<QAPost> {
     const id = randomUUID();
     const qaPost: QAPost = {
       ...post,
       id,
       createdAt: new Date(),
-      txHash: `kas_tx_${randomUUID().slice(0, 16)}`,
+      txHash: post.txHash, // Use provided txHash (may be undefined if not posted on-chain)
     };
     this.qaPosts.set(id, qaPost);
     return qaPost;
