@@ -77,7 +77,8 @@ class KaspaService {
   private isLiveMode: boolean = false;
   private apiConnected: boolean = false;
   private rpcConnected: boolean = false;
-  private rpcClient: any = null;
+  private rpcClient: any = null;           // kaspa-rpc-client (npm) for UTXO fetching
+  private wasmRpcClient: any = null;       // WASM RpcClient for PendingTransaction.submit()
   private kaspaModule: any = null;
   private treasuryMnemonic: string | null = null;
 
@@ -115,6 +116,12 @@ class KaspaService {
       // Fallback to WASM RPC if pure client failed
       if (!this.rpcConnected) {
         await this.tryWasmRpcConnection();
+      }
+      
+      // Also try to establish WASM RpcClient for PendingTransaction.submit()
+      // This is needed because Generator/PendingTransaction requires WASM RpcClient
+      if (!this.wasmRpcClient) {
+        await this.initWasmRpcClient();
       }
 
       // Fallback to REST API if all RPC methods failed
@@ -527,6 +534,46 @@ class KaspaService {
     } catch (apiError: any) {
       console.log(`[Kaspa] REST API failed: ${apiError.message}`);
       console.log("[Kaspa] Running in pending transaction mode");
+    }
+  }
+
+  /**
+   * Initialize WASM RpcClient for PendingTransaction.submit()
+   * This is separate from tryWasmRpcConnection because Generator/PendingTransaction
+   * specifically requires the WASM RpcClient class, not kaspa-rpc-client
+   */
+  private async initWasmRpcClient(): Promise<void> {
+    try {
+      if (!this.kaspaModule) {
+        console.log("[Kaspa] Cannot init WASM RpcClient - module not loaded");
+        return;
+      }
+
+      const { RpcClient, Encoding } = this.kaspaModule;
+      if (!RpcClient) {
+        console.log("[Kaspa] Cannot init WASM RpcClient - RpcClient not available");
+        return;
+      }
+
+      // Public wRPC endpoints for Kaspa mainnet
+      const wRpcUrl = "wss://wrpc.kaspa.net:443";
+      console.log(`[Kaspa] Initializing WASM RpcClient for tx submission: ${wRpcUrl}`);
+
+      this.wasmRpcClient = new RpcClient({
+        url: wRpcUrl,
+        encoding: Encoding?.Borsh || 0,
+        networkId: this.config.network,
+      });
+
+      await this.wasmRpcClient.connect({
+        timeoutDuration: 10000,
+        blockAsyncConnect: true,
+      });
+
+      console.log(`[Kaspa] WASM RpcClient ready for tx submission`);
+    } catch (error: any) {
+      console.log(`[Kaspa] Failed to init WASM RpcClient: ${error.message}`);
+      this.wasmRpcClient = null;
     }
   }
 
@@ -1177,8 +1224,18 @@ class KaspaService {
         throw new Error(`Failed to create Generator: ${errorMsg}`);
       }
 
+      // Verify we have WASM RpcClient for submission
+      if (!this.wasmRpcClient) {
+        console.log(`[Kaspa] WASM RpcClient not available, attempting to initialize...`);
+        await this.initWasmRpcClient();
+        if (!this.wasmRpcClient) {
+          throw new Error("Cannot submit transaction: WASM RpcClient not available. Check network connection.");
+        }
+      }
+
       // Use Generator.next() pattern from SDK documentation
       // https://kaspa.aspectron.org/docs/classes/Generator.html
+      // Example from SDK: while(pendingTransaction = await generator.next()) { ... }
       let finalTxHash = "";
       let txCount = 0;
       
@@ -1198,19 +1255,20 @@ class KaspaService {
         txCount++;
         console.log(`[Kaspa] Processing transaction ${txCount}...`);
         
-        // Sign the pending transaction
+        // Sign the pending transaction (synchronous per typings: sign() returns void)
         try {
-          await pendingTransaction.sign([privateKey]);
+          pendingTransaction.sign([privateKey]);
           console.log(`[Kaspa] Transaction ${txCount} signed`);
         } catch (signError: any) {
           console.error(`[Kaspa] Sign failed: ${signError.message}`);
           throw new Error(`Failed to sign transaction: ${signError.message}`);
         }
         
-        // Submit via RPC
+        // Submit via WASM RpcClient (required by PendingTransaction.submit())
+        // Per SDK docs: "let txid = await pendingTransaction.submit(rpc);"
         try {
-          const submitResult = await pendingTransaction.submit(this.rpcClient);
-          finalTxHash = submitResult || pendingTransaction.id || "";
+          const txid = await pendingTransaction.submit(this.wasmRpcClient);
+          finalTxHash = txid || pendingTransaction.id || "";
           console.log(`[Kaspa] Transaction ${txCount} submitted: ${finalTxHash}`);
         } catch (submitError: any) {
           const errorMsg = submitError?.message || String(submitError);
