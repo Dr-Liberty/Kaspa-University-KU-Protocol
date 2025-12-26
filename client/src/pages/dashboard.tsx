@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -94,6 +95,35 @@ export default function Dashboard() {
       toast({
         title: "Claim Failed",
         description: error.message || "Failed to claim reward",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const response = await apiRequest("POST", `/api/rewards/${rewardId}/verify`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+      if (data.verified) {
+        toast({
+          title: "Transaction Confirmed",
+          description: data.confirmed ? "Your transaction is confirmed on L1." : "Transaction found, awaiting confirmation.",
+        });
+      } else {
+        toast({
+          title: "Verification Pending",
+          description: data.error || "Transaction not yet visible on L1.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Verification Failed",
+        description: "Could not verify transaction status",
         variant: "destructive",
       });
     },
@@ -396,13 +426,23 @@ export default function Dashboard() {
                           <Award className="h-5 w-5 text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="font-medium">Course Completion</p>
                             <Badge
                               variant={reward.status === "claimed" ? "default" : "secondary"}
-                              className={reward.status === "claimed" ? "bg-primary/20 text-primary" : ""}
+                              className={
+                                reward.status === "claimed" 
+                                  ? "bg-primary/20 text-primary" 
+                                  : reward.status === "confirming" 
+                                    ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                                    : ""
+                              }
                             >
-                              {reward.status === "claimed" ? "confirmed" : reward.status}
+                              {reward.status === "claimed" 
+                                ? "confirmed" 
+                                : reward.status === "confirming" 
+                                  ? "confirming" 
+                                  : reward.status}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
@@ -445,6 +485,23 @@ export default function Dashboard() {
                                 <Coins className="h-4 w-4" />
                               )}
                               Claim
+                            </Button>
+                          )}
+                          {reward.status === "confirming" && (
+                            <Button
+                              onClick={() => verifyMutation.mutate(reward.id)}
+                              disabled={verifyMutation.isPending}
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              data-testid={`button-verify-${reward.id}`}
+                            >
+                              {verifyMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              Verify
                             </Button>
                           )}
                         </div>

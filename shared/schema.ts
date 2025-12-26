@@ -74,8 +74,9 @@ export const courseRewardSchema = z.object({
   walletAddress: z.string(),
   kasAmount: z.number(),
   averageScore: z.number(),
-  status: z.enum(["pending", "claiming", "claimed"]).default("pending"),
+  status: z.enum(["pending", "claiming", "confirming", "claimed", "failed"]).default("pending"),
   txHash: z.string().optional(),
+  txConfirmed: z.boolean().optional(),
   completedAt: z.date(),
   claimedAt: z.date().optional(),
 });

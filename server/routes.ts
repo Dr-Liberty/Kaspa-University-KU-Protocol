@@ -660,19 +660,39 @@ export async function registerRoutes(
           !txResult.txHash.startsWith("demo_");
         
         if (isRealTx) {
+          // Set to confirming first, then try to verify
           await storage.updateCourseReward(rewardId, { 
-            status: "claimed", 
+            status: "confirming", 
             txHash: txResult.txHash,
+            txConfirmed: false,
             claimedAt: new Date(),
           });
+          
+          // Try to verify the transaction on L1 (with a short delay for propagation)
+          setTimeout(async () => {
+            try {
+              const verification = await kaspaService.verifyTransaction(txResult.txHash!);
+              if (verification.exists) {
+                await storage.updateCourseReward(rewardId, { 
+                  status: "claimed",
+                  txConfirmed: verification.confirmed,
+                });
+                console.log(`[Claim] TX verified on L1: ${txResult.txHash}, confirmed: ${verification.confirmed}`);
+              }
+            } catch (e) {
+              console.log(`[Claim] TX verification pending: ${txResult.txHash}`);
+            }
+          }, 3000); // Wait 3 seconds before verification attempt
+          
           await storage.updateUserKas(user.id, reward.kasAmount);
           
-          console.log(`[Claim] Course reward claimed: ${reward.kasAmount} KAS for ${course?.title}, txHash: ${txResult.txHash}`);
+          console.log(`[Claim] Course reward submitted: ${reward.kasAmount} KAS for ${course?.title}, txHash: ${txResult.txHash}`);
           
           res.json({ 
             success: true, 
             txHash: txResult.txHash, 
-            amount: reward.kasAmount 
+            amount: reward.kasAmount,
+            status: "confirming"
           });
         } else {
           // Transaction was queued but not actually sent - keep as pending
@@ -692,6 +712,57 @@ export async function registerRoutes(
       await storage.updateCourseReward(rewardId, { status: "pending" });
       console.error(`[Claim] Error: ${error.message}`);
       res.status(500).json({ error: "Failed to process claim" });
+    }
+  });
+
+  // Verify a reward's transaction status on L1
+  app.post("/api/rewards/:rewardId/verify", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { rewardId } = req.params;
+    const reward = await storage.getCourseReward(rewardId);
+    
+    if (!reward) {
+      return res.status(404).json({ error: "Reward not found" });
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user || reward.userId !== user.id) {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    if (!reward.txHash) {
+      return res.json({ verified: false, error: "No transaction hash" });
+    }
+
+    try {
+      const kaspaService = await getKaspaService();
+      const verification = await kaspaService.verifyTransaction(reward.txHash);
+      
+      if (verification.exists) {
+        await storage.updateCourseReward(rewardId, { 
+          status: "claimed",
+          txConfirmed: verification.confirmed,
+        });
+        
+        return res.json({ 
+          verified: true, 
+          confirmed: verification.confirmed,
+          txHash: reward.txHash,
+          status: "claimed"
+        });
+      } else {
+        return res.json({ 
+          verified: false, 
+          error: verification.error || "Transaction not found on L1",
+          txHash: reward.txHash
+        });
+      }
+    } catch (error: any) {
+      return res.status(500).json({ error: "Verification failed", message: error.message });
     }
   });
 
