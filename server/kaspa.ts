@@ -1033,21 +1033,28 @@ class KaspaService {
         const tx = await this.apiCall(`/transactions/${txHash}`);
         if (!tx) return false;
 
-        // Check if transaction has outputs to the recipient with sufficient amount
+        // Sum all outputs to the recipient address
         const outputs = tx.outputs || [];
         const minAmountSompi = minAmountKas * 100_000_000;
+        let totalToRecipient = 0;
 
         for (const output of outputs) {
           const outputAddress = output.script_public_key_address || output.address;
           const outputAmount = Number(output.amount || 0);
 
-          if (outputAddress === recipientAddress && outputAmount >= minAmountSompi) {
-            console.log(`[Kaspa] Payment verified: ${outputAmount / 100_000_000} KAS to ${recipientAddress}`);
-            return true;
+          if (outputAddress === recipientAddress) {
+            totalToRecipient += outputAmount;
           }
         }
 
-        console.log(`[Kaspa] Payment verification failed: no matching output found`);
+        // Check if total to recipient meets minimum (with small tolerance for rounding)
+        const tolerance = 1000; // 0.00001 KAS tolerance
+        if (totalToRecipient >= minAmountSompi - tolerance) {
+          console.log(`[Kaspa] Payment verified: ${totalToRecipient / 100_000_000} KAS to ${recipientAddress}`);
+          return true;
+        }
+
+        console.log(`[Kaspa] Payment verification failed: only ${totalToRecipient / 100_000_000} KAS sent to ${recipientAddress}, need ${minAmountKas} KAS`);
         return false;
       }
 
