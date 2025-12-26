@@ -425,9 +425,7 @@ export async function registerRoutes(
                       securityFlags.includes("VPN_SUSPECTED") ||
                       securityFlags.includes("MULTI_IP_WALLET");
     
-    let rewardMultiplier = validation.rewardMultiplier;
     if (isFlagged) {
-      rewardMultiplier = 0;
       console.log(`[Security] Blocked rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
     }
 
@@ -510,17 +508,16 @@ export async function registerRoutes(
         const existingReward = await storage.getCourseRewardForCourse(user.id, lesson.courseId);
         
         if (!existingReward && !isFlagged) {
-          // Create course reward with full course kasReward amount
-          const effectiveReward = course.kasReward * rewardMultiplier;
+          // Always use full course reward (minimum 0.2 KAS required for on-chain tx storage mass limits)
           await storage.createCourseReward({
             courseId: lesson.courseId,
             userId: user.id,
             walletAddress: user.walletAddress,
-            kasAmount: effectiveReward,
+            kasAmount: course.kasReward,
             averageScore: completion.averageScore,
             status: "pending",
           });
-          console.log(`[Reward] Course reward created for ${user.walletAddress} - ${effectiveReward} KAS pending claim`);
+          console.log(`[Reward] Course reward created for ${user.walletAddress} - ${course.kasReward} KAS pending claim`);
         }
 
         // Check if certificate already exists
