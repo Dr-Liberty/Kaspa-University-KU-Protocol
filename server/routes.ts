@@ -200,26 +200,38 @@ export async function registerRoutes(
   app.get("/api/kaspa/status", async (_req: Request, res: Response) => {
     try {
       const kaspaService = await getKaspaService();
-      const networkInfo = await kaspaService.getNetworkInfo();
+      const diagnostics = await kaspaService.getDiagnostics();
       const treasuryAddress = kaspaService.getTreasuryAddress();
       const balanceInfo = await kaspaService.getTreasuryBalance();
       
+      // Compute specific issues for frontend display
+      const issues: string[] = [];
+      if (!diagnostics.rpcConnected) issues.push("RPC not connected to Kaspa network");
+      if (!treasuryAddress) issues.push("Treasury wallet not configured");
+      if (!diagnostics.isLive) issues.push("Service running in demo mode");
+      if (balanceInfo.balance === 0 && diagnostics.isLive) issues.push("Treasury balance is zero");
+      
       res.json({
-        isLive: kaspaService.isLive(),
-        network: networkInfo.network,
-        status: networkInfo.status,
+        isLive: diagnostics.isLive,
+        rpcConnected: diagnostics.rpcConnected,
+        network: diagnostics.networkName || "mainnet",
+        status: diagnostics.isLive ? "live" : "demo",
         treasuryAddress: treasuryAddress ?? "Not configured - running in demo mode",
         treasuryBalance: balanceInfo.balance,
         utxoCount: balanceInfo.utxoCount,
+        blockCount: diagnostics.blockCount,
+        issues: issues.length > 0 ? issues : undefined,
       });
-    } catch (error) {
+    } catch (error: any) {
       res.json({
         isLive: false,
-        network: "testnet-11",
+        rpcConnected: false,
+        network: "mainnet",
         status: "error",
         treasuryAddress: "Not configured",
         treasuryBalance: 0,
         utxoCount: 0,
+        issues: [`Service initialization error: ${error.message}`],
       });
     }
   });

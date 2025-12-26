@@ -122,11 +122,25 @@ class KaspaService {
         await this.tryRestApiConnection();
       }
 
-      this.isLiveMode = true;
+      // CRITICAL: Only enable live mode if we have a working connection
+      if (this.rpcConnected && this.treasuryAddress && this.treasuryPrivateKey) {
+        this.isLiveMode = true;
+        console.log(`[Kaspa] Live mode enabled - RPC connected, treasury ready: ${this.treasuryAddress.slice(0, 25)}...`);
+      } else {
+        this.isLiveMode = false;
+        const reasons: string[] = [];
+        if (!this.rpcConnected) reasons.push("RPC not connected");
+        if (!this.treasuryAddress) reasons.push("No treasury address");
+        if (!this.treasuryPrivateKey) reasons.push("No private key");
+        console.error(`[Kaspa] Cannot enable live mode: ${reasons.join(", ")}`);
+        console.log("[Kaspa] Running in demo mode - transactions will be simulated");
+      }
+      
       this.initialized = true;
-      return true;
+      return this.isLiveMode;
     } catch (error: any) {
       console.error("[Kaspa] Failed to initialize:", error.message);
+      this.isLiveMode = false;
       this.initialized = true; // Allow demo mode on error
       return false;
     }
@@ -567,6 +581,36 @@ class KaspaService {
   }
 
   /**
+   * Runtime health check - verifies RPC is actually responsive before transactions
+   * This catches cases where RPC was connected at init but has since become unavailable
+   */
+  private async checkRpcHealth(): Promise<{ healthy: boolean; error?: string }> {
+    if (!this.rpcClient) {
+      return { healthy: false, error: "RPC client not initialized" };
+    }
+    
+    try {
+      // Quick ping via getBlockDagInfo (lightweight call)
+      const result = await Promise.race([
+        this.rpcClient.getBlockDagInfo(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("RPC health check timeout")), 5000))
+      ]);
+      
+      if (!result) {
+        return { healthy: false, error: "RPC returned empty response" };
+      }
+      
+      return { healthy: true };
+    } catch (error: any) {
+      // Mark as disconnected for future calls
+      this.rpcConnected = false;
+      this.isLiveMode = false;
+      console.error(`[Kaspa] RPC health check failed: ${error.message}`);
+      return { healthy: false, error: error.message };
+    }
+  }
+
+  /**
    * Get connection type
    */
   getConnectionType(): string {
@@ -866,11 +910,30 @@ class KaspaService {
     console.log(`[Kaspa] Quiz proof payload created: ${quizPayload.length / 2} bytes`);
     
     if (!this.isLive()) {
-      // Demo mode
+      // Check WHY we're not live - provide specific error for real wallet users
+      const reasons: string[] = [];
+      if (!this.rpcConnected) reasons.push("RPC not connected to Kaspa network");
+      if (!this.treasuryAddress) reasons.push("Treasury wallet not configured");
+      if (!this.treasuryPrivateKey) reasons.push("Treasury private key missing");
+      
+      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
+        // Real wallet user but treasury not ready - return error
+        console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
+        return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
+      }
+      
+      // Demo mode for demo users
       const demoTxHash = `demo_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
       console.log(`[Kaspa] Demo mode - simulated reward: ${amountKas} KAS to ${recipientAddress}`);
       console.log(`[Kaspa] Demo payload would contain wallet: ${recipientAddress.slice(0, 20)}...`);
       return { success: true, txHash: demoTxHash };
+    }
+
+    // Runtime health check before attempting transaction
+    const health = await this.checkRpcHealth();
+    if (!health.healthy) {
+      console.error(`[Kaspa] RPC health check failed before transaction: ${health.error}`);
+      return { success: false, error: `Treasury offline: ${health.error}` };
     }
 
     // Try hybrid approach: kaspa-rpc-client for RPC + WASM for signing

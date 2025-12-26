@@ -151,8 +151,19 @@ class KRC721Service {
       // Connect to RPC
       await this.connectRpc();
 
+      // Log live mode status with reasons if not live
+      if (this.isLive()) {
+        console.log(`[KRC721] Live mode enabled - RPC connected, keys ready`);
+      } else {
+        const reasons: string[] = [];
+        if (!this.rpcClient) reasons.push("RPC not connected");
+        if (!this.privateKey) reasons.push("No private key");
+        console.error(`[KRC721] Cannot enable live mode: ${reasons.join(", ")}`);
+        console.log("[KRC721] Running in demo mode - NFT minting will be simulated");
+      }
+
       this.initialized = true;
-      return true;
+      return this.isLive();
     } catch (error: any) {
       console.error("[KRC721] Failed to initialize:", error.message);
       this.initialized = true; // Allow demo mode
@@ -299,6 +310,31 @@ class KRC721Service {
    */
   isLive(): boolean {
     return this.privateKey !== null && this.rpcClient !== null;
+  }
+
+  /**
+   * Runtime health check - verifies RPC is actually responsive before transactions
+   */
+  private async checkRpcHealth(): Promise<{ healthy: boolean; error?: string }> {
+    if (!this.rpcClient) {
+      return { healthy: false, error: "RPC client not initialized" };
+    }
+    
+    try {
+      const result = await Promise.race([
+        this.rpcClient.getBlockDagInfo(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("RPC health check timeout")), 5000))
+      ]);
+      
+      if (!result) {
+        return { healthy: false, error: "RPC returned empty response" };
+      }
+      
+      return { healthy: true };
+    } catch (error: any) {
+      console.error(`[KRC721] RPC health check failed: ${error.message}`);
+      return { healthy: false, error: error.message };
+    }
   }
 
   /**
@@ -458,6 +494,17 @@ class KRC721Service {
     const tokenId = await this.getNextTokenId();
 
     if (!this.isLive()) {
+      // Check WHY we're not live - provide specific error for real wallet users
+      const reasons: string[] = [];
+      if (!this.rpcClient) reasons.push("RPC not connected to Kaspa network");
+      if (!this.privateKey) reasons.push("Treasury private key not configured");
+      
+      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
+        // Real wallet user but service not ready - return error
+        console.error(`[KRC721] Cannot mint - not live: ${reasons.join(", ")}`);
+        return { success: false, error: `NFT service offline: ${reasons.join(", ")}`, tokenId };
+      }
+      
       console.log(`[KRC721] Demo mode - simulating certificate mint #${tokenId}`);
       // Note: Token ID will be persisted when certificate is created in storage
       return {
@@ -582,7 +629,19 @@ class KRC721Service {
     const tokenId = await this.getNextTokenId();
 
     if (!this.isLive()) {
-      // Demo mode - return simulated data
+      // Check WHY we're not live - provide specific error for real wallet users
+      const reasons: string[] = [];
+      if (!this.rpcClient) reasons.push("RPC not connected to Kaspa network");
+      if (!this.privateKey) reasons.push("Treasury private key not configured");
+      if (!this.publicKey) reasons.push("Public key not derived");
+      
+      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
+        // Real wallet user but service not ready - return error
+        console.error(`[KRC721] Cannot prepare mint - not live: ${reasons.join(", ")}`);
+        return { success: false, error: `NFT service offline: ${reasons.join(", ")}` };
+      }
+      
+      // Demo mode for demo users - return simulated data
       const demoP2sh = `kaspa:demo_p2sh_${Date.now().toString(16)}`;
       console.log(`[KRC721] Demo mode - simulating mint preparation for token #${tokenId}`);
       return {
@@ -600,6 +659,13 @@ class KRC721Service {
         success: false, 
         error: "IPFS URL required. Configure Pinata credentials for NFT minting." 
       };
+    }
+
+    // Runtime health check before attempting transaction
+    const health = await this.checkRpcHealth();
+    if (!health.healthy) {
+      console.error(`[KRC721] RPC health check failed before mint: ${health.error}`);
+      return { success: false, error: `NFT service offline: ${health.error}` };
     }
 
     try {
