@@ -211,3 +211,6 @@ export const walletIpBindingSchema = z.object({
 });
 
 export type WalletIpBinding = z.infer<typeof walletIpBindingSchema>;
+
+// Re-export Drizzle table definitions for database migrations
+export * from "../server/db/schema";
