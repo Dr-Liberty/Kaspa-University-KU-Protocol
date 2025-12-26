@@ -47,7 +47,17 @@ function QuizSection({
   const submitQuiz = useMutation({
     mutationFn: async () => {
       const answerArray = questions?.map((q) => answers[q.id] ?? -1) ?? [];
-      console.log("[Quiz] Submitting quiz", { lessonId, answers: answerArray });
+      console.log("[Quiz] Submitting quiz", { 
+        lessonId, 
+        answers: answerArray,
+        wallet: wallet?.address?.slice(0, 20),
+        isDemoMode,
+      });
+      
+      if (!wallet?.address) {
+        throw new Error("Wallet not connected. Please refresh and reconnect your wallet.");
+      }
+      
       try {
         const response = await apiRequest("POST", `/api/quiz/${lessonId}/submit`, {
           lessonId,
