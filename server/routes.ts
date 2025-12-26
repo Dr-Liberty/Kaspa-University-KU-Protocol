@@ -936,6 +936,28 @@ export async function registerRoutes(
     });
   });
 
+  // KRC-721 NFT Service Health Check
+  app.get("/api/nft/health", async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const pinataService = getPinataService();
+      
+      const health = {
+        isLive: krc721Service.isLive(),
+        pinataConfigured: pinataService.isConfigured(),
+        timestamp: new Date().toISOString(),
+      };
+      
+      res.json(health);
+    } catch (error: any) {
+      res.status(500).json({ 
+        isLive: false, 
+        pinataConfigured: false,
+        error: error.message 
+      });
+    }
+  });
+
   // KRC-721 NFT Collection Info
   app.get("/api/nft/collection", async (_req: Request, res: Response) => {
     try {
@@ -998,8 +1020,11 @@ export async function registerRoutes(
       const krc721Service = await getKRC721Service();
 
       // Generate certificate image and upload to IPFS
-      let imageUrl = certificate.imageUrl;
-      if (!imageUrl) {
+      // Must have IPFS URL for NFT minting - re-upload if only have data URI
+      let imageUrl: string = certificate.imageUrl || "";
+      const needsIpfsUpload = !imageUrl || !imageUrl.startsWith("ipfs://");
+      
+      if (needsIpfsUpload) {
         const svgImage = krc721Service.generateCertificateImageSvg(
           certificate.recipientAddress,
           certificate.courseName,
@@ -1021,14 +1046,23 @@ export async function registerRoutes(
           
           if (uploadResult.success && uploadResult.ipfsUrl) {
             imageUrl = uploadResult.ipfsUrl;
+            console.log(`[Prepare] IPFS upload successful: ${imageUrl}`);
           } else {
-            imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+            console.error(`[Prepare] IPFS upload failed: ${uploadResult.error}`);
+            return res.status(500).json({
+              error: "IPFS upload failed",
+              message: uploadResult.error || "Failed to upload certificate to IPFS"
+            });
           }
         } else {
-          imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+          console.error("[Prepare] Pinata not configured");
+          return res.status(500).json({
+            error: "IPFS not configured",
+            message: "Pinata credentials required for NFT minting"
+          });
         }
         
-        // Save the image URL for later
+        // Save the IPFS URL for later
         await storage.updateCertificate(id, { imageUrl });
       }
 
