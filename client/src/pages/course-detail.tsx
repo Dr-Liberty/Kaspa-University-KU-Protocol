@@ -47,11 +47,19 @@ function QuizSection({
   const submitQuiz = useMutation({
     mutationFn: async () => {
       const answerArray = questions?.map((q) => answers[q.id] ?? -1) ?? [];
-      const response = await apiRequest("POST", `/api/quiz/${lessonId}/submit`, {
-        lessonId,
-        answers: answerArray,
-      });
-      return response.json();
+      console.log("[Quiz] Submitting quiz", { lessonId, answers: answerArray });
+      try {
+        const response = await apiRequest("POST", `/api/quiz/${lessonId}/submit`, {
+          lessonId,
+          answers: answerArray,
+        });
+        const data = await response.json();
+        console.log("[Quiz] Response received", data);
+        return data;
+      } catch (err) {
+        console.error("[Quiz] Submit error", err);
+        throw err;
+      }
     },
     onSuccess: (data) => {
       setResult(data);
