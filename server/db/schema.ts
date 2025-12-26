@@ -157,3 +157,16 @@ export const qaPosts = pgTable("qa_posts", {
   txHash: text("tx_hash"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Error logs - persistent error tracking for debugging
+export const errorLogs = pgTable("error_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  category: text("category").notNull(), // nft, payment, ipfs, security, general
+  action: text("action").notNull(), // prepare, finalize, upload, etc.
+  message: text("message").notNull(),
+  details: jsonb("details"), // Additional context (certificateId, p2shAddress, etc.)
+  walletAddress: text("wallet_address"),
+  ipAddress: text("ip_address"),
+  resolved: boolean("resolved").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
