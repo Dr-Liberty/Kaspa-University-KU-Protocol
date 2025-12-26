@@ -383,17 +383,18 @@ export async function registerRoutes(
         walletAddress,
         kasRewarded,
         lessonId,
-        score
+        score,
+        course.id,
+        100,
+        answers
       );
 
       if (txResult.success && txResult.txHash) {
         txHash = txResult.txHash;
         actualKasRewarded = kasRewarded;
-        console.log(`[Quiz] Reward sent: ${kasRewarded} KAS, txHash: ${txHash}`);
+        console.log(`[Quiz] Reward sent with on-chain proof: ${kasRewarded} KAS, txHash: ${txHash}`);
       } else {
-        // Transaction failed - don't grant rewards, but still record the quiz attempt
         console.error(`[Quiz] Reward failed: ${txResult.error}`);
-        // In demo mode, still grant rewards (demo txHash starts with "demo_")
         if (txResult.txHash?.startsWith("demo_")) {
           txHash = txResult.txHash;
           actualKasRewarded = kasRewarded;

@@ -628,14 +628,17 @@ class KaspaService {
   }
 
   /**
-   * Send KAS reward to a user's wallet
-   * Uses Generator for transaction creation and signing
+   * Send KAS reward to a user's wallet with on-chain quiz proof
+   * Embeds KU protocol payload with wallet address for verification
    */
   async sendReward(
     recipientAddress: string,
     amountKas: number,
     lessonId: string,
-    score: number
+    score: number,
+    courseId?: string,
+    maxScore?: number,
+    answers?: number[]
   ): Promise<TransactionResult> {
     const timestamp = Date.now();
 
@@ -645,18 +648,31 @@ class KaspaService {
       console.error(`[Kaspa] Invalid recipient address: ${validation.error}`);
       return { success: false, error: `Invalid recipient address: ${validation.error}` };
     }
+
+    // Create quiz proof payload for on-chain embedding
+    const quizPayload = createQuizPayload({
+      walletAddress: recipientAddress,
+      courseId: courseId || lessonId.split("-")[0] || "unknown",
+      lessonId,
+      score,
+      maxScore: maxScore || 100,
+      timestamp,
+    }, answers || []);
+
+    console.log(`[Kaspa] Quiz proof payload created: ${quizPayload.length / 2} bytes`);
     
     if (!this.isLive()) {
       // Demo mode
       const demoTxHash = `demo_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
       console.log(`[Kaspa] Demo mode - simulated reward: ${amountKas} KAS to ${recipientAddress}`);
+      console.log(`[Kaspa] Demo payload would contain wallet: ${recipientAddress.slice(0, 20)}...`);
       return { success: true, txHash: demoTxHash };
     }
 
     // Try hybrid approach: kaspa-rpc-client for RPC + WASM for signing
     if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
       try {
-        return await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score);
+        return await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score, quizPayload);
       } catch (error: any) {
         console.error("[Kaspa] Hybrid transaction failed:", error.message);
         // Fall through to pending mode
@@ -666,7 +682,7 @@ class KaspaService {
     // Fallback: If we have a BIP39 mnemonic, try kaspa-rpc-client's Wallet
     if (this.rpcConnected && this.rpcClient && this.treasuryMnemonic) {
       try {
-        return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score);
+        return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score, quizPayload);
       } catch (error: any) {
         console.error("[Kaspa] kaspa-rpc-client wallet failed:", error.message);
         // Fall through to pending mode
@@ -685,6 +701,7 @@ class KaspaService {
       timestamp,
       network: this.config.network,
       treasury: this.treasuryAddress,
+      payloadSize: quizPayload.length / 2,
     };
     
     console.log(`[Kaspa] Reward queued: ${JSON.stringify(rewardData)}`);
@@ -697,14 +714,19 @@ class KaspaService {
    * Hybrid transaction: kaspa-rpc-client for RPC + WASM for signing
    * Uses the private key directly for signing (when mnemonic isn't available)
    * Integrates UTXOManager for concurrent transaction safety
+   * Embeds quiz proof payload for on-chain verification
    */
   private async sendTransactionHybrid(
     recipientAddress: string,
     amountKas: number,
     lessonId: string,
-    score: number
+    score: number,
+    quizPayload?: string
   ): Promise<TransactionResult> {
     console.log(`[Kaspa] Hybrid transaction: ${amountKas} KAS to ${recipientAddress}`);
+    if (quizPayload) {
+      console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
+    }
 
     const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
     const utxoManager = getUTXOManager();
@@ -769,17 +791,26 @@ class KaspaService {
       const priorityFee = kaspaToSompi(0.0001);
 
       // Create and sign transaction using WASM with ONLY reserved entries
-      const { transactions, summary } = await createTransactions({
-        entries: reservedEntries, // Use only reserved entries to prevent race conditions
+      // Include quiz proof payload for on-chain verification
+      const txOptions: any = {
+        entries: reservedEntries,
         outputs: [{
           address: recipientAddress,
           amount: amountSompi
         }],
         changeAddress: this.treasuryAddress,
         priorityFee,
-      });
+      };
 
-      console.log(`[Kaspa] Created ${transactions.length} transaction(s)`);
+      // Embed KU protocol quiz proof in transaction payload
+      if (quizPayload) {
+        txOptions.payload = quizPayload;
+        console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
+      }
+
+      const { transactions, summary } = await createTransactions(txOptions);
+
+      console.log(`[Kaspa] Created ${transactions.length} transaction(s) with${quizPayload ? '' : 'out'} on-chain proof`);
 
       // Sign and submit each transaction
       let finalTxHash = "";
@@ -814,12 +845,14 @@ class KaspaService {
   /**
    * Send transaction via kaspa-rpc-client (pure TypeScript)
    * More reliable in Node.js/tsx environment than WASM
+   * Embeds quiz proof payload for on-chain verification
    */
   private async sendTransactionViaRpcClient(
     recipientAddress: string,
     amountKas: number,
     lessonId: string,
-    score: number
+    score: number,
+    quizPayload?: string
   ): Promise<TransactionResult> {
     const { Wallet } = require("kaspa-rpc-client");
 
@@ -828,6 +861,9 @@ class KaspaService {
     }
 
     console.log(`[Kaspa] Sending ${amountKas} KAS via kaspa-rpc-client...`);
+    if (quizPayload) {
+      console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
+    }
 
     // Create wallet from treasury mnemonic
     const wallet = Wallet.fromPhrase(this.rpcClient, this.treasuryMnemonic);
@@ -836,18 +872,27 @@ class KaspaService {
     // Convert KAS to sompi (1 KAS = 100,000,000 sompi)
     const amountSompi = BigInt(Math.floor(amountKas * 100_000_000));
 
-    // Send transaction
-    const txIds = await account.send({
+    // Build send options with optional payload
+    const sendOptions: any = {
       outputs: [{
         address: recipientAddress,
         amount: amountSompi
       }],
-      priorityFee: BigInt(10000), // 0.0001 KAS priority fee
-    });
+      priorityFee: BigInt(10000),
+    };
+
+    // Embed KU protocol quiz proof in transaction payload
+    if (quizPayload) {
+      sendOptions.payload = quizPayload;
+      console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
+    }
+
+    // Send transaction
+    const txIds = await account.send(sendOptions);
 
     const txHash = txIds[0] || "";
     console.log(`[Kaspa] Transaction sent! TxHash: ${txHash}`);
-    console.log(`[Kaspa] Reward: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
+    console.log(`[Kaspa] Reward: ${amountKas} KAS for lesson ${lessonId} (score: ${score})${quizPayload ? ' with on-chain proof' : ''}`);
 
     return { success: true, txHash };
   }

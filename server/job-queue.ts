@@ -33,6 +33,9 @@ interface RewardJobData {
   lessonId: string;
   score: number;
   userId: string;
+  courseId?: string;
+  maxScore?: number;
+  answers?: number[];
 }
 
 interface NFTMintJobData {
@@ -222,7 +225,7 @@ class JobQueue {
   }
 
   /**
-   * Execute a reward job
+   * Execute a reward job with on-chain quiz proof
    */
   private async executeRewardJob(data: RewardJobData): Promise<Record<string, any>> {
     const kaspaService = await getKaspaService();
@@ -230,7 +233,10 @@ class JobQueue {
       data.recipientAddress,
       data.amountKas,
       data.lessonId,
-      data.score
+      data.score,
+      data.courseId,
+      data.maxScore,
+      data.answers
     );
 
     if (!result.success) {
@@ -241,6 +247,7 @@ class JobQueue {
       txHash: result.txHash,
       amount: data.amountKas,
       recipient: data.recipientAddress,
+      hasOnChainProof: !!data.answers && data.answers.length > 0,
     };
   }
 
