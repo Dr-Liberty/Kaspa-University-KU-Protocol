@@ -12,8 +12,16 @@ export function getWalletAddress(): string | null {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    try {
+      const data = await res.json();
+      errorMessage = data.error || data.message || JSON.stringify(data);
+    } catch {
+      const text = await res.text().catch(() => "");
+      if (text) errorMessage = text;
+    }
+    console.error(`[API] Request failed: ${res.status} - ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 }
 
@@ -30,15 +38,22 @@ export async function apiRequest(
     headers["x-wallet-address"] = walletAddress;
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  console.log(`[API] ${method} ${url}`, { hasWallet: !!walletAddress, walletPreview: walletAddress?.slice(0, 15) });
 
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error(`[API] ${method} ${url} failed:`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
