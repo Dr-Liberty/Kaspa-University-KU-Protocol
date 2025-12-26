@@ -47,6 +47,13 @@ export interface IStorage {
 
   getRecentQuizResults(limit: number): Promise<QuizResult[]>;
   getRecentQAPosts(limit: number): Promise<QAPost[]>;
+  
+  getAllUsers(): Promise<User[]>;
+  getTopLearners(limit: number): Promise<User[]>;
+  getTotalQuizResults(): Promise<number>;
+  getAverageScore(): Promise<number>;
+  getCourseCompletionCounts(): Promise<Map<string, number>>;
+  getAllQuizResults(): Promise<QuizResult[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -744,9 +751,9 @@ const balances = await indexer.getKRC20Balances({
   async getStats(): Promise<Stats> {
     const totalKas = Array.from(this.users.values()).reduce((sum, u) => sum + u.totalKasEarned, 0);
     return {
-      totalKasDistributed: totalKas || 125.5,
-      certificatesMinted: this.certificates.size || 42,
-      activeLearners: this.users.size || 156,
+      totalKasDistributed: totalKas,
+      certificatesMinted: this.certificates.size,
+      activeLearners: this.users.size,
       coursesAvailable: this.courses.size,
     };
   }
@@ -763,6 +770,41 @@ const balances = await indexer.getKRC20Balances({
     return posts
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getTopLearners(limit: number): Promise<User[]> {
+    return Array.from(this.users.values())
+      .sort((a, b) => b.totalKasEarned - a.totalKasEarned)
+      .slice(0, limit);
+  }
+
+  async getTotalQuizResults(): Promise<number> {
+    return this.quizResults.size;
+  }
+
+  async getAverageScore(): Promise<number> {
+    const results = Array.from(this.quizResults.values());
+    if (results.length === 0) return 0;
+    const totalScore = results.reduce((sum, r) => sum + r.score, 0);
+    return Math.round(totalScore / results.length);
+  }
+
+  async getCourseCompletionCounts(): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    const certificates = Array.from(this.certificates.values());
+    for (const cert of certificates) {
+      const current = counts.get(cert.courseId) || 0;
+      counts.set(cert.courseId, current + 1);
+    }
+    return counts;
+  }
+
+  async getAllQuizResults(): Promise<QuizResult[]> {
+    return Array.from(this.quizResults.values());
   }
 }
 

@@ -88,20 +88,43 @@ export async function registerRoutes(
 
       const stats = await storage.getStats();
       const courses = await storage.getCourses();
+      const topLearnersData = await storage.getTopLearners(5);
+      const totalQuizzes = await storage.getTotalQuizResults();
+      const avgScore = await storage.getAverageScore();
+      const completionCounts = await storage.getCourseCompletionCounts();
+      const allQuizResults = await storage.getAllQuizResults();
+      const recentQuizResults = await storage.getRecentQuizResults(5);
+      const recentQAPosts = await storage.getRecentQAPosts(5);
       
-      const activityData = [
-        { date: "Mon", users: 12, completions: 8, rewards: 4.5 },
-        { date: "Tue", users: 19, completions: 14, rewards: 7.2 },
-        { date: "Wed", users: 15, completions: 11, rewards: 5.8 },
-        { date: "Thu", users: 22, completions: 18, rewards: 9.1 },
-        { date: "Fri", users: 28, completions: 21, rewards: 11.3 },
-        { date: "Sat", users: 35, completions: 26, rewards: 14.0 },
-        { date: "Sun", users: 31, completions: 23, rewards: 12.2 },
-      ];
+      // Build activity data from ALL quiz results (real data)
+      const activityData = (() => {
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const dayStats = new Map<string, { users: Set<string>, completions: number, rewards: number }>();
+        
+        // Initialize all days
+        days.forEach(d => dayStats.set(d, { users: new Set(), completions: 0, rewards: 0 }));
+        
+        // Populate from ALL quiz results
+        allQuizResults.forEach(result => {
+          const dayName = days[new Date(result.completedAt).getDay()];
+          const dayStat = dayStats.get(dayName)!;
+          dayStat.users.add(result.userId);
+          dayStat.completions += 1;
+          dayStat.rewards += result.kasRewarded;
+        });
+        
+        return days.slice(1).concat(days[0]).map(d => ({
+          date: d,
+          users: dayStats.get(d)!.users.size,
+          completions: dayStats.get(d)!.completions,
+          rewards: Math.round(dayStats.get(d)!.rewards * 100) / 100,
+        }));
+      })();
 
-      const coursePopularity = courses.slice(0, 5).map((course, i) => ({
+      // Build course popularity from real completion data
+      const coursePopularity = courses.slice(0, 5).map((course) => ({
         name: course.title.length > 20 ? course.title.slice(0, 18) + "..." : course.title,
-        completions: Math.floor(Math.random() * 50) + 10 + (5 - i) * 8,
+        completions: completionCounts.get(course.id) || 0,
         category: course.category,
       }));
 
@@ -111,36 +134,70 @@ export async function registerRoutes(
         { name: "Advanced", value: courses.filter(c => c.difficulty === "advanced").length },
       ];
 
-      const topLearners = [
-        { address: "kaspa:qr8example1234567890abcdefghij", totalKas: 12.5, certificates: 8 },
-        { address: "kaspa:qz9example2345678901bcdefghijk", totalKas: 9.75, certificates: 6 },
-        { address: "kaspa:qx7example3456789012cdefghijkl", totalKas: 7.25, certificates: 5 },
-        { address: "kaspa:qw6example4567890123defghijklm", totalKas: 5.50, certificates: 4 },
-        { address: "kaspa:qv5example5678901234efghijklmn", totalKas: 4.00, certificates: 3 },
-      ];
+      // Build top learners from real user data
+      const topLearners = await Promise.all(topLearnersData.map(async (user) => {
+        const certs = await storage.getCertificatesByUser(user.id);
+        return {
+          address: user.walletAddress,
+          totalKas: Math.round(user.totalKasEarned * 100) / 100,
+          certificates: certs.length,
+        };
+      }));
 
-      const recentActivity = [
-        { type: "completion", description: "User completed 'Introduction to Kaspa'", timestamp: "2 min ago" },
-        { type: "reward", description: "0.5 KAS distributed for quiz completion", timestamp: "5 min ago" },
-        { type: "certificate", description: "NFT certificate minted for course completion", timestamp: "12 min ago" },
-        { type: "completion", description: "User completed 'BlockDAG Technology'", timestamp: "18 min ago" },
-        { type: "reward", description: "1.0 KAS distributed for quiz completion", timestamp: "25 min ago" },
-      ];
+      // Build recent activity from real data
+      const recentActivity: Array<{ type: string, description: string, timestamp: string }> = [];
+      
+      // Add recent quiz completions
+      for (const result of recentQuizResults.slice(0, 3)) {
+        // Get lesson to find course
+        const lesson = await storage.getLesson(result.lessonId);
+        const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+        const timeDiff = Date.now() - new Date(result.completedAt).getTime();
+        const minutes = Math.floor(timeDiff / 60000);
+        const timeStr = minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hours ago`;
+        
+        recentActivity.push({
+          type: "completion",
+          description: `User completed '${course?.title || "Quiz"}'`,
+          timestamp: timeStr,
+        });
+        
+        if (result.kasRewarded > 0) {
+          recentActivity.push({
+            type: "reward",
+            description: `${result.kasRewarded} KAS distributed for quiz completion`,
+            timestamp: timeStr,
+          });
+        }
+      }
+      
+      // Add recent Q&A posts
+      for (const post of recentQAPosts.slice(0, 2)) {
+        const timeDiff = Date.now() - new Date(post.createdAt).getTime();
+        const minutes = Math.floor(timeDiff / 60000);
+        const timeStr = minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hours ago`;
+        
+        recentActivity.push({
+          type: post.parentId ? "answer" : "question",
+          description: post.parentId ? "New answer posted in Q&A" : "New question asked in Q&A",
+          timestamp: timeStr,
+        });
+      }
 
       const analyticsData = {
         overview: {
-          totalUsers: stats.activeLearners || 0,
-          totalCourses: stats.coursesAvailable || 0,
-          totalCertificates: stats.certificatesMinted || 0,
-          totalKasDistributed: stats.totalKasDistributed || 0,
-          totalQuizzes: Math.floor((stats.certificatesMinted || 0) * 2.5),
-          avgScore: 78,
+          totalUsers: stats.activeLearners,
+          totalCourses: stats.coursesAvailable,
+          totalCertificates: stats.certificatesMinted,
+          totalKasDistributed: stats.totalKasDistributed,
+          totalQuizzes,
+          avgScore,
         },
         activityData,
         coursePopularity,
         difficultyDistribution,
         topLearners,
-        recentActivity,
+        recentActivity: recentActivity.slice(0, 5),
       };
       
       analyticsCache.set("platform_analytics", analyticsData);
