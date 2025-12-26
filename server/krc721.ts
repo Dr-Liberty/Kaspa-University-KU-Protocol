@@ -60,6 +60,10 @@ interface CertificateMetadata {
   }>;
 }
 
+// KRC-721 spec fees (per aspectron/krc721)
+// Deploy = 1000 KAS minimum, Mint = 10 KAS minimum
+const KRC721_MINT_FEE_KAS = "10.5"; // 10 KAS minimum + buffer for network fees
+
 // Default configuration for Kaspa University Certificates
 const DEFAULT_CONFIG: KRC721Config = {
   network: "mainnet",
@@ -388,11 +392,15 @@ class KRC721Service {
   /**
    * Mint a certificate NFT for a course completion
    * 
+   * Per KRC-721 spec (aspectron/krc721):
+   * - Mint operations require minimum 10 KAS fee
+   * - Image URLs must use ipfs:// prefix (data URIs not accepted by indexer)
+   * 
    * @param recipientAddress - The wallet address to receive the certificate
    * @param courseName - Name of the completed course
    * @param score - Quiz/course score
    * @param completionDate - Date of completion
-   * @param imageUrl - IPFS URL for certificate image
+   * @param imageUrl - IPFS URL for certificate image (must start with ipfs://)
    */
   async mintCertificate(
     recipientAddress: string,
@@ -408,6 +416,16 @@ class KRC721Service {
       return { success: false, error: `Invalid recipient address: ${validation.error}` };
     }
 
+    // Validate IPFS URL per KRC-721 spec
+    // Note: In production, we require IPFS URLs. Data URIs are only accepted in demo mode.
+    const isIpfsUrl = imageUrl.startsWith("ipfs://");
+    const isDataUri = imageUrl.startsWith("data:");
+    
+    if (!isIpfsUrl && !isDataUri) {
+      console.error(`[KRC721] Invalid image URL: must be ipfs:// or data: URI`);
+      return { success: false, error: "Image URL must use ipfs:// protocol" };
+    }
+
     // Get token ID from storage (will be incremented after certificate is created)
     const tokenId = await this.getNextTokenId();
 
@@ -419,6 +437,17 @@ class KRC721Service {
         commitTxHash: `demo_mint_commit_${Date.now().toString(16)}`,
         revealTxHash: `demo_mint_reveal_${Date.now().toString(16)}`,
         tokenId,
+      };
+    }
+
+    // In production mode, require IPFS URLs (indexer rejects data URIs)
+    if (!isIpfsUrl) {
+      console.error(`[KRC721] IPFS URL required for production minting. Data URIs are rejected by the KRC-721 indexer.`);
+      console.error(`[KRC721] Configure Pinata IPFS credentials (PINATA_API_KEY, PINATA_SECRET_KEY) for NFT minting.`);
+      return { 
+        success: false, 
+        error: "IPFS URL required. Configure Pinata credentials for NFT minting.", 
+        tokenId 
       };
     }
 
@@ -469,8 +498,8 @@ class KRC721Service {
         this.config.network
       )!;
 
-      // Execute commit-reveal pattern
-      const result = await this.executeCommitReveal(script, P2SHAddress, "3.3");
+      // Execute commit-reveal pattern using spec-compliant fee
+      const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_MINT_FEE_KAS);
 
       if (result.success) {
         // Token ID is persisted via certificate creation in storage

@@ -71,25 +71,28 @@ Preferred communication style: Simple, everyday language.
 - **Verification**: `/api/verify/:txHash` endpoint decodes and validates on-chain payloads
 
 ### KRC-721 NFT Certificates
-- **Standard**: KRC-721 (based on coinchimp/kaspa-krc721-apps)
+- **Standard**: KRC-721 (per aspectron/krc721 spec)
 - **Collection**: KPROOF (Kaspa Proof of Learning)
 - **Pattern**: Commit-and-Reveal transaction for NFT inscriptions
 - **Implementation**: `server/krc721.ts` for minting, `server/routes.ts` for API
+- **Spec Compliance**:
+  - Mint fee: 10.5 KAS (10 KAS minimum per spec + buffer)
+  - IPFS URLs required (ipfs:// prefix) - data URIs rejected in production
+  - Uses kspr marker in inscription script
 - **Endpoints**:
   - `GET /api/nft/collection` - Collection info and status
-  - `GET /api/nft/fee` - Get minting fee info (3.5 KAS)
-  - `POST /api/certificates/:id/claim` - User-initiated NFT claiming with payment
+  - `POST /api/certificates/:id/mint` - Treasury-funded NFT minting (no user payment)
   - `GET /api/nft/preview` - Generate certificate image preview
-- **User-pays model**: Users claim NFTs by paying ~3.5 KAS minting fee
+- **Treasury-pays model**: Treasury absorbs ~10.5 KAS minting fee per certificate
 - **Certificate states**: `pending` -> `minting` -> `claimed`
-- **Payment verification**: Server verifies payment to treasury before minting
-- **Demo mode**: NFT claiming disabled in demo mode (requires real wallet)
+- **IPFS Requirement**: Pinata credentials required for production minting
+- **Demo mode**: NFT minting simulated in demo mode (requires real wallet for production)
 - **Certificate Image**: SVG generated server-side with course details, score, and recipient
 
 ### Pinata IPFS Integration
 - **Service**: `server/pinata.ts` - Uploads certificate images and metadata to IPFS
 - **Environment Variables**: `PINATA_API_KEY`, `PINATA_SECRET_KEY`, `PINATA_GATEWAY` (optional)
-- **Fallback**: If Pinata not configured, uses base64 data URIs for certificate images
+- **Required for NFT Minting**: KRC-721 spec requires ipfs:// URLs - Pinata must be configured for production NFT minting
 - **Upload Flow**: SVG image uploaded first, then metadata JSON with image reference
 
 ### Anti-Sybil Protection

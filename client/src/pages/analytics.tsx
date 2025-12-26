@@ -13,7 +13,9 @@ import {
   Zap,
   BarChart3,
   Clock,
+  ExternalLink,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   AreaChart,
   Area,
@@ -62,6 +64,7 @@ interface AnalyticsData {
     type: string;
     description: string;
     timestamp: string;
+    txHash?: string;
   }>;
 }
 
@@ -407,24 +410,47 @@ export default function Analytics() {
             {analytics.recentActivity.map((activity, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 rounded-md border border-border/50"
+                className="flex items-center justify-between gap-2 p-3 rounded-md border border-border/50"
                 data-testid={`row-activity-${index}`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   {activity.type === "completion" && (
-                    <Award className="h-4 w-4 text-primary" />
+                    <Award className="h-4 w-4 text-primary shrink-0" />
                   )}
                   {activity.type === "reward" && (
-                    <Coins className="h-4 w-4 text-yellow-500" />
+                    <Coins className="h-4 w-4 text-yellow-500 shrink-0" />
                   )}
                   {activity.type === "certificate" && (
-                    <Trophy className="h-4 w-4 text-purple-500" />
+                    <Trophy className="h-4 w-4 text-purple-500 shrink-0" />
                   )}
-                  <span className="text-sm">{activity.description}</span>
+                  {(activity.type === "question" || activity.type === "answer") && (
+                    <Activity className="h-4 w-4 text-blue-500 shrink-0" />
+                  )}
+                  <span className="text-sm truncate">{activity.description}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {activity.timestamp}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {activity.timestamp}
+                  </span>
+                  {activity.txHash && !activity.txHash.startsWith("demo") && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      asChild
+                      data-testid={`button-view-tx-${index}`}
+                    >
+                      <a
+                        href={`https://kaspa.stream/tx/${activity.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View on kaspa.stream"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

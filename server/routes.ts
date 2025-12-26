@@ -142,7 +142,7 @@ export async function registerRoutes(
       }));
 
       // Build recent activity from real data
-      const recentActivity: Array<{ type: string, description: string, timestamp: string }> = [];
+      const recentActivity: Array<{ type: string, description: string, timestamp: string, txHash?: string }> = [];
       
       // Add recent quiz completions
       for (const result of recentQuizResults.slice(0, 3)) {
@@ -156,6 +156,7 @@ export async function registerRoutes(
           type: "completion",
           description: `User completed '${course?.title || "Quiz"}'`,
           timestamp: timeStr,
+          txHash: result.txHash || undefined,
         });
       }
       
@@ -169,6 +170,7 @@ export async function registerRoutes(
           type: post.parentId ? "answer" : "question",
           description: post.parentId ? "New answer posted in Q&A" : "New question asked in Q&A",
           timestamp: timeStr,
+          txHash: post.txId || undefined,
         });
       }
 
