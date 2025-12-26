@@ -125,6 +125,12 @@ Preferred communication style: Simple, everyday language.
   4. Frontend calls `finalize` endpoint with P2SH address
   5. Server verifies commit transaction, submits reveal transaction
   6. NFT is minted on-chain
+- **Reservation Persistence** (CRITICAL):
+  - Reservations stored in `pending_mint_reservations` table
+  - Prepare endpoint reuses existing reservations (prevents duplicate P2SH generation)
+  - Frontend fetches reservation status on page load via `/api/nft/reservation/:id`
+  - Already-paid reservations skip to finalize automatically
+  - Prevents loss of user funds on page refresh/server restart
 - **Certificate states**: `pending` -> `minting` -> `claimed`
 - **IPFS Requirement**: Pinata credentials required for production minting
 - **Demo mode**: NFT minting simulated in demo mode (requires real wallet for production)

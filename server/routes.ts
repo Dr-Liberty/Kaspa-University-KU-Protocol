@@ -1003,17 +1003,39 @@ export async function registerRoutes(
     }
     
     // Check if there's an active (non-expired) reservation already
-    if (certificate.nftStatus === "minting") {
-      const hasActive = await hasActiveReservation(id);
-      if (hasActive) {
-        return res.status(409).json({ 
-          error: "Minting in progress", 
-          message: "A mint is already in progress for this certificate. Please wait or use the retry button."
+    // If so, RETURN THE EXISTING RESERVATION instead of creating a new one
+    // This prevents the bug where a new P2SH is generated but the user has the old one cached
+    const existingReservation = await mintStorage.getByCertificateId(id);
+    if (existingReservation) {
+      const now = new Date();
+      const isExpired = existingReservation.expiresAt < now;
+      const isPaid = existingReservation.status === "paid" || existingReservation.commitTxHash;
+      
+      if (!isExpired) {
+        // Return the existing reservation's P2SH - this is critical for page refresh scenarios
+        console.log(`[Prepare] Returning existing reservation for ${id}: ${existingReservation.p2shAddress.slice(0, 25)}...`);
+        return res.json({
+          success: true,
+          p2shAddress: existingReservation.p2shAddress,
+          amountSompi: "1050000000",
+          amountKas: "10.5",
+          tokenId: existingReservation.tokenId,
+          expiresAt: existingReservation.expiresAt.getTime(),
+          imageUrl: certificate.imageUrl,
+          existingReservation: true, // Flag so frontend knows this is a retry
+          isPaid,
         });
       } else {
-        // Reservation expired but status wasn't reset - reset it now
-        await storage.updateCertificate(id, { nftStatus: "pending" });
+        // Reservation expired - delete it and allow creating a new one
+        console.log(`[Prepare] Reservation expired for ${id}, clearing...`);
+        await mintStorage.deleteReservation(existingReservation.p2shAddress);
+        if (certificate.nftStatus === "minting") {
+          await storage.updateCertificate(id, { nftStatus: "pending" });
+        }
       }
+    } else if (certificate.nftStatus === "minting") {
+      // Status is minting but no reservation exists - reset status
+      await storage.updateCertificate(id, { nftStatus: "pending" });
     }
 
     try {

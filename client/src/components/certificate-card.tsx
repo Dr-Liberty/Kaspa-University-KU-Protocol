@@ -108,6 +108,28 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
 
       setPendingP2sh(prepareData.p2shAddress);
       
+      // Check if this is an already-paid reservation (user is retrying after page refresh)
+      if (prepareData.existingReservation && prepareData.isPaid) {
+        console.log("[NFT] Found already-paid reservation, skipping to finalize");
+        toast({
+          title: "Payment Already Confirmed",
+          description: "Completing your NFT mint...",
+        });
+        setMintStep("finalizing");
+        // Skip payment step - go directly to finalize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const finalizeRes = await apiRequest("POST", `/api/nft/finalize/${certificate.id}`, {
+          p2shAddress: prepareData.p2shAddress,
+        });
+        
+        const finalizeData = await finalizeRes.json();
+        if (!finalizeData.success) {
+          throw new Error(finalizeData.message || "Failed to finalize mint");
+        }
+        return finalizeData as FinalizeResponse;
+      }
+      
       // Step 2: User pays directly via KasWare
       setMintStep("awaiting_payment");
       toast({
