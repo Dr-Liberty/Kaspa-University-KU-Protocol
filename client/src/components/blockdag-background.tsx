@@ -60,9 +60,9 @@ export function BlockDAGBackground() {
     nodesRef.current = nodes;
 
     const kaspaColors = {
-      primary: { r: 112, g: 199, b: 186 },
-      accent: { r: 79, g: 176, b: 163 },
-      glow: { r: 147, g: 216, b: 206 },
+      primary: { r: 16, g: 185, b: 129 },
+      accent: { r: 5, g: 150, b: 105 },
+      glow: { r: 52, g: 211, b: 153 },
     };
 
     const animate = () => {
@@ -78,8 +78,8 @@ export function BlockDAGBackground() {
         canvas.height * 0.5,
         canvas.width * 0.8
       );
-      gradient.addColorStop(0, "rgba(112, 199, 186, 0.03)");
-      gradient.addColorStop(0.5, "rgba(79, 176, 163, 0.01)");
+      gradient.addColorStop(0, "rgba(16, 185, 129, 0.03)");
+      gradient.addColorStop(0.5, "rgba(5, 150, 105, 0.01)");
       gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);

@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/stats-bar";
-import { BlockDAGBackground } from "@/components/blockdag-background";
 import { useWallet } from "@/lib/wallet-context";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -89,7 +88,6 @@ export default function Landing() {
 
   return (
     <div className="flex flex-col">
-      <BlockDAGBackground />
       
       {securityCheck?.isFlagged && (
         <div 

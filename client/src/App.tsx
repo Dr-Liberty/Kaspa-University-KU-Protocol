@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WalletProvider } from "@/lib/wallet-context";
 import { Header } from "@/components/header";
+import { BlockDAGBackground } from "@/components/blockdag-background";
 import Landing from "@/pages/landing";
 import Courses from "@/pages/courses";
 import CourseDetail from "@/pages/course-detail";
@@ -37,6 +38,7 @@ function App() {
       <TooltipProvider>
         <WalletProvider>
           <div className="min-h-screen bg-background text-foreground">
+            <BlockDAGBackground />
             <Header />
             <Router />
           </div>
