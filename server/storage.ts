@@ -271,8 +271,8 @@ export class MemStorage implements IStorage {
           
           <table>
             <tr><th>Feature</th><th>Bitcoin</th><th>Kaspa</th></tr>
-            <tr><td>Block Time</td><td>10 minutes</td><td>1 second</td></tr>
-            <tr><td>Confirmation</td><td>10-60 minutes</td><td>1-10 seconds</td></tr>
+            <tr><td>Block Time</td><td>10 minutes</td><td>100ms (10 blocks per second)</td></tr>
+            <tr><td>Confirmation</td><td>10-60 minutes</td><td>Under 10 seconds</td></tr>
             <tr><td>Consensus</td><td>Nakamoto</td><td>GHOSTDAG</td></tr>
             <tr><td>Structure</td><td>Blockchain</td><td>BlockDAG</td></tr>
             <tr><td>Max Supply</td><td>21 million</td><td>28.7 billion</td></tr>
@@ -598,7 +598,7 @@ const balances = await indexer.getKRC20Balances({
       { id: "q-1-3-1", lessonId: "lesson-1-3", question: "What is the maximum supply of KAS?", options: ["21 million", "28.7 billion", "100 billion", "Unlimited"], correctIndex: 1, explanation: "The maximum supply of KAS is 28.7 billion tokens." },
       { id: "q-2-1-1", lessonId: "lesson-2-1", question: "What is an 'orphan' block in Bitcoin?", options: ["A block with no transactions", "A block that was found but discarded", "A block with invalid signatures", "The first block in a chain"], correctIndex: 1, explanation: "An orphan block is one that was validly mined but not included in the main chain." },
       { id: "q-2-2-1", lessonId: "lesson-2-2", question: "How does Kaspa handle blocks created simultaneously?", options: ["Discards all but one", "Includes all of them", "Uses random selection", "Requires manual resolution"], correctIndex: 1, explanation: "Kaspa includes all valid blocks in the DAG and orders them with GHOSTDAG." },
-      { id: "q-2-3-1", lessonId: "lesson-2-3", question: "What is Kaspa's block time compared to Bitcoin?", options: ["Same (10 minutes)", "1 second vs 10 minutes", "1 minute vs 10 minutes", "10 seconds vs 1 hour"], correctIndex: 1, explanation: "Kaspa produces blocks every 1 second compared to Bitcoin's 10 minutes." },
+      { id: "q-2-3-1", lessonId: "lesson-2-3", question: "What is Kaspa's block rate compared to Bitcoin?", options: ["Same (1 block per 10 minutes)", "10 blocks per second vs 1 per 10 minutes", "1 block per minute vs 10 per hour", "10 blocks per minute vs 1 per hour"], correctIndex: 1, explanation: "Since the Crescendo upgrade, Kaspa produces 10 blocks per second compared to Bitcoin's 1 block per 10 minutes." },
       { id: "q-3-1-1", lessonId: "lesson-3-1", question: "In a BlockDAG, how many parent blocks can a new block reference?", options: ["Exactly one", "Multiple", "None", "Exactly two"], correctIndex: 1, explanation: "In a BlockDAG, blocks can reference multiple parent blocks." },
       { id: "q-3-2-1", lessonId: "lesson-3-2", question: "What happens to simultaneously mined blocks in Kaspa?", options: ["One is discarded", "All are included", "They are merged", "They cancel each other"], correctIndex: 1, explanation: "All valid blocks are included in the DAG structure." },
       { id: "q-3-3-1", lessonId: "lesson-3-3", question: "What is the purpose of GHOSTDAG coloring?", options: ["Visual display", "Determine block order and validity", "Mining optimization", "Network routing"], correctIndex: 1, explanation: "GHOSTDAG coloring helps determine block ordering and identify honest blocks." },
