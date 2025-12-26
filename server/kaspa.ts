@@ -76,9 +76,10 @@ class KaspaService {
   private treasuryPrivateKey: any = null;
   private isLiveMode: boolean = false;
   private apiConnected: boolean = false;
-  private rpcConnected: boolean = false;
-  private rpcClient: any = null;           // kaspa-rpc-client (npm) for UTXO fetching
-  private wasmRpcClient: any = null;       // WASM RpcClient for PendingTransaction.submit()
+  private rpcConnected: boolean = false;        // kaspa-rpc-client connection status
+  private wasmRpcConnected: boolean = false;    // WASM RpcClient connection status
+  private rpcClient: any = null;                // kaspa-rpc-client (npm) for UTXO fetching
+  private wasmRpcClient: any = null;            // WASM RpcClient for PendingTransaction.submit()
   private kaspaModule: any = null;
   private treasuryMnemonic: string | null = null;
 
@@ -114,14 +115,9 @@ class KaspaService {
       await this.tryRpcClientConnection();
 
       // Fallback to WASM RPC if pure client failed
+      // Note: WASM RpcClient in Node.js has WebSocket issues, so kaspa-rpc-client is preferred
       if (!this.rpcConnected) {
         await this.tryWasmRpcConnection();
-      }
-      
-      // Also try to establish WASM RpcClient for PendingTransaction.submit()
-      // This is needed because Generator/PendingTransaction requires WASM RpcClient
-      if (!this.wasmRpcClient) {
-        await this.initWasmRpcClient();
       }
 
       // Fallback to REST API if all RPC methods failed
@@ -129,10 +125,15 @@ class KaspaService {
         await this.tryRestApiConnection();
       }
 
-      // CRITICAL: Only enable live mode if we have a working connection
-      if (this.rpcConnected && this.treasuryAddress && this.treasuryPrivateKey) {
+      // CRITICAL: Only enable live mode if we have kaspa-rpc-client connected and treasury keys
+      // WASM RpcClient is no longer required - we use serializeToObject() + rpcClient.submitTransaction()
+      const canEnableLive = this.rpcConnected && 
+                            this.treasuryAddress && 
+                            this.treasuryPrivateKey;
+      
+      if (canEnableLive) {
         this.isLiveMode = true;
-        console.log(`[Kaspa] Live mode enabled - RPC connected, treasury ready: ${this.treasuryAddress.slice(0, 25)}...`);
+        console.log(`[Kaspa] Live mode enabled - RPC connected, treasury: ${this.treasuryAddress.slice(0, 25)}...`);
       } else {
         this.isLiveMode = false;
         const reasons: string[] = [];
@@ -473,12 +474,12 @@ class KaspaService {
   }
 
   /**
-   * Try to connect via kaspa-wasm RPC (legacy, often fails in Node.js)
-   * Note: Resolver is not exported from npm kaspa package, using direct URL
+   * Try to connect via kaspa-wasm RPC (fallback if kaspa-rpc-client fails)
+   * Note: This is now primarily a fallback, as we have initWasmRpcClient() for tx submission
    */
   private async tryWasmRpcConnection(): Promise<void> {
     try {
-      console.log("[Kaspa] Trying WASM RPC connection...");
+      console.log("[Kaspa] Trying WASM RPC connection (fallback)...");
       
       if (!this.kaspaModule) {
         throw new Error("Kaspa module not loaded");
@@ -491,34 +492,36 @@ class KaspaService {
       }
 
       // Public wRPC endpoints for Kaspa mainnet
-      // Using Borsh encoding for efficiency
       const wRpcUrl = "wss://wrpc.kaspa.net:443";
       
       console.log(`[Kaspa] Connecting to wRPC: ${wRpcUrl}`);
 
-      // Create RPC client with direct URL
-      this.rpcClient = new RpcClient({
+      // Create WASM RPC client (store in wasmRpcClient, not rpcClient)
+      this.wasmRpcClient = new RpcClient({
         url: wRpcUrl,
         encoding: Encoding?.Borsh || 0,
         networkId: this.config.network,
       });
 
       // Connect with timeout
-      await this.rpcClient.connect({
+      await this.wasmRpcClient.connect({
         timeoutDuration: 5000,
         blockAsyncConnect: true,
       });
 
-      console.log(`[Kaspa] WASM RPC connected to: ${this.rpcClient.url}`);
+      console.log(`[Kaspa] WASM RPC connected to: ${this.wasmRpcClient.url}`);
 
       // Test connection
-      const info = await this.rpcClient.getBlockDagInfo();
+      const info = await this.wasmRpcClient.getBlockDagInfo();
       console.log(`[Kaspa] Block count: ${info?.blockCount || 'unknown'}`);
+      
+      // Mark both as connected since WASM RPC can do everything
       this.rpcConnected = true;
+      this.wasmRpcConnected = true;
 
     } catch (error: any) {
       console.log(`[Kaspa] WASM RPC failed: ${error.message}`);
-      this.rpcConnected = false;
+      // Don't set rpcConnected = false here, it might have succeeded via kaspa-rpc-client
     }
   }
 
@@ -543,6 +546,12 @@ class KaspaService {
    * specifically requires the WASM RpcClient class, not kaspa-rpc-client
    */
   private async initWasmRpcClient(): Promise<void> {
+    // Skip if already connected
+    if (this.wasmRpcConnected && this.wasmRpcClient) {
+      console.log("[Kaspa] WASM RpcClient already connected, reusing...");
+      return;
+    }
+
     try {
       if (!this.kaspaModule) {
         console.log("[Kaspa] Cannot init WASM RpcClient - module not loaded");
@@ -565,15 +574,24 @@ class KaspaService {
         networkId: this.config.network,
       });
 
-      await this.wasmRpcClient.connect({
-        timeoutDuration: 10000,
+      // Wrap connect() in a timeout to prevent indefinite blocking
+      const connectPromise = this.wasmRpcClient.connect({
+        timeoutDuration: 5000,
         blockAsyncConnect: true,
       });
+      
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("WASM RpcClient connect timeout")), 8000);
+      });
 
+      await Promise.race([connectPromise, timeoutPromise]);
+
+      this.wasmRpcConnected = true;
       console.log(`[Kaspa] WASM RpcClient ready for tx submission`);
     } catch (error: any) {
       console.log(`[Kaspa] Failed to init WASM RpcClient: ${error.message}`);
       this.wasmRpcClient = null;
+      this.wasmRpcConnected = false;
     }
   }
 
@@ -1224,13 +1242,9 @@ class KaspaService {
         throw new Error(`Failed to create Generator: ${errorMsg}`);
       }
 
-      // Verify we have WASM RpcClient for submission
-      if (!this.wasmRpcClient) {
-        console.log(`[Kaspa] WASM RpcClient not available, attempting to initialize...`);
-        await this.initWasmRpcClient();
-        if (!this.wasmRpcClient) {
-          throw new Error("Cannot submit transaction: WASM RpcClient not available. Check network connection.");
-        }
+      // Verify we have kaspa-rpc-client for submission
+      if (!this.rpcClient) {
+        throw new Error("Cannot submit transaction: RPC client not connected.");
       }
 
       // Use Generator.next() pattern from SDK documentation
@@ -1264,11 +1278,20 @@ class KaspaService {
           throw new Error(`Failed to sign transaction: ${signError.message}`);
         }
         
-        // Submit via WASM RpcClient (required by PendingTransaction.submit())
-        // Per SDK docs: "let txid = await pendingTransaction.submit(rpc);"
+        // Submit via kaspa-rpc-client instead of WASM RpcClient
+        // Use serializeToObject() to get RPC-compatible transaction format
         try {
-          const txid = await pendingTransaction.submit(this.wasmRpcClient);
-          finalTxHash = txid || pendingTransaction.id || "";
+          // Serialize the signed PendingTransaction to RPC format
+          const serializedTx = pendingTransaction.serializeToObject();
+          console.log(`[Kaspa] Submitting transaction via kaspa-rpc-client...`);
+          
+          // Submit via kaspa-rpc-client's submitTransaction method
+          const submitResult = await this.rpcClient.submitTransaction({
+            transaction: serializedTx,
+            allowOrphan: false
+          });
+          
+          finalTxHash = submitResult?.transactionId || pendingTransaction.id || "";
           console.log(`[Kaspa] Transaction ${txCount} submitted: ${finalTxHash}`);
         } catch (submitError: any) {
           const errorMsg = submitError?.message || String(submitError);
