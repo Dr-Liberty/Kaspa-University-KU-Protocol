@@ -23,6 +23,8 @@ import {
 } from "./security";
 import { getSecurityMetrics } from "./security-metrics";
 import { checkVpn } from "./vpn-detection";
+import { getJobQueue } from "./job-queue";
+import { statsCache, analyticsCache } from "./cache";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -33,12 +35,57 @@ export async function registerRoutes(
   app.use("/api", generalRateLimiter);
 
   app.get("/api/stats", async (_req: Request, res: Response) => {
+    const cached = statsCache.get("platform_stats");
+    if (cached) {
+      return res.json(cached);
+    }
     const stats = await storage.getStats();
+    statsCache.set("platform_stats", stats);
     res.json(stats);
+  });
+
+  app.get("/api/jobs/:jobId", async (req: Request, res: Response) => {
+    const jobQueue = getJobQueue();
+    const job = jobQueue.getJob(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    res.json({
+      id: job.id,
+      type: job.type,
+      status: job.status,
+      result: job.result,
+      error: job.error,
+      createdAt: job.createdAt,
+      completedAt: job.completedAt,
+    });
+  });
+
+  app.get("/api/jobs", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    const jobQueue = getJobQueue();
+    
+    if (walletAddress) {
+      const jobs = jobQueue.getJobsByWallet(walletAddress);
+      return res.json(jobs.map(job => ({
+        id: job.id,
+        type: job.type,
+        status: job.status,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt,
+      })));
+    }
+    
+    res.json({ stats: jobQueue.getStats() });
   });
 
   app.get("/api/analytics", async (_req: Request, res: Response) => {
     try {
+      const cached = analyticsCache.get("platform_analytics");
+      if (cached) {
+        return res.json(cached);
+      }
+
       const stats = await storage.getStats();
       const courses = await storage.getCourses();
       
@@ -80,7 +127,7 @@ export async function registerRoutes(
         { type: "reward", description: "1.0 KAS distributed for quiz completion", timestamp: "25 min ago" },
       ];
 
-      res.json({
+      const analyticsData = {
         overview: {
           totalUsers: stats.activeLearners || 0,
           totalCourses: stats.coursesAvailable || 0,
@@ -94,7 +141,10 @@ export async function registerRoutes(
         difficultyDistribution,
         topLearners,
         recentActivity,
-      });
+      };
+      
+      analyticsCache.set("platform_analytics", analyticsData);
+      res.json(analyticsData);
     } catch (error) {
       console.error("[Analytics] Error fetching analytics:", error);
       res.status(500).json({ error: "Failed to fetch analytics" });

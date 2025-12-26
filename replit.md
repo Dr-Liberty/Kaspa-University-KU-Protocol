@@ -168,6 +168,30 @@ Preferred communication style: Simple, everyday language.
 - **Coverage**: 27 tests covering input validation, IP detection, VPN detection, UTXO manager, security metrics, session store, anti-sybil service
 - **Run**: `npx vitest run`
 
+### Performance Optimizations
+
+#### Job Queue System
+- **Service**: `server/job-queue.ts` - Async blockchain operations
+- **Types**: REWARD, NFT_MINT, QA_POST
+- **Benefits**: Non-blocking API responses, automatic retries
+- **Endpoints**:
+  - `GET /api/jobs/:jobId` - Check job status
+  - `GET /api/jobs` - List jobs for wallet
+- **Pattern**: HTTP returns immediately with jobId, blockchain work processes in background
+
+#### TTL Caching
+- **Service**: `server/cache.ts` - In-memory TTL caches
+- **VPN Cache**: 6-hour TTL (matches GetIPIntel recommendations)
+- **Stats Cache**: 5-minute TTL
+- **Analytics Cache**: 5-minute TTL
+- **Security Flags Cache**: 1-minute TTL
+- **Benefits**: Reduced database/API calls, faster responses
+
+#### UTXO Cache
+- **Service**: `server/utxo-cache.ts` - Treasury UTXO caching
+- **Refresh**: Every 30 seconds
+- **Benefits**: Reduced RPC calls, faster transaction building
+
 ### Cryptographic Utilities
 - **Service**: `server/crypto.ts` - Wallet authentication and quiz integrity
 - **Challenge-Response Auth**: ECDSA signature verification for wallet authentication
