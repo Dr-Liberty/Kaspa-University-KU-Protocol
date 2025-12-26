@@ -3,11 +3,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
 import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+// Convert IPFS URLs to gateway URLs for browser display
+function toGatewayUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("ipfs://")) {
+    const cid = url.replace("ipfs://", "");
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+  return url;
+}
 
 interface CertificateCardProps {
   certificate: Certificate;
@@ -39,6 +49,34 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const [mintStep, setMintStep] = useState<"idle" | "preparing" | "awaiting_payment" | "finalizing">("idle");
   const [pendingP2sh, setPendingP2sh] = useState<string | null>(null);
   const [pendingCommitTx, setPendingCommitTx] = useState<string | null>(null);
+
+  // Get displayable image URL (convert IPFS to gateway)
+  const displayImageUrl = toGatewayUrl(certificate.imageUrl);
+
+  // Check for existing reservation when certificate is in "minting" status
+  const { data: reservationData } = useQuery({
+    queryKey: ["/api/nft/reservation", certificate.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/nft/reservation/${certificate.id}`);
+      return res.json();
+    },
+    enabled: certificate.nftStatus === "minting",
+    staleTime: 30000,
+  });
+
+  // Restore pending state from server reservation
+  useEffect(() => {
+    if (reservationData?.hasReservation && !reservationData.isExpired) {
+      setPendingP2sh(reservationData.p2shAddress);
+      if (reservationData.commitTxHash) {
+        setPendingCommitTx(reservationData.commitTxHash);
+      }
+      // If reservation exists and is paid, show retry state
+      if (reservationData.isPaid) {
+        setMintStep("finalizing");
+      }
+    }
+  }, [reservationData]);
 
   // Non-custodial minting flow
   const mintMutation = useMutation({
@@ -236,9 +274,9 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   };
 
   const handleDownload = () => {
-    if (certificate.imageUrl) {
+    if (displayImageUrl) {
       const link = document.createElement("a");
-      link.href = certificate.imageUrl;
+      link.href = displayImageUrl;
       link.download = `kaspa-university-certificate-${certificate.verificationCode}.svg`;
       document.body.appendChild(link);
       link.click();
@@ -277,9 +315,9 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     >
       <CardContent className="p-0">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-background via-card to-background">
-          {certificate.imageUrl ? (
+          {displayImageUrl ? (
             <img
-              src={certificate.imageUrl}
+              src={displayImageUrl}
               alt={`Certificate for ${certificate.courseName}`}
               className="h-full w-full object-contain"
             />
@@ -311,7 +349,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             </div>
           )}
           
-          {certificate.imageUrl && (
+          {displayImageUrl && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent p-3 pt-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="min-w-0 flex-1">

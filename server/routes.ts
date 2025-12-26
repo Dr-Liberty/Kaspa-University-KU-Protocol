@@ -25,6 +25,7 @@ import { getSecurityMetrics } from "./security-metrics";
 import { checkVpn } from "./vpn-detection";
 import { getJobQueue } from "./job-queue";
 import { statsCache, analyticsCache } from "./cache";
+import { mintStorage } from "./mint-storage";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1353,6 +1354,36 @@ export async function registerRoutes(
       await storage.updateCertificate(id, { nftStatus: "pending" });
       console.error("[Claim] Error:", error.message);
       return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get reservation status for a certificate (for retry functionality)
+  app.get("/api/nft/reservation/:id", async (req: Request, res: Response) => {
+    const { id } = req.params;
+    
+    try {
+      const reservation = await mintStorage.getByCertificateId(id);
+      
+      if (!reservation) {
+        return res.json({ hasReservation: false });
+      }
+      
+      const now = new Date();
+      const isExpired = reservation.expiresAt < now;
+      const isPaid = reservation.status === "paid" || reservation.commitTxHash;
+      
+      res.json({
+        hasReservation: true,
+        p2shAddress: reservation.p2shAddress,
+        status: reservation.status,
+        isPaid,
+        isExpired,
+        commitTxHash: reservation.commitTxHash,
+        expiresAt: reservation.expiresAt.getTime(),
+      });
+    } catch (error: any) {
+      console.error("[NFT] Failed to get reservation:", error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 
