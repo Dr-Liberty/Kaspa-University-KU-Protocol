@@ -994,6 +994,7 @@ export async function registerRoutes(
     }
 
     try {
+      console.log(`[Prepare] Starting prepare for certificate ${id} and wallet ${walletAddress.slice(0, 25)}...`);
       const krc721Service = await getKRC721Service();
 
       // Generate certificate image and upload to IPFS

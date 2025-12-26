@@ -60,10 +60,12 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
       });
       
       const prepareRes = await apiRequest("POST", `/api/nft/prepare/${certificate.id}`);
-      const prepareData: PrepareResponse = await prepareRes.json();
+      const prepareData = await prepareRes.json();
       
       if (!prepareData.success) {
-        throw new Error("Failed to prepare mint");
+        const errorMsg = prepareData.message || prepareData.error || "Failed to prepare mint";
+        console.error("[NFT] Prepare failed:", errorMsg);
+        throw new Error(errorMsg);
       }
 
       setPendingP2sh(prepareData.p2shAddress);
