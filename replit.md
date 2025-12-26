@@ -61,8 +61,16 @@ Preferred communication style: Simple, everyday language.
 - **Loading**: Synchronous via CommonJS require() - no async init needed
 - **Key Exports Used**:
   - `PrivateKey`, `PublicKey`, `Address` - Key management
-  - `createTransactions`, `kaspaToSompi` - Transaction building
+  - `createTransactions`, `signTransaction`, `kaspaToSompi` - Transaction building
   - `ScriptBuilder`, `addressFromScriptPublicKey` - KRC-721 inscription scripts
+- **Transaction Building Pattern** (CRITICAL):
+  1. Build `IUtxoEntry[]` with FLAT structure (per kaspa.d.ts):
+     - `address`, `outpoint`, `amount`, `scriptPublicKey`, `blockDaaScore`, `isCoinbase` at TOP LEVEL
+     - `scriptPublicKey: { version: number, script: HexString }`
+  2. Call `createTransactions(settings)` with `IGeneratorSettingsObject`
+  3. Sign using `signTransaction(tx, [privateKey], true)`
+  4. Submit via `rpcClient.submitTransaction({ transaction: tx.toRpcTransaction() })`
+- **Documentation Reference**: https://github.com/MMOStars/Kaspa-WASM32-SDK-Documentation-AI-VibeCoding
 - **References**:
   - GitHub: https://github.com/kaspanet/rusty-kaspa
   - WASM SDK: https://github.com/kaspanet/rusty-kaspa/tree/master/wasm

@@ -1047,7 +1047,7 @@ class KaspaService {
       console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
     }
 
-    const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
+    const { PrivateKey, createTransactions, signTransaction, kaspaToSompi } = this.kaspaModule;
     const utxoManager = getUTXOManager();
 
     // Get UTXOs via kaspa-rpc-client
@@ -1141,14 +1141,14 @@ class KaspaService {
 
     console.log(`[Kaspa] Using ${reservedEntries.length} reserved entries for transaction`);
 
-    // Convert RPC entries to WASM-compatible IUtxoEntry format
-    // Per https://kaspa.aspectron.org/docs/interfaces/IUtxoEntry.html:
+    // Convert RPC entries to WASM-compatible IUtxoEntry format (FLAT structure)
+    // Per kaspa.d.ts IUtxoEntry interface:
     // - address?: Address (optional)
+    // - outpoint: { transactionId: string, index: number }
     // - amount: bigint
+    // - scriptPublicKey: { version: number, script: HexString }
     // - blockDaaScore: bigint
     // - isCoinbase: boolean
-    // - outpoint: ITransactionOutpoint
-    // - scriptPublicKey: IScriptPublicKey { script: string, version: number }
     const wasmEntries = reservedEntries.map((e: any) => {
       // Extract the scriptPublicKey hex string - try multiple paths
       const spkHex = e.utxoEntry?.scriptPublicKey?.scriptPublicKey || 
@@ -1161,6 +1161,7 @@ class KaspaService {
       const spkVersion = e.utxoEntry?.scriptPublicKey?.version ?? 
                          e.scriptPublicKey?.version ?? 0;
       
+      // Build IUtxoEntry with FLAT structure (per kaspa.d.ts)
       const entry = {
         address: e.address || this.treasuryAddress,
         outpoint: {
@@ -1168,10 +1169,9 @@ class KaspaService {
           index: e.outpoint?.index ?? 0
         },
         amount: BigInt(e.utxoEntry?.amount || e.amount || 0),
-        // IScriptPublicKey format: { script: string, version: number }
         scriptPublicKey: {
-          script: spkHex,
-          version: spkVersion
+          version: spkVersion,
+          script: spkHex
         },
         blockDaaScore: BigInt(e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0),
         isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
@@ -1182,7 +1182,7 @@ class KaspaService {
     // DIAGNOSTIC: Log the first WASM entry for debugging
     if (wasmEntries.length > 0) {
       const firstEntry = wasmEntries[0];
-      console.log(`[Kaspa] WASM Entry format check:`);
+      console.log(`[Kaspa] WASM Entry format check (IUtxoEntry - FLAT):`);
       console.log(`  - address: ${firstEntry.address}`);
       console.log(`  - outpoint.transactionId: ${firstEntry.outpoint.transactionId.slice(0, 16)}...`);
       console.log(`  - outpoint.index: ${firstEntry.outpoint.index}`);
@@ -1240,14 +1240,15 @@ class KaspaService {
         throw new Error("Cannot submit transaction: RPC client not connected.");
       }
 
-      // Sign and submit each transaction (same pattern as payload transactions)
+      // Sign and submit each transaction using signTransaction helper
       let finalTxHash = "";
       for (let i = 0; i < transactions.length; i++) {
-        const tx = transactions[i];
+        let tx = transactions[i];
         console.log(`[Kaspa] Processing transaction ${i + 1}/${transactions.length}...`);
         
-        // Sign the transaction (synchronous)
-        tx.sign([privateKey]);
+        // Sign the transaction using signTransaction helper (per kaspa.d.ts)
+        // signTransaction(tx, signer[], verify_sig) returns signed Transaction
+        tx = signTransaction(tx, [privateKey], true);
         console.log(`[Kaspa] Transaction ${i + 1} signed`);
         
         // Submit via kaspa-rpc-client using toRpcTransaction()
