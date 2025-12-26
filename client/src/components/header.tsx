@@ -163,9 +163,9 @@ export function Header() {
               </Button>
               {isWalletInstalled ? (
                 <Button
+                  variant="default"
                   onClick={connect}
                   disabled={isConnecting}
-                  className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
                   data-testid="button-connect-wallet"
                 >
                   <Wallet className="h-4 w-4" />
@@ -175,9 +175,9 @@ export function Header() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      variant="default"
                       onClick={connect}
                       disabled={isConnecting}
-                      className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
                       data-testid="button-connect-wallet"
                     >
                       <Wallet className="h-4 w-4" />
