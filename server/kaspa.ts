@@ -134,13 +134,24 @@ class KaspaService {
 
   /**
    * Load kaspa module with K-Kluster fixes
+   * Tries manual WASM import first, then falls back to npm package
    */
   private async loadKaspaModule(): Promise<void> {
     try {
-      console.log("[Kaspa] Loading kaspa module with K-Kluster fixes...");
+      console.log("[Kaspa] Loading kaspa module...");
       
-      // Dynamic import after WebSocket shim is set
-      this.kaspaModule = await import("kaspa");
+      // Try manual WASM import first (recommended by other Kaspa developers)
+      try {
+        console.log("[Kaspa] Trying manual WASM import from server/wasm/...");
+        const path = await import("path");
+        const wasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
+        this.kaspaModule = await import(wasmPath);
+        console.log("[Kaspa] Manual WASM import successful!");
+      } catch (manualError: any) {
+        console.log("[Kaspa] Manual WASM import failed, trying npm package:", manualError.message);
+        // Fall back to npm package
+        this.kaspaModule = await import("kaspa");
+      }
       
       // K-Kluster Fix #2: Initialize console panic hook for better WASM errors
       if (this.kaspaModule.initConsolePanicHook) {

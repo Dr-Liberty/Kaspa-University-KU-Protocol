@@ -48,6 +48,9 @@ Preferred communication style: Simple, everyday language.
 - **Network**: Mainnet (production)
 - **RPC**: Uses `kaspa-rpc-client` for network operations (pure TypeScript, reliable in Node.js)
 - **Signing**: Uses Kaspa WASM module for transaction signing
+- **WASM Source**: Manual import from `server/wasm/` (downloaded from official rusty-kaspa releases v1.0.1)
+  - Falls back to npm `kaspa` package if manual import fails
+  - Manual WASM import recommended by Kaspa developers for better compatibility
 - **Treasury Secret**: `KASPA_TREASURY_PRIVATEKEY` - 64-character hex private key for the treasury wallet
   - Legacy names `KASPA_TREASURY_PRIVATE_KEY` and `KASPA_TREASURY_MNEMONIC` still work as fallback
 
@@ -55,7 +58,7 @@ Preferred communication style: Simple, everyday language.
 - KAS token reward distribution on quiz completion
 - Wallet-based authentication (wallet address tracking)
 - On-chain Q&A storage with KU Protocol (inspired by Kasia)
-- Verifiable quiz results embedded in transaction payloads
+- Verifiable quiz results embedded in transaction payloads with full wallet address proof
 - Verification page for on-chain content (/verify/:txHash)
 
 ### KU Protocol (On-Chain Data)
