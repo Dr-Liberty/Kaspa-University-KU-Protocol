@@ -1108,17 +1108,9 @@ class KaspaService {
       const privateKey = new PrivateKey(privateKeyHex);
       console.log(`[Kaspa] PrivateKey object created`);
 
-      // Convert amount to sompi - kaspaToSompi expects a STRING argument
-      const amountSompi = kaspaToSompi(amountKas.toString());
-      const priorityFee = kaspaToSompi("0.0001");
-      
-      // kaspaToSompi returns bigint | undefined, handle undefined case
-      if (amountSompi === undefined) {
-        throw new Error(`Invalid amount: ${amountKas} KAS could not be converted to sompi`);
-      }
-      if (priorityFee === undefined) {
-        throw new Error("Failed to convert priority fee to sompi");
-      }
+      // Convert amount to sompi
+      const amountSompi = kaspaToSompi(amountKas);
+      const priorityFee = kaspaToSompi(0.0001);
       console.log(`[Kaspa] Amounts: ${amountSompi} sompi, fee: ${priorityFee}`);
 
       // Create transaction using WASM with properly formatted IUtxoEntry array
@@ -1295,18 +1287,11 @@ class KaspaService {
     // Sort UTXOs by amount
     entries.sort((a: any, b: any) => (a.amount > b.amount ? 1 : -1));
 
-    // Create transaction generator - kaspaToSompi expects STRING arguments
-    const amountSompi = kaspaToSompi(amountKas.toString());
-    const feeSompi = kaspaToSompi("0.0001");
-    
-    if (amountSompi === undefined || feeSompi === undefined) {
-      throw new Error(`Invalid amounts: amount=${amountKas}, fee=0.0001`);
-    }
-    
+    // Create transaction generator
     const generator = new Generator({
       entries,
-      outputs: [{ address: recipientAddress, amount: amountSompi }],
-      priorityFee: feeSompi,
+      outputs: [{ address: recipientAddress, amount: kaspaToSompi(amountKas) }],
+      priorityFee: kaspaToSompi(0.0001),
       changeAddress: this.treasuryAddress,
     });
 
@@ -1623,13 +1608,8 @@ class KaspaService {
       const privateKey = new PrivateKey(privateKeyHex);
 
       // Minimal transaction - send dust amount to self
-      // kaspaToSompi expects STRING arguments
-      const dustAmount = kaspaToSompi("0.00001"); // 1000 sompi minimum
-      const priorityFee = kaspaToSompi("0.0001");
-      
-      if (dustAmount === undefined || priorityFee === undefined) {
-        throw new Error("Failed to convert amounts to sompi");
-      }
+      const dustAmount = kaspaToSompi(0.00001); // 1000 sompi minimum
+      const priorityFee = kaspaToSompi(0.0001);
 
       // Create transaction with payload using ONLY reserved entries
       const { transactions } = await createTransactions({
