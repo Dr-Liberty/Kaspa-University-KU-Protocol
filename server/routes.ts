@@ -277,6 +277,24 @@ export async function registerRoutes(
     res.json(metrics.getAlerts());
   });
 
+  app.post("/api/admin/reset-quiz-attempts", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ error: "walletAddress required" });
+    }
+    
+    const antiSybil = getAntiSybilService();
+    await antiSybil.resetQuizAttempts(walletAddress);
+    
+    console.log(`[Admin] Reset quiz attempts for wallet: ${walletAddress}`);
+    res.json({ success: true, message: `Quiz attempts reset for ${walletAddress}` });
+  });
+
   app.get("/api/courses", async (_req: Request, res: Response) => {
     const courses = await storage.getCourses();
     res.json(courses);

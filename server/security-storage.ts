@@ -27,6 +27,7 @@ interface SecurityStorageInterface {
   
   getQuizAttempts(walletAddress: string, lessonId: string): Promise<QuizAttemptRecord[]>;
   recordQuizAttempt(attempt: Omit<QuizAttemptRecord, "id">): Promise<QuizAttemptRecord>;
+  deleteQuizAttempts(walletAddress: string): Promise<void>;
   
   getIpActivity(ipAddress: string): Promise<IpActivity | undefined>;
   upsertIpActivity(data: Partial<IpActivity> & { ipAddress: string }): Promise<IpActivity>;
@@ -127,6 +128,23 @@ class MemorySecurityStorage implements SecurityStorageInterface {
     this.quizAttempts.set(key, existing);
     
     return record;
+  }
+
+  async deleteQuizAttempts(walletAddress: string): Promise<void> {
+    const normalizedWallet = walletAddress.toLowerCase();
+    const keysToDelete: string[] = [];
+    
+    for (const key of Array.from(this.quizAttempts.keys())) {
+      if (key.startsWith(`${normalizedWallet}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+    
+    for (const key of keysToDelete) {
+      this.quizAttempts.delete(key);
+    }
+    
+    console.log(`[MemorySecurityStorage] Deleted ${keysToDelete.length} quiz attempt entries for ${walletAddress}`);
   }
 
   async getIpActivity(ipAddress: string): Promise<IpActivity | undefined> {
@@ -433,6 +451,25 @@ class DatabaseSecurityStorage implements SecurityStorageInterface {
     } catch (error: any) {
       console.error("[SecurityStorage] Record quiz attempt failed:", error.message);
       return this.fallback.recordQuizAttempt(attempt);
+    }
+  }
+
+  async deleteQuizAttempts(walletAddress: string): Promise<void> {
+    if (!(await this.ensureInitialized())) {
+      return this.fallback.deleteQuizAttempts(walletAddress);
+    }
+
+    try {
+      const { eq, sql } = await import("drizzle-orm");
+      await this.db.delete(this.schema.quizAttempts)
+        .where(sql`LOWER(${this.schema.quizAttempts.walletAddress}) = ${walletAddress.toLowerCase()}`);
+      
+      console.log(`[SecurityStorage] Deleted quiz attempts for ${walletAddress}`);
+      
+      await this.fallback.deleteQuizAttempts(walletAddress);
+    } catch (error: any) {
+      console.error("[SecurityStorage] Delete quiz attempts failed:", error.message);
+      await this.fallback.deleteQuizAttempts(walletAddress);
     }
   }
 

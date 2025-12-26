@@ -458,6 +458,25 @@ class AntiSybilService {
       attemptsRemaining,
     };
   }
+
+  async resetQuizAttempts(walletAddress: string): Promise<void> {
+    const normalizedAddress = walletAddress.toLowerCase();
+    
+    const activity = this.walletActivityCache.get(normalizedAddress);
+    if (activity) {
+      activity.quizAttempts.clear();
+      activity.totalQuizzes = 0;
+      console.log(`[AntiSybil] Reset in-memory quiz attempts for ${normalizedAddress}`);
+    }
+    
+    try {
+      const storage = await getSecurityStorage();
+      await storage.deleteQuizAttempts(walletAddress);
+      console.log(`[AntiSybil] Reset database quiz attempts for ${walletAddress}`);
+    } catch (error: any) {
+      console.error(`[AntiSybil] Failed to reset DB quiz attempts: ${error.message}`);
+    }
+  }
 }
 
 let antiSybilInstance: AntiSybilService | null = null;
