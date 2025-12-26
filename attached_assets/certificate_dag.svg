@@ -98,14 +98,14 @@
         </text>
         
         <!-- Verification Badge -->
-        <rect x="280" y="515" width="240" height="30" rx="15" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
-        <circle cx="300" cy="530" r="8" fill="#10b981"/>
-        <text x="315" y="535" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
-          Verified on Kaspa Blockchain
+        <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
+        <circle cx="165" cy="521" r="8" fill="#10b981"/>
+        <text x="400" y="526" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
+          Quiz data has been embedded on Kaspa Layer one for future verification
         </text>
         
         <!-- Footer -->
-        <text x="400" y="575" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">
+        <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">
           KRC-721 NFT Certificate | KPROOF Collection
         </text>
       </svg>
