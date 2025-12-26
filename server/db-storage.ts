@@ -259,6 +259,11 @@ export class DbStorage implements IStorage {
     return Number(result[0]?.count || 0);
   }
 
+  async getAllCertificates(): Promise<Certificate[]> {
+    const results = await db.select().from(schema.certificates);
+    return results as Certificate[];
+  }
+
   async getUserProgress(userId: string): Promise<UserProgress[]> {
     const results = await db.select().from(schema.userProgress)
       .where(eq(schema.userProgress.userId, userId));

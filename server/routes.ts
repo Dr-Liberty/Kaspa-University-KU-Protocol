@@ -1563,5 +1563,132 @@ export async function registerRoutes(
     }
   });
 
+  // ========== ADMIN API ENDPOINTS ==========
+  // Simple password protection - in production use proper auth
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "kaspa2025";
+  
+  const adminAuth = (req: Request, res: Response, next: () => void) => {
+    const password = req.headers["x-admin-password"] as string;
+    if (password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+  };
+
+  // Get all certificates (admin)
+  app.get("/api/admin/certificates", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const allCerts = await storage.getAllCertificates();
+      res.json(allCerts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get all mint reservations (admin)
+  app.get("/api/admin/reservations", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const reservations = await mintStorage.getAllReservations();
+      res.json(reservations);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get error logs (admin)
+  app.get("/api/admin/errors", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { getRecentErrors } = await import("./error-logger");
+      const limit = parseInt(req.query.limit as string) || 50;
+      const errors = await getRecentErrors(limit);
+      res.json(errors);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mark error as resolved (admin)
+  app.post("/api/admin/errors/:id/resolve", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { markErrorResolved } = await import("./error-logger");
+      const success = await markErrorResolved(req.params.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Reset certificate status to pending (admin)
+  app.post("/api/admin/certificates/:id/reset", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const certificate = await storage.getCertificate(id);
+      if (!certificate) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+
+      // Reset the certificate status
+      await storage.updateCertificate(id, { 
+        nftStatus: "pending",
+        nftTxHash: undefined,
+      });
+
+      // Delete any associated reservations
+      await mintStorage.deleteReservationByCertificateId(id);
+
+      console.log(`[Admin] Reset certificate ${id} to pending status`);
+      res.json({ success: true, message: "Certificate reset to pending" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get admin dashboard stats
+  app.get("/api/admin/stats", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { getRecentErrors } = await import("./error-logger");
+      const allCerts = await storage.getAllCertificates();
+      const reservations = await mintStorage.getAllReservations();
+      const errors = await getRecentErrors(100);
+      
+      const stats = {
+        certificates: {
+          total: allCerts.length,
+          pending: allCerts.filter(c => c.nftStatus === "pending").length,
+          minting: allCerts.filter(c => c.nftStatus === "minting").length,
+          claimed: allCerts.filter(c => c.nftStatus === "claimed").length,
+        },
+        reservations: {
+          total: reservations.length,
+          pending: reservations.filter(r => r.status === "pending").length,
+          finalized: reservations.filter(r => r.status === "finalized").length,
+          expired: reservations.filter(r => r.status === "expired").length,
+        },
+        errors: {
+          total: errors.length,
+          unresolved: errors.filter(e => !e.resolved).length,
+          byCategory: errors.reduce((acc: Record<string, number>, e) => {
+            acc[e.category] = (acc[e.category] || 0) + 1;
+            return acc;
+          }, {}),
+        }
+      };
+      
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete a specific reservation (admin)
+  app.delete("/api/admin/reservations/:id", adminAuth, async (req: Request, res: Response) => {
+    try {
+      await mintStorage.deleteReservation(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

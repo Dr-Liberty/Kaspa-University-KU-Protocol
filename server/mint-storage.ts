@@ -196,7 +196,7 @@ class MintStorageService {
   }
 
   /**
-   * Delete a reservation (for cleanup)
+   * Delete a reservation by P2SH address (for cleanup)
    */
   async deleteReservation(p2shAddress: string): Promise<boolean> {
     try {
@@ -208,6 +208,54 @@ class MintStorageService {
     } catch (error: any) {
       console.error("[MintStorage] Failed to delete reservation:", error.message);
       return false;
+    }
+  }
+
+  /**
+   * Delete a reservation by ID
+   */
+  async deleteReservationById(id: string): Promise<boolean> {
+    try {
+      await db
+        .delete(pendingMintReservations)
+        .where(eq(pendingMintReservations.id, id));
+      
+      return true;
+    } catch (error: any) {
+      console.error("[MintStorage] Failed to delete reservation by id:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Delete reservations by certificate ID
+   */
+  async deleteReservationByCertificateId(certificateId: string): Promise<boolean> {
+    try {
+      await db
+        .delete(pendingMintReservations)
+        .where(eq(pendingMintReservations.certificateId, certificateId));
+      
+      return true;
+    } catch (error: any) {
+      console.error("[MintStorage] Failed to delete reservation by certificate:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get all reservations (for admin)
+   */
+  async getAllReservations(): Promise<PendingMintReservation[]> {
+    try {
+      const reservations = await db
+        .select()
+        .from(pendingMintReservations);
+      
+      return reservations as PendingMintReservation[];
+    } catch (error: any) {
+      console.error("[MintStorage] Failed to get all reservations:", error.message);
+      return [];
     }
   }
 
