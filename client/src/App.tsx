@@ -10,6 +10,7 @@ import Landing from "@/pages/landing";
 import Courses from "@/pages/courses";
 import CourseDetail from "@/pages/course-detail";
 import Dashboard from "@/pages/dashboard";
+import Rewards from "@/pages/rewards";
 import Certificates from "@/pages/certificates";
 import Analytics from "@/pages/analytics";
 import VerifyPage from "@/pages/verify";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/courses" component={Courses} />
       <Route path="/courses/:id" component={CourseDetail} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/rewards" component={Rewards} />
       <Route path="/certificates" component={Certificates} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/verify" component={VerifyExplorerPage} />

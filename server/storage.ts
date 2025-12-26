@@ -28,6 +28,9 @@ export interface IStorage {
   getQuizQuestionsByLesson(lessonId: string): Promise<QuizQuestion[]>;
   saveQuizResult(result: Omit<QuizResult, "id" | "completedAt">): Promise<QuizResult>;
   getQuizResultsByUser(userId: string): Promise<QuizResult[]>;
+  getQuizResult(id: string): Promise<QuizResult | undefined>;
+  updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined>;
+  getClaimableRewards(userId: string): Promise<QuizResult[]>;
 
   getCertificatesByUser(userId: string): Promise<Certificate[]>;
   getCertificate(id: string): Promise<Certificate | undefined>;
@@ -662,6 +665,24 @@ const balances = await indexer.getKRC20Balances({
 
   async getQuizResultsByUser(userId: string): Promise<QuizResult[]> {
     return Array.from(this.quizResults.values()).filter((r) => r.userId === userId);
+  }
+
+  async getQuizResult(id: string): Promise<QuizResult | undefined> {
+    return this.quizResults.get(id);
+  }
+
+  async updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined> {
+    const result = this.quizResults.get(id);
+    if (!result) return undefined;
+    const updated = { ...result, ...updates };
+    this.quizResults.set(id, updated);
+    return updated;
+  }
+
+  async getClaimableRewards(userId: string): Promise<QuizResult[]> {
+    return Array.from(this.quizResults.values())
+      .filter((r) => r.userId === userId && r.passed && r.kasRewarded > 0 && r.rewardStatus === "pending")
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
 
   async getCertificatesByUser(userId: string): Promise<Certificate[]> {

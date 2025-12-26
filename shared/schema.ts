@@ -64,6 +64,7 @@ export const quizResultSchema = z.object({
   passed: z.boolean(),
   kasRewarded: z.number(),
   txHash: z.string().optional(),
+  rewardStatus: z.enum(["pending", "claiming", "claimed"]).default("pending"),
   completedAt: z.date(),
 });
 

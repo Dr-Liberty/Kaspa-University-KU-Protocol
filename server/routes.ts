@@ -431,49 +431,20 @@ export async function registerRoutes(
     const baseKasReward = passed ? kasPerLesson : 0;
     const kasRewarded = baseKasReward * rewardMultiplier;
 
-    let txHash: string | undefined;
-    let actualKasRewarded = 0;
-
-    if (passed && kasRewarded > 0) {
-      const kaspaService = await getKaspaService();
-      const txResult = await kaspaService.sendReward(
-        walletAddress,
-        kasRewarded,
-        lessonId,
-        score,
-        course.id,
-        100,
-        answers
-      );
-
-      if (txResult.success && txResult.txHash) {
-        txHash = txResult.txHash;
-        actualKasRewarded = kasRewarded;
-        console.log(`[Quiz] Reward sent with on-chain proof: ${kasRewarded} KAS, txHash: ${txHash}`);
-      } else {
-        console.error(`[Quiz] Reward failed: ${txResult.error}`);
-        if (txResult.txHash?.startsWith("demo_")) {
-          txHash = txResult.txHash;
-          actualKasRewarded = kasRewarded;
-        }
-      }
-    }
-
+    // Save quiz result - rewards are now claimed by user later
     const result = await storage.saveQuizResult({
       lessonId,
       userId: user.id,
       score,
       passed,
-      kasRewarded: actualKasRewarded,
-      txHash,
+      kasRewarded: passed ? kasRewarded : 0,
+      rewardStatus: "pending",
     });
 
-    await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, actualKasRewarded);
+    await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, kasRewarded);
 
-    // Only update user KAS and progress if transaction succeeded (or demo mode)
-    if (passed && actualKasRewarded > 0) {
-      await storage.updateUserKas(user.id, actualKasRewarded);
-
+    // Update progress when quiz is passed (rewards claimed separately)
+    if (passed) {
       const progress = await storage.getOrCreateProgress(user.id, lesson.courseId);
       await storage.updateProgress(progress.id, lessonId);
 
@@ -574,6 +545,110 @@ export async function registerRoutes(
       return res.status(404).json({ error: "Certificate not found" });
     }
     res.json(certificate);
+  });
+
+  // Get claimable rewards for user
+  app.get("/api/rewards/claimable", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.json([]);
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.json([]);
+    }
+
+    const claimable = await storage.getClaimableRewards(user.id);
+    
+    // Enrich with lesson/course info
+    const enriched = await Promise.all(claimable.map(async (r) => {
+      const lesson = await storage.getLesson(r.lessonId);
+      const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+      return {
+        ...r,
+        lessonTitle: lesson?.title || "Unknown Lesson",
+        courseTitle: course?.title || "Unknown Course",
+        courseId: lesson?.courseId,
+      };
+    }));
+
+    res.json(enriched);
+  });
+
+  // Claim a reward
+  app.post("/api/rewards/:resultId/claim", rewardRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    if (walletAddress.startsWith("demo:")) {
+      return res.status(400).json({ error: "Connect a real wallet to claim rewards" });
+    }
+
+    const { resultId } = req.params;
+    const result = await storage.getQuizResult(resultId);
+    
+    if (!result) {
+      return res.status(404).json({ error: "Quiz result not found" });
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user || result.userId !== user.id) {
+      return res.status(403).json({ error: "Not authorized to claim this reward" });
+    }
+
+    if (result.rewardStatus !== "pending") {
+      return res.status(400).json({ error: "Reward already claimed or in progress" });
+    }
+
+    if (!result.passed || result.kasRewarded <= 0) {
+      return res.status(400).json({ error: "No reward available for this quiz" });
+    }
+
+    // Mark as claiming
+    await storage.updateQuizResult(resultId, { rewardStatus: "claiming" });
+
+    try {
+      const kaspaService = await getKaspaService();
+      const lesson = await storage.getLesson(result.lessonId);
+      const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+
+      const txResult = await kaspaService.sendReward(
+        walletAddress,
+        result.kasRewarded,
+        result.lessonId,
+        result.score,
+        course?.id || result.lessonId.split("-")[0],
+        100,
+        []
+      );
+
+      if (txResult.success && txResult.txHash) {
+        await storage.updateQuizResult(resultId, { 
+          rewardStatus: "claimed", 
+          txHash: txResult.txHash 
+        });
+        await storage.updateUserKas(user.id, result.kasRewarded);
+        
+        console.log(`[Claim] Reward claimed: ${result.kasRewarded} KAS, txHash: ${txResult.txHash}`);
+        
+        res.json({ 
+          success: true, 
+          txHash: txResult.txHash, 
+          amount: result.kasRewarded 
+        });
+      } else {
+        await storage.updateQuizResult(resultId, { rewardStatus: "pending" });
+        console.error(`[Claim] Failed: ${txResult.error}`);
+        res.status(500).json({ error: "Transaction failed", message: txResult.error });
+      }
+    } catch (error: any) {
+      await storage.updateQuizResult(resultId, { rewardStatus: "pending" });
+      console.error(`[Claim] Error: ${error.message}`);
+      res.status(500).json({ error: "Failed to process claim" });
+    }
   });
 
   app.get("/api/qa/:lessonId", async (req: Request, res: Response) => {
