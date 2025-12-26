@@ -52,8 +52,8 @@ const DEFAULT_CONFIG: AntiSybilConfig = {
   maxDailyRewardKas: 5,
   maxQuizAttemptsPerLesson: 3, // 3 attempts per lesson per day
   minTrustScoreForRewards: 0.3,
-  newWalletRewardMultiplier: 0.5,
-  walletAgeDaysForFullRewards: 7,
+  newWalletRewardMultiplier: 1.0, // Full rewards for new wallets - many users create first wallet to learn
+  walletAgeDaysForFullRewards: 0, // No waiting period - instant full rewards
 };
 
 class AntiSybilService {
