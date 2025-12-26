@@ -63,6 +63,32 @@ interface CertificateMetadata {
 // KRC-721 spec fees (per aspectron/krc721)
 // Deploy = 1000 KAS minimum, Mint = 10 KAS minimum
 const KRC721_MINT_FEE_KAS = "10.5"; // 10 KAS minimum + buffer for network fees
+const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
+
+// Import the database-backed mint storage service
+import { mintStorage, PendingMintReservation } from "./mint-storage";
+
+// Re-export the database-backed functions
+export async function getAndClearExpiredCertificateIds(): Promise<string[]> {
+  return await mintStorage.markExpiredReservations();
+}
+
+export async function hasActiveReservation(certificateId: string): Promise<boolean> {
+  return await mintStorage.hasActiveReservation(certificateId);
+}
+
+export async function getPendingMintByCertificateId(certificateId: string): Promise<PendingMintReservation | null> {
+  return await mintStorage.getByCertificateId(certificateId);
+}
+
+export async function updatePendingMintCommitTx(p2shAddress: string, commitTxHash: string): Promise<boolean> {
+  return await mintStorage.updateCommitTx(p2shAddress, commitTxHash);
+}
+
+// Cleanup old reservations every hour
+setInterval(async () => {
+  await mintStorage.cleanupOldReservations();
+}, 60 * 60 * 1000);
 
 // Default configuration for Kaspa University Certificates
 const DEFAULT_CONFIG: KRC721Config = {
@@ -84,6 +110,8 @@ class KRC721Service {
   private publicKey: any = null;
   private address: string | null = null;
   private collectionDeployed: boolean = false;
+  // In-memory cache for current session (script objects can't be serialized)
+  private _pendingMints: Map<string, { script: any; mintData: any; tokenId: number; certificateId: string; recipientAddress: string }> = new Map();
 
   constructor(config: Partial<KRC721Config> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -512,6 +540,356 @@ class KRC721Service {
       console.error("[KRC721] Mint failed:", error.message);
       return { success: false, error: error.message, tokenId };
     }
+  }
+
+  /**
+   * Prepare a non-custodial NFT mint
+   * 
+   * Returns the P2SH address and amount for the user to send directly from their wallet.
+   * This is fully non-custodial - funds go directly from user to P2SH, never through treasury.
+   * 
+   * @param certificateId - The certificate ID to mint
+   * @param recipientAddress - The wallet address to receive the certificate
+   * @param courseName - Name of the completed course
+   * @param score - Quiz/course score
+   * @param completionDate - Date of completion
+   * @param imageUrl - IPFS URL for certificate image
+   */
+  async prepareMint(
+    certificateId: string,
+    recipientAddress: string,
+    courseName: string,
+    score: number,
+    completionDate: Date,
+    imageUrl: string
+  ): Promise<{ success: boolean; p2shAddress?: string; amountSompi?: string; tokenId?: number; expiresAt?: number; error?: string }> {
+    // Validate recipient address
+    const validation = this.validateAddress(recipientAddress);
+    if (!validation.valid) {
+      console.error(`[KRC721] Invalid recipient address: ${validation.error}`);
+      return { success: false, error: `Invalid recipient address: ${validation.error}` };
+    }
+
+    // Validate IPFS URL
+    const isIpfsUrl = imageUrl.startsWith("ipfs://");
+    const isDataUri = imageUrl.startsWith("data:");
+    
+    if (!isIpfsUrl && !isDataUri) {
+      return { success: false, error: "Image URL must use ipfs:// protocol" };
+    }
+
+    // Get token ID
+    const tokenId = await this.getNextTokenId();
+
+    if (!this.isLive()) {
+      // Demo mode - return simulated data
+      const demoP2sh = `kaspa:demo_p2sh_${Date.now().toString(16)}`;
+      console.log(`[KRC721] Demo mode - simulating mint preparation for token #${tokenId}`);
+      return {
+        success: true,
+        p2shAddress: demoP2sh,
+        amountSompi: KRC721_MINT_FEE_SOMPI.toString(),
+        tokenId,
+        expiresAt: Date.now() + 15 * 60 * 1000, // 15 minute expiry
+      };
+    }
+
+    // Production mode - require IPFS URLs
+    if (!isIpfsUrl) {
+      return { 
+        success: false, 
+        error: "IPFS URL required. Configure Pinata credentials for NFT minting." 
+      };
+    }
+
+    try {
+      const {
+        ScriptBuilder,
+        Opcodes,
+        addressFromScriptPublicKey,
+      } = this.kaspaModule;
+
+      // Create mint data with certificate metadata
+      const mintData = {
+        p: "krc-721",
+        op: "mint",
+        tick: this.config.ticker,
+        to: recipientAddress,
+        metadata: {
+          name: `KU Certificate #${tokenId}: ${courseName}`,
+          description: `Kaspa University course completion certificate for "${courseName}". Earned with a score of ${score}%.`,
+          image: imageUrl,
+          attributes: [
+            { traitType: "Course", value: courseName },
+            { traitType: "Score", value: score },
+            { traitType: "Completion Date", value: completionDate.toISOString().split("T")[0] },
+            { traitType: "Recipient", value: recipientAddress },
+            { traitType: "Token ID", value: tokenId },
+            { traitType: "Platform", value: "Kaspa University" },
+          ],
+        },
+      };
+
+      // Build inscription script
+      const script = new ScriptBuilder()
+        .addData(this.publicKey.toXOnlyPublicKey().toString())
+        .addOp(Opcodes.OpCheckSig)
+        .addOp(Opcodes.OpFalse)
+        .addOp(Opcodes.OpIf)
+        .addData(Buffer.from("kspr"))
+        .addI64(BigInt(0))
+        .addData(Buffer.from(JSON.stringify(mintData, null, 0)))
+        .addOp(Opcodes.OpEndIf);
+
+      // Get P2SH address
+      const P2SHAddress = addressFromScriptPublicKey(
+        script.createPayToScriptHashScript(),
+        this.config.network
+      )!;
+
+      const p2shAddressStr = P2SHAddress.toString();
+      const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minute expiry
+
+      // Store pending mint in database for finalization
+      const reservation = await mintStorage.createReservation({
+        certificateId,
+        recipientAddress,
+        tokenId,
+        p2shAddress: p2shAddressStr,
+        scriptData: script.toString(), // Serialize script for storage
+        mintData,
+        expiresAt: new Date(expiresAt),
+      });
+
+      if (!reservation) {
+        return { success: false, error: "Failed to store mint reservation" };
+      }
+
+      // Also keep in memory for the current session (faster lookup)
+      this._pendingMints.set(p2shAddressStr, {
+        script,
+        mintData,
+        tokenId,
+        certificateId,
+        recipientAddress,
+      });
+
+      console.log(`[KRC721] Prepared non-custodial mint #${tokenId} -> P2SH: ${p2shAddressStr.slice(0, 25)}...`);
+
+      return {
+        success: true,
+        p2shAddress: p2shAddressStr,
+        amountSompi: KRC721_MINT_FEE_SOMPI.toString(),
+        tokenId,
+        expiresAt,
+      };
+    } catch (error: any) {
+      console.error("[KRC721] Prepare mint failed:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Finalize a non-custodial NFT mint after user has sent funds to P2SH
+   * 
+   * Verifies the commit transaction exists and submits the reveal transaction.
+   * 
+   * @param p2shAddress - The P2SH address user sent funds to
+   * @param certificateId - The certificate ID being minted (for verification)
+   * @param commitTxHash - The transaction hash of the user's commit (optional, for verification)
+   */
+  async finalizeMint(
+    p2shAddress: string,
+    certificateId: string,
+    commitTxHash?: string
+  ): Promise<MintResult> {
+    // First try in-memory cache (for current session)
+    let pending = this._pendingMints.get(p2shAddress);
+    
+    // If not in memory, check database
+    let dbReservation = await mintStorage.getByP2shAddress(p2shAddress);
+    
+    if (!pending && !dbReservation) {
+      console.error(`[KRC721] No pending mint found for P2SH: ${p2shAddress.slice(0, 25)}...`);
+      return { success: false, error: "Mint reservation not found or expired" };
+    }
+
+    // Verify the certificate ID matches
+    const reservationCertId = pending?.certificateId || dbReservation?.certificateId;
+    if (reservationCertId !== certificateId) {
+      console.error(`[KRC721] Certificate ID mismatch: expected ${reservationCertId}, got ${certificateId}`);
+      return { success: false, error: "Certificate ID mismatch" };
+    }
+
+    // Check expiry from database
+    if (dbReservation) {
+      const expiresAt = dbReservation.expiresAt.getTime();
+      if (expiresAt < Date.now() && dbReservation.status === "pending") {
+        await mintStorage.markFailed(p2shAddress);
+        return { success: false, error: "Mint reservation expired", expired: true } as any;
+      }
+    }
+
+    const tokenId = pending?.tokenId || dbReservation?.tokenId || 0;
+
+    if (!this.isLive()) {
+      // Demo mode - simulate success
+      this._pendingMints.delete(p2shAddress);
+      if (dbReservation) await mintStorage.markFinalized(p2shAddress);
+      console.log(`[KRC721] Demo mode - simulating finalization for token #${tokenId}`);
+      return {
+        success: true,
+        commitTxHash: commitTxHash || `demo_commit_${Date.now().toString(16)}`,
+        revealTxHash: `demo_reveal_${Date.now().toString(16)}`,
+        tokenId,
+      };
+    }
+
+    // In production, we need the script object for signing
+    // If we only have database data (server restarted), we need to rebuild the script
+    if (!pending && dbReservation) {
+      // Try to rebuild the script from stored data
+      try {
+        const mintData = JSON.parse(dbReservation.mintData);
+        const {
+          ScriptBuilder,
+          Opcodes,
+        } = this.kaspaModule;
+
+        // Rebuild the inscription script
+        const script = new ScriptBuilder()
+          .addData(this.publicKey.toXOnlyPublicKey().toString())
+          .addOp(Opcodes.OpCheckSig)
+          .addOp(Opcodes.OpFalse)
+          .addOp(Opcodes.OpIf)
+          .addData(Buffer.from("kspr"))
+          .addI64(BigInt(0))
+          .addData(Buffer.from(JSON.stringify(mintData, null, 0)))
+          .addOp(Opcodes.OpEndIf);
+
+        pending = {
+          script,
+          mintData,
+          tokenId: dbReservation.tokenId,
+          certificateId: dbReservation.certificateId,
+          recipientAddress: dbReservation.recipientAddress,
+        };
+        
+        console.log(`[KRC721] Rebuilt script from database for certificate ${certificateId}`);
+      } catch (rebuildError: any) {
+        console.error(`[KRC721] Failed to rebuild script: ${rebuildError.message}`);
+        return { 
+          success: false, 
+          error: "Server restarted. Mint reservation lost - please start over.",
+          tokenId 
+        };
+      }
+    }
+
+    if (!pending) {
+      return { success: false, error: "Mint data not available", tokenId };
+    }
+
+    try {
+      const { createTransactions, kaspaToSompi } = this.kaspaModule;
+
+      // Step 1: Verify UTXO exists at P2SH address (user's commit transaction)
+      console.log(`[KRC721] Checking for UTXO at ${p2shAddress.slice(0, 25)}...`);
+      
+      const { entries: p2shEntries } = await this.rpcClient.getUtxosByAddresses({
+        addresses: [p2shAddress],
+      });
+
+      if (p2shEntries.length === 0) {
+        return { 
+          success: false, 
+          error: "Funds not yet received at P2SH address. Please wait for your transaction to confirm." 
+        };
+      }
+
+      // Verify amount is sufficient
+      const p2shUtxo = p2shEntries[0];
+      const receivedAmount = BigInt(p2shUtxo.utxoEntry?.amount || p2shUtxo.entry?.utxoEntry?.amount || 0);
+      
+      if (receivedAmount < BigInt(kaspaToSompi("10")!)) {
+        return {
+          success: false,
+          error: `Insufficient funds at P2SH. Received: ${Number(receivedAmount) / 1e8} KAS, Required: 10 KAS minimum`,
+        };
+      }
+
+      console.log(`[KRC721] Found ${Number(receivedAmount) / 1e8} KAS at P2SH. Proceeding with reveal...`);
+
+      // Step 2: Get treasury UTXOs for reveal transaction fees
+      const { entries: treasuryEntries } = await this.rpcClient.getUtxosByAddresses({
+        addresses: [this.address!],
+      });
+
+      // Step 3: Create reveal transaction
+      const { transactions: revealTxs } = await createTransactions({
+        priorityEntries: [p2shUtxo], // P2SH UTXO first
+        entries: treasuryEntries, // Treasury UTXOs for fee
+        outputs: [], // All funds go to change
+        changeAddress: this.address!, // Change goes to treasury (covers reveal fee)
+        priorityFee: kaspaToSompi("0.5")!,
+        networkId: this.config.network,
+      });
+
+      // Step 4: Sign reveal transaction with script signature
+      let revealTxHash: string | undefined;
+      
+      for (const tx of revealTxs) {
+        tx.sign([this.privateKey], false);
+
+        // Find and fill the P2SH input with inscription script
+        const p2shInputIndex = tx.transaction.inputs.findIndex(
+          (input: any) => input.signatureScript === ""
+        );
+
+        if (p2shInputIndex !== -1) {
+          const signature = await tx.createInputSignature(p2shInputIndex, this.privateKey);
+          tx.fillInput(
+            p2shInputIndex,
+            pending.script.encodePayToScriptHashSignatureScript(signature)
+          );
+        }
+
+        revealTxHash = await tx.submit(this.rpcClient);
+        console.log(`[KRC721] Reveal tx: ${revealTxHash}`);
+      }
+
+      // Clean up pending mint from cache and mark as finalized in database
+      this._pendingMints.delete(p2shAddress);
+      await mintStorage.markFinalized(p2shAddress);
+
+      // Wait for confirmation
+      if (revealTxHash) {
+        await this.waitForConfirmation(revealTxHash, 60000);
+      }
+
+      console.log(`[KRC721] Non-custodial mint #${tokenId} completed successfully!`);
+
+      return {
+        success: true,
+        commitTxHash: commitTxHash,
+        revealTxHash,
+        tokenId,
+      };
+    } catch (error: any) {
+      console.error("[KRC721] Finalize mint failed:", error.message);
+      return { success: false, error: error.message, tokenId };
+    }
+  }
+
+  /**
+   * Get the mint fee info for display to users
+   */
+  getMintFeeInfo(): { kasAmount: string; sompiAmount: string; description: string } {
+    return {
+      kasAmount: KRC721_MINT_FEE_KAS,
+      sompiAmount: KRC721_MINT_FEE_SOMPI.toString(),
+      description: "KRC-721 NFT mint fee (10 KAS minimum per spec + network fees)",
+    };
   }
 
   /**

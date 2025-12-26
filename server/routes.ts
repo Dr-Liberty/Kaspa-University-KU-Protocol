@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import { getKaspaService } from "./kaspa";
 import { createQuizPayload } from "./ku-protocol.js";
-import { getKRC721Service } from "./krc721";
+import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation } from "./krc721";
 import { getPinataService } from "./pinata";
 import { getAntiSybilService } from "./anti-sybil";
 import { 
@@ -156,7 +156,6 @@ export async function registerRoutes(
           type: "completion",
           description: `User completed '${course?.title || "Quiz"}'`,
           timestamp: timeStr,
-          txHash: result.txHash || undefined,
         });
       }
       
@@ -170,7 +169,7 @@ export async function registerRoutes(
           type: post.parentId ? "answer" : "question",
           description: post.parentId ? "New answer posted in Q&A" : "New question asked in Q&A",
           timestamp: timeStr,
-          txHash: post.txId || undefined,
+          txHash: post.txHash || undefined,
         });
       }
 
@@ -800,21 +799,25 @@ export async function registerRoutes(
     }
   });
 
-  // Mint NFT certificate - treasury pays gas fees
-  app.post("/api/certificates/:id/mint", async (req: Request, res: Response) => {
+  // Prepare non-custodial NFT mint - returns P2SH address for user to pay directly
+  app.post("/api/nft/prepare/:id", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
     }
 
-    if (walletAddress.startsWith("demo:")) {
-      return res.status(403).json({ 
-        error: "Demo mode not supported for NFT minting",
-        message: "Connect a real Kaspa wallet to mint your NFT certificate"
-      });
-    }
-
     const { id } = req.params;
+    
+    // First, handle any expired reservations by resetting certificate status
+    const expiredIds = await getAndClearExpiredCertificateIds();
+    for (const expiredId of expiredIds) {
+      const cert = await storage.getCertificate(expiredId);
+      if (cert && cert.nftStatus === "minting") {
+        await storage.updateCertificate(expiredId, { nftStatus: "pending" });
+        console.log(`[Prepare] Reset expired certificate ${expiredId} status to pending`);
+      }
+    }
+    
     const certificate = await storage.getCertificate(id);
     if (!certificate) {
       return res.status(404).json({ error: "Certificate not found" });
@@ -828,15 +831,24 @@ export async function registerRoutes(
       return res.status(400).json({ error: "NFT already minted", nftTxHash: certificate.nftTxHash });
     }
     
+    // Check if there's an active (non-expired) reservation already
     if (certificate.nftStatus === "minting") {
-      return res.status(400).json({ error: "NFT minting already in progress" });
+      const hasActive = await hasActiveReservation(id);
+      if (hasActive) {
+        return res.status(409).json({ 
+          error: "Minting in progress", 
+          message: "A mint is already in progress for this certificate. Please wait or use the retry button."
+        });
+      } else {
+        // Reservation expired but status wasn't reset - reset it now
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+      }
     }
-
-    await storage.updateCertificate(id, { nftStatus: "minting" });
 
     try {
       const krc721Service = await getKRC721Service();
 
+      // Generate certificate image and upload to IPFS
       let imageUrl = certificate.imageUrl;
       if (!imageUrl) {
         const svgImage = krc721Service.generateCertificateImageSvg(
@@ -848,7 +860,7 @@ export async function registerRoutes(
         
         const pinataService = getPinataService();
         if (pinataService.isConfigured()) {
-          console.log(`[Mint] Uploading certificate to IPFS...`);
+          console.log(`[Prepare] Uploading certificate to IPFS...`);
           const uploadResult = await pinataService.uploadCertificate(
             svgImage,
             id,
@@ -866,9 +878,14 @@ export async function registerRoutes(
         } else {
           imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
         }
+        
+        // Save the image URL for later
+        await storage.updateCertificate(id, { imageUrl });
       }
 
-      const mintResult = await krc721Service.mintCertificate(
+      // Prepare non-custodial mint - returns P2SH address for user to pay
+      const prepareResult = await krc721Service.prepareMint(
+        id,
         certificate.recipientAddress,
         certificate.courseName,
         certificate.score || 100,
@@ -876,30 +893,120 @@ export async function registerRoutes(
         imageUrl
       );
 
-      if (mintResult.success && mintResult.revealTxHash) {
-        await storage.updateCertificate(id, {
-          nftStatus: "claimed",
-          nftTxHash: mintResult.revealTxHash,
-          imageUrl,
-        });
-
-        console.log(`[Mint] NFT minted for certificate ${id}, txHash: ${mintResult.revealTxHash}`);
+      if (prepareResult.success) {
+        await storage.updateCertificate(id, { nftStatus: "minting" });
+        
+        console.log(`[Prepare] Non-custodial mint prepared for certificate ${id}`);
         return res.json({
           success: true,
-          txHash: mintResult.revealTxHash,
+          p2shAddress: prepareResult.p2shAddress,
+          amountSompi: prepareResult.amountSompi,
+          amountKas: "10.5",
+          tokenId: prepareResult.tokenId,
+          expiresAt: prepareResult.expiresAt,
           imageUrl,
         });
       } else {
-        await storage.updateCertificate(id, { nftStatus: "pending" });
         return res.status(500).json({ 
-          error: "Minting failed",
-          message: mintResult.error || "NFT minting transaction failed"
+          error: "Prepare failed",
+          message: prepareResult.error || "Failed to prepare NFT mint"
+        });
+      }
+    } catch (error: any) {
+      console.error(`[Prepare] Error: ${error.message}`);
+      return res.status(500).json({ error: "Prepare failed", message: error.message });
+    }
+  });
+
+  // Finalize non-custodial NFT mint - verifies user's commit tx and submits reveal
+  app.post("/api/nft/finalize/:id", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { id } = req.params;
+    const { p2shAddress, commitTxHash } = req.body;
+
+    if (!p2shAddress) {
+      return res.status(400).json({ error: "P2SH address is required" });
+    }
+
+    const certificate = await storage.getCertificate(id);
+    if (!certificate) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    if (certificate.recipientAddress !== walletAddress) {
+      return res.status(403).json({ error: "You don't own this certificate" });
+    }
+
+    if (certificate.nftStatus === "claimed") {
+      return res.status(400).json({ error: "NFT already minted", nftTxHash: certificate.nftTxHash });
+    }
+
+    try {
+      const krc721Service = await getKRC721Service();
+
+      // Finalize the mint - server submits reveal transaction
+      const finalizeResult = await krc721Service.finalizeMint(p2shAddress, id, commitTxHash);
+
+      if (finalizeResult.success && finalizeResult.revealTxHash) {
+        await storage.updateCertificate(id, {
+          nftStatus: "claimed",
+          nftTxHash: finalizeResult.revealTxHash,
+        });
+
+        console.log(`[Finalize] NFT minted for certificate ${id}, txHash: ${finalizeResult.revealTxHash}`);
+        return res.json({
+          success: true,
+          commitTxHash: finalizeResult.commitTxHash,
+          revealTxHash: finalizeResult.revealTxHash,
+          tokenId: finalizeResult.tokenId,
+        });
+      } else {
+        // Check for specific error cases
+        const isPaymentPending = finalizeResult.error?.includes("not yet received");
+        const isExpired = (finalizeResult as any).expired === true;
+        const isNotFound = finalizeResult.error?.includes("not found");
+        
+        if (isPaymentPending) {
+          // Don't reset - funds may still be pending, allow retry
+          return res.status(202).json({ 
+            success: false,
+            error: "Payment pending",
+            message: finalizeResult.error,
+            retry: true,
+            p2shAddress
+          });
+        }
+        
+        // Reset status immediately on expiry or not found
+        if (isExpired || isNotFound) {
+          await storage.updateCertificate(id, { nftStatus: "pending" });
+          console.log(`[Finalize] Reset certificate ${id} status to pending (${isExpired ? "expired" : "not found"})`);
+          return res.status(410).json({ 
+            success: false,
+            error: isExpired ? "Reservation expired" : "Reservation not found",
+            message: "Your mint reservation expired or was not found. Please start again.",
+            retry: false,
+            statusReset: true // Inform frontend that status was reset
+          });
+        }
+        
+        // Reset status on other failures so user can retry
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+        
+        return res.status(500).json({ 
+          success: false,
+          error: "Finalize failed",
+          message: finalizeResult.error || "NFT minting transaction failed"
         });
       }
     } catch (error: any) {
       await storage.updateCertificate(id, { nftStatus: "pending" });
-      console.error(`[Mint] Error: ${error.message}`);
-      return res.status(500).json({ error: "Minting failed", message: error.message });
+      console.error(`[Finalize] Error: ${error.message}`);
+      return res.status(500).json({ success: false, error: "Finalize failed", message: error.message });
     }
   });
 
@@ -1064,16 +1171,19 @@ export async function registerRoutes(
     }
   });
 
-  // Get minting fee info
+  // Get minting fee info (non-custodial - user pays directly)
   app.get("/api/nft/fee", async (_req: Request, res: Response) => {
     try {
       const krc721Service = await getKRC721Service();
-      const info = await krc721Service.getCollectionInfo();
+      const feeInfo = krc721Service.getMintFeeInfo();
+      const collectionInfo = await krc721Service.getCollectionInfo();
       
       res.json({
-        mintingFee: 3.5, // KAS required for minting (commit + reveal + buffer)
-        treasuryAddress: info.address,
-        network: info.network,
+        mintingFeeKas: feeInfo.kasAmount,
+        mintingFeeSompi: feeInfo.sompiAmount,
+        description: feeInfo.description,
+        model: "non-custodial", // User pays directly to P2SH, not to treasury
+        network: collectionInfo.network,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

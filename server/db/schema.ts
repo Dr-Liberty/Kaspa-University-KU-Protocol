@@ -64,3 +64,19 @@ export const walletIpBindings = pgTable("wallet_ip_bindings", {
   primaryIp: text("primary_ip"),
   flagged: boolean("flagged").default(false).notNull(),
 });
+
+// Pending mint reservations for non-custodial NFT minting
+export const pendingMintReservations = pgTable("pending_mint_reservations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  certificateId: text("certificate_id").notNull(),
+  recipientAddress: text("recipient_address").notNull(),
+  tokenId: integer("token_id").notNull(),
+  p2shAddress: text("p2sh_address").notNull().unique(),
+  scriptData: text("script_data").notNull(), // JSON-serialized script data
+  mintData: text("mint_data").notNull(), // JSON-serialized mint metadata
+  commitTxHash: text("commit_tx_hash"), // User's commit transaction hash
+  status: text("status").default("pending").notNull(), // pending, paid, finalized, expired, failed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  finalizedAt: timestamp("finalized_at"),
+});

@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles, Wallet } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
@@ -14,44 +14,209 @@ interface CertificateCardProps {
   showActions?: boolean;
 }
 
+interface PrepareResponse {
+  success: boolean;
+  p2shAddress: string;
+  amountSompi: string;
+  amountKas: string;
+  tokenId: number;
+  expiresAt: number;
+  imageUrl: string;
+}
+
+interface FinalizeResponse {
+  success: boolean;
+  commitTxHash?: string;
+  revealTxHash: string;
+  tokenId: number;
+}
+
 export function CertificateCard({ certificate, showActions = true }: CertificateCardProps) {
   const { toast } = useToast();
   const { isDemoMode } = useWallet();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showImage, setShowImage] = useState(false);
+  const [mintStep, setMintStep] = useState<"idle" | "preparing" | "awaiting_payment" | "finalizing">("idle");
+  const [pendingP2sh, setPendingP2sh] = useState<string | null>(null);
+  const [pendingCommitTx, setPendingCommitTx] = useState<string | null>(null);
 
-  const claimMutation = useMutation({
+  // Non-custodial minting flow
+  const mintMutation = useMutation({
     mutationFn: async () => {
       if (isDemoMode) {
         throw new Error("Connect a real Kaspa wallet to mint your NFT certificate");
       }
       
+      // Check if KasWare is available
+      if (typeof window === "undefined" || !window.kasware) {
+        throw new Error("KasWare wallet not found. Please install the KasWare extension.");
+      }
+
+      // Step 1: Prepare the mint (get P2SH address)
+      setMintStep("preparing");
       toast({
-        title: "Minting NFT Certificate",
-        description: "Creating your certificate on the Kaspa blockchain...",
+        title: "Preparing NFT Mint",
+        description: "Generating inscription script...",
       });
       
-      const response = await apiRequest("POST", `/api/certificates/${certificate.id}/mint`);
-      return response.json();
+      const prepareRes = await apiRequest("POST", `/api/nft/prepare/${certificate.id}`);
+      const prepareData: PrepareResponse = await prepareRes.json();
+      
+      if (!prepareData.success) {
+        throw new Error("Failed to prepare mint");
+      }
+
+      setPendingP2sh(prepareData.p2shAddress);
+      
+      // Step 2: User pays directly via KasWare
+      setMintStep("awaiting_payment");
+      toast({
+        title: "Confirm Payment",
+        description: `Send ${prepareData.amountKas} KAS to mint your NFT certificate`,
+      });
+
+      // Use KasWare's sendKaspa to send funds directly to P2SH
+      // This is fully non-custodial - funds go directly from user to P2SH
+      let commitTxHash: string;
+      try {
+        commitTxHash = await window.kasware.sendKaspa(
+          prepareData.p2shAddress,
+          parseInt(prepareData.amountSompi) // Amount in sompi
+        );
+        // Store for potential retry
+        setPendingCommitTx(commitTxHash);
+      } catch (walletError: any) {
+        throw new Error(walletError.message || "Transaction rejected by wallet");
+      }
+
+      toast({
+        title: "Payment Sent",
+        description: "Waiting for confirmation...",
+      });
+
+      // Step 3: Wait a moment for transaction to propagate, then finalize
+      setMintStep("finalizing");
+      
+      // Give the network a few seconds to process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Finalize the mint (server submits reveal transaction)
+      const finalizeRes = await apiRequest("POST", `/api/nft/finalize/${certificate.id}`, {
+        p2shAddress: prepareData.p2shAddress,
+        commitTxHash,
+      });
+      
+      const finalizeData = await finalizeRes.json();
+      
+      if (!finalizeData.success) {
+        // Check if payment is still pending (202) - allow retry
+        if (finalizeRes.status === 202 && finalizeData.retry) {
+          // Store P2SH for retry and throw with specific message
+          setPendingP2sh(finalizeData.p2shAddress || prepareData.p2shAddress);
+          throw new Error("Transaction still pending. Please wait a moment and try again.");
+        }
+        // Check if reservation expired
+        if (finalizeRes.status === 410) {
+          throw new Error("Mint reservation expired. Please start the process again.");
+        }
+        throw new Error(finalizeData.message || "Failed to finalize mint");
+      }
+
+      return finalizeData as FinalizeResponse;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
+      setMintStep("idle");
+      setPendingP2sh(null);
+      setPendingCommitTx(null);
       toast({
         title: "NFT Minted Successfully",
-        description: data.txHash 
-          ? "Your certificate is now on the Kaspa blockchain!"
-          : "Your NFT certificate has been created!",
+        description: "Your certificate is now on the Kaspa blockchain!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
     },
     onError: (error: Error) => {
+      // Only reset to idle if not a retry-able error
+      const isRetryable = error.message.includes("pending") || error.message.includes("wait");
+      if (!isRetryable) {
+        setMintStep("idle");
+        setPendingP2sh(null);
+        setPendingCommitTx(null);
+      } else {
+        // Keep in finalizing state for retry
+        setMintStep("finalizing");
+      }
       toast({
-        title: "Minting Failed",
+        title: isRetryable ? "Still Processing" : "Minting Failed",
         description: error.message,
-        variant: "destructive",
+        variant: isRetryable ? "default" : "destructive",
       });
     },
   });
+
+  // Retry finalize if we have a pending P2SH
+  const retryFinalize = async () => {
+    if (!pendingP2sh) return;
+    
+    setMintStep("finalizing");
+    try {
+      const finalizeRes = await apiRequest("POST", `/api/nft/finalize/${certificate.id}`, {
+        p2shAddress: pendingP2sh,
+        commitTxHash: pendingCommitTx, // Include commitTxHash for verification
+      });
+      
+      // Defensive JSON parsing
+      let finalizeData;
+      try {
+        finalizeData = await finalizeRes.json();
+      } catch {
+        finalizeData = { success: false, message: "Invalid response from server" };
+      }
+      
+      if (finalizeData.success && finalizeData.revealTxHash) {
+        setMintStep("idle");
+        setPendingP2sh(null);
+        setPendingCommitTx(null);
+        toast({
+          title: "NFT Minted Successfully",
+          description: "Your certificate is now on the Kaspa blockchain!",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      } else if (finalizeRes.status === 202) {
+        toast({
+          title: "Still Processing",
+          description: "Transaction not yet confirmed. Please try again shortly.",
+        });
+      } else if (finalizeRes.status === 410) {
+        // Reservation expired, reset state and allow user to start over
+        setMintStep("idle");
+        setPendingP2sh(null);
+        setPendingCommitTx(null);
+        toast({
+          title: "Reservation Expired",
+          description: "Please start the minting process again.",
+          variant: "destructive",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      } else {
+        setMintStep("idle");
+        setPendingP2sh(null);
+        setPendingCommitTx(null);
+        toast({
+          title: "Minting Failed",
+          description: finalizeData.message || "Please try minting again.",
+          variant: "destructive",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Retry Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/certificates/${certificate.id}`;
@@ -85,8 +250,16 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
 
   const nftStatus = certificate.nftStatus || (certificate.nftTxHash ? "claimed" : "pending");
   const isPending = nftStatus === "pending";
-  const isMinting = nftStatus === "minting" || claimMutation.isPending;
+  const isMinting = nftStatus === "minting" || mintMutation.isPending;
   const isClaimed = nftStatus === "claimed";
+
+  const getMintButtonText = () => {
+    if (isDemoMode) return "Connect Wallet to Mint";
+    if (mintStep === "preparing") return "Preparing...";
+    if (mintStep === "awaiting_payment") return "Confirm in Wallet...";
+    if (mintStep === "finalizing") return "Finalizing...";
+    return "Mint NFT (10.5 KAS)";
+  };
 
   return (
     <Card
@@ -145,7 +318,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             </div>
           )}
           
-          {isPending && (
+          {isPending && !isMinting && (
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
                 <Sparkles className="h-3 w-3" />
@@ -158,7 +331,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-primary">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Minting...
+                {mintStep === "awaiting_payment" ? "Awaiting Payment..." : "Minting..."}
               </Badge>
             </div>
           )}
@@ -170,19 +343,76 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
               <div className="space-y-2">
                 <Button
                   className="w-full gap-2"
-                  onClick={() => claimMutation.mutate()}
-                  disabled={claimMutation.isPending || isDemoMode}
+                  onClick={() => mintMutation.mutate()}
+                  disabled={mintMutation.isPending || isDemoMode}
                   data-testid={`button-mint-${certificate.id}`}
                 >
-                  <Sparkles className="h-4 w-4" />
-                  {isDemoMode 
-                    ? "Connect Wallet to Mint" 
-                    : "Mint NFT"}
+                  {mintMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wallet className="h-4 w-4" />
+                  )}
+                  {getMintButtonText()}
                 </Button>
-                {isDemoMode && (
+                {isDemoMode ? (
                   <p className="text-xs text-center text-muted-foreground">
                     Connect a real Kaspa wallet to mint your NFT
                   </p>
+                ) : (
+                  <p className="text-xs text-center text-muted-foreground">
+                    You pay the mint fee directly from your wallet
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {isMinting && (
+              <div className="space-y-2">
+                {mintStep === "finalizing" && pendingP2sh ? (
+                  <>
+                    <Button 
+                      className="w-full gap-2"
+                      onClick={retryFinalize}
+                      disabled={mintMutation.isPending}
+                      data-testid={`button-retry-${certificate.id}`}
+                    >
+                      {mintMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wallet className="h-4 w-4" />
+                      )}
+                      Retry Finalize
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Your payment was sent. Click to retry finalization.
+                    </p>
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => {
+                        setMintStep("idle");
+                        setPendingP2sh(null);
+                        setPendingCommitTx(null);
+                        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+                      }}
+                      data-testid={`button-cancel-${certificate.id}`}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button className="w-full gap-2" disabled>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {getMintButtonText()}
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      {mintStep === "awaiting_payment" 
+                        ? "Please confirm the transaction in your KasWare wallet"
+                        : "Processing your NFT mint..."}
+                    </p>
+                  </>
                 )}
               </div>
             )}
@@ -223,7 +453,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   data-testid={`button-view-${certificate.id}`}
                 >
                   <a
-                    href={`https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
+                    href={`https://kaspa.stream/tx/${certificate.nftTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -239,3 +469,4 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     </Card>
   );
 }
+

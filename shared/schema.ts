@@ -225,5 +225,25 @@ export const walletIpBindingSchema = z.object({
 
 export type WalletIpBinding = z.infer<typeof walletIpBindingSchema>;
 
+// Pending mint reservations for non-custodial NFT minting
+export const pendingMintReservationSchema = z.object({
+  id: z.string(),
+  certificateId: z.string(),
+  recipientAddress: z.string(),
+  tokenId: z.number(),
+  p2shAddress: z.string(),
+  scriptData: z.string(), // JSON-serialized script data
+  mintData: z.string(), // JSON-serialized mint data
+  commitTxHash: z.string().optional(), // User's commit transaction hash
+  status: z.enum(["pending", "paid", "finalized", "expired", "failed"]).default("pending"),
+  createdAt: z.date(),
+  expiresAt: z.date(),
+  finalizedAt: z.date().optional(),
+});
+
+export type PendingMintReservation = z.infer<typeof pendingMintReservationSchema>;
+export const insertPendingMintReservationSchema = pendingMintReservationSchema.omit({ id: true, createdAt: true });
+export type InsertPendingMintReservation = z.infer<typeof insertPendingMintReservationSchema>;
+
 // Re-export Drizzle table definitions for database migrations
 export * from "../server/db/schema";

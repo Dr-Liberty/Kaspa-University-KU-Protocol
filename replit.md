@@ -75,15 +75,27 @@ Preferred communication style: Simple, everyday language.
 - **Collection**: KPROOF (Kaspa Proof of Learning)
 - **Pattern**: Commit-and-Reveal transaction for NFT inscriptions
 - **Implementation**: `server/krc721.ts` for minting, `server/routes.ts` for API
+- **Non-Custodial Model**: Users pay 10.5 KAS directly from their wallet to a P2SH address
+  - Platform never has custody of user funds
+  - Funds go directly from user wallet to script-controlled P2SH address
+  - Server only submits the reveal transaction after user's commit is confirmed
 - **Spec Compliance**:
   - Mint fee: 10.5 KAS (10 KAS minimum per spec + buffer)
   - IPFS URLs required (ipfs:// prefix) - data URIs rejected in production
   - Uses kspr marker in inscription script
 - **Endpoints**:
   - `GET /api/nft/collection` - Collection info and status
-  - `POST /api/certificates/:id/mint` - Treasury-funded NFT minting (no user payment)
+  - `POST /api/nft/prepare/:id` - Prepare non-custodial mint, returns P2SH address for user to pay
+  - `POST /api/nft/finalize/:id` - Finalize mint after user payment confirmed
+  - `GET /api/nft/fee` - Get minting fee info
   - `GET /api/nft/preview` - Generate certificate image preview
-- **Treasury-pays model**: Treasury absorbs ~10.5 KAS minting fee per certificate
+- **Minting Flow**:
+  1. User clicks "Mint NFT" on certificate card
+  2. Server calls `prepareMint()` - generates inscription script, returns P2SH address
+  3. User confirms payment in KasWare wallet (sendKaspa to P2SH)
+  4. Frontend calls `finalize` endpoint with P2SH address
+  5. Server verifies commit transaction, submits reveal transaction
+  6. NFT is minted on-chain
 - **Certificate states**: `pending` -> `minting` -> `claimed`
 - **IPFS Requirement**: Pinata credentials required for production minting
 - **Demo mode**: NFT minting simulated in demo mode (requires real wallet for production)
