@@ -1060,19 +1060,64 @@ class KaspaService {
 
     console.log(`[Kaspa] Using ${reservedEntries.length} reserved entries for transaction`);
 
+    // Convert RPC entries to WASM-compatible IUtxoEntry format
+    // Per https://kaspa.aspectron.org/docs/interfaces/IUtxoEntry.html:
+    // - address?: Address (optional)
+    // - amount: bigint
+    // - blockDaaScore: bigint
+    // - isCoinbase: boolean
+    // - outpoint: ITransactionOutpoint
+    // - scriptPublicKey: IScriptPublicKey { script: string, version: number }
+    const wasmEntries = reservedEntries.map((e: any) => {
+      // Extract the scriptPublicKey hex string
+      const spkHex = e.utxoEntry?.scriptPublicKey?.scriptPublicKey || 
+                     e.utxoEntry?.scriptPublicKey?.script ||
+                     (typeof e.utxoEntry?.scriptPublicKey === 'string' ? e.utxoEntry.scriptPublicKey : "") ||
+                     e.scriptPublicKey?.scriptPublicKey ||
+                     e.scriptPublicKey?.script ||
+                     (typeof e.scriptPublicKey === 'string' ? e.scriptPublicKey : "");
+      
+      const spkVersion = e.utxoEntry?.scriptPublicKey?.version ?? 
+                         e.scriptPublicKey?.version ?? 0;
+      
+      const entry = {
+        address: e.address || this.treasuryAddress,
+        outpoint: {
+          transactionId: e.outpoint?.transactionId || "",
+          index: e.outpoint?.index ?? 0
+        },
+        amount: BigInt(e.utxoEntry?.amount || e.amount || 0),
+        // IScriptPublicKey format: { script: string, version: number }
+        scriptPublicKey: {
+          script: spkHex,
+          version: spkVersion
+        },
+        blockDaaScore: BigInt(e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0),
+        isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
+      };
+      console.log(`[Kaspa] UTXO: ${entry.outpoint.transactionId.slice(0,12)}:${entry.outpoint.index}, amount: ${entry.amount}, spk.version: ${entry.scriptPublicKey.version}`);
+      return entry;
+    });
+
     try {
+      console.log(`[Kaspa] Building transaction...`);
+      
       // Create private key object from our derived key
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+      console.log(`[Kaspa] Private key hex: ${privateKeyHex.slice(0,8)}...`);
       const privateKey = new PrivateKey(privateKeyHex);
+      console.log(`[Kaspa] PrivateKey object created`);
 
       // Convert amount to sompi
       const amountSompi = kaspaToSompi(amountKas);
       const priorityFee = kaspaToSompi(0.0001);
+      console.log(`[Kaspa] Amounts: ${amountSompi} sompi, fee: ${priorityFee}`);
 
-      // Create and sign transaction using WASM with ONLY reserved entries
-      // Include quiz proof payload for on-chain verification
+      // Create transaction using WASM with properly formatted IUtxoEntry array
+      // Use "utxoEntries" key per IGeneratorSettingsObject interface
+      // Use "address" key for outputs (not "recipient")
       const txOptions: any = {
-        entries: reservedEntries,
+        utxoEntries: wasmEntries,
         outputs: [{
           address: recipientAddress,
           amount: amountSompi
@@ -1086,6 +1131,16 @@ class KaspaService {
         txOptions.payload = quizPayload;
         console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
       }
+
+      // Log transaction options for debugging
+      console.log(`[Kaspa] createTransactions: ${wasmEntries.length} UTXOs, output: ${amountSompi}, change: ${this.treasuryAddress.slice(0, 20)}...`);
+      console.log(`[Kaspa] First UTXO entry:`, {
+        address: String(wasmEntries[0]?.address || 'none'),
+        txId: wasmEntries[0]?.outpoint?.transactionId?.slice(0, 12) || 'none',
+        amount: String(wasmEntries[0]?.amount || 0),
+        spkVersion: wasmEntries[0]?.scriptPublicKey?.version,
+        spkScript: String(wasmEntries[0]?.scriptPublicKey?.script || '').slice(0, 20) + '...'
+      });
 
       let transactions, summary;
       try {

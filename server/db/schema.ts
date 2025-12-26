@@ -80,3 +80,80 @@ export const pendingMintReservations = pgTable("pending_mint_reservations", {
   expiresAt: timestamp("expires_at").notNull(),
   finalizedAt: timestamp("finalized_at"),
 });
+
+// ========= USER DATA TABLES (persistent across restarts) =========
+
+// Users - wallet-based authentication
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  walletAddress: text("wallet_address").notNull().unique(),
+  displayName: text("display_name"),
+  totalKasEarned: real("total_kas_earned").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Quiz results - individual lesson quiz completions
+export const quizResults = pgTable("quiz_results", {
+  id: text("id").primaryKey(),
+  lessonId: text("lesson_id").notNull(),
+  userId: text("user_id").notNull(),
+  score: integer("score").notNull(),
+  passed: boolean("passed").notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+});
+
+// Course rewards - pending/claimed KAS rewards for completed courses
+export const courseRewards = pgTable("course_rewards", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").notNull(),
+  userId: text("user_id").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  kasAmount: real("kas_amount").notNull(),
+  averageScore: real("average_score").notNull(),
+  status: text("status").default("pending").notNull(), // pending, claiming, confirming, claimed, failed
+  txHash: text("tx_hash"),
+  txConfirmed: boolean("tx_confirmed"),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  claimedAt: timestamp("claimed_at"),
+});
+
+// Certificates - NFT certificates for course completion
+export const certificates = pgTable("certificates", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").notNull(),
+  userId: text("user_id").notNull(),
+  recipientAddress: text("recipient_address").notNull(),
+  courseName: text("course_name").notNull(),
+  kasReward: real("kas_reward").notNull(),
+  score: real("score"),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  verificationCode: text("verification_code").notNull(),
+  ipfsHash: text("ipfs_hash"),
+  nftTxHash: text("nft_tx_hash"),
+  imageUrl: text("image_url"),
+  nftStatus: text("nft_status").default("pending").notNull(), // pending, minting, claimed
+});
+
+// User progress - tracks completion status within courses
+export const userProgress = pgTable("user_progress", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  courseId: text("course_id").notNull(),
+  completedLessons: text("completed_lessons").array().default([]),
+  currentLessonId: text("current_lesson_id"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Q&A posts - on-chain discussion forum
+export const qaPosts = pgTable("qa_posts", {
+  id: text("id").primaryKey(),
+  lessonId: text("lesson_id").notNull(),
+  authorAddress: text("author_address").notNull(),
+  authorDisplayName: text("author_display_name"),
+  content: text("content").notNull(),
+  isQuestion: boolean("is_question").notNull(),
+  parentId: text("parent_id"),
+  txHash: text("tx_hash"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
