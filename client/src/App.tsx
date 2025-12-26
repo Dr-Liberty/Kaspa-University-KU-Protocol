@@ -37,7 +37,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WalletProvider>
-          <div className="min-h-screen bg-background text-foreground">
+          <div className="min-h-screen text-foreground">
             <BlockDAGBackground />
             <Header />
             <Router />
