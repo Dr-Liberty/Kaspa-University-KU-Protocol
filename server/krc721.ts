@@ -101,8 +101,8 @@ class KRC721Service {
         return true;
       }
 
-      // Load kaspa module
-      this.kaspaModule = await import("kaspa");
+      // Load kaspa module with production/development path detection
+      await this.loadKaspaModule();
       
       if (this.kaspaModule.initConsolePanicHook) {
         this.kaspaModule.initConsolePanicHook();
@@ -125,6 +125,51 @@ class KRC721Service {
       console.error("[KRC721] Failed to initialize:", error.message);
       this.initialized = true; // Allow demo mode
       return false;
+    }
+  }
+
+  /**
+   * Load kaspa module with production/development path detection
+   */
+  private async loadKaspaModule(): Promise<void> {
+    const path = await import("path");
+    const fs = await import("fs");
+    
+    // Production path (when running from dist/)
+    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
+    // Development path (when running with tsx from server/)
+    const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
+    
+    let wasmLoaded = false;
+    
+    // Try production path first (for deployed apps)
+    if (fs.existsSync(prodWasmPath)) {
+      try {
+        console.log("[KRC721] Trying production WASM from dist/wasm/...");
+        this.kaspaModule = await import(prodWasmPath);
+        console.log("[KRC721] Production WASM import successful!");
+        wasmLoaded = true;
+      } catch (prodError: any) {
+        console.log("[KRC721] Production WASM import failed:", prodError.message);
+      }
+    }
+    
+    // Try development path
+    if (!wasmLoaded && fs.existsSync(devWasmPath)) {
+      try {
+        console.log("[KRC721] Trying development WASM from server/wasm/...");
+        this.kaspaModule = await import(devWasmPath);
+        console.log("[KRC721] Development WASM import successful!");
+        wasmLoaded = true;
+      } catch (devError: any) {
+        console.log("[KRC721] Development WASM import failed:", devError.message);
+      }
+    }
+    
+    // Fall back to npm package
+    if (!wasmLoaded) {
+      console.log("[KRC721] Manual WASM import failed, trying npm package");
+      this.kaspaModule = await import("kaspa");
     }
   }
 
