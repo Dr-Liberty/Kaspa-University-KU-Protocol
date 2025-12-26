@@ -186,7 +186,7 @@ class KaspaService {
       this.kaspaModule = require(wasmPath);
       
       // Verify critical exports are available
-      const requiredExports = ['PrivateKey', 'createTransactions', 'kaspaToSompi'];
+      const requiredExports = ['PrivateKey', 'createTransactions', 'kaspaToSompi', 'Generator'];
       const missingExports = requiredExports.filter(exp => !this.kaspaModule[exp]);
       if (missingExports.length > 0) {
         throw new Error(`WASM module missing required exports: ${missingExports.join(', ')}`);
@@ -982,7 +982,7 @@ class KaspaService {
       console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
     }
 
-    const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
+    const { PrivateKey, Generator, kaspaToSompi } = this.kaspaModule;
     const utxoManager = getUTXOManager();
 
     // Get UTXOs via kaspa-rpc-client
@@ -990,15 +990,31 @@ class KaspaService {
       addresses: [this.treasuryAddress]
     });
 
-    const entries = utxoResult?.entries || [];
-    if (entries.length === 0) {
+    const rpcEntries = utxoResult?.entries || [];
+    if (rpcEntries.length === 0) {
       throw new Error("Treasury wallet has no UTXOs - please fund the treasury address with KAS");
     }
 
-    console.log(`[Kaspa] Found ${entries.length} UTXOs in treasury`);
+    console.log(`[Kaspa] Found ${rpcEntries.length} UTXOs in treasury`);
+    
+    // DIAGNOSTIC: Log raw RPC response structure for debugging
+    if (rpcEntries.length > 0) {
+      const sample = rpcEntries[0];
+      console.log(`[Kaspa] RAW RPC UTXO structure:`, JSON.stringify(sample, (key, val) => 
+        typeof val === 'bigint' ? `BigInt(${val})` : val, 2
+      ).slice(0, 1000));
+      console.log(`[Kaspa] RPC entry keys:`, Object.keys(sample));
+      if (sample.utxoEntry) {
+        console.log(`[Kaspa] utxoEntry keys:`, Object.keys(sample.utxoEntry));
+        if (sample.utxoEntry.scriptPublicKey) {
+          console.log(`[Kaspa] scriptPublicKey type:`, typeof sample.utxoEntry.scriptPublicKey);
+          console.log(`[Kaspa] scriptPublicKey keys:`, Object.keys(sample.utxoEntry.scriptPublicKey || {}));
+        }
+      }
+    }
 
     // Convert RPC entries to UTXO format for the manager
-    const availableUtxos: UTXO[] = entries.map((e: any) => ({
+    const availableUtxos: UTXO[] = rpcEntries.map((e: any) => ({
       txId: e.outpoint?.transactionId || e.transactionId || "",
       index: e.outpoint?.index || e.index || 0,
       amount: BigInt(e.utxoEntry?.amount || e.amount || 0),
@@ -1051,8 +1067,8 @@ class KaspaService {
       reservation.selected.map(u => `${u.txId}:${u.index}`)
     );
 
-    // Filter original entries to only include reserved UTXOs
-    const reservedEntries = entries.filter((e: any) => {
+    // Filter original RPC entries to only include reserved UTXOs
+    const reservedEntries = rpcEntries.filter((e: any) => {
       const txId = e.outpoint?.transactionId || e.transactionId || "";
       const index = e.outpoint?.index || e.index || 0;
       return reservedKeys.has(`${txId}:${index}`);
@@ -1069,7 +1085,7 @@ class KaspaService {
     // - outpoint: ITransactionOutpoint
     // - scriptPublicKey: IScriptPublicKey { script: string, version: number }
     const wasmEntries = reservedEntries.map((e: any) => {
-      // Extract the scriptPublicKey hex string
+      // Extract the scriptPublicKey hex string - try multiple paths
       const spkHex = e.utxoEntry?.scriptPublicKey?.scriptPublicKey || 
                      e.utxoEntry?.scriptPublicKey?.script ||
                      (typeof e.utxoEntry?.scriptPublicKey === 'string' ? e.utxoEntry.scriptPublicKey : "") ||
@@ -1095,89 +1111,103 @@ class KaspaService {
         blockDaaScore: BigInt(e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0),
         isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
       };
-      console.log(`[Kaspa] UTXO: ${entry.outpoint.transactionId.slice(0,12)}:${entry.outpoint.index}, amount: ${entry.amount}, spk.version: ${entry.scriptPublicKey.version}`);
       return entry;
     });
 
+    // DIAGNOSTIC: Log the first WASM entry for debugging
+    if (wasmEntries.length > 0) {
+      const firstEntry = wasmEntries[0];
+      console.log(`[Kaspa] WASM Entry format check:`);
+      console.log(`  - address: ${firstEntry.address}`);
+      console.log(`  - outpoint.transactionId: ${firstEntry.outpoint.transactionId.slice(0, 16)}...`);
+      console.log(`  - outpoint.index: ${firstEntry.outpoint.index}`);
+      console.log(`  - amount: ${firstEntry.amount} (type: ${typeof firstEntry.amount})`);
+      console.log(`  - scriptPublicKey.script: ${String(firstEntry.scriptPublicKey.script).slice(0, 30)}... (len: ${String(firstEntry.scriptPublicKey.script).length})`);
+      console.log(`  - scriptPublicKey.version: ${firstEntry.scriptPublicKey.version}`);
+      console.log(`  - blockDaaScore: ${firstEntry.blockDaaScore}`);
+      console.log(`  - isCoinbase: ${firstEntry.isCoinbase}`);
+    }
+
     try {
-      console.log(`[Kaspa] Building transaction...`);
+      console.log(`[Kaspa] Building transaction using Generator class...`);
       
       // Create private key object from our derived key
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
-      console.log(`[Kaspa] Private key hex: ${privateKeyHex.slice(0,8)}...`);
+      console.log(`[Kaspa] Private key ready: ${privateKeyHex.slice(0, 8)}...`);
       const privateKey = new PrivateKey(privateKeyHex);
-      console.log(`[Kaspa] PrivateKey object created`);
 
       // Convert amount to sompi
       const amountSompi = kaspaToSompi(amountKas);
       const priorityFee = kaspaToSompi(0.0001);
-      console.log(`[Kaspa] Amounts: ${amountSompi} sompi, fee: ${priorityFee}`);
+      console.log(`[Kaspa] Output: ${amountSompi} sompi, priority fee: ${priorityFee}`);
 
-      // Create transaction using WASM with properly formatted IUtxoEntry array
-      // Use "utxoEntries" key per IGeneratorSettingsObject interface
-      // Use "address" key for outputs (not "recipient")
-      const txOptions: any = {
-        utxoEntries: wasmEntries,
+      // Create Generator with properly formatted settings
+      // CRITICAL: Use "entries" not "utxoEntries" per IGeneratorSettingsObject interface
+      // CRITICAL: Include "networkId" when passing array of entries
+      const generatorSettings: any = {
+        entries: wasmEntries,
         outputs: [{
           address: recipientAddress,
           amount: amountSompi
         }],
         changeAddress: this.treasuryAddress,
         priorityFee,
+        networkId: "mainnet",
       };
 
       // Embed KU protocol quiz proof in transaction payload
       if (quizPayload) {
-        txOptions.payload = quizPayload;
+        generatorSettings.payload = quizPayload;
         console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
       }
 
-      // Log transaction options for debugging
-      console.log(`[Kaspa] createTransactions: ${wasmEntries.length} UTXOs, output: ${amountSompi}, change: ${this.treasuryAddress.slice(0, 20)}...`);
-      console.log(`[Kaspa] First UTXO entry:`, {
-        address: String(wasmEntries[0]?.address || 'none'),
-        txId: wasmEntries[0]?.outpoint?.transactionId?.slice(0, 12) || 'none',
-        amount: String(wasmEntries[0]?.amount || 0),
-        spkVersion: wasmEntries[0]?.scriptPublicKey?.version,
-        spkScript: String(wasmEntries[0]?.scriptPublicKey?.script || '').slice(0, 20) + '...'
-      });
+      // Log Generator settings for debugging
+      console.log(`[Kaspa] Generator settings: ${wasmEntries.length} UTXOs, output: ${amountSompi}, networkId: mainnet`);
+      console.log(`[Kaspa] Creating Generator instance...`);
 
-      let transactions, summary;
+      // Create Generator instance (per SDK example pattern)
+      let generator;
       try {
-        const result = await createTransactions(txOptions);
-        transactions = result.transactions;
-        summary = result.summary;
-      } catch (createError: any) {
-        const errorMsg = createError?.message || String(createError);
-        if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
-          throw new Error("Transaction too large: payload or inputs exceed network limits. Try with fewer UTXOs.");
-        } else if (errorMsg.includes("amount") || errorMsg.includes("output")) {
-          throw new Error(`Invalid transaction output: ${errorMsg}`);
-        } else if (errorMsg.includes("change") || errorMsg.includes("dust")) {
-          throw new Error("Change output would be dust. Try a slightly different amount.");
-        }
-        throw new Error(`Failed to create transaction: ${errorMsg}`);
+        generator = new Generator(generatorSettings);
+        console.log(`[Kaspa] Generator created successfully`);
+      } catch (genError: any) {
+        const errorMsg = genError?.message || String(genError);
+        console.error(`[Kaspa] Generator creation failed: ${errorMsg}`);
+        console.error(`[Kaspa] Stack:`, genError?.stack);
+        throw new Error(`Failed to create Generator: ${errorMsg}`);
       }
 
-      console.log(`[Kaspa] Created ${transactions.length} transaction(s) with${quizPayload ? '' : 'out'} on-chain proof`);
-
-      // Sign and submit each transaction
+      // Use Generator.next() pattern from SDK documentation
+      // https://kaspa.aspectron.org/docs/classes/Generator.html
       let finalTxHash = "";
-      for (const tx of transactions) {
-        // Sign transaction
-        tx.sign([privateKey]);
+      let txCount = 0;
+      
+      console.log(`[Kaspa] Starting Generator transaction loop...`);
+      
+      // Generator.next() returns pending transactions until exhausted
+      let pendingTransaction;
+      while ((pendingTransaction = await generator.next()) !== undefined) {
+        txCount++;
+        console.log(`[Kaspa] Processing transaction ${txCount}...`);
         
-        // Submit via kaspa-rpc-client with better error handling
+        // Sign the pending transaction
         try {
-          const submitResult = await this.rpcClient.submitTransaction({
-            transaction: tx.toRpcTransaction()
-          });
-          
-          finalTxHash = submitResult?.transactionId || tx.id;
-          console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+          await pendingTransaction.sign([privateKey]);
+          console.log(`[Kaspa] Transaction ${txCount} signed`);
+        } catch (signError: any) {
+          console.error(`[Kaspa] Sign failed: ${signError.message}`);
+          throw new Error(`Failed to sign transaction: ${signError.message}`);
+        }
+        
+        // Submit via RPC
+        try {
+          const submitResult = await pendingTransaction.submit(this.rpcClient);
+          finalTxHash = submitResult || pendingTransaction.id || "";
+          console.log(`[Kaspa] Transaction ${txCount} submitted: ${finalTxHash}`);
         } catch (submitError: any) {
-          // Parse specific submit errors
           const errorMsg = submitError?.message || String(submitError);
+          console.error(`[Kaspa] Submit failed: ${errorMsg}`);
+          
           if (errorMsg.includes("orphan") || errorMsg.includes("missing parent")) {
             throw new Error("Transaction rejected: UTXO already spent (orphan transaction). Please retry.");
           } else if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
@@ -1193,17 +1223,22 @@ class KaspaService {
         }
       }
 
+      // Get summary from generator
+      const summary = generator.summary();
+      console.log(`[Kaspa] Generator complete: ${txCount} transaction(s)`);
+      console.log(`[Kaspa] Summary:`, summary?.toJSON ? summary.toJSON() : summary);
+
       // Mark UTXOs as spent with txHash
       await utxoManager.markAsSpent(reservation.selected, finalTxHash);
 
       console.log(`[Kaspa] Reward sent: ${amountKas} KAS for lesson ${lessonId} (score: ${score})`);
-      console.log(`[Kaspa] Summary:`, summary);
 
       return { success: true, txHash: finalTxHash };
     } catch (error: any) {
       // Release reservation on failure
       await utxoManager.releaseReservation(reservation.selected);
       console.error(`[Kaspa] Transaction failed, released ${reservation.selected.length} UTXOs: ${error.message}`);
+      console.error(`[Kaspa] Error stack:`, error?.stack);
       throw error;
     }
   }
