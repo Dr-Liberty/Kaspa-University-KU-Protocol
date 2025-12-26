@@ -670,7 +670,7 @@ class KRC721Service {
   /**
    * Generate certificate image as raw SVG string
    * Used for IPFS upload
-   * Dark theme with green accents and KU logo
+   * Dark theme with floating DAG background and KU hexagon logo
    */
   generateCertificateImageSvg(
     recipientAddress: string,
@@ -686,24 +686,34 @@ class KRC721Service {
 
     const shortAddress = `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-8)}`;
 
+    // Generate static DAG nodes for background
+    const dagNodes = this.generateStaticDAGNodes();
+
     return `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
-            <stop offset="50%" style="stop-color:#111111;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#0f0f0f;stop-opacity:1" />
             <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1" />
           </linearGradient>
           <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
             <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
           </linearGradient>
-          <linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
-            <stop offset="100%" style="stop-color:#059669;stop-opacity:0.1" />
+          <linearGradient id="hexGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
           </linearGradient>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="nodeGlow">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
@@ -714,74 +724,75 @@ class KRC721Service {
         <!-- Background -->
         <rect width="800" height="600" fill="url(#bg)"/>
         
-        <!-- Subtle grid pattern -->
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1a1a" stroke-width="1"/>
-        </pattern>
-        <rect width="800" height="600" fill="url(#grid)" opacity="0.5"/>
-        
-        <!-- Corner accent glow -->
-        <circle cx="0" cy="0" r="200" fill="url(#greenGlow)"/>
-        <circle cx="800" cy="600" r="200" fill="url(#greenGlow)"/>
+        <!-- Floating DAG Structure Background -->
+        <g opacity="0.4">
+          ${dagNodes}
+        </g>
         
         <!-- Border -->
         <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#green)" stroke-width="2" rx="12"/>
         <rect x="28" y="28" width="744" height="544" fill="none" stroke="#1f2937" stroke-width="1" rx="10"/>
         
-        <!-- KU Logo Circle -->
-        <circle cx="400" cy="70" r="35" fill="#111" stroke="url(#green)" stroke-width="2"/>
-        <text x="400" y="78" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="24" fill="url(#green)" font-weight="bold">
-          KU
-        </text>
+        <!-- KU Hexagon Logo -->
+        <g transform="translate(400, 70)">
+          <!-- Outer hexagon glow -->
+          <polygon points="0,-42 36,-21 36,21 0,42 -36,21 -36,-21" fill="none" stroke="#10b981" stroke-width="3" opacity="0.3" filter="url(#nodeGlow)"/>
+          <!-- Main hexagon -->
+          <polygon points="0,-38 33,-19 33,19 0,38 -33,19 -33,-19" fill="#0a0a0a" stroke="url(#hexGreen)" stroke-width="2"/>
+          <!-- Inner hexagon accent -->
+          <polygon points="0,-28 24,-14 24,14 0,28 -24,14 -24,-14" fill="none" stroke="#10b981" stroke-width="1" opacity="0.5"/>
+          <!-- KU Text -->
+          <text x="0" y="8" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="22" fill="url(#green)" font-weight="bold">KU</text>
+        </g>
         
         <!-- Header -->
-        <text x="400" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#10b981" letter-spacing="4" font-weight="bold">
+        <text x="400" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#10b981" letter-spacing="4" font-weight="bold">
           KASPA UNIVERSITY
         </text>
         
         <!-- Certificate Title -->
-        <text x="400" y="175" text-anchor="middle" font-family="Georgia, serif" font-size="38" fill="#ffffff" font-weight="bold" filter="url(#glow)">
+        <text x="400" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="36" fill="#ffffff" font-weight="bold" filter="url(#glow)">
           Certificate of Completion
         </text>
         
         <!-- Divider -->
-        <line x1="150" y1="200" x2="650" y2="200" stroke="url(#green)" stroke-width="1" opacity="0.5"/>
+        <line x1="150" y1="205" x2="650" y2="205" stroke="url(#green)" stroke-width="1" opacity="0.5"/>
         
         <!-- This certifies -->
-        <text x="400" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
+        <text x="400" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
           This is to certify that
         </text>
         
         <!-- Recipient Address -->
-        <text x="400" y="285" text-anchor="middle" font-family="monospace" font-size="18" fill="#10b981" font-weight="bold">
+        <text x="400" y="290" text-anchor="middle" font-family="monospace" font-size="18" fill="#10b981" font-weight="bold">
           ${shortAddress}
         </text>
         
         <!-- Has completed -->
-        <text x="400" y="325" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
+        <text x="400" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
           has successfully completed the course
         </text>
         
         <!-- Course Name -->
-        <text x="400" y="375" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#ffffff" font-weight="bold">
+        <text x="400" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#ffffff" font-weight="bold">
           ${courseName}
         </text>
         
         <!-- Score Badge -->
-        <rect x="340" y="400" width="120" height="40" rx="20" fill="#111" stroke="url(#green)" stroke-width="1"/>
-        <text x="400" y="427" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#10b981" font-weight="bold">
+        <rect x="340" y="405" width="120" height="40" rx="20" fill="#0a0a0a" stroke="url(#green)" stroke-width="1"/>
+        <text x="400" y="432" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#10b981" font-weight="bold">
           ${score}% Score
         </text>
         
         <!-- Date -->
-        <text x="400" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
+        <text x="400" y="485" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
           Awarded on ${dateStr}
         </text>
         
         <!-- Verification Badge -->
-        <rect x="280" y="510" width="240" height="30" rx="15" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
-        <circle cx="300" cy="525" r="8" fill="#10b981"/>
-        <text x="315" y="530" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
+        <rect x="280" y="515" width="240" height="30" rx="15" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
+        <circle cx="300" cy="530" r="8" fill="#10b981"/>
+        <text x="315" y="535" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
           Verified on Kaspa Blockchain
         </text>
         
@@ -791,6 +802,76 @@ class KRC721Service {
         </text>
       </svg>
     `.trim();
+  }
+
+  /**
+   * Generate static DAG nodes and connections for certificate background
+   * Creates a visually appealing floating DAG structure
+   */
+  private generateStaticDAGNodes(): string {
+    // Predefined node positions for consistent, aesthetic layout
+    const nodes = [
+      // Top-left cluster
+      { x: 60, y: 80, size: 4 },
+      { x: 120, y: 50, size: 3 },
+      { x: 90, y: 130, size: 5 },
+      { x: 150, y: 100, size: 3 },
+      // Top-right cluster
+      { x: 680, y: 60, size: 4 },
+      { x: 740, y: 90, size: 3 },
+      { x: 700, y: 140, size: 5 },
+      { x: 650, y: 110, size: 3 },
+      // Bottom-left cluster
+      { x: 70, y: 480, size: 4 },
+      { x: 130, y: 520, size: 3 },
+      { x: 100, y: 550, size: 5 },
+      { x: 160, y: 490, size: 3 },
+      // Bottom-right cluster
+      { x: 690, y: 470, size: 4 },
+      { x: 730, y: 510, size: 3 },
+      { x: 710, y: 560, size: 5 },
+      { x: 650, y: 530, size: 3 },
+      // Mid-left scattered
+      { x: 50, y: 250, size: 3 },
+      { x: 80, y: 320, size: 4 },
+      { x: 45, y: 380, size: 3 },
+      // Mid-right scattered
+      { x: 750, y: 260, size: 3 },
+      { x: 720, y: 330, size: 4 },
+      { x: 760, y: 400, size: 3 },
+    ];
+
+    // Connections between nodes (pairs of indices)
+    const connections = [
+      [0, 1], [1, 3], [0, 2], [2, 3],
+      [4, 5], [5, 7], [4, 6], [6, 7],
+      [8, 9], [9, 11], [8, 10], [10, 11],
+      [12, 13], [13, 15], [12, 14], [14, 15],
+      [16, 17], [17, 18],
+      [19, 20], [20, 21],
+      [2, 16], [6, 19], [10, 18], [14, 21],
+    ];
+
+    let svg = '';
+
+    // Draw connections (lines)
+    connections.forEach(([from, to]) => {
+      const n1 = nodes[from];
+      const n2 = nodes[to];
+      svg += `<line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" stroke="#10b981" stroke-width="1" opacity="0.3"/>`;
+    });
+
+    // Draw nodes (circles with glow)
+    nodes.forEach((node) => {
+      // Outer glow
+      svg += `<circle cx="${node.x}" cy="${node.y}" r="${node.size * 3}" fill="#10b981" opacity="0.1"/>`;
+      // Main node
+      svg += `<circle cx="${node.x}" cy="${node.y}" r="${node.size}" fill="#10b981" opacity="0.6"/>`;
+      // Inner bright spot
+      svg += `<circle cx="${node.x}" cy="${node.y}" r="${node.size * 0.4}" fill="#ffffff" opacity="0.4"/>`;
+    });
+
+    return svg;
   }
 
   /**
