@@ -993,7 +993,7 @@ class KaspaService {
 
     const entries = utxoResult?.entries || [];
     if (entries.length === 0) {
-      throw new Error("No UTXOs available in treasury wallet - please fund the treasury address");
+      throw new Error("Treasury wallet has no UTXOs - please fund the treasury address with KAS");
     }
 
     console.log(`[Kaspa] Found ${entries.length} UTXOs in treasury`);
@@ -1006,18 +1006,43 @@ class KaspaService {
       scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
     }));
 
-    // Calculate required amount in sompi (including fee)
-    const requiredSompi = BigInt(Math.floor((amountKas + 0.0001) * 100_000_000));
+    // Calculate total available balance for better error messages
+    const totalAvailableSompi = availableUtxos.reduce((sum, u) => sum + u.amount, BigInt(0));
+    const totalAvailableKas = Number(totalAvailableSompi) / 100_000_000;
+    console.log(`[Kaspa] Total treasury balance: ${totalAvailableKas.toFixed(4)} KAS`);
+
+    // Calculate required amount in sompi (including fee buffer)
+    const feeBuffer = 0.0001; // 10,000 sompi priority fee
+    const requiredKas = amountKas + feeBuffer;
+    const requiredSompi = BigInt(Math.floor(requiredKas * 100_000_000));
+
+    // Pre-check: enough total balance?
+    if (totalAvailableSompi < requiredSompi) {
+      const shortfall = (Number(requiredSompi - totalAvailableSompi) / 100_000_000).toFixed(4);
+      throw new Error(`Insufficient treasury balance: have ${totalAvailableKas.toFixed(4)} KAS, need ${requiredKas.toFixed(4)} KAS (short ${shortfall} KAS)`);
+    }
+
+    // Check for dust UTXOs that can't be used (under 546 sompi is dust on most chains, Kaspa uses similar)
+    const usableUtxos = availableUtxos.filter(u => u.amount >= BigInt(546));
+    if (usableUtxos.length === 0 && availableUtxos.length > 0) {
+      throw new Error(`Treasury has ${availableUtxos.length} UTXOs but all are dust (too small to spend). Please consolidate UTXOs.`);
+    }
 
     // Reserve UTXOs through manager to prevent race conditions
     const reservation = await utxoManager.selectAndReserve(
-      availableUtxos,
+      usableUtxos,
       requiredSompi,
       `reward:${lessonId}:${recipientAddress.slice(-8)}`
     );
 
     if (!reservation) {
-      throw new Error(`Insufficient unreserved UTXOs for ${amountKas + 0.0001} KAS`);
+      // Provide specific reason for reservation failure
+      const unreservedBalance = usableUtxos.reduce((sum, u) => sum + u.amount, BigInt(0));
+      const unreservedKas = Number(unreservedBalance) / 100_000_000;
+      if (unreservedBalance < requiredSompi) {
+        throw new Error(`UTXOs temporarily locked by pending transactions. Available: ${unreservedKas.toFixed(4)} KAS, need: ${requiredKas.toFixed(4)} KAS. Try again in a few seconds.`);
+      }
+      throw new Error(`Failed to reserve UTXOs for ${requiredKas.toFixed(4)} KAS - concurrent transaction limit reached`);
     }
 
     console.log(`[Kaspa] Reserved ${reservation.selected.length} UTXOs (${Number(reservation.total) / 100_000_000} KAS)`);
@@ -1063,7 +1088,22 @@ class KaspaService {
         console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
       }
 
-      const { transactions, summary } = await createTransactions(txOptions);
+      let transactions, summary;
+      try {
+        const result = await createTransactions(txOptions);
+        transactions = result.transactions;
+        summary = result.summary;
+      } catch (createError: any) {
+        const errorMsg = createError?.message || String(createError);
+        if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
+          throw new Error("Transaction too large: payload or inputs exceed network limits. Try with fewer UTXOs.");
+        } else if (errorMsg.includes("amount") || errorMsg.includes("output")) {
+          throw new Error(`Invalid transaction output: ${errorMsg}`);
+        } else if (errorMsg.includes("change") || errorMsg.includes("dust")) {
+          throw new Error("Change output would be dust. Try a slightly different amount.");
+        }
+        throw new Error(`Failed to create transaction: ${errorMsg}`);
+      }
 
       console.log(`[Kaspa] Created ${transactions.length} transaction(s) with${quizPayload ? '' : 'out'} on-chain proof`);
 
@@ -1073,13 +1113,30 @@ class KaspaService {
         // Sign transaction
         tx.sign([privateKey]);
         
-        // Submit via kaspa-rpc-client
-        const submitResult = await this.rpcClient.submitTransaction({
-          transaction: tx.toRpcTransaction()
-        });
-        
-        finalTxHash = submitResult?.transactionId || tx.id;
-        console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+        // Submit via kaspa-rpc-client with better error handling
+        try {
+          const submitResult = await this.rpcClient.submitTransaction({
+            transaction: tx.toRpcTransaction()
+          });
+          
+          finalTxHash = submitResult?.transactionId || tx.id;
+          console.log(`[Kaspa] Transaction submitted: ${finalTxHash}`);
+        } catch (submitError: any) {
+          // Parse specific submit errors
+          const errorMsg = submitError?.message || String(submitError);
+          if (errorMsg.includes("orphan") || errorMsg.includes("missing parent")) {
+            throw new Error("Transaction rejected: UTXO already spent (orphan transaction). Please retry.");
+          } else if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
+            throw new Error("Transaction too large: too many inputs. Please wait for UTXO consolidation.");
+          } else if (errorMsg.includes("fee") || errorMsg.includes("low priority")) {
+            throw new Error("Transaction fee too low for current network conditions. Please retry later.");
+          } else if (errorMsg.includes("double spend") || errorMsg.includes("already exists")) {
+            throw new Error("Transaction rejected: duplicate or conflicting transaction detected.");
+          } else if (errorMsg.includes("timeout") || errorMsg.includes("connect")) {
+            throw new Error("Network timeout submitting transaction. Please check network and retry.");
+          }
+          throw new Error(`Transaction submit failed: ${errorMsg}`);
+        }
       }
 
       // Mark UTXOs as spent with txHash
@@ -1092,7 +1149,7 @@ class KaspaService {
     } catch (error: any) {
       // Release reservation on failure
       await utxoManager.releaseReservation(reservation.selected);
-      console.error(`[Kaspa] Transaction failed, released ${reservation.selected.length} UTXOs`);
+      console.error(`[Kaspa] Transaction failed, released ${reservation.selected.length} UTXOs: ${error.message}`);
       throw error;
     }
   }
