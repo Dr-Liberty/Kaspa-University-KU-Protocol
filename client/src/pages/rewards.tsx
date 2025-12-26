@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { QuizResult, User } from "@shared/schema";
+import type { CourseReward, User } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,10 +20,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-interface ClaimableReward extends QuizResult {
-  lessonTitle: string;
+interface ClaimableReward extends CourseReward {
   courseTitle: string;
-  courseId?: string;
 }
 
 export default function Rewards() {
@@ -73,7 +71,7 @@ export default function Rewards() {
     },
   });
 
-  const totalClaimable = claimableRewards?.reduce((sum, r) => sum + r.kasRewarded, 0) ?? 0;
+  const totalClaimable = claimableRewards?.reduce((sum, r) => sum + r.kasAmount, 0) ?? 0;
 
   if (!wallet) {
     return (
@@ -185,13 +183,13 @@ export default function Rewards() {
                     <div>
                       <p className="font-medium">{reward.courseTitle}</p>
                       <p className="text-sm text-muted-foreground">
-                        {reward.lessonTitle} - Score: {reward.score}%
+                        Average Score: {reward.averageScore}%
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-bold text-primary">{reward.kasRewarded.toFixed(4)} KAS</p>
+                      <p className="font-bold text-primary">{reward.kasAmount.toFixed(4)} KAS</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(reward.completedAt).toLocaleDateString()}
                       </p>
