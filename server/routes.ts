@@ -1735,5 +1735,57 @@ export async function registerRoutes(
     }
   });
 
+  // Check all P2SH addresses for stuck funds (admin recovery tool)
+  app.get("/api/admin/p2sh-recovery", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const reservations = await mintStorage.getAllReservations();
+      const stuckFunds: Array<{
+        p2shAddress: string;
+        balance: number;
+        balanceKas: string;
+        certificateId: string;
+        courseName: string;
+        status: string;
+        createdAt: Date;
+      }> = [];
+      
+      let totalStuckKas = 0;
+      
+      for (const reservation of reservations) {
+        if (!reservation.p2shAddress) continue;
+        
+        try {
+          const balanceRes = await fetch(`https://api.kaspa.org/addresses/${reservation.p2shAddress}/balance`);
+          if (balanceRes.ok) {
+            const balanceData = await balanceRes.json() as { balance: number };
+            if (balanceData.balance > 0) {
+              const balanceKas = balanceData.balance / 100000000;
+              totalStuckKas += balanceKas;
+              stuckFunds.push({
+                p2shAddress: reservation.p2shAddress,
+                balance: balanceData.balance,
+                balanceKas: balanceKas.toFixed(8),
+                certificateId: reservation.certificateId,
+                courseName: reservation.courseName || "Unknown",
+                status: reservation.status,
+                createdAt: reservation.createdAt,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`[P2SH Recovery] Error checking ${reservation.p2shAddress}:`, err);
+        }
+      }
+      
+      res.json({
+        totalStuckFunds: stuckFunds.length,
+        totalStuckKas: totalStuckKas.toFixed(8),
+        stuckFunds,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

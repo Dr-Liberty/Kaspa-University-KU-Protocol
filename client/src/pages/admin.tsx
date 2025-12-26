@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Certificate {
@@ -47,6 +47,22 @@ interface AdminStats {
   certificates: { total: number; pending: number; minting: number; claimed: number };
   reservations: { total: number; pending: number; finalized: number; expired: number };
   errors: { total: number; unresolved: number; byCategory: Record<string, number> };
+}
+
+interface StuckFund {
+  p2shAddress: string;
+  balance: number;
+  balanceKas: string;
+  certificateId: string;
+  courseName: string;
+  status: string;
+  createdAt: string;
+}
+
+interface P2SHRecoveryData {
+  totalStuckFunds: number;
+  totalStuckKas: string;
+  stuckFunds: StuckFund[];
 }
 
 export default function AdminPage() {
@@ -94,6 +110,17 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: authenticated,
+  });
+
+  const { data: p2shRecovery, isLoading: p2shLoading, refetch: refetchP2SH } = useQuery<P2SHRecoveryData>({
+    queryKey: ["/api/admin/p2sh-recovery"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/p2sh-recovery", { headers });
+      if (!res.ok) throw new Error("Failed to fetch P2SH data");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 60000,
   });
 
   const resetCertMutation = useMutation({
@@ -170,6 +197,7 @@ export default function AdminPage() {
     refetchCerts();
     refetchReservations();
     refetchErrors();
+    refetchP2SH();
     toast({ title: "Refreshed", description: "All data refreshed" });
   };
 
@@ -284,7 +312,7 @@ export default function AdminPage() {
         )}
 
         <Tabs defaultValue="certificates" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="certificates" data-testid="tab-certificates">
               Certificates ({certificates.length})
             </TabsTrigger>
@@ -293,6 +321,9 @@ export default function AdminPage() {
             </TabsTrigger>
             <TabsTrigger value="errors" data-testid="tab-errors">
               Errors ({errors.length})
+            </TabsTrigger>
+            <TabsTrigger value="recovery" data-testid="tab-recovery">
+              Recovery {p2shRecovery && p2shRecovery.totalStuckFunds > 0 && `(${p2shRecovery.totalStuckFunds})`}
             </TabsTrigger>
           </TabsList>
 
@@ -459,6 +490,82 @@ export default function AdminPage() {
                     )}
                   </div>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="recovery" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="w-5 h-5" />
+                  P2SH Fund Recovery
+                </CardTitle>
+                <CardDescription>
+                  Check for stuck funds in P2SH addresses from failed minting attempts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {p2shLoading ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    Checking P2SH addresses for stuck funds...
+                  </div>
+                ) : p2shRecovery && p2shRecovery.totalStuckFunds > 0 ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md">
+                      <div className="text-lg font-semibold text-yellow-400">
+                        {p2shRecovery.totalStuckKas} KAS stuck in {p2shRecovery.totalStuckFunds} P2SH addresses
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        These funds need to be recovered by completing the reveal transactions
+                      </p>
+                    </div>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-3">
+                        {p2shRecovery.stuckFunds.map((fund) => (
+                          <div
+                            key={fund.p2shAddress}
+                            className="p-4 border rounded-md space-y-2"
+                            data-testid={`stuck-${fund.certificateId}`}
+                          >
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="font-medium">{fund.courseName}</div>
+                              <Badge className="bg-yellow-500/20 text-yellow-400">
+                                {fund.balanceKas} KAS
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div>Certificate: {fund.certificateId}</div>
+                              <div className="break-all">P2SH: {fund.p2shAddress}</div>
+                              <div>Status: {fund.status}</div>
+                              <div>Created: {formatDate(fund.createdAt)}</div>
+                            </div>
+                            <div className="text-xs text-primary">
+                              To recover: Reset certificate to pending, then retry minting
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No stuck funds found</p>
+                    <p className="text-sm mt-1">All P2SH addresses have been processed correctly</p>
+                  </div>
+                )}
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => refetchP2SH()}
+                    disabled={p2shLoading}
+                    data-testid="button-refresh-recovery"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${p2shLoading ? "animate-spin" : ""}`} />
+                    Scan All P2SH Addresses
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
