@@ -1196,10 +1196,12 @@ class KaspaService {
         priorityFee,
       };
 
-      // Embed KU protocol quiz proof in transaction payload
+      // NOTE: KU protocol payload disabled for rewards to avoid "Storage mass exceeds maximum" error
+      // The payload can cause transactions to exceed Kaspa's storage mass limits
+      // Quiz proofs are tracked off-chain in the database instead
       if (quizPayload) {
-        txSettings.payload = quizPayload;
-        console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
+        console.log(`[Kaspa] Quiz proof available (${quizPayload.length / 2} bytes) but NOT embedding to avoid storage mass limits`);
+        console.log(`[Kaspa] Reward will be sent as simple transfer without on-chain proof`);
       }
 
       console.log(`[Kaspa] Creating transactions with ${wasmEntries.length} UTXOs...`);
