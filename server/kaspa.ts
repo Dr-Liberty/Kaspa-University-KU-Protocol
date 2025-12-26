@@ -1201,13 +1201,15 @@ class KaspaService {
       console.log(`[Kaspa] Private key ready: ${privateKeyHex.slice(0, 8)}...`);
       const privateKey = new PrivateKey(privateKeyHex);
 
-      // Convert amount to sompi
-      const amountSompi = kaspaToSompi(amountKas);
-      const priorityFee = kaspaToSompi(0.0001);
+      // Convert amount to sompi (kaspaToSompi expects string parameter)
+      const amountSompi = kaspaToSompi(String(amountKas));
+      const priorityFee = kaspaToSompi("0.0001");
       console.log(`[Kaspa] Output: ${amountSompi} sompi, priority fee: ${priorityFee}`);
 
       // Build transaction settings (same pattern as payload transactions)
+      // networkId is required when using UTXO entries array (per kaspa.d.ts)
       const txSettings: any = {
+        networkId: "mainnet",
         entries: wasmEntries,
         outputs: [{
           address: recipientAddress,
@@ -1224,10 +1226,21 @@ class KaspaService {
       }
 
       console.log(`[Kaspa] Creating transactions with ${wasmEntries.length} UTXOs...`);
+      console.log(`[Kaspa] Transaction settings: entries=${wasmEntries.length}, outputs=[{address: ${recipientAddress.slice(0,25)}..., amount: ${amountSompi}}], changeAddress=${this.treasuryAddress.slice(0,25)}..., priorityFee=${priorityFee}, hasPayload=${!!txSettings.payload}`);
 
       // Use createTransactions() which returns Transaction objects with toRpcTransaction()
       // This is the same pattern that works for payload transactions
-      const { transactions } = await createTransactions(txSettings);
+      let result;
+      try {
+        result = await createTransactions(txSettings);
+      } catch (createErr: any) {
+        console.error(`[Kaspa] createTransactions error:`, createErr?.message || createErr);
+        console.error(`[Kaspa] createTransactions error type:`, typeof createErr);
+        console.error(`[Kaspa] createTransactions full error:`, JSON.stringify(createErr, Object.getOwnPropertyNames(createErr || {})));
+        throw new Error(`createTransactions failed: ${createErr?.message || String(createErr)}`);
+      }
+      
+      const { transactions } = result;
 
       if (!transactions || transactions.length === 0) {
         throw new Error("createTransactions returned no transactions");
@@ -1240,25 +1253,68 @@ class KaspaService {
         throw new Error("Cannot submit transaction: RPC client not connected.");
       }
 
-      // Sign and submit each transaction using signTransaction helper
+      // Sign and submit each PendingTransaction
+      // createTransactions returns PendingTransaction[] which have their own sign() and submit() methods
       let finalTxHash = "";
       for (let i = 0; i < transactions.length; i++) {
-        let tx = transactions[i];
+        const pendingTx = transactions[i];
         console.log(`[Kaspa] Processing transaction ${i + 1}/${transactions.length}...`);
         
-        // Sign the transaction using signTransaction helper (per kaspa.d.ts)
-        // signTransaction(tx, signer[], verify_sig) returns signed Transaction
-        tx = signTransaction(tx, [privateKey], true);
+        // Sign the PendingTransaction with private key array
+        // PendingTransaction.sign() takes array of private keys
+        await pendingTx.sign([privateKey]);
         console.log(`[Kaspa] Transaction ${i + 1} signed`);
         
-        // Submit via kaspa-rpc-client using toRpcTransaction()
-        // This is the working pattern from payload transactions
+        // Submit via kaspa-rpc-client
+        // Use serializeToObject() to get ISerializableTransaction format for RPC
         try {
+          // Get the signed transaction data for RPC submission
+          const txData = pendingTx.serializeToObject();
+          
+          // Convert to kaspa-rpc-client compatible format
+          // ISerializableTransaction has flat input structure (transactionId, index at top level)
+          // and scriptPublicKey as string with version prefix (first 4 chars = version as hex)
+          const rpcTransaction = {
+            version: txData.version,
+            inputs: txData.inputs.map((input: any) => {
+              // scriptPublicKey string format: "0000" + actual script (version 0 = 4 hex chars prefix)
+              const spk = input.utxo?.scriptPublicKey || "";
+              const spkVersion = spk.length >= 4 ? parseInt(spk.slice(0, 4), 16) : 0;
+              const spkScript = spk.length >= 4 ? spk.slice(4) : spk;
+              return {
+                previousOutpoint: {
+                  transactionId: input.transactionId,
+                  index: input.index
+                },
+                signatureScript: input.signatureScript,
+                sequence: String(input.sequence || 0),
+                sigOpCount: input.sigOpCount || 1
+              };
+            }),
+            outputs: txData.outputs.map((output: any) => {
+              // scriptPublicKey string format: "0000" + actual script (version 0 = 4 hex chars prefix)
+              const spk = output.scriptPublicKey || "";
+              const spkVersion = spk.length >= 4 ? parseInt(spk.slice(0, 4), 16) : 0;
+              const spkScript = spk.length >= 4 ? spk.slice(4) : spk;
+              return {
+                amount: String(output.value),
+                scriptPublicKey: {
+                  version: spkVersion,
+                  script: spkScript
+                }
+              };
+            }),
+            lockTime: String(txData.lockTime || 0),
+            subnetworkId: txData.subnetworkId || "0000000000000000000000000000000000000000",
+            gas: String(txData.gas || 0),
+            payload: txData.payload || ""
+          };
+          
           const submitResult = await this.rpcClient.submitTransaction({
-            transaction: tx.toRpcTransaction()
+            transaction: rpcTransaction
           });
           
-          finalTxHash = submitResult?.transactionId || tx.id;
+          finalTxHash = submitResult?.transactionId || txData.id || pendingTx.id;
           console.log(`[Kaspa] Transaction ${i + 1} submitted: ${finalTxHash}`);
         } catch (submitError: any) {
           const errorMsg = submitError?.message || String(submitError);
@@ -1382,11 +1438,11 @@ class KaspaService {
     // Sort UTXOs by amount
     entries.sort((a: any, b: any) => (a.amount > b.amount ? 1 : -1));
 
-    // Create transaction generator
+    // Create transaction generator (kaspaToSompi expects string)
     const generator = new Generator({
       entries,
-      outputs: [{ address: recipientAddress, amount: kaspaToSompi(amountKas) }],
-      priorityFee: kaspaToSompi(0.0001),
+      outputs: [{ address: recipientAddress, amount: kaspaToSompi(String(amountKas)) }],
+      priorityFee: kaspaToSompi("0.0001"),
       changeAddress: this.treasuryAddress,
     });
 
@@ -1702,9 +1758,9 @@ class KaspaService {
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
       const privateKey = new PrivateKey(privateKeyHex);
 
-      // Minimal transaction - send dust amount to self
-      const dustAmount = kaspaToSompi(0.00001); // 1000 sompi minimum
-      const priorityFee = kaspaToSompi(0.0001);
+      // Minimal transaction - send dust amount to self (kaspaToSompi expects string)
+      const dustAmount = kaspaToSompi("0.00001"); // 1000 sompi minimum
+      const priorityFee = kaspaToSompi("0.0001");
 
       // Create transaction with payload using ONLY reserved entries
       const { transactions } = await createTransactions({

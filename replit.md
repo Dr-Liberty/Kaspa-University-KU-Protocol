@@ -67,9 +67,14 @@ Preferred communication style: Simple, everyday language.
   1. Build `IUtxoEntry[]` with FLAT structure (per kaspa.d.ts):
      - `address`, `outpoint`, `amount`, `scriptPublicKey`, `blockDaaScore`, `isCoinbase` at TOP LEVEL
      - `scriptPublicKey: { version: number, script: HexString }`
-  2. Call `createTransactions(settings)` with `IGeneratorSettingsObject`
-  3. Sign using `signTransaction(tx, [privateKey], true)`
-  4. Submit via `rpcClient.submitTransaction({ transaction: tx.toRpcTransaction() })`
+  2. Call `createTransactions(settings)` with `IGeneratorSettingsObject` including `networkId: "mainnet"`
+  3. Returns `PendingTransaction[]` - sign each via `await pendingTx.sign([privateKey])`
+  4. Get transaction data via `pendingTx.serializeToObject()` (returns ISerializableTransaction)
+  5. Convert for kaspa-rpc-client:
+     - inputs: use `transactionId`, `index` directly (not nested in previousOutpoint)
+     - outputs: use `value` (not amount), `scriptPublicKey` is string with 4-char version prefix
+  6. Submit via `rpcClient.submitTransaction({ transaction: rpcTransaction })`
+  7. **kaspaToSompi()** expects STRING parameter, not number: `kaspaToSompi("0.25")` not `kaspaToSompi(0.25)`
 - **Documentation Reference**: https://github.com/MMOStars/Kaspa-WASM32-SDK-Documentation-AI-VibeCoding
 - **References**:
   - GitHub: https://github.com/kaspanet/rusty-kaspa
