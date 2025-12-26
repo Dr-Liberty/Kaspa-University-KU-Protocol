@@ -16,6 +16,7 @@ import { randomUUID } from "crypto";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { db, schema } from "./db";
 import type { IStorage } from "./storage";
+import { courses as seedCourses, lessons as seedLessons, quizQuestions as seedQuizQuestions } from "./seed-data";
 
 export class DbStorage implements IStorage {
   private courses: Map<string, Course> = new Map();
@@ -27,219 +28,9 @@ export class DbStorage implements IStorage {
   }
 
   private seedStaticData() {
-    const courses: Course[] = [
-      {
-        id: "course-1",
-        title: "Introduction to Kaspa",
-        description: "Learn the fundamentals of Kaspa blockchain, including its unique BlockDAG architecture and GHOSTDAG consensus.",
-        lessonCount: 3,
-        kasReward: 0.5,
-        difficulty: "beginner",
-        category: "Fundamentals",
-      },
-      {
-        id: "course-2",
-        title: "Bitcoin vs Kaspa: The Next Evolution",
-        description: "Compare Bitcoin and Kaspa architectures, understanding how Kaspa solves the blockchain trilemma.",
-        lessonCount: 3,
-        kasReward: 0.75,
-        difficulty: "beginner",
-        category: "Fundamentals",
-      },
-      {
-        id: "course-3",
-        title: "Understanding BlockDAG Technology",
-        description: "Deep dive into Directed Acyclic Graph structures and how they enable parallel block creation.",
-        lessonCount: 4,
-        kasReward: 1.0,
-        difficulty: "intermediate",
-        category: "Technical",
-      },
-      {
-        id: "course-4",
-        title: "Kaspa Mining Essentials",
-        description: "Everything you need to know about mining Kaspa, from hardware requirements to pool selection.",
-        lessonCount: 3,
-        kasReward: 0.5,
-        difficulty: "beginner",
-        category: "Mining",
-      },
-      {
-        id: "course-5",
-        title: "Building on Kaspa with Kasplex",
-        description: "Learn to create tokens and NFTs on Kaspa using the Kasplex Layer 2 protocol.",
-        lessonCount: 4,
-        kasReward: 1.5,
-        difficulty: "advanced",
-        category: "Development",
-      },
-    ];
-
-    courses.forEach((c) => this.courses.set(c.id, c));
-
-    const allLessons: Lesson[] = [
-      {
-        id: "lesson-1-1",
-        courseId: "course-1",
-        title: "What is Kaspa?",
-        order: 1,
-        duration: "10 min",
-        content: `<h2>Welcome to Kaspa</h2><p>Kaspa is a proof-of-work cryptocurrency that implements the GHOSTDAG protocol...</p>`,
-      },
-      {
-        id: "lesson-1-2",
-        courseId: "course-1",
-        title: "The GHOSTDAG Protocol",
-        order: 2,
-        duration: "12 min",
-        content: `<h2>Understanding GHOSTDAG</h2><p>GHOSTDAG is the consensus protocol that makes Kaspa possible...</p>`,
-      },
-      {
-        id: "lesson-1-3",
-        courseId: "course-1",
-        title: "Kaspa's Native Token: KAS",
-        order: 3,
-        duration: "8 min",
-        content: `<h2>KAS Token Economics</h2><p>KAS is the native cryptocurrency of the Kaspa network...</p>`,
-      },
-      {
-        id: "lesson-2-1",
-        courseId: "course-2",
-        title: "Bitcoin's Limitations",
-        order: 1,
-        duration: "10 min",
-        content: `<h2>Understanding Bitcoin's Constraints</h2><p>Bitcoin is the original cryptocurrency...</p>`,
-      },
-      {
-        id: "lesson-2-2",
-        courseId: "course-2",
-        title: "How Kaspa Solves the Trilemma",
-        order: 2,
-        duration: "12 min",
-        content: `<h2>Breaking the Trilemma</h2><p>Kaspa's BlockDAG architecture fundamentally changes the scaling equation...</p>`,
-      },
-      {
-        id: "lesson-2-3",
-        courseId: "course-2",
-        title: "Side-by-Side Comparison",
-        order: 3,
-        duration: "8 min",
-        content: `<h2>Bitcoin vs Kaspa: The Numbers</h2>...`,
-      },
-      {
-        id: "lesson-3-1",
-        courseId: "course-3",
-        title: "DAG Fundamentals",
-        order: 1,
-        duration: "15 min",
-        content: `<h2>Directed Acyclic Graphs Explained</h2>...`,
-      },
-      {
-        id: "lesson-3-2",
-        courseId: "course-3",
-        title: "Parallel Block Creation",
-        order: 2,
-        duration: "12 min",
-        content: `<h2>Mining in a DAG World</h2>...`,
-      },
-      {
-        id: "lesson-3-3",
-        courseId: "course-3",
-        title: "Block Ordering in GHOSTDAG",
-        order: 3,
-        duration: "15 min",
-        content: `<h2>Creating Order from Chaos</h2>...`,
-      },
-      {
-        id: "lesson-3-4",
-        courseId: "course-3",
-        title: "Finality and Confirmation",
-        order: 4,
-        duration: "10 min",
-        content: `<h2>When is a Transaction Final?</h2>...`,
-      },
-      {
-        id: "lesson-4-1",
-        courseId: "course-4",
-        title: "Getting Started with Mining",
-        order: 1,
-        duration: "12 min",
-        content: `<h2>Mining Kaspa: An Introduction</h2>...`,
-      },
-      {
-        id: "lesson-4-2",
-        courseId: "course-4",
-        title: "Choosing Mining Hardware",
-        order: 2,
-        duration: "10 min",
-        content: `<h2>ASIC Mining Hardware</h2>...`,
-      },
-      {
-        id: "lesson-4-3",
-        courseId: "course-4",
-        title: "Pool Selection and Setup",
-        order: 3,
-        duration: "8 min",
-        content: `<h2>Joining a Mining Pool</h2>...`,
-      },
-      {
-        id: "lesson-5-1",
-        courseId: "course-5",
-        title: "Introduction to Kasplex",
-        order: 1,
-        duration: "12 min",
-        content: `<h2>What is Kasplex?</h2>...`,
-      },
-      {
-        id: "lesson-5-2",
-        courseId: "course-5",
-        title: "Creating KRC-20 Tokens",
-        order: 2,
-        duration: "15 min",
-        content: `<h2>Deploying Your First Token</h2>...`,
-      },
-      {
-        id: "lesson-5-3",
-        courseId: "course-5",
-        title: "NFTs with KRC-721",
-        order: 3,
-        duration: "15 min",
-        content: `<h2>Creating NFTs on Kaspa</h2>...`,
-      },
-      {
-        id: "lesson-5-4",
-        courseId: "course-5",
-        title: "Building dApps on Kasplex",
-        order: 4,
-        duration: "18 min",
-        content: `<h2>Developing for Kasplex</h2>...`,
-      },
-    ];
-
-    allLessons.forEach((l) => this.lessons.set(l.id, l));
-
-    const allQuestions: QuizQuestion[] = [
-      { id: "q-1-1-1", lessonId: "lesson-1-1", question: "What consensus protocol does Kaspa use?", options: ["Proof of Stake", "GHOSTDAG", "Nakamoto Consensus", "Tendermint"], correctIndex: 1, explanation: "Kaspa uses the GHOSTDAG protocol for consensus." },
-      { id: "q-1-1-2", lessonId: "lesson-1-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa currently produces 10 blocks per second." },
-      { id: "q-1-2-1", lessonId: "lesson-1-2", question: "What determines if a block is 'blue' in GHOSTDAG?", options: ["Its size", "Its timestamp", "Its connectivity to other blocks", "Its transaction count"], correctIndex: 2, explanation: "Blocks are colored based on their connectivity." },
-      { id: "q-1-3-1", lessonId: "lesson-1-3", question: "What is the maximum supply of KAS?", options: ["21 million", "28.7 billion", "100 billion", "Unlimited"], correctIndex: 1, explanation: "The maximum supply of KAS is 28.7 billion tokens." },
-      { id: "q-2-1-1", lessonId: "lesson-2-1", question: "What is an 'orphan' block in Bitcoin?", options: ["A block with no transactions", "A block that was found but discarded", "A block with invalid signatures", "The first block in a chain"], correctIndex: 1, explanation: "An orphan block is one that was validly mined but not included in the main chain." },
-      { id: "q-2-2-1", lessonId: "lesson-2-2", question: "How does Kaspa handle blocks created simultaneously?", options: ["Discards all but one", "Includes all of them", "Uses random selection", "Requires manual resolution"], correctIndex: 1, explanation: "Kaspa includes all valid blocks in the DAG and orders them with GHOSTDAG." },
-      { id: "q-2-3-1", lessonId: "lesson-2-3", question: "What is Kaspa's block rate compared to Bitcoin?", options: ["Same", "10 blocks per second vs 1 per 10 minutes", "1 block per minute vs 10 per hour", "10 blocks per minute vs 1 per hour"], correctIndex: 1, explanation: "Kaspa produces 10 blocks per second compared to Bitcoin's 1 block per 10 minutes." },
-      { id: "q-3-1-1", lessonId: "lesson-3-1", question: "In a BlockDAG, how many parent blocks can a new block reference?", options: ["Exactly one", "Multiple", "None", "Exactly two"], correctIndex: 1, explanation: "In a BlockDAG, blocks can reference multiple parent blocks." },
-      { id: "q-3-2-1", lessonId: "lesson-3-2", question: "What happens to simultaneously mined blocks in Kaspa?", options: ["One is discarded", "All are included", "They are merged", "They cancel each other"], correctIndex: 1, explanation: "All valid blocks are included in the DAG structure." },
-      { id: "q-3-3-1", lessonId: "lesson-3-3", question: "What is the purpose of GHOSTDAG coloring?", options: ["Visual display", "Determine block order and validity", "Mining optimization", "Network routing"], correctIndex: 1, explanation: "GHOSTDAG coloring helps determine block ordering." },
-      { id: "q-3-4-1", lessonId: "lesson-3-4", question: "How long does Kaspa take for practical transaction finality?", options: ["10 minutes", "1 hour", "About 10 seconds", "24 hours"], correctIndex: 2, explanation: "Kaspa achieves practical finality in about 10 seconds." },
-      { id: "q-4-1-1", lessonId: "lesson-4-1", question: "What mining algorithm does Kaspa use?", options: ["SHA-256", "Ethash", "kHeavyHash", "Scrypt"], correctIndex: 2, explanation: "Kaspa uses the kHeavyHash mining algorithm." },
-      { id: "q-4-2-1", lessonId: "lesson-4-2", question: "What is the best efficiency metric for comparing miners?", options: ["Price", "Hashrate only", "Joules per Terahash (J/TH)", "Weight"], correctIndex: 2, explanation: "J/TH measures power efficiency." },
-      { id: "q-4-3-1", lessonId: "lesson-4-3", question: "Why do most miners join pools?", options: ["It's required", "More consistent payouts", "Lower electricity costs", "Better hardware"], correctIndex: 1, explanation: "Pools provide smaller but more frequent and consistent payouts." },
-      { id: "q-5-1-1", lessonId: "lesson-5-1", question: "What is the token standard for NFTs on Kasplex?", options: ["KRC-20", "KRC-721", "ERC-1155", "BRC-20"], correctIndex: 1, explanation: "KRC-721 is the NFT standard on Kasplex." },
-      { id: "q-5-2-1", lessonId: "lesson-5-2", question: "What does the 'lim' parameter control in KRC-20?", options: ["Total supply", "Max mint per transaction", "Decimal places", "Transfer fee"], correctIndex: 1, explanation: "The 'lim' parameter sets the maximum amount that can be minted per transaction." },
-      { id: "q-5-3-1", lessonId: "lesson-5-3", question: "Why does KRC-721 use a commit-reveal pattern?", options: ["To save gas", "To prevent front-running", "For privacy", "For larger files"], correctIndex: 1, explanation: "The commit-reveal pattern prevents front-running." },
-      { id: "q-5-4-1", lessonId: "lesson-5-4", question: "Where are NFT images typically stored?", options: ["On the blockchain", "On IPFS", "In the indexer", "In the wallet"], correctIndex: 1, explanation: "NFT images are stored on IPFS." },
-    ];
-
-    allQuestions.forEach((q) => this.quizQuestions.set(q.id, q));
+    seedCourses.forEach((c) => this.courses.set(c.id, c));
+    seedLessons.forEach((l) => this.lessons.set(l.id, l));
+    seedQuizQuestions.forEach((q) => this.quizQuestions.set(q.id, q));
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -307,7 +98,8 @@ export class DbStorage implements IStorage {
 
   async getQuizResultsByUser(userId: string): Promise<QuizResult[]> {
     const results = await db.select().from(schema.quizResults)
-      .where(eq(schema.quizResults.userId, userId));
+      .where(eq(schema.quizResults.userId, userId))
+      .orderBy(desc(schema.quizResults.completedAt));
     return results as QuizResult[];
   }
 
@@ -318,8 +110,8 @@ export class DbStorage implements IStorage {
   }
 
   async getQuizResultsForCourse(userId: string, courseId: string): Promise<QuizResult[]> {
-    const lessons = await this.getLessonsByCourse(courseId);
-    const lessonIds = lessons.map(l => l.id);
+    const courseLessons = await this.getLessonsByCourse(courseId);
+    const lessonIds = courseLessons.map(l => l.id);
     if (lessonIds.length === 0) return [];
     
     const results = await db.select().from(schema.quizResults)
