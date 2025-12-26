@@ -1,7 +1,7 @@
 # Kaspa University
 
 ## Overview
-Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It allows users to connect their Kaspa wallets, complete courses and quizzes, and earn KAS token rewards. The platform issues verifiable NFT certificates for course completions and facilitates decentralized P2P Q&A discussions. The core vision is "blockchain-powered education that feels effortless," aiming to hide complexity while showcasing innovation.
+Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It allows users to connect their Kaspa wallets, complete courses and quizzes, and earn KAS token rewards (0.2 KAS per course). The platform issues verifiable NFT certificates for course completions and facilitates decentralized P2P Q&A discussions. The core vision is "blockchain-powered education that feels effortless," aiming to hide complexity while showcasing innovation.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
