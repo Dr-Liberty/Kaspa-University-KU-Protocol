@@ -105,7 +105,8 @@ class KRC721Service {
   private config: KRC721Config;
   private initialized: boolean = false;
   private kaspaModule: any = null;
-  private rpcClient: any = null;
+  private rpcClient: any = null;        // kaspa-rpc-client for UTXO queries
+  private wasmRpcClient: any = null;    // WASM RpcClient for PendingTransaction.submit()
   private privateKey: any = null;
   private publicKey: any = null;
   private address: string | null = null;
@@ -294,7 +295,7 @@ class KRC721Service {
     try {
       console.log("[KRC721] Connecting to RPC via kaspa-rpc-client...");
       
-      // Use kaspa-rpc-client (pure TypeScript) instead of WASM RpcClient
+      // Use kaspa-rpc-client (pure TypeScript) for UTXO queries
       const { ClientWrapper } = require("kaspa-rpc-client");
       
       const wrapper = new ClientWrapper({
@@ -308,6 +309,22 @@ class KRC721Service {
       // Get block count to verify connection
       const info = await this.rpcClient.getBlockDagInfo();
       console.log(`[KRC721] RPC connected! Block count: ${info?.blockCount || "unknown"}`);
+      
+      // Also connect WASM RpcClient for PendingTransaction.submit()
+      // WASM SDK's PendingTransaction.submit() requires WASM RpcClient, not kaspa-rpc-client
+      try {
+        const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
+        const resolver = new Resolver();
+        this.wasmRpcClient = new WasmRpcClient({
+          resolver,
+          networkId: this.config.network,
+        });
+        await this.wasmRpcClient.connect();
+        console.log(`[KRC721] WASM RpcClient connected for transaction submission`);
+      } catch (wasmError: any) {
+        console.log(`[KRC721] WASM RpcClient connection failed: ${wasmError.message}`);
+        // Will fall back to kaspa-rpc-client (may not work for submit)
+      }
     } catch (error: any) {
       console.log(`[KRC721] RPC connection failed: ${error.message}`);
       // Continue without RPC - will use demo mode
@@ -929,7 +946,9 @@ class KRC721Service {
           );
         }
 
-        revealTxHash = await tx.submit(this.rpcClient);
+        // Use WASM RpcClient for PendingTransaction.submit() - kaspa-rpc-client won't work
+        const rpcForSubmit = this.wasmRpcClient || this.rpcClient;
+        revealTxHash = await tx.submit(rpcForSubmit);
         console.log(`[KRC721] Reveal tx: ${revealTxHash}`);
       }
 
@@ -1055,9 +1074,11 @@ class KRC721Service {
       });
 
       // Sign and submit commit transaction
+      // Use WASM RpcClient for PendingTransaction.submit() - kaspa-rpc-client won't work
+      const rpcForSubmit = this.wasmRpcClient || this.rpcClient;
       for (const tx of commitTxs) {
         tx.sign([this.privateKey]);
-        commitTxHash = await tx.submit(this.rpcClient);
+        commitTxHash = await tx.submit(rpcForSubmit);
         console.log(`[KRC721] Commit tx: ${commitTxHash}`);
       }
 
@@ -1113,7 +1134,7 @@ class KRC721Service {
           );
         }
 
-        revealTxHash = await tx.submit(this.rpcClient);
+        revealTxHash = await tx.submit(rpcForSubmit);
         console.log(`[KRC721] Reveal tx: ${revealTxHash}`);
       }
 
