@@ -28,6 +28,7 @@ export interface IStorage {
 
   getQuizQuestionsByLesson(lessonId: string): Promise<QuizQuestion[]>;
   saveQuizResult(result: Omit<QuizResult, "id" | "completedAt">): Promise<QuizResult>;
+  updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined>;
   getQuizResultsByUser(userId: string): Promise<QuizResult[]>;
   getQuizResultsForCourse(userId: string, courseId: string): Promise<QuizResult[]>;
   getQuizResult(id: string): Promise<QuizResult | undefined>;
@@ -668,9 +669,22 @@ const balances = await indexer.getKRC20Balances({
 
   async saveQuizResult(result: Omit<QuizResult, "id" | "completedAt">): Promise<QuizResult> {
     const id = randomUUID();
-    const quizResult: QuizResult = { ...result, id, completedAt: new Date() };
+    const quizResult: QuizResult = { 
+      ...result, 
+      id, 
+      completedAt: new Date(),
+      txStatus: result.txStatus || "none",
+    };
     this.quizResults.set(id, quizResult);
     return quizResult;
+  }
+  
+  async updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined> {
+    const existing = this.quizResults.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates };
+    this.quizResults.set(id, updated);
+    return updated;
   }
 
   async getQuizResultsByUser(userId: string): Promise<QuizResult[]> {

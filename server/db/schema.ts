@@ -100,6 +100,8 @@ export const quizResults = pgTable("quiz_results", {
   score: integer("score").notNull(),
   passed: boolean("passed").notNull(),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
+  txHash: text("tx_hash"),
+  txStatus: text("tx_status").default("none").notNull(),
 });
 
 // Course rewards - pending/claimed KAS rewards for completed courses

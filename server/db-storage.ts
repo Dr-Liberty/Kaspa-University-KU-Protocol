@@ -91,9 +91,29 @@ export class DbStorage implements IStorage {
       userId: result.userId,
       score: result.score,
       passed: result.passed,
+      txHash: result.txHash || null,
+      txStatus: result.txStatus || "pending",
     };
     const inserted = await db.insert(schema.quizResults).values(quizResult).returning();
     return inserted[0] as QuizResult;
+  }
+  
+  async updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined> {
+    const updateData: Record<string, any> = {};
+    if (updates.txHash !== undefined) updateData.txHash = updates.txHash;
+    if (updates.txStatus !== undefined) updateData.txStatus = updates.txStatus;
+    if (updates.score !== undefined) updateData.score = updates.score;
+    if (updates.passed !== undefined) updateData.passed = updates.passed;
+    
+    if (Object.keys(updateData).length === 0) {
+      return this.getQuizResult(id);
+    }
+    
+    const result = await db.update(schema.quizResults)
+      .set(updateData)
+      .where(eq(schema.quizResults.id, id))
+      .returning();
+    return result[0] as QuizResult | undefined;
   }
 
   async getQuizResultsByUser(userId: string): Promise<QuizResult[]> {

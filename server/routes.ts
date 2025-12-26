@@ -454,15 +454,48 @@ export async function registerRoutes(
       return res.status(404).json({ error: "Course not found" });
     }
 
-    // Save quiz result (no individual rewards - rewards are at course level)
+    // Save quiz result first (fast UX)
     const result = await storage.saveQuizResult({
       lessonId,
       userId: user.id,
       score,
       passed,
+      txStatus: "pending",
     });
 
     await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, 0);
+    
+    // Create on-chain transaction for quiz result (async - don't block response)
+    (async () => {
+      try {
+        const kaspaService = await getKaspaService();
+        const quizPayload = createQuizPayload({
+          lessonId,
+          walletAddress,
+          score,
+          maxScore: 100,
+          passed,
+          timestamp: Date.now(),
+        });
+        
+        // Send payload to blockchain
+        const txHash = await kaspaService.sendPayloadTransaction(quizPayload, walletAddress);
+        
+        if (txHash) {
+          await storage.updateQuizResult(result.id, { 
+            txHash, 
+            txStatus: "confirmed" 
+          });
+          console.log(`[Quiz] On-chain TX confirmed: ${txHash} for lesson ${lessonId}`);
+        } else {
+          await storage.updateQuizResult(result.id, { txStatus: "failed" });
+          console.log(`[Quiz] On-chain TX failed for lesson ${lessonId}`);
+        }
+      } catch (error: any) {
+        console.error(`[Quiz] On-chain TX error: ${error.message}`);
+        await storage.updateQuizResult(result.id, { txStatus: "failed" });
+      }
+    })();
 
     // Update progress when quiz is passed
     if (passed) {
@@ -1485,15 +1518,17 @@ export async function registerRoutes(
       const qaPosts = await storage.getRecentQAPosts(10);
       
       const recentTxs = [
-        ...quizResults.map(r => ({
-          txHash: `quiz_${r.id}`,
-          type: "quiz" as const,
-          timestamp: new Date(r.completedAt).getTime(),
-          walletAddress: r.userId,
-          courseId: r.lessonId.split("-")[0],
-          score: r.score,
-          maxScore: 100,
-        })),
+        ...quizResults
+          .filter(r => r.txHash && r.txStatus === "confirmed")
+          .map(r => ({
+            txHash: r.txHash!,
+            type: "quiz" as const,
+            timestamp: new Date(r.completedAt).getTime(),
+            walletAddress: r.userId,
+            courseId: r.lessonId.split("-")[0],
+            score: r.score,
+            maxScore: 100,
+          })),
         ...qaPosts.map(p => ({
           txHash: p.txHash || `demo_qa_${p.id}`,
           type: p.isQuestion ? "qa_question" as const : "qa_answer" as const,

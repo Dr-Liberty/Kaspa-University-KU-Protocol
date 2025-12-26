@@ -63,6 +63,8 @@ export const quizResultSchema = z.object({
   score: z.number(),
   passed: z.boolean(),
   completedAt: z.date(),
+  txHash: z.string().optional(),
+  txStatus: z.enum(["none", "pending", "confirmed", "failed"]).default("none"),
 });
 
 export type QuizResult = z.infer<typeof quizResultSchema>;
