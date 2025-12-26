@@ -99,25 +99,22 @@ export async function registerRoutes(
       // Build activity data from ALL quiz results (real data)
       const activityData = (() => {
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const dayStats = new Map<string, { users: Set<string>, completions: number, rewards: number }>();
+        const dayStats = new Map<string, { users: Set<string>, completions: number }>();
         
-        // Initialize all days
-        days.forEach(d => dayStats.set(d, { users: new Set(), completions: 0, rewards: 0 }));
+        days.forEach(d => dayStats.set(d, { users: new Set(), completions: 0 }));
         
-        // Populate from ALL quiz results
         allQuizResults.forEach(result => {
           const dayName = days[new Date(result.completedAt).getDay()];
           const dayStat = dayStats.get(dayName)!;
           dayStat.users.add(result.userId);
           dayStat.completions += 1;
-          dayStat.rewards += result.kasRewarded;
         });
         
         return days.slice(1).concat(days[0]).map(d => ({
           date: d,
           users: dayStats.get(d)!.users.size,
           completions: dayStats.get(d)!.completions,
-          rewards: Math.round(dayStats.get(d)!.rewards * 100) / 100,
+          rewards: 0,
         }));
       })();
 
@@ -149,7 +146,6 @@ export async function registerRoutes(
       
       // Add recent quiz completions
       for (const result of recentQuizResults.slice(0, 3)) {
-        // Get lesson to find course
         const lesson = await storage.getLesson(result.lessonId);
         const course = lesson ? await storage.getCourse(lesson.courseId) : null;
         const timeDiff = Date.now() - new Date(result.completedAt).getTime();
@@ -161,14 +157,6 @@ export async function registerRoutes(
           description: `User completed '${course?.title || "Quiz"}'`,
           timestamp: timeStr,
         });
-        
-        if (result.kasRewarded > 0) {
-          recentActivity.push({
-            type: "reward",
-            description: `${result.kasRewarded} KAS distributed for quiz completion`,
-            timestamp: timeStr,
-          });
-        }
       }
       
       // Add recent Q&A posts
@@ -585,8 +573,8 @@ export async function registerRoutes(
     res.json(enriched);
   });
 
-  // Claim a reward
-  app.post("/api/rewards/:resultId/claim", rewardRateLimiter, async (req: Request, res: Response) => {
+  // Claim a course reward
+  app.post("/api/rewards/:rewardId/claim", rewardRateLimiter, async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
@@ -596,65 +584,64 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Connect a real wallet to claim rewards" });
     }
 
-    const { resultId } = req.params;
-    const result = await storage.getQuizResult(resultId);
+    const { rewardId } = req.params;
+    const reward = await storage.getCourseReward(rewardId);
     
-    if (!result) {
-      return res.status(404).json({ error: "Quiz result not found" });
+    if (!reward) {
+      return res.status(404).json({ error: "Reward not found" });
     }
 
     const user = await storage.getUserByWalletAddress(walletAddress);
-    if (!user || result.userId !== user.id) {
+    if (!user || reward.userId !== user.id) {
       return res.status(403).json({ error: "Not authorized to claim this reward" });
     }
 
-    if (result.rewardStatus !== "pending") {
+    if (reward.status !== "pending") {
       return res.status(400).json({ error: "Reward already claimed or in progress" });
     }
 
-    if (!result.passed || result.kasRewarded <= 0) {
-      return res.status(400).json({ error: "No reward available for this quiz" });
+    if (reward.kasAmount <= 0) {
+      return res.status(400).json({ error: "No reward available" });
     }
 
-    // Mark as claiming
-    await storage.updateQuizResult(resultId, { rewardStatus: "claiming" });
+    await storage.updateCourseReward(rewardId, { status: "claiming" });
 
     try {
       const kaspaService = await getKaspaService();
-      const lesson = await storage.getLesson(result.lessonId);
-      const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+      const course = await storage.getCourse(reward.courseId);
 
       const txResult = await kaspaService.sendReward(
         walletAddress,
-        result.kasRewarded,
-        result.lessonId,
-        result.score,
-        course?.id || result.lessonId.split("-")[0],
-        100,
+        reward.kasAmount,
+        reward.courseId,
+        reward.averageScore,
+        reward.courseId,
+        reward.averageScore,
         []
       );
 
       if (txResult.success && txResult.txHash) {
-        await storage.updateQuizResult(resultId, { 
-          rewardStatus: "claimed", 
-          txHash: txResult.txHash 
+        await storage.updateCourseReward(rewardId, { 
+          status: "claimed", 
+          txHash: txResult.txHash,
+          claimedAt: new Date(),
         });
-        await storage.updateUserKas(user.id, result.kasRewarded);
+        await storage.updateUserKas(user.id, reward.kasAmount);
         
-        console.log(`[Claim] Reward claimed: ${result.kasRewarded} KAS, txHash: ${txResult.txHash}`);
+        console.log(`[Claim] Course reward claimed: ${reward.kasAmount} KAS for ${course?.title}, txHash: ${txResult.txHash}`);
         
         res.json({ 
           success: true, 
           txHash: txResult.txHash, 
-          amount: result.kasRewarded 
+          amount: reward.kasAmount 
         });
       } else {
-        await storage.updateQuizResult(resultId, { rewardStatus: "pending" });
+        await storage.updateCourseReward(rewardId, { status: "pending" });
         console.error(`[Claim] Failed: ${txResult.error}`);
         res.status(500).json({ error: "Transaction failed", message: txResult.error });
       }
     } catch (error: any) {
-      await storage.updateQuizResult(resultId, { rewardStatus: "pending" });
+      await storage.updateCourseReward(rewardId, { status: "pending" });
       console.error(`[Claim] Error: ${error.message}`);
       res.status(500).json({ error: "Failed to process claim" });
     }
@@ -811,14 +798,116 @@ export async function registerRoutes(
     }
   });
 
-  // Claim NFT certificate - user pays minting fee
+  // Mint NFT certificate - treasury pays gas fees
+  app.post("/api/certificates/:id/mint", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    if (walletAddress.startsWith("demo:")) {
+      return res.status(403).json({ 
+        error: "Demo mode not supported for NFT minting",
+        message: "Connect a real Kaspa wallet to mint your NFT certificate"
+      });
+    }
+
+    const { id } = req.params;
+    const certificate = await storage.getCertificate(id);
+    if (!certificate) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    if (certificate.recipientAddress !== walletAddress) {
+      return res.status(403).json({ error: "You don't own this certificate" });
+    }
+
+    if (certificate.nftStatus === "claimed") {
+      return res.status(400).json({ error: "NFT already minted", nftTxHash: certificate.nftTxHash });
+    }
+    
+    if (certificate.nftStatus === "minting") {
+      return res.status(400).json({ error: "NFT minting already in progress" });
+    }
+
+    await storage.updateCertificate(id, { nftStatus: "minting" });
+
+    try {
+      const krc721Service = await getKRC721Service();
+
+      let imageUrl = certificate.imageUrl;
+      if (!imageUrl) {
+        const svgImage = krc721Service.generateCertificateImageSvg(
+          certificate.recipientAddress,
+          certificate.courseName,
+          certificate.score || 100,
+          certificate.issuedAt
+        );
+        
+        const pinataService = getPinataService();
+        if (pinataService.isConfigured()) {
+          console.log(`[Mint] Uploading certificate to IPFS...`);
+          const uploadResult = await pinataService.uploadCertificate(
+            svgImage,
+            id,
+            certificate.courseName,
+            certificate.score || 100,
+            certificate.recipientAddress,
+            certificate.issuedAt
+          );
+          
+          if (uploadResult.success && uploadResult.ipfsUrl) {
+            imageUrl = uploadResult.ipfsUrl;
+          } else {
+            imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+          }
+        } else {
+          imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
+        }
+      }
+
+      const mintResult = await krc721Service.mintCertificate(
+        certificate.recipientAddress,
+        certificate.courseName,
+        certificate.score || 100,
+        certificate.issuedAt,
+        imageUrl
+      );
+
+      if (mintResult.success && mintResult.revealTxHash) {
+        await storage.updateCertificate(id, {
+          nftStatus: "claimed",
+          nftTxHash: mintResult.revealTxHash,
+          imageUrl,
+        });
+
+        console.log(`[Mint] NFT minted for certificate ${id}, txHash: ${mintResult.revealTxHash}`);
+        return res.json({
+          success: true,
+          txHash: mintResult.revealTxHash,
+          imageUrl,
+        });
+      } else {
+        await storage.updateCertificate(id, { nftStatus: "pending" });
+        return res.status(500).json({ 
+          error: "Minting failed",
+          message: mintResult.error || "NFT minting transaction failed"
+        });
+      }
+    } catch (error: any) {
+      await storage.updateCertificate(id, { nftStatus: "pending" });
+      console.error(`[Mint] Error: ${error.message}`);
+      return res.status(500).json({ error: "Minting failed", message: error.message });
+    }
+  });
+
+  // Legacy claim endpoint (deprecated - use /mint instead)
   app.post("/api/certificates/:id/claim", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
     }
 
-    // Reject demo mode - NFT claiming requires real payment
     if (walletAddress.startsWith("demo:")) {
       return res.status(403).json({ 
         error: "Demo mode not supported for NFT claiming",
@@ -829,17 +918,14 @@ export async function registerRoutes(
     const { id } = req.params;
     const { paymentTxHash } = req.body;
 
-    // Payment transaction hash is required
     if (!paymentTxHash) {
       return res.status(400).json({ error: "Payment transaction hash is required" });
     }
 
-    // Reject demo payment hashes
     if (paymentTxHash.startsWith("demo_")) {
       return res.status(400).json({ error: "Invalid payment transaction" });
     }
 
-    // Check if payment tx has already been used (prevent double-claiming)
     const txAlreadyUsed = await isPaymentTxUsed(paymentTxHash);
     if (txAlreadyUsed) {
       return res.status(400).json({ 
@@ -848,18 +934,15 @@ export async function registerRoutes(
       });
     }
 
-    // Get certificate
     const certificate = await storage.getCertificate(id);
     if (!certificate) {
       return res.status(404).json({ error: "Certificate not found" });
     }
 
-    // Verify ownership
     if (certificate.recipientAddress !== walletAddress) {
       return res.status(403).json({ error: "You don't own this certificate" });
     }
 
-    // Check if already claimed or minting in progress
     if (certificate.nftStatus === "claimed") {
       return res.status(400).json({ error: "NFT already claimed", nftTxHash: certificate.nftTxHash });
     }
@@ -868,21 +951,19 @@ export async function registerRoutes(
       return res.status(400).json({ error: "NFT minting already in progress" });
     }
 
-    // Mark as minting
     await storage.updateCertificate(id, { nftStatus: "minting" });
 
     try {
       const krc721Service = await getKRC721Service();
       const kaspaService = await getKaspaService();
       const collectionInfo = await krc721Service.getCollectionInfo();
-      const MINTING_FEE = 3.5; // KAS
+      const MINTING_FEE = 3.5;
 
       if (!collectionInfo.address) {
         await storage.updateCertificate(id, { nftStatus: "pending" });
         return res.status(500).json({ error: "Treasury address not configured" });
       }
 
-      // Verify payment transaction
       console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
       const paymentVerified = await kaspaService.verifyPayment(
         paymentTxHash,
@@ -1029,7 +1110,7 @@ export async function registerRoutes(
       
       const recentTxs = [
         ...quizResults.map(r => ({
-          txHash: r.txHash || `demo_quiz_${r.id}`,
+          txHash: `quiz_${r.id}`,
           type: "quiz" as const,
           timestamp: new Date(r.completedAt).getTime(),
           walletAddress: r.userId,

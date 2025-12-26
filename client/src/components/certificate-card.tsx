@@ -6,7 +6,7 @@ import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles } from "l
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 interface CertificateCardProps {
@@ -14,60 +14,39 @@ interface CertificateCardProps {
   showActions?: boolean;
 }
 
-interface NftFeeInfo {
-  mintingFee: number;
-  treasuryAddress: string;
-  network: string;
-}
-
 export function CertificateCard({ certificate, showActions = true }: CertificateCardProps) {
   const { toast } = useToast();
-  const { sendKaspa, isDemoMode } = useWallet();
+  const { isDemoMode } = useWallet();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showImage, setShowImage] = useState(false);
 
-  const { data: feeInfo } = useQuery<NftFeeInfo>({
-    queryKey: ["/api/nft/fee"],
-    staleTime: 60000,
-  });
-
   const claimMutation = useMutation({
     mutationFn: async () => {
-      if (!feeInfo) throw new Error("Fee info not loaded");
-      
       if (isDemoMode) {
-        throw new Error("Connect a real Kaspa wallet to claim your NFT certificate");
+        throw new Error("Connect a real Kaspa wallet to mint your NFT certificate");
       }
       
       toast({
         title: "Minting NFT Certificate",
-        description: `Sending ${feeInfo.mintingFee} KAS to cover minting fees...`,
+        description: "Creating your certificate on the Kaspa blockchain...",
       });
       
-      const paymentTxHash = await sendKaspa(feeInfo.treasuryAddress, feeInfo.mintingFee);
-      
-      toast({
-        title: "Payment Sent",
-        description: "Waiting for NFT to be minted...",
-      });
-      
-      const response = await apiRequest("POST", `/api/certificates/${certificate.id}/claim`, {
-        paymentTxHash,
-      });
-      
+      const response = await apiRequest("POST", `/api/certificates/${certificate.id}/mint`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "NFT Claimed Successfully",
-        description: "Your NFT certificate has been minted on the Kaspa blockchain!",
+        title: "NFT Minted Successfully",
+        description: data.txHash 
+          ? "Your certificate is now on the Kaspa blockchain!"
+          : "Your NFT certificate has been created!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Claim Failed",
+        title: "Minting Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -170,7 +149,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
                 <Sparkles className="h-3 w-3" />
-                Claim NFT
+                Mint NFT
               </Badge>
             </div>
           )}
@@ -192,17 +171,17 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                 <Button
                   className="w-full gap-2"
                   onClick={() => claimMutation.mutate()}
-                  disabled={claimMutation.isPending || !feeInfo || isDemoMode}
-                  data-testid={`button-claim-${certificate.id}`}
+                  disabled={claimMutation.isPending || isDemoMode}
+                  data-testid={`button-mint-${certificate.id}`}
                 >
                   <Sparkles className="h-4 w-4" />
                   {isDemoMode 
-                    ? "Connect Wallet to Claim" 
-                    : `Claim NFT (${feeInfo?.mintingFee || "..."} KAS)`}
+                    ? "Connect Wallet to Mint" 
+                    : "Mint NFT"}
                 </Button>
                 {isDemoMode && (
                   <p className="text-xs text-center text-muted-foreground">
-                    Connect a real Kaspa wallet to claim your NFT
+                    Connect a real Kaspa wallet to mint your NFT
                   </p>
                 )}
               </div>

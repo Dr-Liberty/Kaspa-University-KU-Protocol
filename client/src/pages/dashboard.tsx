@@ -1,13 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CertificateCard } from "@/components/certificate-card";
-import type { Course, UserProgress, Certificate, User } from "@shared/schema";
+import type { Course, UserProgress, Certificate, User, CourseReward } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
   Coins,
@@ -18,6 +20,9 @@ import {
   Wallet,
   ArrowRight,
   ShieldAlert,
+  Loader2,
+  CheckCircle2,
+  Gift,
 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -54,6 +59,40 @@ export default function Dashboard() {
   const { data: certificates } = useQuery<Certificate[]>({
     queryKey: ["/api/certificates"],
     enabled: !!wallet,
+  });
+
+  interface ClaimableReward extends CourseReward {
+    courseTitle: string;
+  }
+
+  const { data: claimableRewards, isLoading: rewardsLoading } = useQuery<ClaimableReward[]>({
+    queryKey: ["/api/rewards/claimable"],
+    enabled: !!wallet,
+  });
+
+  const { toast } = useToast();
+  const isDemoMode = wallet?.address?.startsWith("demo:");
+
+  const claimMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const response = await apiRequest("POST", `/api/rewards/${rewardId}/claim`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rewards/claimable"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Reward Claimed!",
+        description: `${data.amount} KAS has been sent to your wallet.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Claim Failed",
+        description: error.message || "Failed to claim reward",
+        variant: "destructive",
+      });
+    },
   });
 
   const progressMap = useMemo(() => {
@@ -197,6 +236,70 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {claimableRewards && claimableRewards.length > 0 && (
+          <Card className="mb-6 border-primary/30 bg-primary/5">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">Pending Rewards</CardTitle>
+                </div>
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                  {claimableRewards.length} available
+                </Badge>
+              </div>
+              <CardDescription>
+                Complete courses to unlock KAS rewards
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {claimableRewards.map((reward) => (
+                <div
+                  key={reward.id}
+                  className="flex items-center justify-between gap-4 rounded-lg border bg-card p-4"
+                  data-testid={`reward-item-${reward.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Award className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{reward.courseTitle}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Score: {reward.averageScore}%
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-bold text-primary">{reward.kasAmount.toFixed(2)} KAS</p>
+                    </div>
+                    <Button
+                      onClick={() => claimMutation.mutate(reward.id)}
+                      disabled={claimMutation.isPending || isDemoMode}
+                      size="sm"
+                      className="gap-2"
+                      data-testid={`button-claim-${reward.id}`}
+                    >
+                      {claimMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Coins className="h-4 w-4" />
+                      )}
+                      Claim
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {isDemoMode && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Connect a real wallet to claim rewards
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="border-border/50">
