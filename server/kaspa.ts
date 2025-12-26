@@ -1047,7 +1047,7 @@ class KaspaService {
       console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
     }
 
-    const { PrivateKey, Generator, kaspaToSompi } = this.kaspaModule;
+    const { PrivateKey, createTransactions, kaspaToSompi } = this.kaspaModule;
     const utxoManager = getUTXOManager();
 
     // Get UTXOs via kaspa-rpc-client
@@ -1194,7 +1194,7 @@ class KaspaService {
     }
 
     try {
-      console.log(`[Kaspa] Building transaction using Generator class...`);
+      console.log(`[Kaspa] Building transaction using createTransactions()...`);
       
       // Create private key object from our derived key
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
@@ -1206,10 +1206,8 @@ class KaspaService {
       const priorityFee = kaspaToSompi(0.0001);
       console.log(`[Kaspa] Output: ${amountSompi} sompi, priority fee: ${priorityFee}`);
 
-      // Create Generator with properly formatted settings
-      // CRITICAL: Use "entries" not "utxoEntries" per IGeneratorSettingsObject interface
-      // CRITICAL: Include "networkId" when passing array of entries
-      const generatorSettings: any = {
+      // Build transaction settings (same pattern as payload transactions)
+      const txSettings: any = {
         entries: wasmEntries,
         outputs: [{
           address: recipientAddress,
@@ -1217,82 +1215,50 @@ class KaspaService {
         }],
         changeAddress: this.treasuryAddress,
         priorityFee,
-        networkId: "mainnet",
       };
 
       // Embed KU protocol quiz proof in transaction payload
       if (quizPayload) {
-        generatorSettings.payload = quizPayload;
+        txSettings.payload = quizPayload;
         console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
       }
 
-      // Log Generator settings for debugging
-      console.log(`[Kaspa] Generator settings: ${wasmEntries.length} UTXOs, output: ${amountSompi}, networkId: mainnet`);
-      console.log(`[Kaspa] Creating Generator instance...`);
+      console.log(`[Kaspa] Creating transactions with ${wasmEntries.length} UTXOs...`);
 
-      // Create Generator instance (per SDK example pattern)
-      let generator;
-      try {
-        generator = new Generator(generatorSettings);
-        console.log(`[Kaspa] Generator created successfully`);
-      } catch (genError: any) {
-        const errorMsg = genError?.message || String(genError);
-        console.error(`[Kaspa] Generator creation failed: ${errorMsg}`);
-        console.error(`[Kaspa] Stack:`, genError?.stack);
-        throw new Error(`Failed to create Generator: ${errorMsg}`);
+      // Use createTransactions() which returns Transaction objects with toRpcTransaction()
+      // This is the same pattern that works for payload transactions
+      const { transactions } = await createTransactions(txSettings);
+
+      if (!transactions || transactions.length === 0) {
+        throw new Error("createTransactions returned no transactions");
       }
+
+      console.log(`[Kaspa] Created ${transactions.length} transaction(s), signing and submitting...`);
 
       // Verify we have kaspa-rpc-client for submission
       if (!this.rpcClient) {
         throw new Error("Cannot submit transaction: RPC client not connected.");
       }
 
-      // Use Generator.next() pattern from SDK documentation
-      // https://kaspa.aspectron.org/docs/classes/Generator.html
-      // Example from SDK: while(pendingTransaction = await generator.next()) { ... }
+      // Sign and submit each transaction (same pattern as payload transactions)
       let finalTxHash = "";
-      let txCount = 0;
-      
-      console.log(`[Kaspa] Starting Generator transaction loop...`);
-      
-      // Generator.next() returns pending transactions until exhausted (null/undefined)
-      let pendingTransaction;
-      while (true) {
-        pendingTransaction = await generator.next();
+      for (let i = 0; i < transactions.length; i++) {
+        const tx = transactions[i];
+        console.log(`[Kaspa] Processing transaction ${i + 1}/${transactions.length}...`);
         
-        // Generator returns null or undefined when exhausted
-        if (pendingTransaction === null || pendingTransaction === undefined) {
-          console.log(`[Kaspa] Generator exhausted after ${txCount} transaction(s)`);
-          break;
-        }
+        // Sign the transaction (synchronous)
+        tx.sign([privateKey]);
+        console.log(`[Kaspa] Transaction ${i + 1} signed`);
         
-        txCount++;
-        console.log(`[Kaspa] Processing transaction ${txCount}...`);
-        
-        // Sign the pending transaction (synchronous per typings: sign() returns void)
+        // Submit via kaspa-rpc-client using toRpcTransaction()
+        // This is the working pattern from payload transactions
         try {
-          pendingTransaction.sign([privateKey]);
-          console.log(`[Kaspa] Transaction ${txCount} signed`);
-        } catch (signError: any) {
-          console.error(`[Kaspa] Sign failed: ${signError.message}`);
-          throw new Error(`Failed to sign transaction: ${signError.message}`);
-        }
-        
-        // Submit via kaspa-rpc-client instead of WASM RpcClient
-        // Use serializeToObject() to get RPC-compatible transaction format
-        try {
-          // Serialize the signed PendingTransaction to RPC format
-          const serializedTx = pendingTransaction.serializeToObject();
-          console.log(`[Kaspa] Submitting transaction via kaspa-rpc-client...`);
-          
-          // Submit via kaspa-rpc-client's submitTransaction method
           const submitResult = await this.rpcClient.submitTransaction({
-            transaction: serializedTx,
-            allowOrphan: false
+            transaction: tx.toRpcTransaction()
           });
           
-          finalTxHash = submitResult?.transactionId || pendingTransaction.id || "";
-          console.log(`[Kaspa] Transaction ${txCount} submitted: ${finalTxHash}`);
+          finalTxHash = submitResult?.transactionId || tx.id;
+          console.log(`[Kaspa] Transaction ${i + 1} submitted: ${finalTxHash}`);
         } catch (submitError: any) {
           const errorMsg = submitError?.message || String(submitError);
           console.error(`[Kaspa] Submit failed: ${errorMsg}`);
@@ -1312,23 +1278,13 @@ class KaspaService {
         }
       }
 
-      // Get summary from generator (synchronous per typings)
-      const summary = generator.summary();
-      console.log(`[Kaspa] Generator complete: ${txCount} transaction(s)`);
-      
-      // Try to get finalTransactionId from summary if we don't have one
-      if (!finalTxHash && summary?.finalTransactionId) {
-        finalTxHash = summary.finalTransactionId;
-        console.log(`[Kaspa] Using finalTransactionId from summary: ${finalTxHash}`);
-      }
-      
-      console.log(`[Kaspa] Summary:`, summary?.toJSON ? summary.toJSON() : summary);
+      console.log(`[Kaspa] All ${transactions.length} transaction(s) submitted successfully`);
 
       // Validate we have a transaction hash before marking UTXOs as spent
       if (!finalTxHash) {
-        console.error(`[Kaspa] Generator produced no transactions - releasing UTXOs`);
+        console.error(`[Kaspa] No transaction hash received - releasing UTXOs`);
         await utxoManager.releaseReservation(reservation.selected);
-        throw new Error("Transaction generation failed: no transactions produced. The amount may be below dust threshold or UTXOs insufficient.");
+        throw new Error("Transaction failed: no transaction hash returned. Please retry.");
       }
 
       // Mark UTXOs as spent with txHash
