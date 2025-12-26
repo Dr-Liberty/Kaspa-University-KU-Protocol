@@ -1113,6 +1113,11 @@ export async function registerRoutes(
           imageUrl,
         });
       } else {
+        const { logError } = await import("./error-logger");
+        await logError("nft", "prepare", prepareResult.error || "Failed to prepare NFT mint", {
+          certificateId: id,
+          recipientAddress: certificate.recipientAddress,
+        }, walletAddress, getClientIP(req));
         return res.status(500).json({ 
           error: "Prepare failed",
           message: prepareResult.error || "Failed to prepare NFT mint"
@@ -1120,6 +1125,11 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       console.error(`[Prepare] Error: ${error.message}`);
+      const { logError } = await import("./error-logger");
+      await logError("nft", "prepare", error.message, {
+        certificateId: id,
+        stack: error.stack,
+      }, walletAddress, getClientIP(req));
       return res.status(500).json({ error: "Prepare failed", message: error.message });
     }
   });
@@ -1205,6 +1215,13 @@ export async function registerRoutes(
         // Reset status on other failures so user can retry
         await storage.updateCertificate(id, { nftStatus: "pending" });
         
+        const { logError } = await import("./error-logger");
+        await logError("nft", "finalize", finalizeResult.error || "NFT minting transaction failed", {
+          certificateId: id,
+          p2shAddress,
+          commitTxHash,
+        }, walletAddress, getClientIP(req));
+        
         return res.status(500).json({ 
           success: false,
           error: "Finalize failed",
@@ -1214,6 +1231,15 @@ export async function registerRoutes(
     } catch (error: any) {
       await storage.updateCertificate(id, { nftStatus: "pending" });
       console.error(`[Finalize] Error: ${error.message}`);
+      
+      const { logError } = await import("./error-logger");
+      await logError("nft", "finalize", error.message, {
+        certificateId: id,
+        p2shAddress,
+        commitTxHash,
+        stack: error.stack,
+      }, walletAddress, getClientIP(req));
+      
       return res.status(500).json({ success: false, error: "Finalize failed", message: error.message });
     }
   });
@@ -1680,10 +1706,10 @@ export async function registerRoutes(
     }
   });
 
-  // Delete a specific reservation (admin)
+  // Delete a specific reservation by ID (admin)
   app.delete("/api/admin/reservations/:id", adminAuth, async (req: Request, res: Response) => {
     try {
-      await mintStorage.deleteReservation(req.params.id);
+      await mintStorage.deleteReservationById(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

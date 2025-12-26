@@ -15,6 +15,7 @@ import Certificates from "@/pages/certificates";
 import Analytics from "@/pages/analytics";
 import VerifyPage from "@/pages/verify";
 import VerifyExplorerPage from "@/pages/verify-explorer";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/verify" component={VerifyExplorerPage} />
       <Route path="/verify/:txHash" component={VerifyPage} />
+      <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );
