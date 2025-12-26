@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +28,14 @@ function QuizSection({
   lessonId,
   courseId,
   onComplete,
+  isLastLesson = false,
 }: {
   lessonId: string;
   courseId: string;
   onComplete: () => void;
+  isLastLesson?: boolean;
 }) {
+  const [, navigate] = useLocation();
   const { wallet, isDemoMode } = useWallet();
   const { toast } = useToast();
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -196,8 +199,18 @@ function QuizSection({
                   Connect a wallet to earn real KAS rewards and NFT certificates
                 </p>
               )}
-              <Button className="mt-4 gap-2" onClick={onComplete} data-testid="button-continue">
-                Continue
+              <Button 
+                className="mt-4 gap-2" 
+                onClick={() => {
+                  if (courseCompleted && isLastLesson) {
+                    navigate("/dashboard");
+                  } else {
+                    onComplete();
+                  }
+                }} 
+                data-testid="button-continue"
+              >
+                {courseCompleted && isLastLesson ? "View Rewards" : "Continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </>
@@ -514,6 +527,7 @@ export default function CourseDetail() {
                     lessonId={currentLesson.id}
                     courseId={courseId}
                     onComplete={handleNextLesson}
+                    isLastLesson={selectedLessonIndex === lessons.length - 1}
                   />
                 )}
 

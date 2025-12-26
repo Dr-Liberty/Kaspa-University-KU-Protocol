@@ -874,12 +874,15 @@ class KaspaService {
     }
 
     // Try hybrid approach: kaspa-rpc-client for RPC + WASM for signing
+    let lastError: string = "Treasury not properly configured";
+    
     if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
       try {
         return await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score, quizPayload);
       } catch (error: any) {
         console.error("[Kaspa] Hybrid transaction failed:", error.message);
-        // Fall through to pending mode
+        lastError = `Transaction failed: ${error.message}`;
+        // Fall through to next method
       }
     }
 
@@ -889,29 +892,14 @@ class KaspaService {
         return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score, quizPayload);
       } catch (error: any) {
         console.error("[Kaspa] kaspa-rpc-client wallet failed:", error.message);
-        // Fall through to pending mode
+        lastError = `Transaction failed: ${error.message}`;
+        // Fall through to error response
       }
     }
 
-    // Pending transaction mode
-    const pendingTxHash = `pending_${this.config.network}_${timestamp.toString(16)}_${lessonId.slice(0, 8)}`;
-    
-    const rewardData = {
-      type: "KU_REWARD",
-      recipient: recipientAddress,
-      amount: amountKas,
-      lessonId,
-      score,
-      timestamp,
-      network: this.config.network,
-      treasury: this.treasuryAddress,
-      payloadSize: quizPayload.length / 2,
-    };
-    
-    console.log(`[Kaspa] Reward queued: ${JSON.stringify(rewardData)}`);
-    console.log(`[Kaspa] Pending txHash: ${pendingTxHash}`);
-    
-    return { success: true, txHash: pendingTxHash };
+    // Return error with detailed message
+    console.error(`[Kaspa] All transaction methods failed: ${lastError}`);
+    return { success: false, error: lastError };
   }
 
   /**
@@ -1152,26 +1140,6 @@ class KaspaService {
     console.log(`[Kaspa] Transaction summary:`, summary);
 
     return { success: true, txHash: finalTxHash };
-  }
-
-  /**
-   * Verify a transaction on-chain
-   */
-  async verifyTransaction(txHash: string): Promise<boolean> {
-    if (txHash.startsWith("demo_") || txHash.startsWith("pending_")) {
-      return true;
-    }
-
-    if (this.apiConnected) {
-      try {
-        const result = await this.apiCall(`/transactions/${txHash}`);
-        return !!result;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    return false;
   }
 
   /**
