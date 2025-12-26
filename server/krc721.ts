@@ -201,16 +201,16 @@ class KRC721Service {
       const { ClientWrapper } = require("kaspa-rpc-client");
       
       const wrapper = new ClientWrapper({
-        hosts: ["seeder1.kaspad.net:16110"],
+        hosts: ["seeder2.kaspad.net:16110"],
         verbose: false,
       });
       
       await wrapper.initialize();
-      this.rpcClient = wrapper;
+      this.rpcClient = await wrapper.getClient();
       
       // Get block count to verify connection
-      const blockCount = await wrapper.call("getBlockCountRequest", {});
-      console.log(`[KRC721] RPC connected! Block count: ${blockCount?.blockCount || "unknown"}`);
+      const info = await this.rpcClient.getBlockDagInfo();
+      console.log(`[KRC721] RPC connected! Block count: ${info?.blockCount || "unknown"}`);
     } catch (error: any) {
       console.log(`[KRC721] RPC connection failed: ${error.message}`);
       // Continue without RPC - will use demo mode
