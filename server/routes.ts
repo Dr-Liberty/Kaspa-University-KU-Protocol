@@ -1645,13 +1645,20 @@ export async function registerRoutes(
   });
 
   // Reset certificate status to pending (admin)
+  // NOTE: This does NOT delete reservations to preserve P2SH addresses for fund recovery
   app.post("/api/admin/certificates/:id/reset", adminAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      const { deleteReservation } = req.body; // Optional: explicitly request deletion
+      
       const certificate = await storage.getCertificate(id);
       if (!certificate) {
         return res.status(404).json({ error: "Certificate not found" });
       }
+
+      // Get existing reservation info for logging
+      const existingReservation = await mintStorage.getByCertificateId(id);
+      let p2shAddress = existingReservation?.p2shAddress;
 
       // Reset the certificate status
       await storage.updateCertificate(id, { 
@@ -1659,11 +1666,23 @@ export async function registerRoutes(
         nftTxHash: undefined,
       });
 
-      // Delete any associated reservations
-      await mintStorage.deleteReservationByCertificateId(id);
+      // Only delete reservation if explicitly requested (to preserve P2SH for fund recovery)
+      if (deleteReservation === true && existingReservation) {
+        await mintStorage.deleteReservationByCertificateId(id);
+        console.log(`[Admin] Reset certificate ${id} and deleted reservation`);
+      } else if (existingReservation) {
+        // Mark reservation as failed but keep the P2SH address for recovery
+        await mintStorage.markFailed(existingReservation.p2shAddress);
+        console.log(`[Admin] Reset certificate ${id}, marked reservation as failed (P2SH preserved: ${p2shAddress?.slice(0, 30)}...)`);
+      } else {
+        console.log(`[Admin] Reset certificate ${id} (no reservation found)`);
+      }
 
-      console.log(`[Admin] Reset certificate ${id} to pending status`);
-      res.json({ success: true, message: "Certificate reset to pending" });
+      res.json({ 
+        success: true, 
+        message: "Certificate reset to pending",
+        p2shPreserved: existingReservation ? p2shAddress : null
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
