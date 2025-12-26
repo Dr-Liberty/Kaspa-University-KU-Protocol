@@ -890,4 +890,8 @@ const balances = await indexer.getKRC20Balances({
   }
 }
 
-export const storage = new MemStorage();
+import { DbStorage } from "./db-storage";
+
+export const storage: IStorage = process.env.DATABASE_URL 
+  ? new DbStorage() 
+  : new MemStorage();
