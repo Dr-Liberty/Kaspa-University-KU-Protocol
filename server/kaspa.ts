@@ -1768,25 +1768,34 @@ class KaspaService {
 
   /**
    * Verify a quiz result from an on-chain transaction
+   * Note: The Kaspa REST API (api.kaspa.org) may not return the payload field
+   * This is a known limitation - payloads are embedded but not exposed via API
    */
   async verifyQuizResult(txHash: string): Promise<QuizPayload | null> {
     try {
       // Fetch transaction from API
       const txData = await this.apiCall(`/transactions/${txHash}`);
       
-      if (!txData?.outputs?.[0]?.script_public_key_type) {
+      if (!txData) {
+        console.log(`[Kaspa] Transaction not found: ${txHash}`);
         return null;
       }
+      
+      console.log(`[Kaspa] TX data for ${txHash}: has payload=${!!txData.payload}, outputs=${txData.outputs?.length || 0}`);
 
       // Extract payload from transaction
       const payloadHex = txData.payload;
       if (!payloadHex) {
+        // Transaction exists but API doesn't return payload field
+        // This is expected behavior - the Kaspa REST API often omits the payload
+        console.log(`[Kaspa] Transaction ${txHash} exists but no payload returned by API`);
         return null;
       }
 
       // Parse the KU protocol message
       const parsed = parseKUPayload(payloadHex);
       if (!parsed || parsed.type !== "quiz") {
+        console.log(`[Kaspa] Payload exists but not a quiz type: ${parsed?.type || 'invalid'}`);
         return null;
       }
 

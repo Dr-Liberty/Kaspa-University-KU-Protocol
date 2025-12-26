@@ -72,6 +72,7 @@ interface P2SHRecoveryData {
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
+  const [resetWalletAddress, setResetWalletAddress] = useState("");
   const { toast } = useToast();
 
   const headers = { "x-admin-password": password };
@@ -179,6 +180,28 @@ export default function AdminPage() {
       toast({ title: "Error marked as resolved" });
       refetchErrors();
       refetchStats();
+    },
+  });
+
+  const resetQuizAttemptsMutation = useMutation({
+    mutationFn: async (walletAddress: string) => {
+      const res = await fetch("/api/admin/reset-quiz-attempts", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to reset");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Quiz attempts reset", description: data.message });
+      setResetWalletAddress("");
+    },
+    onError: (error: any) => {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -594,6 +617,48 @@ export default function AdminPage() {
                     Scan All P2SH Addresses
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5" />
+                  Reset Quiz Attempts
+                </CardTitle>
+                <CardDescription>
+                  Remove quiz attempt limits for a wallet (useful for testing)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 flex-wrap">
+                  <Input
+                    placeholder="Enter wallet address (kaspa:...)"
+                    value={resetWalletAddress}
+                    onChange={(e) => setResetWalletAddress(e.target.value)}
+                    className="flex-1 min-w-[300px]"
+                    data-testid="input-reset-wallet"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (resetWalletAddress.trim()) {
+                        resetQuizAttemptsMutation.mutate(resetWalletAddress.trim());
+                      }
+                    }}
+                    disabled={!resetWalletAddress.trim() || resetQuizAttemptsMutation.isPending}
+                    data-testid="button-reset-attempts"
+                  >
+                    {resetQuizAttemptsMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                    )}
+                    Reset Attempts
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This will clear all quiz attempt history for the specified wallet, allowing unlimited retries.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>

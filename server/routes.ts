@@ -1529,13 +1529,26 @@ export async function registerRoutes(
     try {
       const kaspaService = await getKaspaService();
 
+      // First check if transaction exists on L1
+      const txVerification = await kaspaService.verifyTransaction(txHash);
+      
+      if (!txVerification.exists) {
+        return res.json({
+          verified: false,
+          message: "Transaction not found on Kaspa network",
+          txExists: false
+        });
+      }
+
       // Try to verify as quiz result first
       const quizResult = await kaspaService.verifyQuizResult(txHash);
       if (quizResult) {
         return res.json({
           verified: true,
           type: "quiz",
-          data: quizResult
+          data: quizResult,
+          txExists: true,
+          txConfirmed: txVerification.confirmed
         });
       }
 
@@ -1545,13 +1558,20 @@ export async function registerRoutes(
         return res.json({
           verified: true,
           type: "questionTxId" in qaContent ? "qa_answer" : "qa_question",
-          data: qaContent
+          data: qaContent,
+          txExists: true,
+          txConfirmed: txVerification.confirmed
         });
       }
 
+      // Transaction exists but no KU protocol payload found
+      // Note: The Kaspa REST API may not expose transaction payloads
       return res.json({
         verified: false,
-        message: "Transaction not found or not a KU protocol transaction"
+        message: "Transaction exists but KU protocol payload not found. Note: The Kaspa API may not expose payload data.",
+        txExists: true,
+        txConfirmed: txVerification.confirmed,
+        outputs: txVerification.outputs
       });
     } catch (error) {
       return res.json({
@@ -1777,12 +1797,16 @@ export async function registerRoutes(
           if (balanceSompi > 0 && !isNaN(balanceSompi)) {
             const balanceKas = balanceSompi / 100000000;
             totalStuckKas += balanceKas;
+            
+            // Look up certificate to get course name
+            const cert = await storage.getCertificate(reservation.certificateId);
+            
             stuckFunds.push({
               p2shAddress: reservation.p2shAddress,
               balance: balanceSompi,
               balanceKas: balanceKas.toFixed(8),
               certificateId: reservation.certificateId,
-              courseName: reservation.courseName || "Unknown",
+              courseName: cert?.courseName || "Unknown",
               status: reservation.status,
               createdAt: reservation.createdAt,
             });
