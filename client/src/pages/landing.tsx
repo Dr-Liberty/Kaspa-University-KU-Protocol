@@ -63,7 +63,7 @@ export default function Landing() {
     {
       number: "02",
       title: "Choose a Course",
-      description: "Browse our curated courses on blockchain, Kaspa, and Web3 technology.",
+      description: "Browse our curated courses on BlockDAG, Kaspa, and Web3 technology.",
     },
     {
       number: "03",
@@ -130,7 +130,7 @@ export default function Landing() {
             className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl"
             data-testid="text-hero-title"
           >
-            Learn Blockchain.{" "}
+            Learn BlockDAG.{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Earn KAS.
             </span>
@@ -140,9 +140,9 @@ export default function Landing() {
             className="max-w-2xl text-lg text-muted-foreground md:text-xl"
             data-testid="text-hero-subtitle"
           >
-            Master blockchain technology while earning real cryptocurrency rewards.
+            Master BlockDAG technology while earning real cryptocurrency rewards.
             Complete courses, earn instant KAS, and receive verifiable NFT certificates
-            on the world's fastest proof-of-work blockchain.
+            on the world's fastest proof-of-work BlockDAG.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -263,7 +263,7 @@ export default function Landing() {
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
                 Join the first decentralized Learn-to-Earn platform on Kaspa. Your journey
-                to blockchain mastery starts here.
+                to BlockDAG mastery starts here.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -306,7 +306,7 @@ export default function Landing() {
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
             The first decentralized Learn-to-Earn platform built on Kaspa L1.
-            Powered by the world's fastest proof-of-work blockchain.
+            Powered by the world's fastest proof-of-work BlockDAG.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>Built for Kaspathon 2026</span>
