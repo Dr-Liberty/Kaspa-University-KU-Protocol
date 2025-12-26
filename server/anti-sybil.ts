@@ -48,7 +48,7 @@ interface AntiSybilConfig {
 
 const DEFAULT_CONFIG: AntiSybilConfig = {
   quizCooldownMs: 0, // No cooldown between quiz attempts
-  minCompletionTimeMs: 10 * 1000, // 10 seconds minimum
+  minCompletionTimeMs: 3 * 1000, // 3 seconds minimum
   maxDailyRewardKas: 5,
   maxQuizAttemptsPerLesson: 3, // 3 attempts per lesson per day
   minTrustScoreForRewards: 0.3,
