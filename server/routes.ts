@@ -470,26 +470,26 @@ export async function registerRoutes(
       try {
         const kaspaService = await getKaspaService();
         const quizPayload = createQuizPayload({
-          lessonId,
           walletAddress,
+          courseId: lesson.courseId,
+          lessonId,
           score,
           maxScore: 100,
-          passed,
           timestamp: Date.now(),
-        });
+        }, answers);
         
-        // Send payload to blockchain
-        const txHash = await kaspaService.sendPayloadTransaction(quizPayload, walletAddress);
+        // Send payload to blockchain using public method
+        const txResult = await kaspaService.sendQuizProof(quizPayload, walletAddress);
         
-        if (txHash) {
+        if (txResult.success && txResult.txHash) {
           await storage.updateQuizResult(result.id, { 
-            txHash, 
+            txHash: txResult.txHash, 
             txStatus: "confirmed" 
           });
-          console.log(`[Quiz] On-chain TX confirmed: ${txHash} for lesson ${lessonId}`);
+          console.log(`[Quiz] On-chain TX confirmed: ${txResult.txHash} for lesson ${lessonId}`);
         } else {
           await storage.updateQuizResult(result.id, { txStatus: "failed" });
-          console.log(`[Quiz] On-chain TX failed for lesson ${lessonId}`);
+          console.log(`[Quiz] On-chain TX failed for lesson ${lessonId}: ${txResult.error}`);
         }
       } catch (error: any) {
         console.error(`[Quiz] On-chain TX error: ${error.message}`);
@@ -774,8 +774,13 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       await storage.updateCourseReward(rewardId, { status: "pending" });
-      console.error(`[Claim] Error: ${error.message}`);
-      res.status(500).json({ error: "Failed to process claim" });
+      const errorMsg = error.message || "Unknown error";
+      console.error(`[Claim] Error: ${errorMsg}`);
+      res.status(500).json({ 
+        error: "Transaction failed", 
+        message: errorMsg,
+        details: `Claim error: ${errorMsg}`
+      });
     }
   });
 

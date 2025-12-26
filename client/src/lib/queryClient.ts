@@ -15,7 +15,12 @@ async function throwIfResNotOk(res: Response) {
     let errorMessage = res.statusText;
     try {
       const data = await res.json();
-      errorMessage = data.error || data.message || JSON.stringify(data);
+      // Combine error and message for more detailed feedback
+      if (data.message && data.error && data.message !== data.error) {
+        errorMessage = `${data.error}: ${data.message}`;
+      } else {
+        errorMessage = data.message || data.error || data.details || JSON.stringify(data);
+      }
     } catch {
       const text = await res.text().catch(() => "");
       if (text) errorMessage = text;

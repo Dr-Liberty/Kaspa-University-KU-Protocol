@@ -1660,6 +1660,29 @@ class KaspaService {
   }
 
   /**
+   * Send a quiz proof transaction (public method for on-chain quiz storage)
+   * Embeds KU protocol quiz proof payload
+   */
+  async sendQuizProof(
+    payloadHex: string,
+    walletAddress: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    if (!this.isLive()) {
+      const demoTxHash = `demo_quiz_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
+      console.log(`[Kaspa] Demo mode - simulated quiz proof`);
+      return { success: true, txHash: demoTxHash };
+    }
+
+    try {
+      const txHash = await this.sendPayloadTransaction(payloadHex, walletAddress);
+      return { success: true, txHash };
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to send quiz proof:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Send a transaction with a custom payload (for on-chain data storage)
    * Sends minimal amount to self or treasury to embed the payload
    * Integrates UTXOManager for concurrent transaction safety
