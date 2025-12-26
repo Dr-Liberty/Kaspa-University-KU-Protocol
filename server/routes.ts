@@ -427,47 +427,57 @@ export async function registerRoutes(
       return res.status(404).json({ error: "Course not found" });
     }
 
-    const kasPerLesson = course.kasReward / course.lessonCount;
-    const baseKasReward = passed ? kasPerLesson : 0;
-    const kasRewarded = baseKasReward * rewardMultiplier;
-
-    // Save quiz result - rewards are now claimed by user later
+    // Save quiz result (no individual rewards - rewards are at course level)
     const result = await storage.saveQuizResult({
       lessonId,
       userId: user.id,
       score,
       passed,
-      kasRewarded: passed ? kasRewarded : 0,
-      rewardStatus: "pending",
     });
 
-    await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, kasRewarded);
+    await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, 0);
 
-    // Update progress when quiz is passed (rewards claimed separately)
+    // Update progress when quiz is passed
     if (passed) {
       const progress = await storage.getOrCreateProgress(user.id, lesson.courseId);
       await storage.updateProgress(progress.id, lessonId);
 
-      const lessons = await storage.getLessonsByCourse(lesson.courseId);
-      const updatedProgress = await storage.getOrCreateProgress(user.id, lesson.courseId);
+      // Check if course is now complete
+      const completion = await storage.checkCourseCompletion(user.id, lesson.courseId);
+      
+      if (completion.completed) {
+        // Check if reward already exists for this course
+        const existingReward = await storage.getCourseRewardForCourse(user.id, lesson.courseId);
+        
+        if (!existingReward && !isFlagged) {
+          // Create course reward with full course kasReward amount
+          const effectiveReward = course.kasReward * rewardMultiplier;
+          await storage.createCourseReward({
+            courseId: lesson.courseId,
+            userId: user.id,
+            walletAddress: user.walletAddress,
+            kasAmount: effectiveReward,
+            averageScore: completion.averageScore,
+            status: "pending",
+          });
+          console.log(`[Reward] Course reward created for ${user.walletAddress} - ${effectiveReward} KAS pending claim`);
+        }
 
-      if (updatedProgress.completedLessons.length === lessons.length) {
+        // Check if certificate already exists
         const existingCerts = await storage.getCertificatesByUser(user.id);
         const hasCertForCourse = existingCerts.some((c) => c.courseId === lesson.courseId);
 
         if (!hasCertForCourse) {
-          // Create certificate (NFT minting is user-initiated via claim page)
           const verificationCode = `KU-${randomUUID().slice(0, 8).toUpperCase()}`;
           const completionDate = new Date();
           
-          // Generate certificate image preview
           let imageUrl: string | undefined;
           try {
             const krc721Service = await getKRC721Service();
             imageUrl = krc721Service.generateCertificateImage(
               user.walletAddress,
               course.title,
-              score,
+              completion.averageScore,
               completionDate
             );
           } catch (error: any) {
@@ -480,7 +490,7 @@ export async function registerRoutes(
             recipientAddress: user.walletAddress,
             courseName: course.title,
             kasReward: course.kasReward,
-            score,
+            score: completion.averageScore,
             issuedAt: completionDate,
             verificationCode,
             imageUrl,
@@ -492,7 +502,10 @@ export async function registerRoutes(
       }
     }
 
-    res.json(result);
+    res.json({
+      ...result,
+      courseCompleted: passed ? (await storage.checkCourseCompletion(user.id, lesson.courseId)).completed : false,
+    });
   });
 
   app.get("/api/user", async (req: Request, res: Response) => {
@@ -559,17 +572,13 @@ export async function registerRoutes(
       return res.json([]);
     }
 
-    const claimable = await storage.getClaimableRewards(user.id);
+    const claimable = await storage.getClaimableCourseRewards(user.id);
     
-    // Enrich with lesson/course info
     const enriched = await Promise.all(claimable.map(async (r) => {
-      const lesson = await storage.getLesson(r.lessonId);
-      const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+      const course = await storage.getCourse(r.courseId);
       return {
         ...r,
-        lessonTitle: lesson?.title || "Unknown Lesson",
         courseTitle: course?.title || "Unknown Course",
-        courseId: lesson?.courseId,
       };
     }));
 

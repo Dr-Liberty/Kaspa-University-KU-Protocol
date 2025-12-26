@@ -5,6 +5,7 @@ import type {
   Lesson,
   QuizQuestion,
   QuizResult,
+  CourseReward,
   Certificate,
   UserProgress,
   QAPost,
@@ -28,9 +29,16 @@ export interface IStorage {
   getQuizQuestionsByLesson(lessonId: string): Promise<QuizQuestion[]>;
   saveQuizResult(result: Omit<QuizResult, "id" | "completedAt">): Promise<QuizResult>;
   getQuizResultsByUser(userId: string): Promise<QuizResult[]>;
+  getQuizResultsForCourse(userId: string, courseId: string): Promise<QuizResult[]>;
   getQuizResult(id: string): Promise<QuizResult | undefined>;
-  updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined>;
-  getClaimableRewards(userId: string): Promise<QuizResult[]>;
+
+  getCourseRewardsByUser(userId: string): Promise<CourseReward[]>;
+  getCourseReward(id: string): Promise<CourseReward | undefined>;
+  getCourseRewardForCourse(userId: string, courseId: string): Promise<CourseReward | undefined>;
+  createCourseReward(reward: Omit<CourseReward, "id" | "completedAt">): Promise<CourseReward>;
+  updateCourseReward(id: string, updates: Partial<CourseReward>): Promise<CourseReward | undefined>;
+  getClaimableCourseRewards(userId: string): Promise<CourseReward[]>;
+  checkCourseCompletion(userId: string, courseId: string): Promise<{completed: boolean; averageScore: number; lessonsCompleted: number; totalLessons: number}>;
 
   getCertificatesByUser(userId: string): Promise<Certificate[]>;
   getCertificate(id: string): Promise<Certificate | undefined>;
@@ -65,6 +73,7 @@ export class MemStorage implements IStorage {
   private lessons: Map<string, Lesson> = new Map();
   private quizQuestions: Map<string, QuizQuestion> = new Map();
   private quizResults: Map<string, QuizResult> = new Map();
+  private courseRewards: Map<string, CourseReward> = new Map();
   private certificates: Map<string, Certificate> = new Map();
   private userProgress: Map<string, UserProgress> = new Map();
   private qaPosts: Map<string, QAPost> = new Map();
@@ -671,18 +680,70 @@ const balances = await indexer.getKRC20Balances({
     return this.quizResults.get(id);
   }
 
-  async updateQuizResult(id: string, updates: Partial<QuizResult>): Promise<QuizResult | undefined> {
-    const result = this.quizResults.get(id);
-    if (!result) return undefined;
-    const updated = { ...result, ...updates };
-    this.quizResults.set(id, updated);
+  async getQuizResultsForCourse(userId: string, courseId: string): Promise<QuizResult[]> {
+    const lessons = await this.getLessonsByCourse(courseId);
+    const lessonIds = new Set(lessons.map(l => l.id));
+    return Array.from(this.quizResults.values())
+      .filter((r) => r.userId === userId && lessonIds.has(r.lessonId))
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }
+
+  async getCourseRewardsByUser(userId: string): Promise<CourseReward[]> {
+    return Array.from(this.courseRewards.values())
+      .filter((r) => r.userId === userId)
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }
+
+  async getCourseReward(id: string): Promise<CourseReward | undefined> {
+    return this.courseRewards.get(id);
+  }
+
+  async getCourseRewardForCourse(userId: string, courseId: string): Promise<CourseReward | undefined> {
+    return Array.from(this.courseRewards.values())
+      .find((r) => r.userId === userId && r.courseId === courseId);
+  }
+
+  async createCourseReward(reward: Omit<CourseReward, "id" | "completedAt">): Promise<CourseReward> {
+    const id = randomUUID();
+    const courseReward: CourseReward = { ...reward, id, completedAt: new Date() };
+    this.courseRewards.set(id, courseReward);
+    return courseReward;
+  }
+
+  async updateCourseReward(id: string, updates: Partial<CourseReward>): Promise<CourseReward | undefined> {
+    const reward = this.courseRewards.get(id);
+    if (!reward) return undefined;
+    const updated = { ...reward, ...updates };
+    this.courseRewards.set(id, updated);
     return updated;
   }
 
-  async getClaimableRewards(userId: string): Promise<QuizResult[]> {
-    return Array.from(this.quizResults.values())
-      .filter((r) => r.userId === userId && r.passed && r.kasRewarded > 0 && r.rewardStatus === "pending")
+  async getClaimableCourseRewards(userId: string): Promise<CourseReward[]> {
+    return Array.from(this.courseRewards.values())
+      .filter((r) => r.userId === userId && r.status === "pending")
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }
+
+  async checkCourseCompletion(userId: string, courseId: string): Promise<{completed: boolean; averageScore: number; lessonsCompleted: number; totalLessons: number}> {
+    const lessons = await this.getLessonsByCourse(courseId);
+    const quizResults = await this.getQuizResultsForCourse(userId, courseId);
+    
+    const passedLessons = new Set<string>();
+    const scores: number[] = [];
+    
+    for (const result of quizResults) {
+      if (result.passed) {
+        passedLessons.add(result.lessonId);
+        scores.push(result.score);
+      }
+    }
+    
+    const lessonsCompleted = passedLessons.size;
+    const totalLessons = lessons.length;
+    const completed = lessonsCompleted >= totalLessons;
+    const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    
+    return { completed, averageScore, lessonsCompleted, totalLessons };
   }
 
   async getCertificatesByUser(userId: string): Promise<Certificate[]> {

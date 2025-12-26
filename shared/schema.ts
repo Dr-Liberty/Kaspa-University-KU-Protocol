@@ -62,13 +62,25 @@ export const quizResultSchema = z.object({
   userId: z.string(),
   score: z.number(),
   passed: z.boolean(),
-  kasRewarded: z.number(),
-  txHash: z.string().optional(),
-  rewardStatus: z.enum(["pending", "claiming", "claimed"]).default("pending"),
   completedAt: z.date(),
 });
 
 export type QuizResult = z.infer<typeof quizResultSchema>;
+
+export const courseRewardSchema = z.object({
+  id: z.string(),
+  courseId: z.string(),
+  userId: z.string(),
+  walletAddress: z.string(),
+  kasAmount: z.number(),
+  averageScore: z.number(),
+  status: z.enum(["pending", "claiming", "claimed"]).default("pending"),
+  txHash: z.string().optional(),
+  completedAt: z.date(),
+  claimedAt: z.date().optional(),
+});
+
+export type CourseReward = z.infer<typeof courseRewardSchema>;
 
 export const certificateSchema = z.object({
   id: z.string(),
