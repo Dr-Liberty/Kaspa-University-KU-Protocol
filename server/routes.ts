@@ -341,8 +341,15 @@ export async function registerRoutes(
     const { lessonId } = req.params;
     const { answers } = req.body;
 
+    console.log(`[Quiz] Submit request for lesson ${lessonId}`, {
+      answers,
+      hasWalletHeader: !!req.headers["x-wallet-address"],
+      walletPreview: (req.headers["x-wallet-address"] as string)?.slice(0, 20),
+    });
+
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
+      console.log("[Quiz] Rejected: No wallet address header");
       return res.status(401).json({ error: "Wallet not connected" });
     }
 
