@@ -559,30 +559,24 @@ class KRC721Service {
         addressFromScriptPublicKey,
       } = this.kaspaModule;
 
-      // Create mint data with certificate metadata
-      const mintData = {
+      // Create MINIMAL mint data per KRC-721 spec to avoid 520-byte limit
+      // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
+      // Keep `to` field for recipient and minimal metadata reference
+      const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
-        to: recipientAddress, // Recipient of the NFT
-        metadata: {
-          name: `KU Certificate #${tokenId}: ${courseName}`,
-          description: `Kaspa University course completion certificate for "${courseName}". Earned with a score of ${score}%.`,
-          image: imageUrl,
-          attributes: [
-            { traitType: "Course", value: courseName },
-            { traitType: "Score", value: score },
-            { traitType: "Completion Date", value: completionDate.toISOString().split("T")[0] },
-            { traitType: "Recipient", value: recipientAddress },
-            { traitType: "Token ID", value: tokenId },
-            { traitType: "Platform", value: "Kaspa University" },
-          ],
-        },
+        to: recipientAddress, // REQUIRED: recipient of the NFT
       };
+      
+      // Add IPFS metadata reference if available (keeps payload minimal)
+      if (imageUrl.startsWith("ipfs://")) {
+        mintData.meta = imageUrl; // Reference to full metadata on IPFS
+      }
 
       console.log(`[KRC721] Minting certificate #${tokenId} for ${recipientAddress}`);
 
-      // Build inscription script
+      // Build inscription script per coinchimp reference
       const script = new ScriptBuilder()
         .addData(this.publicKey.toXOnlyPublicKey().toString())
         .addOp(Opcodes.OpCheckSig)
@@ -701,36 +695,44 @@ class KRC721Service {
         addressFromScriptPublicKey,
       } = this.kaspaModule;
 
-      // Create mint data with certificate metadata
-      const mintData = {
+      // Create MINIMAL mint data per KRC-721 spec
+      // Metadata must be stored in IPFS to avoid 520-byte script element limit
+      // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
+      // Keep `to` field for recipient and minimal IPFS reference
+      const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
-        to: recipientAddress,
-        metadata: {
-          name: `KU Certificate #${tokenId}: ${courseName}`,
-          description: `Kaspa University course completion certificate for "${courseName}". Earned with a score of ${score}%.`,
-          image: imageUrl,
-          attributes: [
-            { traitType: "Course", value: courseName },
-            { traitType: "Score", value: score },
-            { traitType: "Completion Date", value: completionDate.toISOString().split("T")[0] },
-            { traitType: "Recipient", value: recipientAddress },
-            { traitType: "Token ID", value: tokenId },
-            { traitType: "Platform", value: "Kaspa University" },
-          ],
-        },
+        to: recipientAddress, // REQUIRED: recipient of the NFT
       };
+      
+      // Add IPFS metadata reference if available (keeps payload minimal)
+      if (imageUrl.startsWith("ipfs://")) {
+        mintData.meta = imageUrl; // Reference to full metadata on IPFS
+      }
 
-      // Build inscription script
+      // Calculate data size to prevent 520-byte limit errors
+      const mintDataStr = JSON.stringify(mintData, null, 0);
+      console.log(`[KRC721] Mint data: ${mintDataStr}`);
+      console.log(`[KRC721] Mint data size: ${mintDataStr.length} bytes (limit: 520)`);
+      
+      if (mintDataStr.length > 500) {
+        console.error(`[KRC721] Mint data too large: ${mintDataStr.length} bytes`);
+        return { success: false, error: "Mint data exceeds script size limit" };
+      }
+
+      // Build inscription script per coinchimp reference implementation
+      const xOnlyPubKey = this.publicKey.toXOnlyPublicKey().toString();
+      console.log(`[KRC721] Building script with pubkey: ${xOnlyPubKey.slice(0, 16)}...`);
+      
       const script = new ScriptBuilder()
-        .addData(this.publicKey.toXOnlyPublicKey().toString())
+        .addData(xOnlyPubKey)
         .addOp(Opcodes.OpCheckSig)
         .addOp(Opcodes.OpFalse)
         .addOp(Opcodes.OpIf)
         .addData(Buffer.from("kspr"))
-        .addI64(BigInt(0))
-        .addData(Buffer.from(JSON.stringify(mintData, null, 0)))
+        .addI64(BigInt(0)) // BigInt(0) for ES2019 compatibility
+        .addData(Buffer.from(mintDataStr))
         .addOp(Opcodes.OpEndIf);
 
       // Get P2SH address
