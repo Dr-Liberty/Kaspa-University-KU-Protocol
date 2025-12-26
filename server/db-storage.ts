@@ -180,7 +180,7 @@ export class DbStorage implements IStorage {
     const results = await db.select().from(schema.courseRewards)
       .where(and(
         eq(schema.courseRewards.userId, userId),
-        eq(schema.courseRewards.status, "pending")
+        inArray(schema.courseRewards.status, ["pending", "failed", "confirming"])
       ))
       .orderBy(desc(schema.courseRewards.completedAt));
     return results as CourseReward[];

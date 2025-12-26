@@ -720,7 +720,7 @@ const balances = await indexer.getKRC20Balances({
 
   async getClaimableCourseRewards(userId: string): Promise<CourseReward[]> {
     return Array.from(this.courseRewards.values())
-      .filter((r) => r.userId === userId && r.status === "pending")
+      .filter((r) => r.userId === userId && ["pending", "failed", "confirming"].includes(r.status))
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
 

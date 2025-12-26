@@ -659,8 +659,8 @@ export async function registerRoutes(
       return res.status(403).json({ error: "Not authorized to claim this reward" });
     }
 
-    if (reward.status !== "pending") {
-      return res.status(400).json({ error: "Reward already claimed or in progress" });
+    if (!["pending", "failed", "confirming"].includes(reward.status)) {
+      return res.status(400).json({ error: "Reward already claimed" });
     }
 
     if (reward.kasAmount <= 0) {

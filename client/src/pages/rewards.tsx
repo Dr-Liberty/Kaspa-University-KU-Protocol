@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,6 +19,8 @@ import {
   ExternalLink,
   Gift,
   ArrowRight,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
 interface ClaimableReward extends CourseReward {
@@ -39,28 +42,55 @@ export default function Rewards() {
     refetchInterval: 5000,
   });
 
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimStatus, setClaimStatus] = useState<string>("");
+
   const claimMutation = useMutation({
     mutationFn: async (resultId: string) => {
-      const response = await fetch(`/api/rewards/${resultId}/claim`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-wallet-address": wallet?.address || "",
-        },
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || error.error || "Claim failed");
+      setClaimingId(resultId);
+      setClaimStatus("Preparing transaction...");
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      
+      try {
+        setClaimStatus("Sending to Kaspa network...");
+        const response = await fetch(`/api/rewards/${resultId}/claim`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-wallet-address": wallet?.address || "",
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || error.error || "Claim failed");
+        }
+        return response.json();
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          throw new Error('Request timed out. Please check your rewards - it may have succeeded.');
+        }
+        throw err;
       }
-      return response.json();
     },
     onSuccess: (data: any) => {
+      setClaimStatus("Confirmed!");
       queryClient.invalidateQueries({ queryKey: ["/api/rewards/claimable"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({
         title: "Reward Claimed!",
-        description: `${data.amount} KAS sent to your wallet`,
+        description: data.txHash 
+          ? `${data.amount} KAS sent! TX: ${data.txHash.slice(0, 8)}...`
+          : `${data.amount} KAS sent to your wallet`,
       });
+      setClaimingId(null);
+      setClaimStatus("");
     },
     onError: (error: any) => {
       toast({
@@ -68,6 +98,8 @@ export default function Rewards() {
         description: error.message || "Failed to claim reward",
         variant: "destructive",
       });
+      setClaimingId(null);
+      setClaimStatus("");
     },
   });
 
@@ -190,20 +222,45 @@ export default function Rewards() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="font-bold text-primary">{reward.kasAmount.toFixed(4)} KAS</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(reward.completedAt).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {reward.status === "failed" && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Failed
+                          </Badge>
+                        )}
+                        {reward.status === "confirming" && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Confirming
+                          </Badge>
+                        )}
+                        {reward.status === "pending" && (
+                          <span>{new Date(reward.completedAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
                     </div>
                     <Button
                       onClick={() => claimMutation.mutate(reward.id)}
-                      disabled={claimMutation.isPending || isDemoMode}
+                      disabled={(claimMutation.isPending && claimingId === reward.id) || isDemoMode}
                       className="gap-2"
+                      variant={reward.status === "failed" ? "destructive" : "default"}
                       data-testid={`button-claim-${reward.id}`}
                     >
-                      {claimMutation.isPending ? (
+                      {claimMutation.isPending && claimingId === reward.id ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Claiming...
+                          <span className="max-w-24 truncate">{claimStatus || "Claiming..."}</span>
+                        </>
+                      ) : reward.status === "failed" ? (
+                        <>
+                          <RefreshCw className="h-4 w-4" />
+                          Retry
+                        </>
+                      ) : reward.status === "confirming" ? (
+                        <>
+                          <RefreshCw className="h-4 w-4" />
+                          Retry
                         </>
                       ) : (
                         <>
