@@ -9,6 +9,7 @@ interface Node {
   connections: number[];
   opacity: number;
   pulse: number;
+  rotation: number;
 }
 
 export function BlockDAGBackground() {
@@ -31,24 +32,25 @@ export function BlockDAGBackground() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    const nodeCount = Math.floor((window.innerWidth * window.innerHeight) / 25000);
+    const nodeCount = Math.floor((window.innerWidth * window.innerHeight) / 20000);
     const nodes: Node[] = [];
 
     for (let i = 0; i < nodeCount; i++) {
       nodes.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        size: Math.random() * 3 + 2,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        size: Math.random() * 2 + 3,
         connections: [],
-        opacity: Math.random() * 0.5 + 0.3,
+        opacity: Math.random() * 0.4 + 0.3,
         pulse: Math.random() * Math.PI * 2,
+        rotation: Math.random() * Math.PI * 0.5,
       });
     }
 
     for (let i = 0; i < nodes.length; i++) {
-      const connectionCount = Math.floor(Math.random() * 3) + 1;
+      const connectionCount = Math.floor(Math.random() * 4) + 2;
       for (let j = 0; j < connectionCount; j++) {
         const targetIndex = Math.floor(Math.random() * nodes.length);
         if (targetIndex !== i && !nodes[i].connections.includes(targetIndex)) {
@@ -63,6 +65,38 @@ export function BlockDAGBackground() {
       primary: { r: 16, g: 185, b: 129 },
       accent: { r: 5, g: 150, b: 105 },
       glow: { r: 52, g: 211, b: 153 },
+    };
+
+    const drawCube = (x: number, y: number, size: number, rotation: number, opacity: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      
+      const s = size;
+      const depth = size * 0.4;
+      
+      ctx.fillStyle = `rgba(${kaspaColors.accent.r}, ${kaspaColors.accent.g}, ${kaspaColors.accent.b}, ${opacity * 0.8})`;
+      ctx.beginPath();
+      ctx.moveTo(-s, -s);
+      ctx.lineTo(-s + depth, -s - depth);
+      ctx.lineTo(s + depth, -s - depth);
+      ctx.lineTo(s, -s);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.fillStyle = `rgba(${kaspaColors.primary.r}, ${kaspaColors.primary.g}, ${kaspaColors.primary.b}, ${opacity})`;
+      ctx.fillRect(-s, -s, s * 2, s * 2);
+      
+      ctx.fillStyle = `rgba(${kaspaColors.glow.r}, ${kaspaColors.glow.g}, ${kaspaColors.glow.b}, ${opacity * 0.6})`;
+      ctx.beginPath();
+      ctx.moveTo(s, -s);
+      ctx.lineTo(s + depth, -s - depth);
+      ctx.lineTo(s + depth, s - depth);
+      ctx.lineTo(s, s);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.restore();
     };
 
     const animate = () => {
@@ -86,9 +120,10 @@ export function BlockDAGBackground() {
 
       const time = Date.now() * 0.001;
 
-      nodes.forEach((node, i) => {
+      nodes.forEach((node) => {
         node.x += node.vx;
         node.y += node.vy;
+        node.rotation += 0.002;
 
         if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
         if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
@@ -102,60 +137,30 @@ export function BlockDAGBackground() {
           const dy = target.y - node.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 300) {
-            const lineOpacity = (1 - distance / 300) * 0.15;
-            const pulseOpacity = Math.sin(time * 2 + node.pulse) * 0.05 + 0.1;
+          if (distance < 350) {
+            const lineOpacity = (1 - distance / 350) * 0.2;
 
             ctx.beginPath();
             ctx.moveTo(node.x, node.y);
             ctx.lineTo(target.x, target.y);
-            ctx.strokeStyle = `rgba(${kaspaColors.primary.r}, ${kaspaColors.primary.g}, ${kaspaColors.primary.b}, ${lineOpacity + pulseOpacity})`;
+            ctx.strokeStyle = `rgba(${kaspaColors.primary.r}, ${kaspaColors.primary.g}, ${kaspaColors.primary.b}, ${lineOpacity})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
         });
       });
 
-      nodes.forEach((node, i) => {
-        const pulseSize = Math.sin(time * 3 + node.pulse) * 0.5 + 1;
+      nodes.forEach((node) => {
+        const pulseSize = Math.sin(time * 2 + node.pulse) * 0.15 + 1;
         const currentSize = node.size * pulseSize;
 
         ctx.beginPath();
-        ctx.arc(node.x, node.y, currentSize * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${kaspaColors.glow.r}, ${kaspaColors.glow.g}, ${kaspaColors.glow.b}, 0.05)`;
+        ctx.arc(node.x, node.y, currentSize * 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${kaspaColors.glow.r}, ${kaspaColors.glow.g}, ${kaspaColors.glow.b}, 0.03)`;
         ctx.fill();
 
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, currentSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${kaspaColors.primary.r}, ${kaspaColors.primary.g}, ${kaspaColors.primary.b}, ${node.opacity})`;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, currentSize * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * 0.5})`;
-        ctx.fill();
+        drawCube(node.x, node.y, currentSize, node.rotation, node.opacity);
       });
-
-      if (Math.random() < 0.02) {
-        const sourceIndex = Math.floor(Math.random() * nodes.length);
-        const source = nodes[sourceIndex];
-        if (source.connections.length > 0) {
-          const targetIndex = source.connections[Math.floor(Math.random() * source.connections.length)];
-          const target = nodes[targetIndex];
-
-          ctx.beginPath();
-          ctx.arc(source.x, source.y, 8, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${kaspaColors.glow.r}, ${kaspaColors.glow.g}, ${kaspaColors.glow.b}, 0.4)`;
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.moveTo(source.x, source.y);
-          ctx.lineTo(target.x, target.y);
-          ctx.strokeStyle = `rgba(${kaspaColors.glow.r}, ${kaspaColors.glow.g}, ${kaspaColors.glow.b}, 0.5)`;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      }
 
       animationRef.current = requestAnimationFrame(animate);
     };
