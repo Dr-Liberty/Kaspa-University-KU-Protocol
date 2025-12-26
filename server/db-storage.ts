@@ -260,8 +260,8 @@ export class DbStorage implements IStorage {
       displayName: insertUser.displayName || null,
       totalKasEarned: 0,
     };
-    await db.insert(schema.users).values(user);
-    return { ...user, createdAt: new Date() } as User;
+    const result = await db.insert(schema.users).values(user).returning();
+    return result[0] as User;
   }
 
   async updateUserKas(userId: string, amount: number): Promise<void> {
@@ -301,8 +301,8 @@ export class DbStorage implements IStorage {
       score: result.score,
       passed: result.passed,
     };
-    await db.insert(schema.quizResults).values(quizResult);
-    return { ...quizResult, completedAt: new Date() } as QuizResult;
+    const inserted = await db.insert(schema.quizResults).values(quizResult).returning();
+    return inserted[0] as QuizResult;
   }
 
   async getQuizResultsByUser(userId: string): Promise<QuizResult[]> {
@@ -367,8 +367,8 @@ export class DbStorage implements IStorage {
       txConfirmed: reward.txConfirmed || null,
       claimedAt: reward.claimedAt || null,
     };
-    await db.insert(schema.courseRewards).values(courseReward);
-    return { ...courseReward, completedAt: new Date() } as CourseReward;
+    const result = await db.insert(schema.courseRewards).values(courseReward).returning();
+    return result[0] as CourseReward;
   }
 
   async updateCourseReward(id: string, updates: Partial<CourseReward>): Promise<CourseReward | undefined> {
@@ -445,8 +445,8 @@ export class DbStorage implements IStorage {
       imageUrl: cert.imageUrl || null,
       nftStatus: cert.nftStatus || "pending",
     };
-    await db.insert(schema.certificates).values(certificate);
-    return { ...certificate, issuedAt: new Date() } as Certificate;
+    const result = await db.insert(schema.certificates).values(certificate).returning();
+    return result[0] as Certificate;
   }
 
   async updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined> {
@@ -490,8 +490,13 @@ export class DbStorage implements IStorage {
       completedLessons: [] as string[],
       currentLessonId: null,
     };
-    await db.insert(schema.userProgress).values(progress);
-    return { ...progress, startedAt: new Date(), currentLessonId: undefined } as UserProgress;
+    const result = await db.insert(schema.userProgress).values(progress).returning();
+    const inserted = result[0];
+    return {
+      ...inserted,
+      completedLessons: inserted.completedLessons || [],
+      currentLessonId: inserted.currentLessonId || undefined,
+    } as UserProgress;
   }
 
   async updateProgress(progressId: string, lessonId: string): Promise<UserProgress> {
@@ -538,8 +543,8 @@ export class DbStorage implements IStorage {
       parentId: post.parentId || null,
       txHash: post.txHash || null,
     };
-    await db.insert(schema.qaPosts).values(qaPost);
-    return { ...qaPost, createdAt: new Date() } as QAPost;
+    const result = await db.insert(schema.qaPosts).values(qaPost).returning();
+    return result[0] as QAPost;
   }
 
   async getStats(): Promise<Stats> {
