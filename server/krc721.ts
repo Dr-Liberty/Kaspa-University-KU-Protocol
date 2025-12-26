@@ -670,6 +670,7 @@ class KRC721Service {
   /**
    * Generate certificate image as raw SVG string
    * Used for IPFS upload
+   * Dark theme with green accents and KU logo
    */
   generateCertificateImageSvg(
     recipientAddress: string,
@@ -689,74 +690,104 @@ class KRC721Service {
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#0d9488;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#115e59;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#111111;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1" />
           </linearGradient>
-          <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+          <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
           </linearGradient>
+          <linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
+            <stop offset="100%" style="stop-color:#059669;stop-opacity:0.1" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
         
         <!-- Background -->
         <rect width="800" height="600" fill="url(#bg)"/>
         
-        <!-- Border -->
-        <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#gold)" stroke-width="4" rx="10"/>
-        <rect x="30" y="30" width="740" height="540" fill="none" stroke="url(#gold)" stroke-width="1" rx="8"/>
+        <!-- Subtle grid pattern -->
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+        </pattern>
+        <rect width="800" height="600" fill="url(#grid)" opacity="0.5"/>
         
-        <!-- Logo/Header -->
-        <text x="400" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#fbbf24" font-weight="bold">
+        <!-- Corner accent glow -->
+        <circle cx="0" cy="0" r="200" fill="url(#greenGlow)"/>
+        <circle cx="800" cy="600" r="200" fill="url(#greenGlow)"/>
+        
+        <!-- Border -->
+        <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#green)" stroke-width="2" rx="12"/>
+        <rect x="28" y="28" width="744" height="544" fill="none" stroke="#1f2937" stroke-width="1" rx="10"/>
+        
+        <!-- KU Logo Circle -->
+        <circle cx="400" cy="70" r="35" fill="#111" stroke="url(#green)" stroke-width="2"/>
+        <text x="400" y="78" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="24" fill="url(#green)" font-weight="bold">
+          KU
+        </text>
+        
+        <!-- Header -->
+        <text x="400" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#10b981" letter-spacing="4" font-weight="bold">
           KASPA UNIVERSITY
         </text>
         
         <!-- Certificate Title -->
-        <text x="400" y="140" text-anchor="middle" font-family="Georgia, serif" font-size="42" fill="white" font-weight="bold">
+        <text x="400" y="175" text-anchor="middle" font-family="Georgia, serif" font-size="38" fill="#ffffff" font-weight="bold" filter="url(#glow)">
           Certificate of Completion
         </text>
         
         <!-- Divider -->
-        <line x1="200" y1="170" x2="600" y2="170" stroke="url(#gold)" stroke-width="2"/>
+        <line x1="150" y1="200" x2="650" y2="200" stroke="url(#green)" stroke-width="1" opacity="0.5"/>
         
         <!-- This certifies -->
-        <text x="400" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ccfbf1">
+        <text x="400" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
           This is to certify that
         </text>
         
         <!-- Recipient Address -->
-        <text x="400" y="265" text-anchor="middle" font-family="monospace" font-size="20" fill="white" font-weight="bold">
+        <text x="400" y="285" text-anchor="middle" font-family="monospace" font-size="18" fill="#10b981" font-weight="bold">
           ${shortAddress}
         </text>
         
         <!-- Has completed -->
-        <text x="400" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ccfbf1">
+        <text x="400" y="325" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
           has successfully completed the course
         </text>
         
         <!-- Course Name -->
-        <text x="400" y="360" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="#fbbf24" font-weight="bold">
+        <text x="400" y="375" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#ffffff" font-weight="bold">
           ${courseName}
         </text>
         
-        <!-- Score -->
-        <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="white">
-          with a score of <tspan font-weight="bold" fill="#fbbf24">${score}%</tspan>
+        <!-- Score Badge -->
+        <rect x="340" y="400" width="120" height="40" rx="20" fill="#111" stroke="url(#green)" stroke-width="1"/>
+        <text x="400" y="427" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#10b981" font-weight="bold">
+          ${score}% Score
         </text>
         
         <!-- Date -->
-        <text x="400" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#ccfbf1">
+        <text x="400" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
           Awarded on ${dateStr}
         </text>
         
-        <!-- Kaspa Logo/Badge -->
-        <circle cx="400" cy="540" r="25" fill="url(#gold)" opacity="0.3"/>
-        <text x="400" y="547" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#fbbf24" font-weight="bold">
-          KAS
+        <!-- Verification Badge -->
+        <rect x="280" y="510" width="240" height="30" rx="15" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
+        <circle cx="300" cy="525" r="8" fill="#10b981"/>
+        <text x="315" y="530" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
+          Verified on Kaspa Blockchain
         </text>
         
         <!-- Footer -->
-        <text x="400" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5eead4" opacity="0.7">
-          Verified on Kaspa Blockchain | KRC-721 NFT Certificate
+        <text x="400" y="575" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">
+          KRC-721 NFT Certificate | KPROOF Collection
         </text>
       </svg>
     `.trim();
