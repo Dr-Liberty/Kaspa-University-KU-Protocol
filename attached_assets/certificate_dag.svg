@@ -101,7 +101,7 @@
         <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
         <circle cx="165" cy="521" r="8" fill="#10b981"/>
         <text x="400" y="526" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981">
-          Quiz data has been embedded on Kaspa Layer one for future verification
+          Quiz data has been embedded on Kaspa layer one for future verification
         </text>
         
         <!-- Footer -->
