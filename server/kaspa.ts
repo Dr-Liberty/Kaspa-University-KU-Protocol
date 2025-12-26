@@ -800,32 +800,9 @@ class KaspaService {
 
     console.log(`[Kaspa] Verifying transaction: ${txHash}`);
 
-    // Try RPC first (fastest, most reliable)
-    if (this.rpcConnected && this.rpcClient) {
-      try {
-        const result = await this.rpcClient.getTransaction({ transactionId: txHash });
-        if (result?.transaction) {
-          const tx = result.transaction;
-          const outputs = tx.outputs?.map((o: any) => ({
-            address: o.scriptPublicKeyAddress || o.address || "unknown",
-            amount: Number(o.value || 0) / 100_000_000,
-          })) || [];
-          
-          console.log(`[Kaspa] TX verified via RPC: ${txHash}`);
-          return {
-            exists: true,
-            confirmed: true,
-            blockHash: tx.blockHash,
-            blockTime: tx.blockTime,
-            outputs,
-            source: "rpc",
-          };
-        }
-      } catch (error: any) {
-        console.log(`[Kaspa] RPC tx lookup failed: ${error.message}`);
-      }
-    }
-
+    // Note: Kaspa RPC doesn't support direct transaction lookup by ID
+    // Use REST API (api.kaspa.org) for transaction verification
+    
     // Try REST API (api.kaspa.org)
     if (this.apiConnected) {
       try {
@@ -1253,85 +1230,74 @@ class KaspaService {
         throw new Error("Cannot submit transaction: RPC client not connected.");
       }
 
-      // Sign and submit each PendingTransaction
-      // createTransactions returns PendingTransaction[] which have their own sign() and submit() methods
+      // Sign and submit each PendingTransaction using WASM SDK's native RpcClient
+      // This ensures the transaction format is correct for the Kaspa network
       let finalTxHash = "";
-      for (let i = 0; i < transactions.length; i++) {
-        const pendingTx = transactions[i];
-        console.log(`[Kaspa] Processing transaction ${i + 1}/${transactions.length}...`);
+      
+      // Create WASM SDK's RpcClient for submission
+      const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
+      console.log(`[Kaspa] Creating WASM RpcClient with Resolver...`);
+      
+      let wasmRpc: any = null;
+      try {
+        // Use Resolver for automatic node discovery on mainnet
+        const resolver = new Resolver();
+        wasmRpc = new WasmRpcClient({
+          resolver,
+          networkId: "mainnet"
+        });
         
-        // Sign the PendingTransaction with private key array
-        // PendingTransaction.sign() takes array of private keys
-        await pendingTx.sign([privateKey]);
-        console.log(`[Kaspa] Transaction ${i + 1} signed`);
-        
-        // Submit via kaspa-rpc-client
-        // Use serializeToObject() to get ISerializableTransaction format for RPC
-        try {
-          // Get the signed transaction data for RPC submission
-          const txData = pendingTx.serializeToObject();
+        console.log(`[Kaspa] Connecting WASM RpcClient...`);
+        await wasmRpc.connect();
+        console.log(`[Kaspa] WASM RpcClient connected`);
+      } catch (rpcErr: any) {
+        console.error(`[Kaspa] Failed to create WASM RpcClient: ${rpcErr?.message || rpcErr}`);
+        throw new Error(`Cannot submit transaction: Failed to connect WASM RPC: ${rpcErr?.message}`);
+      }
+      
+      try {
+        for (let i = 0; i < transactions.length; i++) {
+          const pendingTx = transactions[i];
+          console.log(`[Kaspa] Processing transaction ${i + 1}/${transactions.length}...`);
           
-          // Convert to kaspa-rpc-client compatible format
-          // ISerializableTransaction has flat input structure (transactionId, index at top level)
-          // and scriptPublicKey as string with version prefix (first 4 chars = version as hex)
-          const rpcTransaction = {
-            version: txData.version,
-            inputs: txData.inputs.map((input: any) => {
-              // scriptPublicKey string format: "0000" + actual script (version 0 = 4 hex chars prefix)
-              const spk = input.utxo?.scriptPublicKey || "";
-              const spkVersion = spk.length >= 4 ? parseInt(spk.slice(0, 4), 16) : 0;
-              const spkScript = spk.length >= 4 ? spk.slice(4) : spk;
-              return {
-                previousOutpoint: {
-                  transactionId: input.transactionId,
-                  index: input.index
-                },
-                signatureScript: input.signatureScript,
-                sequence: String(input.sequence || 0),
-                sigOpCount: input.sigOpCount || 1
-              };
-            }),
-            outputs: txData.outputs.map((output: any) => {
-              // scriptPublicKey string format: "0000" + actual script (version 0 = 4 hex chars prefix)
-              const spk = output.scriptPublicKey || "";
-              const spkVersion = spk.length >= 4 ? parseInt(spk.slice(0, 4), 16) : 0;
-              const spkScript = spk.length >= 4 ? spk.slice(4) : spk;
-              return {
-                amount: String(output.value),
-                scriptPublicKey: {
-                  version: spkVersion,
-                  script: spkScript
-                }
-              };
-            }),
-            lockTime: String(txData.lockTime || 0),
-            subnetworkId: txData.subnetworkId || "0000000000000000000000000000000000000000",
-            gas: String(txData.gas || 0),
-            payload: txData.payload || ""
-          };
+          // Sign the PendingTransaction with private key array
+          await pendingTx.sign([privateKey]);
+          console.log(`[Kaspa] Transaction ${i + 1} signed`);
           
-          const submitResult = await this.rpcClient.submitTransaction({
-            transaction: rpcTransaction
-          });
-          
-          finalTxHash = submitResult?.transactionId || txData.id || pendingTx.id;
-          console.log(`[Kaspa] Transaction ${i + 1} submitted: ${finalTxHash}`);
-        } catch (submitError: any) {
-          const errorMsg = submitError?.message || String(submitError);
-          console.error(`[Kaspa] Submit failed: ${errorMsg}`);
-          
-          if (errorMsg.includes("orphan") || errorMsg.includes("missing parent")) {
-            throw new Error("Transaction rejected: UTXO already spent (orphan transaction). Please retry.");
-          } else if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
-            throw new Error("Transaction too large: too many inputs. Please wait for UTXO consolidation.");
-          } else if (errorMsg.includes("fee") || errorMsg.includes("low priority")) {
-            throw new Error("Transaction fee too low for current network conditions. Please retry later.");
-          } else if (errorMsg.includes("double spend") || errorMsg.includes("already exists")) {
-            throw new Error("Transaction rejected: duplicate or conflicting transaction detected.");
-          } else if (errorMsg.includes("timeout") || errorMsg.includes("connect")) {
-            throw new Error("Network timeout submitting transaction. Please check network and retry.");
+          // Submit using WASM SDK's native submit() method
+          // This handles all format conversion internally
+          console.log(`[Kaspa] Submitting via WASM SDK...`);
+          try {
+            const txId = await pendingTx.submit(wasmRpc);
+            finalTxHash = txId;
+            console.log(`[Kaspa] Transaction ${i + 1} confirmed: ${finalTxHash}`);
+          } catch (submitError: any) {
+            const errorMsg = submitError?.message || String(submitError);
+            console.error(`[Kaspa] WASM submit failed: ${errorMsg}`);
+            
+            if (errorMsg.includes("orphan") || errorMsg.includes("missing parent")) {
+              throw new Error("Transaction rejected: UTXO already spent (orphan transaction). Please retry.");
+            } else if (errorMsg.includes("mass") || errorMsg.includes("too large")) {
+              throw new Error("Transaction too large: too many inputs. Please wait for UTXO consolidation.");
+            } else if (errorMsg.includes("fee") || errorMsg.includes("low priority")) {
+              throw new Error("Transaction fee too low for current network conditions. Please retry later.");
+            } else if (errorMsg.includes("double spend") || errorMsg.includes("already exists")) {
+              throw new Error("Transaction rejected: duplicate or conflicting transaction detected.");
+            } else if (errorMsg.includes("timeout") || errorMsg.includes("connect")) {
+              throw new Error("Network timeout submitting transaction. Please check network and retry.");
+            }
+            throw new Error(`Transaction submit failed: ${errorMsg}`);
           }
-          throw new Error(`Transaction submit failed: ${errorMsg}`);
+        }
+      } finally {
+        // Disconnect WASM RpcClient
+        if (wasmRpc) {
+          try {
+            await wasmRpc.disconnect();
+            console.log(`[Kaspa] WASM RpcClient disconnected`);
+          } catch (e) {
+            // Ignore disconnect errors
+          }
         }
       }
 
