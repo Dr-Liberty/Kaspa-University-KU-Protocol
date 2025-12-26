@@ -308,6 +308,33 @@ export async function registerRoutes(
     res.json({ success: true, message: `Quiz attempts reset for ${walletAddress}` });
   });
 
+  app.post("/api/admin/reset-user", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ error: "walletAddress required" });
+    }
+    
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Reset all user data: progress, quiz results, rewards, certificates
+    await storage.resetUserData(user.id);
+    
+    // Also reset anti-sybil quiz attempts
+    const antiSybil = getAntiSybilService();
+    await antiSybil.resetQuizAttempts(walletAddress);
+    
+    console.log(`[Admin] Full reset for wallet: ${walletAddress}`);
+    res.json({ success: true, message: `All data reset for ${walletAddress}` });
+  });
+
   app.get("/api/courses", async (_req: Request, res: Response) => {
     const courses = await storage.getCourses();
     res.json(courses);

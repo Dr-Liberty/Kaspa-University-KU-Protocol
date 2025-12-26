@@ -435,4 +435,12 @@ export class DbStorage implements IStorage {
     const results = await db.select().from(schema.quizResults);
     return results as QuizResult[];
   }
+
+  async resetUserData(userId: string): Promise<void> {
+    await db.delete(schema.quizResults).where(eq(schema.quizResults.userId, userId));
+    await db.delete(schema.courseRewards).where(eq(schema.courseRewards.userId, userId));
+    await db.delete(schema.certificates).where(eq(schema.certificates.userId, userId));
+    await db.delete(schema.userProgress).where(eq(schema.userProgress.userId, userId));
+    console.log(`[DbStorage] Reset all data for user ${userId}`);
+  }
 }
