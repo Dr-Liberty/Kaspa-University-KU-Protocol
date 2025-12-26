@@ -58,10 +58,13 @@ function QuizSection({
       setSubmitted(true);
       queryClient.invalidateQueries({ queryKey: ["/api/progress"] });
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rewards/claimable"] });
       if (data.passed) {
         toast({
           title: "Quiz Passed!",
-          description: `You earned ${data.kasRewarded} KAS!`,
+          description: data.courseCompleted 
+            ? "Course complete! Your reward is ready to claim."
+            : "Great job! Continue to the next lesson.",
         });
       } else {
         toast({
@@ -71,10 +74,10 @@ function QuizSection({
         });
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to submit quiz. Please try again.",
+        description: error.message || "Failed to submit quiz. Please try again.",
         variant: "destructive",
       });
     },
@@ -146,7 +149,7 @@ function QuizSection({
     const displayResult = result || demoResult;
     const passed = displayResult?.passed ?? false;
     const score = displayResult?.score ?? 0;
-    const kasRewarded = result?.kasRewarded ?? 0;
+    const courseCompleted = (result as any)?.courseCompleted ?? false;
     
     return (
       <Card className="border-primary/30 bg-primary/5">
@@ -161,11 +164,11 @@ function QuizSection({
               </h3>
               <p className="mt-2 text-muted-foreground">
                 You scored {score}%
-                {!isDemoMode && kasRewarded > 0 && (
+                {!isDemoMode && courseCompleted && (
                   <>
-                    {" "}and earned{" "}
+                    {" - "}
                     <span className="font-semibold text-primary">
-                      +{kasRewarded} KAS
+                      Course reward ready to claim!
                     </span>
                   </>
                 )}
