@@ -1750,37 +1750,59 @@ export async function registerRoutes(
       }> = [];
       
       let totalStuckKas = 0;
+      let apiErrors: string[] = [];
+      let scannedCount = 0;
       
       for (const reservation of reservations) {
         if (!reservation.p2shAddress) continue;
         
         try {
-          const balanceRes = await fetch(`https://api.kaspa.org/addresses/${reservation.p2shAddress}/balance`);
-          if (balanceRes.ok) {
-            const balanceData = await balanceRes.json() as { balance: number };
-            if (balanceData.balance > 0) {
-              const balanceKas = balanceData.balance / 100000000;
-              totalStuckKas += balanceKas;
-              stuckFunds.push({
-                p2shAddress: reservation.p2shAddress,
-                balance: balanceData.balance,
-                balanceKas: balanceKas.toFixed(8),
-                certificateId: reservation.certificateId,
-                courseName: reservation.courseName || "Unknown",
-                status: reservation.status,
-                createdAt: reservation.createdAt,
-              });
-            }
+          const balanceRes = await fetch(`https://api.kaspa.org/addresses/${reservation.p2shAddress}/balance`, {
+            headers: { "Accept": "application/json" },
+          });
+          
+          if (!balanceRes.ok) {
+            apiErrors.push(`API error for ${reservation.p2shAddress.slice(0, 20)}...: HTTP ${balanceRes.status}`);
+            continue;
           }
-        } catch (err) {
-          console.error(`[P2SH Recovery] Error checking ${reservation.p2shAddress}:`, err);
+          
+          const balanceData = await balanceRes.json() as { address: string; balance: number | string };
+          scannedCount++;
+          
+          // Handle both number and string balance (Kaspa API can return either)
+          const balanceSompi = typeof balanceData.balance === "string" 
+            ? parseInt(balanceData.balance, 10) 
+            : balanceData.balance;
+          
+          if (balanceSompi > 0 && !isNaN(balanceSompi)) {
+            const balanceKas = balanceSompi / 100000000;
+            totalStuckKas += balanceKas;
+            stuckFunds.push({
+              p2shAddress: reservation.p2shAddress,
+              balance: balanceSompi,
+              balanceKas: balanceKas.toFixed(8),
+              certificateId: reservation.certificateId,
+              courseName: reservation.courseName || "Unknown",
+              status: reservation.status,
+              createdAt: reservation.createdAt,
+            });
+          }
+          
+          // Rate limit: wait 100ms between API calls
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err: any) {
+          apiErrors.push(`Network error for ${reservation.p2shAddress.slice(0, 20)}...: ${err.message}`);
         }
       }
       
       res.json({
         totalStuckFunds: stuckFunds.length,
         totalStuckKas: totalStuckKas.toFixed(8),
+        totalReservations: reservations.length,
+        scannedCount,
         stuckFunds,
+        hasErrors: apiErrors.length > 0,
+        errors: apiErrors.slice(0, 10), // Limit error output
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

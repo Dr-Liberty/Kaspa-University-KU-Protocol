@@ -62,7 +62,11 @@ interface StuckFund {
 interface P2SHRecoveryData {
   totalStuckFunds: number;
   totalStuckKas: string;
+  totalReservations: number;
+  scannedCount: number;
   stuckFunds: StuckFund[];
+  hasErrors: boolean;
+  errors: string[];
 }
 
 export default function AdminPage() {
@@ -510,49 +514,73 @@ export default function AdminPage() {
                   <div className="text-center text-muted-foreground py-8">
                     Checking P2SH addresses for stuck funds...
                   </div>
-                ) : p2shRecovery && p2shRecovery.totalStuckFunds > 0 ? (
+                ) : p2shRecovery ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md">
-                      <div className="text-lg font-semibold text-yellow-400">
-                        {p2shRecovery.totalStuckKas} KAS stuck in {p2shRecovery.totalStuckFunds} P2SH addresses
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        These funds need to be recovered by completing the reveal transactions
-                      </p>
+                    <div className="text-xs text-muted-foreground">
+                      Scanned {p2shRecovery.scannedCount} of {p2shRecovery.totalReservations} reservations
                     </div>
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-3">
-                        {p2shRecovery.stuckFunds.map((fund) => (
-                          <div
-                            key={fund.p2shAddress}
-                            className="p-4 border rounded-md space-y-2"
-                            data-testid={`stuck-${fund.certificateId}`}
-                          >
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="font-medium">{fund.courseName}</div>
-                              <Badge className="bg-yellow-500/20 text-yellow-400">
-                                {fund.balanceKas} KAS
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground space-y-1">
-                              <div>Certificate: {fund.certificateId}</div>
-                              <div className="break-all">P2SH: {fund.p2shAddress}</div>
-                              <div>Status: {fund.status}</div>
-                              <div>Created: {formatDate(fund.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-primary">
-                              To recover: Reset certificate to pending, then retry minting
-                            </div>
-                          </div>
-                        ))}
+                    
+                    {p2shRecovery.hasErrors && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-md">
+                        <div className="text-sm font-medium text-red-400">API Errors Encountered</div>
+                        <ul className="text-xs text-muted-foreground mt-1 list-disc pl-4">
+                          {p2shRecovery.errors.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
                       </div>
-                    </ScrollArea>
+                    )}
+                    
+                    {p2shRecovery.totalStuckFunds > 0 ? (
+                      <>
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md">
+                          <div className="text-lg font-semibold text-yellow-400">
+                            {p2shRecovery.totalStuckKas} KAS stuck in {p2shRecovery.totalStuckFunds} P2SH addresses
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            These funds need to be recovered by completing the reveal transactions
+                          </p>
+                        </div>
+                        <ScrollArea className="h-[400px]">
+                          <div className="space-y-3">
+                            {p2shRecovery.stuckFunds.map((fund) => (
+                              <div
+                                key={fund.p2shAddress}
+                                className="p-4 border rounded-md space-y-2"
+                                data-testid={`stuck-${fund.certificateId}`}
+                              >
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="font-medium">{fund.courseName}</div>
+                                  <Badge className="bg-yellow-500/20 text-yellow-400">
+                                    {fund.balanceKas} KAS
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  <div>Certificate: {fund.certificateId}</div>
+                                  <div className="break-all">P2SH: {fund.p2shAddress}</div>
+                                  <div>Status: {fund.status}</div>
+                                  <div>Created: {formatDate(fund.createdAt)}</div>
+                                </div>
+                                <div className="text-xs text-primary">
+                                  To recover: Reset certificate to pending, then retry minting
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No stuck funds found</p>
+                        <p className="text-sm mt-1">All P2SH addresses have been processed correctly</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center text-muted-foreground py-8">
                     <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No stuck funds found</p>
-                    <p className="text-sm mt-1">All P2SH addresses have been processed correctly</p>
+                    <p>Click scan to check for stuck funds</p>
                   </div>
                 )}
                 <div className="mt-4">
