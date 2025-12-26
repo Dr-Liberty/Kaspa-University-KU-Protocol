@@ -1344,5 +1344,33 @@ export async function registerRoutes(
     }
   });
 
+  // Verify a transaction exists on Kaspa L1 mainnet
+  app.get("/api/kaspa/verify-tx/:txHash", async (req: Request, res: Response) => {
+    const { txHash } = req.params;
+    
+    try {
+      const kaspaService = await getKaspaService();
+      const result = await kaspaService.verifyTransaction(txHash);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ 
+        exists: false, 
+        confirmed: false, 
+        error: error.message 
+      });
+    }
+  });
+
+  // Get Kaspa RPC/API diagnostics
+  app.get("/api/kaspa/diagnostics", async (req: Request, res: Response) => {
+    try {
+      const kaspaService = await getKaspaService();
+      const diagnostics = await kaspaService.getDiagnostics();
+      res.json(diagnostics);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

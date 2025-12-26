@@ -668,6 +668,170 @@ class KaspaService {
   }
 
   /**
+   * Verify a transaction exists on the Kaspa L1 mainnet
+   * Uses multiple sources: RPC, REST API (api.kaspa.org), and explorer API
+   * Returns detailed status including confirmation info
+   */
+  async verifyTransaction(txHash: string): Promise<{
+    exists: boolean;
+    confirmed: boolean;
+    blockHash?: string;
+    blockTime?: number;
+    outputs?: Array<{ address: string; amount: number }>;
+    error?: string;
+    source?: string;
+  }> {
+    if (!txHash || typeof txHash !== "string") {
+      return { exists: false, confirmed: false, error: "Invalid transaction hash" };
+    }
+
+    // Skip demo/pending transactions
+    if (txHash.startsWith("demo_") || txHash.startsWith("pending_")) {
+      return { exists: false, confirmed: false, error: "Demo/pending transaction - not on L1" };
+    }
+
+    console.log(`[Kaspa] Verifying transaction: ${txHash}`);
+
+    // Try RPC first (fastest, most reliable)
+    if (this.rpcConnected && this.rpcClient) {
+      try {
+        const result = await this.rpcClient.getTransaction({ transactionId: txHash });
+        if (result?.transaction) {
+          const tx = result.transaction;
+          const outputs = tx.outputs?.map((o: any) => ({
+            address: o.scriptPublicKeyAddress || o.address || "unknown",
+            amount: Number(o.value || 0) / 100_000_000,
+          })) || [];
+          
+          console.log(`[Kaspa] TX verified via RPC: ${txHash}`);
+          return {
+            exists: true,
+            confirmed: true,
+            blockHash: tx.blockHash,
+            blockTime: tx.blockTime,
+            outputs,
+            source: "rpc",
+          };
+        }
+      } catch (error: any) {
+        console.log(`[Kaspa] RPC tx lookup failed: ${error.message}`);
+      }
+    }
+
+    // Try REST API (api.kaspa.org)
+    if (this.apiConnected) {
+      try {
+        const result = await this.apiCall(`/transactions/${txHash}`);
+        if (result) {
+          const outputs = result.outputs?.map((o: any) => ({
+            address: o.script_public_key_address || o.address || "unknown",
+            amount: Number(o.amount || 0) / 100_000_000,
+          })) || [];
+          
+          console.log(`[Kaspa] TX verified via REST API: ${txHash}`);
+          return {
+            exists: true,
+            confirmed: !!result.is_accepted || !!result.block_hash,
+            blockHash: result.block_hash,
+            blockTime: result.block_time,
+            outputs,
+            source: "api",
+          };
+        }
+      } catch (error: any) {
+        console.log(`[Kaspa] REST API tx lookup failed: ${error.message}`);
+      }
+    }
+
+    // Try Kaspa explorer API as fallback
+    try {
+      const response = await fetch(`https://api.kaspa.org/transactions/${txHash}`, {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        const outputs = result.outputs?.map((o: any) => ({
+          address: o.script_public_key_address || o.address || "unknown",
+          amount: Number(o.amount || 0) / 100_000_000,
+        })) || [];
+        
+        console.log(`[Kaspa] TX verified via explorer API: ${txHash}`);
+        return {
+          exists: true,
+          confirmed: !!result.is_accepted || !!result.block_hash,
+          blockHash: result.block_hash,
+          blockTime: result.block_time,
+          outputs,
+          source: "explorer",
+        };
+      }
+    } catch (error: any) {
+      console.log(`[Kaspa] Explorer API tx lookup failed: ${error.message}`);
+    }
+
+    console.log(`[Kaspa] TX not found on any source: ${txHash}`);
+    return { exists: false, confirmed: false, error: "Transaction not found on L1" };
+  }
+
+  /**
+   * Get RPC and API connection diagnostics
+   * Useful for debugging transaction submission issues
+   */
+  async getDiagnostics(): Promise<{
+    rpcConnected: boolean;
+    apiConnected: boolean;
+    treasuryAddress: string | null;
+    treasuryBalance: number;
+    rpcEndpoint: string;
+    apiEndpoint: string;
+    blockCount?: number;
+    networkName?: string;
+    isLive: boolean;
+  }> {
+    const diagnostics: any = {
+      rpcConnected: this.rpcConnected,
+      apiConnected: this.apiConnected,
+      treasuryAddress: this.treasuryAddress,
+      treasuryBalance: 0,
+      rpcEndpoint: "seeder2.kaspad.net:16110",
+      apiEndpoint: this.config.apiUrl,
+      isLive: this.isLive(),
+    };
+
+    // Get treasury balance with timeout
+    if (this.treasuryAddress) {
+      try {
+        const balancePromise = this.getBalance(this.treasuryAddress);
+        const timeoutPromise = new Promise<number>((_, reject) => 
+          setTimeout(() => reject(new Error("timeout")), 5000)
+        );
+        diagnostics.treasuryBalance = await Promise.race([balancePromise, timeoutPromise]);
+      } catch {
+        diagnostics.treasuryBalance = -1; // Indicates fetch failed
+      }
+    }
+
+    // Get network info from RPC with timeout
+    if (this.rpcConnected && this.rpcClient) {
+      try {
+        const infoPromise = this.rpcClient.getBlockDagInfo();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("timeout")), 5000)
+        );
+        const info = await Promise.race([infoPromise, timeoutPromise]) as any;
+        diagnostics.blockCount = info?.blockCount;
+        diagnostics.networkName = info?.networkName;
+      } catch {
+        // Ignore - leave undefined
+      }
+    }
+
+    return diagnostics;
+  }
+
+  /**
    * Send KAS reward to a user's wallet with on-chain quiz proof
    * Embeds KU protocol payload with wallet address for verification
    */

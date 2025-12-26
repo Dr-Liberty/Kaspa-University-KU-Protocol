@@ -36,7 +36,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const { isDemoMode } = useWallet();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
-  const [showImage, setShowImage] = useState(false);
   const [mintStep, setMintStep] = useState<"idle" | "preparing" | "awaiting_payment" | "finalizing">("idle");
   const [pendingP2sh, setPendingP2sh] = useState<string | null>(null);
   const [pendingCommitTx, setPendingCommitTx] = useState<string | null>(null);
@@ -268,18 +267,14 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     >
       <CardContent className="p-0">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-background via-card to-background">
-          {certificate.imageUrl && showImage ? (
+          {certificate.imageUrl ? (
             <img
               src={certificate.imageUrl}
               alt={`Certificate for ${certificate.courseName}`}
-              className="h-full w-full object-cover"
-              onClick={() => setShowImage(false)}
+              className="h-full w-full object-contain"
             />
           ) : (
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center cursor-pointer"
-              onClick={() => certificate.imageUrl && setShowImage(true)}
-            >
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
               <div className="rounded-full bg-primary/10 p-3">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
               </div>
@@ -303,9 +298,20 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   +{certificate.kasReward} KAS
                 </span>
               </div>
-              {certificate.imageUrl && (
-                <p className="text-xs text-muted-foreground/60 mt-1">Click to view certificate</p>
-              )}
+            </div>
+          )}
+          
+          {certificate.imageUrl && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent p-3 pt-6">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-sm leading-tight truncate">{certificate.courseName}</h3>
+                  <p className="text-xs text-muted-foreground">{formatDate(certificate.issuedAt)}</p>
+                </div>
+                <Badge className="bg-primary/10 text-primary border-primary/20 shrink-0 text-xs">
+                  +{certificate.kasReward} KAS
+                </Badge>
+              </div>
             </div>
           )}
 
