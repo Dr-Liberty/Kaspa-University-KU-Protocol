@@ -109,19 +109,25 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
       });
       
       const finalizeData = await finalizeRes.json();
+      console.log("[NFT] Finalize response:", finalizeData);
       
       if (!finalizeData.success) {
+        // Always store P2SH for potential retry since user already paid
+        setPendingP2sh(prepareData.p2shAddress);
+        
         // Check if payment is still pending (202) - allow retry
         if (finalizeRes.status === 202 && finalizeData.retry) {
-          // Store P2SH for retry and throw with specific message
-          setPendingP2sh(finalizeData.p2shAddress || prepareData.p2shAddress);
           throw new Error("Transaction still pending. Please wait a moment and try again.");
         }
         // Check if reservation expired
         if (finalizeRes.status === 410) {
+          setPendingP2sh(null); // Clear P2SH on expiry
           throw new Error("Mint reservation expired. Please start the process again.");
         }
-        throw new Error(finalizeData.message || "Failed to finalize mint");
+        // For other errors, keep P2SH for retry
+        const errorMsg = finalizeData.message || finalizeData.error || "Failed to finalize mint";
+        console.error("[NFT] Finalize failed:", errorMsg);
+        throw new Error(errorMsg);
       }
 
       return finalizeData as FinalizeResponse;
@@ -137,20 +143,22 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
     },
     onError: (error: Error) => {
-      // Only reset to idle if not a retry-able error
-      const isRetryable = error.message.includes("pending") || error.message.includes("wait");
+      // Check if we have a pending P2SH - if so, allow retry
+      const hasP2sh = pendingP2sh !== null;
+      const isRetryable = error.message.includes("pending") || error.message.includes("wait") || hasP2sh;
+      
       if (!isRetryable) {
         setMintStep("idle");
         setPendingP2sh(null);
         setPendingCommitTx(null);
       } else {
-        // Keep in finalizing state for retry
+        // Keep in finalizing state for retry since user already paid
         setMintStep("finalizing");
       }
       toast({
-        title: isRetryable ? "Still Processing" : "Minting Failed",
+        title: isRetryable ? "Finalization Failed - Retry Available" : "Minting Failed",
         description: error.message,
-        variant: isRetryable ? "default" : "destructive",
+        variant: "destructive",
       });
     },
   });

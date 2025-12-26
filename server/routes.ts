@@ -1129,10 +1129,12 @@ export async function registerRoutes(
     }
 
     try {
+      console.log(`[Finalize] Starting finalize for certificate ${id}, P2SH: ${p2shAddress.slice(0, 30)}...`);
       const krc721Service = await getKRC721Service();
 
       // Finalize the mint - server submits reveal transaction
       const finalizeResult = await krc721Service.finalizeMint(p2shAddress, id, commitTxHash);
+      console.log(`[Finalize] Result:`, JSON.stringify(finalizeResult));
 
       if (finalizeResult.success && finalizeResult.revealTxHash) {
         await storage.updateCertificate(id, {
