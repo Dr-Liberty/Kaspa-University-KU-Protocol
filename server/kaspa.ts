@@ -1184,9 +1184,17 @@ class KaspaService {
       
       console.log(`[Kaspa] Starting Generator transaction loop...`);
       
-      // Generator.next() returns pending transactions until exhausted
+      // Generator.next() returns pending transactions until exhausted (null/undefined)
       let pendingTransaction;
-      while ((pendingTransaction = await generator.next()) !== undefined) {
+      while (true) {
+        pendingTransaction = await generator.next();
+        
+        // Generator returns null or undefined when exhausted
+        if (pendingTransaction === null || pendingTransaction === undefined) {
+          console.log(`[Kaspa] Generator exhausted after ${txCount} transaction(s)`);
+          break;
+        }
+        
         txCount++;
         console.log(`[Kaspa] Processing transaction ${txCount}...`);
         
@@ -1223,10 +1231,24 @@ class KaspaService {
         }
       }
 
-      // Get summary from generator
+      // Get summary from generator (synchronous per typings)
       const summary = generator.summary();
       console.log(`[Kaspa] Generator complete: ${txCount} transaction(s)`);
+      
+      // Try to get finalTransactionId from summary if we don't have one
+      if (!finalTxHash && summary?.finalTransactionId) {
+        finalTxHash = summary.finalTransactionId;
+        console.log(`[Kaspa] Using finalTransactionId from summary: ${finalTxHash}`);
+      }
+      
       console.log(`[Kaspa] Summary:`, summary?.toJSON ? summary.toJSON() : summary);
+
+      // Validate we have a transaction hash before marking UTXOs as spent
+      if (!finalTxHash) {
+        console.error(`[Kaspa] Generator produced no transactions - releasing UTXOs`);
+        await utxoManager.releaseReservation(reservation.selected);
+        throw new Error("Transaction generation failed: no transactions produced. The amount may be below dust threshold or UTXOs insufficient.");
+      }
 
       // Mark UTXOs as spent with txHash
       await utxoManager.markAsSpent(reservation.selected, finalTxHash);
