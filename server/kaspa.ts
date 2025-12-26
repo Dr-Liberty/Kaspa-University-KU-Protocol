@@ -147,64 +147,63 @@ class KaspaService {
   }
 
   /**
-   * Load kaspa module with K-Kluster fixes
-   * Tries manual WASM import first, then falls back to npm package
+   * Load kaspa WASM module from local bundle (rusty-kaspa v1.0.1)
+   * 
+   * Uses ONLY the local WASM bundle from server/wasm/ - NO npm package fallback.
+   * The npm "kaspa" package is outdated and has API drift issues.
+   * 
+   * Reference: https://github.com/kaspanet/rusty-kaspa/tree/master/wasm
+   * Source: https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.0.1
    */
   private async loadKaspaModule(): Promise<void> {
     try {
-      console.log("[Kaspa] Loading kaspa module...");
+      console.log("[Kaspa] Loading kaspa WASM module v1.0.1...");
       
-      // Try manual WASM import first (recommended by other Kaspa developers)
-      // Check both development and production paths
       const path = await import("path");
       const fs = await import("fs");
       
-      // Production path (when running from dist/)
-      const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
-      // Development path (when running with tsx from server/)
+      // Development path (tsx from project root)
       const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
+      // Production path (esbuild bundle in dist/)
+      const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
       
-      let wasmLoaded = false;
-      
-      // Try production path first (for deployed apps)
+      // Determine which WASM path to use
+      let wasmPath: string | null = null;
       if (fs.existsSync(prodWasmPath)) {
-        try {
-          console.log("[Kaspa] Trying production WASM from dist/wasm/...");
-          this.kaspaModule = await import(prodWasmPath);
-          console.log("[Kaspa] Production WASM import successful!");
-          wasmLoaded = true;
-        } catch (prodError: any) {
-          console.log("[Kaspa] Production WASM import failed:", prodError.message);
-        }
+        wasmPath = prodWasmPath;
+        console.log("[Kaspa] Using production WASM from dist/wasm/");
+      } else if (fs.existsSync(devWasmPath)) {
+        wasmPath = devWasmPath;
+        console.log("[Kaspa] Using development WASM from server/wasm/");
       }
       
-      // Try development path
-      if (!wasmLoaded && fs.existsSync(devWasmPath)) {
-        try {
-          console.log("[Kaspa] Trying development WASM from server/wasm/...");
-          this.kaspaModule = await import(devWasmPath);
-          console.log("[Kaspa] Development WASM import successful!");
-          wasmLoaded = true;
-        } catch (devError: any) {
-          console.log("[Kaspa] Development WASM import failed:", devError.message);
-        }
+      if (!wasmPath) {
+        throw new Error("Kaspa WASM module not found. Expected at server/wasm/kaspa.js or dist/wasm/kaspa.js");
       }
       
-      // Fall back to npm package
-      if (!wasmLoaded) {
-        console.log("[Kaspa] Manual WASM import failed, trying npm package");
-        this.kaspaModule = await import("kaspa");
+      // Use require() for CommonJS WASM bundle (synchronous loading)
+      // The WASM module auto-initializes on require() - see kaspa.js lines 14794-14799
+      this.kaspaModule = require(wasmPath);
+      
+      // Verify critical exports are available
+      const requiredExports = ['PrivateKey', 'createTransactions', 'kaspaToSompi'];
+      const missingExports = requiredExports.filter(exp => !this.kaspaModule[exp]);
+      if (missingExports.length > 0) {
+        throw new Error(`WASM module missing required exports: ${missingExports.join(', ')}`);
       }
       
-      // K-Kluster Fix #2: Initialize console panic hook for better WASM errors
-      if (this.kaspaModule.initConsolePanicHook) {
+      // Initialize console panic hook for better WASM error debugging
+      // Reference: https://kaspa-mdbook.aspectron.com/
+      if (typeof this.kaspaModule.initConsolePanicHook === 'function') {
         this.kaspaModule.initConsolePanicHook();
-        console.log("[Kaspa] Console panic hook initialized");
+        console.log("[Kaspa] Console panic hook initialized for WASM debugging");
       }
 
-      console.log("[Kaspa] Kaspa module loaded successfully");
+      console.log("[Kaspa] Kaspa WASM v1.0.1 loaded successfully");
+      console.log("[Kaspa] Available exports:", Object.keys(this.kaspaModule).slice(0, 10).join(', ') + '...');
     } catch (error: any) {
-      console.error("[Kaspa] Failed to load kaspa module:", error.message);
+      console.error("[Kaspa] Failed to load WASM module:", error.message);
+      console.error("[Kaspa] Ensure server/wasm/ contains kaspa.js and kaspa_bg.wasm from rusty-kaspa v1.0.1");
       throw error;
     }
   }

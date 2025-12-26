@@ -172,48 +172,57 @@ class KRC721Service {
   }
 
   /**
-   * Load kaspa module with production/development path detection
+   * Load kaspa WASM module from local bundle (rusty-kaspa v1.0.1)
+   * 
+   * Uses ONLY the local WASM bundle from server/wasm/ - NO npm package fallback.
+   * The npm "kaspa" package is outdated and has API drift issues.
+   * 
+   * Reference: https://github.com/kaspanet/rusty-kaspa/tree/master/wasm
+   * Source: https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.0.1
    */
   private async loadKaspaModule(): Promise<void> {
     const path = await import("path");
     const fs = await import("fs");
     
-    // Production path (when running from dist/)
-    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
-    // Development path (when running with tsx from server/)
+    console.log("[KRC721] Loading kaspa WASM module v1.0.1...");
+    
+    // Development path (tsx from project root)
     const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
+    // Production path (esbuild bundle in dist/)
+    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
     
-    let wasmLoaded = false;
-    
-    // Try production path first (for deployed apps)
+    // Determine which WASM path to use
+    let wasmPath: string | null = null;
     if (fs.existsSync(prodWasmPath)) {
-      try {
-        console.log("[KRC721] Trying production WASM from dist/wasm/...");
-        this.kaspaModule = await import(prodWasmPath);
-        console.log("[KRC721] Production WASM import successful!");
-        wasmLoaded = true;
-      } catch (prodError: any) {
-        console.log("[KRC721] Production WASM import failed:", prodError.message);
-      }
+      wasmPath = prodWasmPath;
+      console.log("[KRC721] Using production WASM from dist/wasm/");
+    } else if (fs.existsSync(devWasmPath)) {
+      wasmPath = devWasmPath;
+      console.log("[KRC721] Using development WASM from server/wasm/");
     }
     
-    // Try development path
-    if (!wasmLoaded && fs.existsSync(devWasmPath)) {
-      try {
-        console.log("[KRC721] Trying development WASM from server/wasm/...");
-        this.kaspaModule = await import(devWasmPath);
-        console.log("[KRC721] Development WASM import successful!");
-        wasmLoaded = true;
-      } catch (devError: any) {
-        console.log("[KRC721] Development WASM import failed:", devError.message);
-      }
+    if (!wasmPath) {
+      throw new Error("Kaspa WASM module not found. Expected at server/wasm/kaspa.js or dist/wasm/kaspa.js");
     }
     
-    // Fall back to npm package
-    if (!wasmLoaded) {
-      console.log("[KRC721] Manual WASM import failed, trying npm package");
-      this.kaspaModule = await import("kaspa");
+    // Use require() for CommonJS WASM bundle (synchronous loading)
+    // The WASM module auto-initializes on require() - see kaspa.js lines 14794-14799
+    this.kaspaModule = require(wasmPath);
+    
+    // Verify critical exports for KRC721 operations
+    const requiredExports = ['PrivateKey', 'PublicKey', 'ScriptBuilder', 'addressFromScriptPublicKey'];
+    const missingExports = requiredExports.filter(exp => !this.kaspaModule[exp]);
+    if (missingExports.length > 0) {
+      throw new Error(`WASM module missing required exports: ${missingExports.join(', ')}`);
     }
+    
+    // Initialize console panic hook for better WASM error debugging
+    if (typeof this.kaspaModule.initConsolePanicHook === 'function') {
+      this.kaspaModule.initConsolePanicHook();
+      console.log("[KRC721] Console panic hook initialized for WASM debugging");
+    }
+
+    console.log("[KRC721] Kaspa WASM v1.0.1 loaded successfully");
   }
 
   /**

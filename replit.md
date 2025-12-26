@@ -48,11 +48,27 @@ Preferred communication style: Simple, everyday language.
 - **Network**: Mainnet (production)
 - **RPC**: Uses `kaspa-rpc-client` for network operations (pure TypeScript, reliable in Node.js)
 - **Signing**: Uses Kaspa WASM module for transaction signing
-- **WASM Source**: Manual import from `server/wasm/` (downloaded from official rusty-kaspa releases v1.0.1)
-  - Falls back to npm `kaspa` package if manual import fails
-  - Manual WASM import recommended by Kaspa developers for better compatibility
+- **WASM Source**: Local bundle from `server/wasm/` (rusty-kaspa v1.0.1)
+  - NO npm package fallback - npm `kaspa` package is outdated and has API drift issues
+  - WASM auto-initializes on require() via CommonJS loader
+  - Console panic hook enabled for better error debugging
 - **Treasury Secret**: `KASPA_TREASURY_PRIVATEKEY` - 64-character hex private key for the treasury wallet
   - Legacy names `KASPA_TREASURY_PRIVATE_KEY` and `KASPA_TREASURY_MNEMONIC` still work as fallback
+
+### WASM Module Details
+- **Version**: rusty-kaspa v1.0.1 (Crescendo release with 10 BPS support)
+- **Files**: `server/wasm/kaspa.js`, `server/wasm/kaspa_bg.wasm`
+- **Loading**: Synchronous via CommonJS require() - no async init needed
+- **Key Exports Used**:
+  - `PrivateKey`, `PublicKey`, `Address` - Key management
+  - `createTransactions`, `kaspaToSompi` - Transaction building
+  - `ScriptBuilder`, `addressFromScriptPublicKey` - KRC-721 inscription scripts
+- **References**:
+  - GitHub: https://github.com/kaspanet/rusty-kaspa
+  - WASM SDK: https://github.com/kaspanet/rusty-kaspa/tree/master/wasm
+  - Releases: https://github.com/kaspanet/rusty-kaspa/releases
+  - TypeScript Docs: https://kaspa.aspectron.org/docs/
+  - Integration Guide: https://kaspa-mdbook.aspectron.com/
 
 ### Features Implemented
 - KAS token reward distribution on quiz completion
