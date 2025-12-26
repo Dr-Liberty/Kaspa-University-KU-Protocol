@@ -556,6 +556,31 @@ export async function registerRoutes(
     res.json(certificate);
   });
 
+  // Get all rewards for user (both pending and claimed)
+  app.get("/api/rewards", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.json([]);
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.json([]);
+    }
+
+    const allRewards = await storage.getCourseRewardsByUser(user.id);
+    
+    const enriched = await Promise.all(allRewards.map(async (r) => {
+      const course = await storage.getCourse(r.courseId);
+      return {
+        ...r,
+        courseTitle: course?.title || "Unknown Course",
+      };
+    }));
+
+    res.json(enriched);
+  });
+
   // Get claimable rewards for user
   app.get("/api/rewards/claimable", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
@@ -629,20 +654,35 @@ export async function registerRoutes(
       );
 
       if (txResult.success && txResult.txHash) {
-        await storage.updateCourseReward(rewardId, { 
-          status: "claimed", 
-          txHash: txResult.txHash,
-          claimedAt: new Date(),
-        });
-        await storage.updateUserKas(user.id, reward.kasAmount);
+        // Check if this is a real transaction (not a pending/demo placeholder)
+        const isRealTx = txResult.txHash && 
+          !txResult.txHash.startsWith("pending_") && 
+          !txResult.txHash.startsWith("demo_");
         
-        console.log(`[Claim] Course reward claimed: ${reward.kasAmount} KAS for ${course?.title}, txHash: ${txResult.txHash}`);
-        
-        res.json({ 
-          success: true, 
-          txHash: txResult.txHash, 
-          amount: reward.kasAmount 
-        });
+        if (isRealTx) {
+          await storage.updateCourseReward(rewardId, { 
+            status: "claimed", 
+            txHash: txResult.txHash,
+            claimedAt: new Date(),
+          });
+          await storage.updateUserKas(user.id, reward.kasAmount);
+          
+          console.log(`[Claim] Course reward claimed: ${reward.kasAmount} KAS for ${course?.title}, txHash: ${txResult.txHash}`);
+          
+          res.json({ 
+            success: true, 
+            txHash: txResult.txHash, 
+            amount: reward.kasAmount 
+          });
+        } else {
+          // Transaction was queued but not actually sent - keep as pending
+          await storage.updateCourseReward(rewardId, { status: "pending" });
+          console.error(`[Claim] Transaction not submitted - treasury may not be properly configured. Hash: ${txResult.txHash}`);
+          res.status(500).json({ 
+            error: "Transaction not submitted", 
+            message: "Treasury wallet not properly configured. Please contact admin." 
+          });
+        }
       } else {
         await storage.updateCourseReward(rewardId, { status: "pending" });
         console.error(`[Claim] Failed: ${txResult.error}`);

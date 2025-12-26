@@ -97,7 +97,8 @@ class PinataService {
 
       const result = await response.json();
       const ipfsHash = result.IpfsHash;
-      const ipfsUrl = `${this.gateway}/${ipfsHash}`;
+      // Return ipfs:// URL for NFT standards (KRC-721 requires this format)
+      const ipfsUrl = `ipfs://${ipfsHash}`;
 
       console.log(`[Pinata] Image uploaded: ${ipfsUrl}`);
       return { success: true, ipfsHash, ipfsUrl };
@@ -143,7 +144,8 @@ class PinataService {
 
       const result = await response.json();
       const ipfsHash = result.IpfsHash;
-      const ipfsUrl = `${this.gateway}/${ipfsHash}`;
+      // Return ipfs:// URL for NFT standards (KRC-721 requires this format)
+      const ipfsUrl = `ipfs://${ipfsHash}`;
 
       console.log(`[Pinata] Metadata uploaded: ${ipfsUrl}`);
       return { success: true, ipfsHash, ipfsUrl };

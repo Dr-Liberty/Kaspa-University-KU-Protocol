@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateCard } from "@/components/certificate-card";
 import type { Course, UserProgress, Certificate, User, CourseReward } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
@@ -22,9 +23,10 @@ import {
   ShieldAlert,
   Loader2,
   CheckCircle2,
-  Gift,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface SecurityCheck {
   isFlagged: boolean;
@@ -34,8 +36,13 @@ interface SecurityCheck {
   rewardsBlocked: boolean;
 }
 
+interface EnrichedReward extends CourseReward {
+  courseTitle: string;
+}
+
 export default function Dashboard() {
   const { wallet, connect, isConnecting, truncatedAddress } = useWallet();
+  const [activeTab, setActiveTab] = useState("courses");
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
     queryKey: ["/api/security/check"],
@@ -61,12 +68,8 @@ export default function Dashboard() {
     enabled: !!wallet,
   });
 
-  interface ClaimableReward extends CourseReward {
-    courseTitle: string;
-  }
-
-  const { data: claimableRewards, isLoading: rewardsLoading } = useQuery<ClaimableReward[]>({
-    queryKey: ["/api/rewards/claimable"],
+  const { data: allRewards } = useQuery<EnrichedReward[]>({
+    queryKey: ["/api/rewards"],
     enabled: !!wallet,
   });
 
@@ -79,6 +82,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards/claimable"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
@@ -100,20 +104,34 @@ export default function Dashboard() {
     return new Map(progressList.map((p) => [p.courseId, p]));
   }, [progressList]);
 
+  const enrolledCourses = useMemo(() => {
+    if (!courses || !progressList) return [];
+    return courses.filter((c) => progressMap.has(c.id));
+  }, [courses, progressList, progressMap]);
+
   const inProgressCourses = useMemo(() => {
     if (!courses || !progressList) return [];
-    return courses
-      .filter((c) => {
-        const p = progressMap.get(c.id);
-        if (!p) return false;
-        const completed = p.completedLessons?.length ?? 0;
-        return completed > 0 && completed < c.lessonCount;
-      })
-      .slice(0, 3);
+    return courses.filter((c) => {
+      const p = progressMap.get(c.id);
+      if (!p) return false;
+      const completed = p.completedLessons?.length ?? 0;
+      return completed > 0 && completed < c.lessonCount;
+    });
   }, [courses, progressList, progressMap]);
 
   const completedCount = certificates?.length ?? 0;
   const totalKasEarned = user?.totalKasEarned ?? 0;
+
+  const pendingRewards = useMemo(() => {
+    return allRewards?.filter((r) => r.status === "pending") || [];
+  }, [allRewards]);
+
+  const claimedRewards = useMemo(() => {
+    return allRewards?.filter((r) => r.status === "claimed") || [];
+  }, [allRewards]);
+
+  const totalPending = pendingRewards.reduce((sum, r) => sum + r.kasAmount, 0);
+  const totalClaimed = claimedRewards.reduce((sum, r) => sum + r.kasAmount, 0);
 
   if (!wallet) {
     return (
@@ -161,39 +179,49 @@ export default function Dashboard() {
       )}
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-primary/10 p-2.5">
-              <LayoutDashboard className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-dashboard-title">
-                Dashboard
-              </h1>
-              <p className="font-mono text-sm text-muted-foreground">
-                {truncatedAddress}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-dashboard-title">
+            Student Dashboard
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Track your learning progress and KAS rewards
+          </p>
         </div>
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-border/50">
+          <Card className="border-primary/30">
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Coins className="h-5 w-5 text-primary" />
+              <div className="rounded-lg bg-primary/10 p-3">
+                <BookOpen className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total KAS Earned</p>
-                <p className="text-2xl font-bold" data-testid="stat-kas-earned">
-                  {totalKasEarned.toFixed(2)} <span className="text-lg text-primary">KAS</span>
+                <p className="text-sm text-muted-foreground">Courses Enrolled</p>
+                <p className="text-2xl font-bold" data-testid="stat-enrolled">
+                  {enrolledCourses.length}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {inProgressCourses.length} in progress
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className="border-primary/30">
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-full bg-primary/10 p-3">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold" data-testid="stat-completed">
+                  {completedCount}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/30">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="rounded-lg bg-primary/10 p-3">
                 <Award className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -205,196 +233,250 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className="border-primary/30">
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <BookOpen className="h-5 w-5 text-primary" />
+              <div className="rounded-lg bg-primary/10 p-3">
+                <Coins className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold" data-testid="stat-in-progress">
-                  {inProgressCourses.length}
+                <p className="text-sm text-muted-foreground">KAS Earned</p>
+                <p className="text-2xl font-bold text-primary" data-testid="stat-kas-earned">
+                  {totalKasEarned.toFixed(2)}
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/50">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completion Rate</p>
-                <p className="text-2xl font-bold" data-testid="stat-completion-rate">
-                  {courses?.length
-                    ? Math.round((completedCount / courses.length) * 100)
-                    : 0}
-                  %
-                </p>
+                {totalPending > 0 && (
+                  <p className="text-xs text-primary">
+                    +{totalPending.toFixed(2)} pending
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {claimableRewards && claimableRewards.length > 0 && (
-          <Card className="mb-6 border-primary/30 bg-primary/5">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Pending Rewards</CardTitle>
-                </div>
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  {claimableRewards.length} available
-                </Badge>
-              </div>
-              <CardDescription>
-                Complete courses to unlock KAS rewards
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {claimableRewards.map((reward) => (
-                <div
-                  key={reward.id}
-                  className="flex items-center justify-between gap-4 rounded-lg border bg-card p-4"
-                  data-testid={`reward-item-${reward.id}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                      <Award className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{reward.courseTitle}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Score: {reward.averageScore}%
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="font-bold text-primary">{reward.kasAmount.toFixed(2)} KAS</p>
-                    </div>
-                    <Button
-                      onClick={() => claimMutation.mutate(reward.id)}
-                      disabled={claimMutation.isPending || isDemoMode}
-                      size="sm"
-                      className="gap-2"
-                      data-testid={`button-claim-${reward.id}`}
-                    >
-                      {claimMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Coins className="h-4 w-4" />
-                      )}
-                      Claim
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {isDemoMode && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Connect a real wallet to claim rewards
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="courses" className="gap-2" data-testid="tab-courses">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">My Courses</span>
+              <span className="sm:hidden">Courses</span>
+            </TabsTrigger>
+            <TabsTrigger value="certificates" className="gap-2" data-testid="tab-certificates">
+              <Award className="h-4 w-4" />
+              <span>Certificates</span>
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="gap-2" data-testid="tab-rewards">
+              <Coins className="h-4 w-4" />
+              <span>Rewards</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="border-border/50">
-            <CardHeader className="flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg">Continue Learning</CardTitle>
-              <Link href="/courses">
-                <Button variant="ghost" size="sm" className="gap-1">
-                  View All
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {inProgressCourses.length > 0 ? (
-                inProgressCourses.map((course) => {
+          <TabsContent value="courses" className="space-y-4">
+            {enrolledCourses.length > 0 ? (
+              <>
+                {enrolledCourses.map((course) => {
                   const p = progressMap.get(course.id);
                   const completed = p?.completedLessons?.length ?? 0;
                   const percent = Math.round((completed / course.lessonCount) * 100);
+                  const isComplete = completed >= course.lessonCount;
+                  
                   return (
                     <Link key={course.id} href={`/courses/${course.id}`}>
-                      <div
-                        className="group flex items-center gap-4 rounded-lg border border-border/50 bg-card/50 p-4 transition-colors hover:border-primary/30 hover:bg-card"
+                      <Card
+                        className="group transition-colors hover:border-primary/50"
                         data-testid={`progress-course-${course.id}`}
                       >
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                          <BookOpen className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="truncate font-medium group-hover:text-primary">
-                            {course.title}
-                          </h4>
-                          <div className="mt-1 flex items-center gap-2">
-                            <Progress value={percent} className="h-1.5 flex-1" />
-                            <span className="text-xs text-muted-foreground">
-                              {percent}%
-                            </span>
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            {isComplete ? (
+                              <CheckCircle2 className="h-5 w-5 text-primary" />
+                            ) : (
+                              <BookOpen className="h-5 w-5 text-primary" />
+                            )}
                           </div>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                      </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="truncate font-medium group-hover:text-primary">
+                                {course.title}
+                              </h4>
+                              {isComplete && (
+                                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                  Completed
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Progress value={percent} className="h-2 flex-1" />
+                              <span className="text-sm text-muted-foreground">
+                                {completed}/{course.lessonCount}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                        </CardContent>
+                      </Card>
                     </Link>
                   );
-                })
-              ) : (
-                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No courses in progress
+                })}
+              </>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <BookOpen className="h-12 w-12 text-muted-foreground/50" />
+                  <p className="mt-4 text-lg font-medium">No courses enrolled</p>
+                  <p className="text-sm text-muted-foreground">
+                    Start learning to earn KAS rewards
                   </p>
                   <Link href="/courses">
-                    <Button variant="outline" size="sm" className="mt-4 gap-1">
+                    <Button className="mt-4 gap-2">
                       Browse Courses
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-          <Card className="border-border/50">
-            <CardHeader className="flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg">Recent Certificates</CardTitle>
-              <Link href="/certificates">
-                <Button variant="ghost" size="sm" className="gap-1">
-                  View All
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {certificates && certificates.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {certificates.slice(0, 2).map((cert) => (
-                    <CertificateCard
-                      key={cert.id}
-                      certificate={cert}
-                      showActions={false}
-                    />
+          <TabsContent value="certificates" className="space-y-4">
+            {certificates && certificates.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {certificates.map((cert) => (
+                  <CertificateCard
+                    key={cert.id}
+                    certificate={cert}
+                    showActions={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Award className="h-12 w-12 text-muted-foreground/50" />
+                  <p className="mt-4 text-lg font-medium">No certificates yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Complete a course to earn your first NFT certificate
+                  </p>
+                  <Link href="/courses">
+                    <Button className="mt-4 gap-2">
+                      Start Learning
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="rewards" className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Coins className="h-5 w-5 text-primary" />
+                Reward History
+              </h2>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  {totalPending.toFixed(2)} pending
+                </span>
+                <span className="flex items-center gap-1 text-primary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {totalClaimed.toFixed(2)} claimed
+                </span>
+              </div>
+            </div>
+
+            {allRewards && allRewards.length > 0 ? (
+              <div className="space-y-3">
+                {allRewards
+                  .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                  .map((reward) => (
+                    <Card key={reward.id} data-testid={`reward-item-${reward.id}`}>
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                          <Award className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">Course Completion</p>
+                            <Badge
+                              variant={reward.status === "claimed" ? "default" : "secondary"}
+                              className={reward.status === "claimed" ? "bg-primary/20 text-primary" : ""}
+                            >
+                              {reward.status === "claimed" ? "confirmed" : reward.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {reward.courseTitle}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(reward.completedAt).toLocaleDateString()}
+                            {reward.txHash && !reward.txHash.startsWith("demo_") && !reward.txHash.startsWith("pending_") && (
+                              <a
+                                href={`https://explorer.kaspa.org/txs/${reward.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 inline-flex items-center gap-1 text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {reward.txHash.slice(0, 12)}...
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="font-bold text-primary">
+                              +{reward.kasAmount.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">KAS</p>
+                          </div>
+                          {reward.status === "pending" && (
+                            <Button
+                              onClick={() => claimMutation.mutate(reward.id)}
+                              disabled={claimMutation.isPending || isDemoMode}
+                              size="sm"
+                              className="gap-1"
+                              data-testid={`button-claim-${reward.id}`}
+                            >
+                              {claimMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Coins className="h-4 w-4" />
+                              )}
+                              Claim
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
-                  <Award className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No certificates yet
+              </div>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Coins className="h-12 w-12 text-muted-foreground/50" />
+                  <p className="mt-4 text-lg font-medium">No rewards yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Complete courses to earn KAS rewards
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Complete a course to earn your first NFT certificate!
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  <Link href="/courses">
+                    <Button className="mt-4 gap-2">
+                      Start Learning
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {isDemoMode && allRewards && allRewards.length > 0 && (
+              <p className="text-center text-sm text-muted-foreground">
+                Connect a real wallet to claim rewards
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
