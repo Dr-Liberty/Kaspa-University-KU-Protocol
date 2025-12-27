@@ -195,7 +195,7 @@ export default function Landing() {
               </Button>
             </Link>
             <Link href="/analytics">
-              <Button variant="outline" size="lg" className="gap-2 text-base bg-[#7ed0bc] text-[#141414]" data-testid="button-analytics-hero">
+              <Button variant="outline" size="lg" className="gap-2 text-base bg-[#7fd0bc] text-[#141414]" data-testid="button-analytics-hero">
                 <BarChart3 className="h-5 w-5" />
                 Analytics
               </Button>
