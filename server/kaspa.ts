@@ -447,30 +447,48 @@ class KaspaService {
    * This is more reliable than WASM in Node.js/tsx environment
    */
   private async tryRpcClientConnection(): Promise<void> {
-    try {
-      console.log("[Kaspa] Trying kaspa-rpc-client connection...");
-      
-      // Dynamic import to handle CommonJS module
-      const { ClientWrapper } = require("kaspa-rpc-client");
-      
-      const wrapper = new ClientWrapper({
-        hosts: ["seeder2.kaspad.net:16110"],
-        verbose: false
-      });
+    // Multiple seeder nodes for failover
+    const seeders = [
+      "seeder2.kaspad.net:16110",
+      "seeder1.kaspad.net:16110",
+      "n.seeder1.kaspad.net:16110",
+      "n.seeder2.kaspad.net:16110",
+    ];
+    
+    for (const host of seeders) {
+      try {
+        console.log(`[Kaspa] Trying kaspa-rpc-client connection to ${host}...`);
+        
+        // Dynamic import to handle CommonJS module
+        const { ClientWrapper } = require("kaspa-rpc-client");
+        
+        const wrapper = new ClientWrapper({
+          hosts: [host],
+          verbose: false
+        });
 
-      await wrapper.initialize();
-      this.rpcClient = await wrapper.getClient();
-      
-      // Test connection
-      const info = await this.rpcClient.getBlockDagInfo();
-      console.log(`[Kaspa] RPC connected! Block count: ${info?.blockCount || 'unknown'}`);
-      console.log(`[Kaspa] Network: ${info?.networkName || 'kaspa-mainnet'}`);
-      this.rpcConnected = true;
+        // Set a connection timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Connection timeout (10s)")), 10000)
+        );
+        
+        await Promise.race([wrapper.initialize(), timeoutPromise]);
+        this.rpcClient = await wrapper.getClient();
+        
+        // Test connection
+        const info = await this.rpcClient.getBlockDagInfo();
+        console.log(`[Kaspa] RPC connected to ${host}! Block count: ${info?.blockCount || 'unknown'}`);
+        console.log(`[Kaspa] Network: ${info?.networkName || 'kaspa-mainnet'}`);
+        this.rpcConnected = true;
+        return; // Success - exit loop
 
-    } catch (error: any) {
-      console.log(`[Kaspa] kaspa-rpc-client failed: ${error.message}`);
-      this.rpcConnected = false;
+      } catch (error: any) {
+        console.log(`[Kaspa] ${host} failed: ${error.message}`);
+      }
     }
+    
+    console.log("[Kaspa] All seeder nodes failed, RPC not connected");
+    this.rpcConnected = false;
   }
 
   /**

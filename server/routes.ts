@@ -344,6 +344,43 @@ export async function registerRoutes(
     res.json({ success: true, message: `All data reset for ${walletAddress}` });
   });
 
+  // Test RPC payload capability
+  app.get("/api/admin/rpc-test", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const { txHash } = req.query;
+    const kaspaService = await getKaspaService();
+    
+    try {
+      const diagnostics = await kaspaService.getDiagnostics();
+      
+      // If a txHash is provided, test fetching it
+      let payloadTest = null;
+      if (txHash) {
+        const result = await kaspaService.verifyQuizResult(txHash as string);
+        payloadTest = {
+          txHash,
+          payloadReturned: result !== null,
+          parsedData: result,
+        };
+      }
+      
+      res.json({
+        rpcConnected: diagnostics.rpcConnected,
+        rpcEndpoint: diagnostics.rpcUrl || "seeder2.kaspad.net:16110",
+        network: diagnostics.network,
+        blockCount: diagnostics.blockCount,
+        payloadTest,
+        note: "If payloadTest.payloadReturned is true, this RPC node supports getTransactionsByIds with payload data",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Transaction monitoring with bitmasks
   app.get("/api/admin/tx-monitor", async (req: Request, res: Response) => {
     const adminKey = req.headers["x-admin-key"];
