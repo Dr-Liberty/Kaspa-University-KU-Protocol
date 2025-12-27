@@ -9,6 +9,7 @@ import {
   parseTxBitmask, 
   matchesTxMask,
   bitmaskToHex,
+  parseKUPayload,
   TX_TYPE,
   TX_STATUS,
   TX_FLAGS,
@@ -370,8 +371,7 @@ export async function registerRoutes(
       
       res.json({
         rpcConnected: diagnostics.rpcConnected,
-        rpcEndpoint: diagnostics.rpcUrl || "seeder2.kaspad.net:16110",
-        network: diagnostics.network,
+        rpcEndpoint: diagnostics.rpcEndpoint || "seeder2.kaspad.net:16110",
         blockCount: diagnostics.blockCount,
         payloadTest,
         note: "If payloadTest.payloadReturned is true, this RPC node supports getTransactionsByIds with payload data",
@@ -1659,14 +1659,89 @@ export async function registerRoutes(
     }
   });
 
-  // Get recent verified transactions for the explorer
+  // Scan blockchain for KU protocol transactions (Kaspa Education Explorer)
+  app.get("/api/explorer/scan", async (req: Request, res: Response) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const kaspaService = await getKaspaService();
+      const treasuryAddress = kaspaService.getTreasuryAddress();
+      
+      if (!treasuryAddress) {
+        return res.json({ transactions: [], error: "Treasury not configured" });
+      }
+      
+      // Fetch transactions from Kaspa REST API (includes payload data)
+      const apiUrl = `https://api.kaspa.org/addresses/${treasuryAddress}/full-transactions?limit=${limit}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const transactions = await response.json();
+      const kuTransactions: any[] = [];
+      
+      for (const tx of transactions) {
+        if (tx.payload) {
+          // Try to parse as KU protocol
+          const parsed = parseKUPayload(tx.payload);
+          if (parsed) {
+            const kuTx: any = {
+              txHash: tx.transaction_id,
+              type: parsed.type === "quiz" ? "quiz" : 
+                    parsed.type === "qa_q" ? "qa_question" : 
+                    parsed.type === "qa_a" ? "qa_answer" : "unknown",
+              timestamp: tx.block_time || Date.now(),
+              blockHash: tx.accepting_block_hash,
+              confirmed: tx.is_accepted,
+              rawPayload: tx.payload,
+            };
+            
+            if (parsed.quiz) {
+              kuTx.walletAddress = parsed.quiz.walletAddress;
+              kuTx.courseId = parsed.quiz.courseId;
+              kuTx.lessonId = parsed.quiz.lessonId;
+              kuTx.score = parsed.quiz.score;
+              kuTx.maxScore = parsed.quiz.maxScore;
+              kuTx.contentHash = parsed.quiz.contentHash;
+            } else if (parsed.question) {
+              kuTx.walletAddress = parsed.question.authorAddress;
+              kuTx.lessonId = parsed.question.lessonId;
+              kuTx.contentHash = parsed.question.contentHash;
+              kuTx.content = parsed.question.content;
+            } else if (parsed.answer) {
+              kuTx.walletAddress = parsed.answer.authorAddress;
+              kuTx.questionTxId = parsed.answer.questionTxId;
+              kuTx.contentHash = parsed.answer.contentHash;
+              kuTx.content = parsed.answer.content;
+            }
+            
+            kuTransactions.push(kuTx);
+          }
+        }
+      }
+      
+      res.json({
+        transactions: kuTransactions,
+        total: kuTransactions.length,
+        scanned: transactions.length,
+        treasuryAddress,
+        source: "blockchain",
+      });
+    } catch (error: any) {
+      console.error("[Explorer] Error scanning blockchain:", error);
+      res.json({ transactions: [], error: error.message });
+    }
+  });
+
+  // Get recent verified transactions for the explorer (combines DB + blockchain)
   app.get("/api/verify/recent", async (_req: Request, res: Response) => {
     try {
       // Get recent quiz results and Q&A posts from storage
       const quizResults = await storage.getRecentQuizResults(10);
       const qaPosts = await storage.getRecentQAPosts(10);
       
-      const recentTxs = [
+      const dbTxs = [
         ...quizResults
           .filter(r => r.txHash && r.txStatus === "confirmed")
           .map(r => ({
@@ -1677,14 +1752,65 @@ export async function registerRoutes(
             courseId: r.lessonId.split("-")[0],
             score: r.score,
             maxScore: 100,
+            source: "database" as const,
           })),
         ...qaPosts.map(p => ({
           txHash: p.txHash || `demo_qa_${p.id}`,
           type: p.isQuestion ? "qa_question" as const : "qa_answer" as const,
           timestamp: new Date(p.createdAt).getTime(),
           walletAddress: p.authorAddress,
+          source: "database" as const,
         })),
-      ]
+      ];
+
+      // Also try to fetch from blockchain for live data
+      try {
+        const kaspaService = await getKaspaService();
+        const treasuryAddress = kaspaService.getTreasuryAddress();
+        
+        if (treasuryAddress) {
+          const apiUrl = `https://api.kaspa.org/addresses/${treasuryAddress}/full-transactions?limit=20`;
+          const response = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
+          
+          if (response.ok) {
+            const transactions = await response.json();
+            
+            for (const tx of transactions) {
+              if (tx.payload) {
+                const parsed = parseKUPayload(tx.payload);
+                if (parsed && !dbTxs.some(t => t.txHash === tx.transaction_id)) {
+                  const blockchainTx: any = {
+                    txHash: tx.transaction_id,
+                    type: parsed.type === "quiz" ? "quiz" : 
+                          parsed.type === "qa_q" ? "qa_question" : 
+                          parsed.type === "qa_a" ? "qa_answer" : "unknown",
+                    timestamp: tx.block_time || Date.now(),
+                    source: "blockchain",
+                  };
+                  
+                  if (parsed.quiz) {
+                    blockchainTx.walletAddress = parsed.quiz.walletAddress;
+                    blockchainTx.courseId = parsed.quiz.courseId;
+                    blockchainTx.score = parsed.quiz.score;
+                    blockchainTx.maxScore = parsed.quiz.maxScore;
+                  } else if (parsed.question) {
+                    blockchainTx.walletAddress = parsed.question.authorAddress;
+                  } else if (parsed.answer) {
+                    blockchainTx.walletAddress = parsed.answer.authorAddress;
+                  }
+                  
+                  dbTxs.push(blockchainTx);
+                }
+              }
+            }
+          }
+        }
+      } catch (blockchainError) {
+        // Silently continue with DB results if blockchain fetch fails
+        console.log("[Explorer] Blockchain fetch skipped:", (blockchainError as Error).message);
+      }
+      
+      const recentTxs = dbTxs
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, 10);
 
