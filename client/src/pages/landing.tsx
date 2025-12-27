@@ -134,16 +134,6 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/dashboard">
-              <Button
-                size="lg"
-                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
-                data-testid="button-dashboard-hero"
-              >
-                <LayoutDashboard className="h-5 w-5" />
-                Dashboard
-              </Button>
-            </Link>
             <Link href="/courses">
               <Button size="lg" className="gap-2 text-base" data-testid="button-start-learning">
                 Start Learning
@@ -154,6 +144,16 @@ export default function Landing() {
               <Button size="lg" className="gap-2 text-base" data-testid="button-analytics-hero">
                 <BarChart3 className="h-5 w-5" />
                 Analytics
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground"
+                data-testid="button-dashboard-hero"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+                Dashboard
               </Button>
             </Link>
             {!wallet && !isDemoMode && (
