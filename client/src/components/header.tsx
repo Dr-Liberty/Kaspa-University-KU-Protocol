@@ -103,16 +103,15 @@ export function Header() {
             </div>
           ) : isDemoMode ? (
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1.5">
+              <Badge className="gap-1.5 text-[#7ed1bd] bg-[#232429]">
                 <Play className="h-3 w-3" />
                 Demo Mode
               </Badge>
               <Button
-                variant="outline"
                 size="sm"
                 onClick={connect}
                 disabled={isConnecting}
-                className="hidden gap-2 sm:flex"
+                className="hidden gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground sm:flex"
                 data-testid="button-connect-wallet-demo"
               >
                 <Wallet className="h-4 w-4" />
