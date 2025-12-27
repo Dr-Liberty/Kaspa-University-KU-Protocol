@@ -657,7 +657,7 @@ export async function registerRoutes(
         const existingReward = await storage.getCourseRewardForCourse(user.id, lesson.courseId);
         
         if (!existingReward && !isFlagged) {
-          // Always use full course reward (minimum 0.2 KAS required for on-chain tx storage mass limits)
+          // Always use full course reward (0.1 KAS for reward, proof tx sent separately)
           await storage.createCourseReward({
             courseId: lesson.courseId,
             userId: user.id,

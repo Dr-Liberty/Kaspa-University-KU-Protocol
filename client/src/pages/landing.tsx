@@ -40,9 +40,9 @@ export default function Landing() {
   const features = [
     {
       icon: Coins,
-      title: "Earn 0.2 KAS Per Course",
+      title: "Earn 0.1 KAS Per Course",
       description:
-        "Complete quizzes and earn real KAS tokens. Each course rewards 0.2 KAS minimum, sent directly to your wallet via on-chain transactions.",
+        "Complete quizzes and earn real KAS tokens. Each course rewards 0.1 KAS, sent directly to your wallet via on-chain transactions.",
     },
     {
       icon: Award,
@@ -72,7 +72,7 @@ export default function Landing() {
     {
       number: "03",
       title: "Earn KAS On-Chain",
-      description: "Quiz results are recorded on Kaspa L1 via KU Protocol. 0.2 KAS is sent to your wallet.",
+      description: "Quiz results are recorded on Kaspa L1 via KU Protocol. 0.1 KAS is sent to your wallet.",
     },
     {
       number: "04",
@@ -83,7 +83,7 @@ export default function Landing() {
 
   const benefits = [
     "No registration required",
-    "0.2 KAS per course",
+    "0.1 KAS per course",
     "KRC-721 NFT certificates",
     "On-chain verification",
     "Anti-Sybil protection",
@@ -331,7 +331,7 @@ export default function Landing() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">3</span>
-                  <span>Your reward (0.2 KAS) is sent to your wallet on-chain</span>
+                  <span>Your reward (0.1 KAS) is sent to your wallet on-chain</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">4</span>

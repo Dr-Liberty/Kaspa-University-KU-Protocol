@@ -1215,7 +1215,7 @@ class KaspaService {
       };
 
       // Embed KU protocol quiz proof in transaction payload for on-chain verification
-      // Note: Reward must be >= 0.2 KAS to keep storage mass under 100,000 limit (KIP-0009)
+      // Note: Reward must be >= 0.1 KAS to keep storage mass at 100,000 limit (KIP-0009)
       if (quizPayload) {
         txSettings.payload = quizPayload;
         console.log(`[Kaspa] Embedding quiz proof (${quizPayload.length / 2} bytes) for on-chain verification`);
@@ -1735,7 +1735,7 @@ class KaspaService {
       scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
     }));
 
-    // Required amount: 0.2 KAS for proof output + fee (for storage mass compliance)
+    // Required amount: 0.1 KAS for proof output + fee (for storage mass compliance)
     const requiredSompi = BigInt(Math.floor(0.21 * 100_000_000));
 
     // Reserve UTXOs through manager
