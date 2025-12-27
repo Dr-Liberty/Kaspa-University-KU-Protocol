@@ -14,6 +14,10 @@ import {
   Shield,
   AlertTriangle,
   ShieldAlert,
+  BarChart3,
+  Link2,
+  FileText,
+  Layers,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 
@@ -36,71 +40,99 @@ export default function Landing() {
   const features = [
     {
       icon: Coins,
-      title: "Instant KAS Rewards",
+      title: "Earn 0.2 KAS Per Course",
       description:
-        "Earn KAS tokens instantly when you complete quizzes. Rewards are sent directly to your wallet with sub-second confirmation.",
+        "Complete quizzes and earn real KAS tokens. Each course rewards 0.2 KAS minimum, sent directly to your wallet via on-chain transactions.",
     },
     {
       icon: Award,
-      title: "On-Chain Certificates",
+      title: "KRC-721 NFT Certificates",
       description:
-        "Receive verifiable KRC-721 NFT certificates for each completed course. Your achievements are permanently recorded on Kaspa.",
+        "Receive verifiable NFT certificates for completed courses. Non-custodial minting means you own your credentials with no intermediaries.",
     },
     {
-      icon: MessageSquare,
-      title: "P2P Discussions",
+      icon: Link2,
+      title: "On-Chain Verification",
       description:
-        "Participate in decentralized Q&A. Every question and answer is recorded on-chain, creating an immutable knowledge base.",
+        "Every quiz completion is recorded on Kaspa L1 using the KU Protocol. Your achievements are permanently verifiable on the blockchain.",
     },
   ];
 
   const steps = [
     {
       number: "01",
-      title: "Connect Wallet",
-      description: "Link your Kaspa wallet to get started. No registration or email required.",
+      title: "Connect Your Wallet",
+      description: "Connect via KasWare browser extension or try demo mode. No email or registration required.",
     },
     {
       number: "02",
-      title: "Choose a Course",
-      description: "Browse our curated courses on BlockDAG, Kaspa, and Web3 technology.",
+      title: "Complete Course Lessons",
+      description: "Study the lesson content and pass the quiz with 70% or higher to earn rewards.",
     },
     {
       number: "03",
-      title: "Learn & Earn",
-      description: "Complete lessons and quizzes to earn KAS rewards sent directly to you.",
+      title: "Earn KAS On-Chain",
+      description: "Quiz results are recorded on Kaspa L1 via KU Protocol. 0.2 KAS is sent to your wallet.",
     },
     {
       number: "04",
-      title: "Get Certified",
-      description: "Receive an NFT certificate as proof of your achievement, verifiable on-chain.",
+      title: "Claim Your NFT Certificate",
+      description: "Complete all lessons to unlock your KRC-721 certificate with non-custodial minting.",
     },
   ];
 
   const benefits = [
-    "No registration fees",
-    "Instant KAS rewards",
-    "Verifiable NFT certificates",
-    "Decentralized discussions",
-    "Sub-second transactions",
-    "True ownership of credentials",
+    "No registration required",
+    "0.2 KAS per course",
+    "KRC-721 NFT certificates",
+    "On-chain verification",
+    "Anti-Sybil protection",
+    "Non-custodial minting",
   ];
 
   return (
     <div className="flex flex-col">
       
-      {securityCheck?.isFlagged && (
+      {securityCheck?.rewardsBlocked && (
         <div 
-          className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-destructive px-4 py-3 text-destructive-foreground"
+          className="sticky top-16 z-40 border-b border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-4"
           data-testid="banner-vpn-warning"
         >
-          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-          <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-2">
-            <span className="font-semibold">VPN/Proxy Detected</span>
-            <span className="hidden sm:inline">-</span>
-            <span>
-              Rewards are disabled while using VPN or proxy services. Please disable your VPN to earn KAS rewards.
-            </span>
+          <div className="mx-auto max-w-4xl">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/50 p-2">
+                <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-200">
+                  VPN or Proxy Detected
+                </h3>
+                <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
+                  Our anti-fraud system has detected that you may be using a VPN, proxy, or similar service. 
+                  To protect the integrity of our reward system, KAS rewards are temporarily disabled.
+                </p>
+                <div className="mt-3 rounded-lg bg-white dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200 mb-2">To resume earning rewards:</p>
+                  <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      Disable your VPN or proxy service
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      Refresh this page after disconnecting
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      You can still browse courses and take quizzes in demo mode
+                    </li>
+                  </ul>
+                </div>
+                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                  VPN Score: {securityCheck.vpnScore?.toFixed(2) || "N/A"} | This helps prevent abuse of the reward system.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -160,6 +192,12 @@ export default function Landing() {
               <Button size="lg" className="gap-2 text-base" data-testid="button-start-learning">
                 Start Learning
                 <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/analytics">
+              <Button variant="outline" size="lg" className="gap-2 text-base" data-testid="button-analytics-hero">
+                <BarChart3 className="h-5 w-5" />
+                Analytics
               </Button>
             </Link>
             {!wallet && !isDemoMode && (
@@ -250,7 +288,76 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="px-4 py-20">
+      <section className="px-4 py-20" id="ku-protocol">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+              The KU Protocol
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              True decentralization through on-chain verification
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="rounded-2xl border border-border/50 bg-card/50 p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
+                <FileText className="h-6 w-6" />
+              </div>
+              <h3 className="mb-3 text-xl font-semibold">What is KU Protocol?</h3>
+              <p className="text-muted-foreground mb-4">
+                KU Protocol is our custom on-chain data format for recording educational achievements on Kaspa L1. 
+                Every quiz completion generates a unique payload that is embedded in a real blockchain transaction.
+              </p>
+              <div className="rounded-lg bg-muted/50 p-3 font-mono text-xs break-all">
+                <span className="text-primary">ku:1:quiz:</span>
+                <span className="text-muted-foreground">wallet:courseId:lessonId:score:maxScore:timestamp:contentHash</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/50 bg-card/50 p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
+                <Layers className="h-6 w-6" />
+              </div>
+              <h3 className="mb-3 text-xl font-semibold">How It Works</h3>
+              <ul className="space-y-3 text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">1</span>
+                  <span>Quiz answers are hashed and signed by your wallet</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">2</span>
+                  <span>A proof transaction with embedded KU payload is sent to Kaspa L1</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">3</span>
+                  <span>Your reward (0.2 KAS) is sent to your wallet on-chain</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">4</span>
+                  <span>Anyone can verify your achievement using the blockchain explorer</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 p-6 text-center">
+            <p className="text-muted-foreground">
+              <span className="font-semibold text-foreground">True Decentralization:</span>{" "}
+              Unlike traditional platforms, your achievements exist independently on Kaspa L1. 
+              Even if Kaspa University goes offline, your credentials remain verifiable forever on the blockchain.
+            </p>
+            <Link href="/verify">
+              <Button variant="outline" className="mt-4 gap-2" data-testid="button-verify-cta">
+                <Shield className="h-4 w-4" />
+                Verify Achievements
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-border/50 bg-card/30 px-4 py-20">
         <div className="mx-auto max-w-4xl">
           <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-accent/10 p-8 text-center md:p-12">
             <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/20 blur-[60px]" />

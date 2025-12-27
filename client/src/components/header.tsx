@@ -30,7 +30,6 @@ export function Header() {
 
   const navItems = [
     { href: "/courses", label: "Courses", icon: BookOpen },
-    { href: "/certificates", label: "Certificates", icon: Award },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/verify", label: "Verify", icon: Shield },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
