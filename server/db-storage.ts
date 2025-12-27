@@ -93,6 +93,8 @@ export class DbStorage implements IStorage {
       passed: result.passed,
       txHash: result.txHash || null,
       txStatus: result.txStatus || "pending",
+      payloadHex: result.payloadHex || null,
+      walletAddress: result.walletAddress || null,
     };
     const inserted = await db.insert(schema.quizResults).values(quizResult).returning();
     return inserted[0] as QuizResult;

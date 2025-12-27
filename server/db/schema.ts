@@ -102,6 +102,8 @@ export const quizResults = pgTable("quiz_results", {
   completedAt: timestamp("completed_at").defaultNow().notNull(),
   txHash: text("tx_hash"),
   txStatus: text("tx_status").default("none").notNull(),
+  payloadHex: text("payload_hex"), // KU protocol payload for verification
+  walletAddress: text("wallet_address"), // Store wallet for lookup
 });
 
 // Course rewards - pending/claimed KAS rewards for completed courses

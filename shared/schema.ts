@@ -65,6 +65,8 @@ export const quizResultSchema = z.object({
   completedAt: z.date(),
   txHash: z.string().optional(),
   txStatus: z.enum(["none", "pending", "confirmed", "failed"]).default("none"),
+  payloadHex: z.string().optional(), // KU protocol payload for on-chain verification
+  walletAddress: z.string().optional(), // Store wallet for verification lookup
 });
 
 export type QuizResult = z.infer<typeof quizResultSchema>;

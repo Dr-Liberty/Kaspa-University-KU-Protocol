@@ -1794,27 +1794,78 @@ class KaspaService {
 
   /**
    * Verify a quiz result from an on-chain transaction
-   * Note: The Kaspa REST API (api.kaspa.org) may not return the payload field
-   * This is a known limitation - payloads are embedded but not exposed via API
+   * Uses RPC getTransactionsByIds for true on-chain verification with payload data
+   * Falls back to REST API if RPC is unavailable
    */
   async verifyQuizResult(txHash: string): Promise<QuizPayload | null> {
     try {
-      // Fetch transaction from API
-      const txData = await this.apiCall(`/transactions/${txHash}`);
-      
-      if (!txData) {
+      let payloadHex: string | null = null;
+      let txExists = false;
+
+      // Method 1: Try RPC client for full transaction data with payload
+      if (this.rpcConnected && this.rpcClient) {
+        try {
+          console.log(`[Kaspa] Fetching TX via RPC: ${txHash}`);
+          const rpcResult = await this.rpcClient.request("getTransactionsByIdsRequest", {
+            transactionIds: [txHash]
+          });
+          
+          if (rpcResult?.transactions && rpcResult.transactions.length > 0) {
+            const tx = rpcResult.transactions[0];
+            txExists = true;
+            
+            // Extract payload from RPC response
+            if (tx.payload) {
+              payloadHex = tx.payload;
+              console.log(`[Kaspa] RPC returned payload for ${txHash}: ${payloadHex.length} chars`);
+            } else {
+              console.log(`[Kaspa] RPC TX found but no payload field: ${txHash}`);
+            }
+          }
+        } catch (rpcError: any) {
+          console.log(`[Kaspa] RPC getTransactionsByIds failed: ${rpcError.message}, trying REST API`);
+        }
+      }
+
+      // Method 2: Try WASM RPC client if available
+      if (!payloadHex && this.wasmRpcClient) {
+        try {
+          console.log(`[Kaspa] Fetching TX via WASM RPC: ${txHash}`);
+          const wasmResult = await this.wasmRpcClient.getTransactionsByIds([txHash]);
+          
+          if (wasmResult?.transactions && wasmResult.transactions.length > 0) {
+            const tx = wasmResult.transactions[0];
+            txExists = true;
+            
+            if (tx.payload) {
+              payloadHex = tx.payload;
+              console.log(`[Kaspa] WASM RPC returned payload for ${txHash}: ${payloadHex.length} chars`);
+            }
+          }
+        } catch (wasmError: any) {
+          console.log(`[Kaspa] WASM RPC getTransactionsByIds failed: ${wasmError.message}`);
+        }
+      }
+
+      // Method 3: Fallback to REST API (usually doesn't have payload but confirms tx exists)
+      if (!txExists) {
+        const txData = await this.apiCall(`/transactions/${txHash}`);
+        if (txData) {
+          txExists = true;
+          if (txData.payload) {
+            payloadHex = txData.payload;
+            console.log(`[Kaspa] REST API returned payload for ${txHash}`);
+          }
+        }
+      }
+
+      if (!txExists) {
         console.log(`[Kaspa] Transaction not found: ${txHash}`);
         return null;
       }
-      
-      console.log(`[Kaspa] TX data for ${txHash}: has payload=${!!txData.payload}, outputs=${txData.outputs?.length || 0}`);
 
-      // Extract payload from transaction
-      const payloadHex = txData.payload;
       if (!payloadHex) {
-        // Transaction exists but API doesn't return payload field
-        // This is expected behavior - the Kaspa REST API often omits the payload
-        console.log(`[Kaspa] Transaction ${txHash} exists but no payload returned by API`);
+        console.log(`[Kaspa] Transaction ${txHash} exists on-chain but payload not accessible via current RPC node`);
         return null;
       }
 
@@ -1825,6 +1876,7 @@ class KaspaService {
         return null;
       }
 
+      console.log(`[Kaspa] Successfully verified quiz proof on-chain: ${txHash}`);
       return parsed.quiz || null;
     } catch (error: any) {
       console.error("[Kaspa] Failed to verify quiz result:", error.message);
@@ -1834,16 +1886,40 @@ class KaspaService {
 
   /**
    * Verify Q&A content from an on-chain transaction
+   * Uses RPC for true on-chain verification with payload data
    */
   async verifyQAContent(txHash: string): Promise<QAQuestionPayload | QAAnswerPayload | null> {
     try {
-      const txData = await this.apiCall(`/transactions/${txHash}`);
-      
-      if (!txData?.payload) {
+      let payloadHex: string | null = null;
+
+      // Try RPC client for full transaction data
+      if (this.rpcConnected && this.rpcClient) {
+        try {
+          const rpcResult = await this.rpcClient.request("getTransactionsByIdsRequest", {
+            transactionIds: [txHash]
+          });
+          
+          if (rpcResult?.transactions?.[0]?.payload) {
+            payloadHex = rpcResult.transactions[0].payload;
+          }
+        } catch (rpcError: any) {
+          console.log(`[Kaspa] RPC Q&A verification failed: ${rpcError.message}`);
+        }
+      }
+
+      // Fallback to REST API
+      if (!payloadHex) {
+        const txData = await this.apiCall(`/transactions/${txHash}`);
+        if (txData?.payload) {
+          payloadHex = txData.payload;
+        }
+      }
+
+      if (!payloadHex) {
         return null;
       }
 
-      const parsed = parseKUPayload(txData.payload);
+      const parsed = parseKUPayload(payloadHex);
       if (!parsed) {
         return null;
       }
