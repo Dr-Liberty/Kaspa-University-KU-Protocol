@@ -72,7 +72,7 @@ export default function Landing() {
     {
       number: "03",
       title: "Earn KAS On-Chain",
-      description: "Quiz results are recorded on Kaspa L1 via KU Protocol. 0.1 KAS is sent to your wallet.",
+      description: "Quiz results are recorded on Kaspa L1 via KU Protocol. 0.1 KAS becomes claimable.",
     },
     {
       number: "04",
@@ -331,7 +331,7 @@ export default function Landing() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">3</span>
-                  <span>Your reward (0.1 KAS) is sent to your wallet on-chain</span>
+                  <span>Your reward (0.1 KAS) becomes claimable on-chain</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">4</span>
