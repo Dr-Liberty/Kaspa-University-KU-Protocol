@@ -31,9 +31,17 @@ export function CourseCard({ course, progress }: CourseCardProps) {
       >
         <CardContent className="p-0">
           <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-gradient-to-br from-primary/20 via-accent/10 to-background">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <BookOpen className="h-12 w-12 text-primary/40" />
-            </div>
+            {course.thumbnail ? (
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <BookOpen className="h-12 w-12 text-primary/40" />
+              </div>
+            )}
             <div className="absolute right-3 top-3">
               <Badge
                 variant="outline"
