@@ -805,6 +805,32 @@ export async function registerRoutes(
 
     const claimable = await storage.getClaimableCourseRewards(user.id);
     
+    // Auto-verify confirming transactions in background
+    const confirmingRewards = claimable.filter(r => r.status === "confirming" && r.txHash);
+    if (confirmingRewards.length > 0) {
+      (async () => {
+        try {
+          const kaspaService = await getKaspaService();
+          for (const reward of confirmingRewards) {
+            try {
+              const verification = await kaspaService.verifyTransaction(reward.txHash!);
+              if (verification.confirmed) {
+                await storage.updateCourseReward(reward.id, {
+                  status: "claimed",
+                  txConfirmed: true
+                });
+                console.log(`[AutoVerify] Reward ${reward.id} confirmed on-chain`);
+              }
+            } catch (err) {
+              console.log(`[AutoVerify] Could not verify ${reward.txHash}: ${err}`);
+            }
+          }
+        } catch (err) {
+          console.log(`[AutoVerify] Service error: ${err}`);
+        }
+      })();
+    }
+    
     const enriched = await Promise.all(claimable.map(async (r) => {
       const course = await storage.getCourse(r.courseId);
       return {
