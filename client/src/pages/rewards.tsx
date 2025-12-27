@@ -86,8 +86,8 @@ export default function Rewards() {
       toast({
         title: "Reward Claimed!",
         description: data.txHash 
-          ? `${data.amount} KAS sent! TX: ${data.txHash.slice(0, 8)}...`
-          : `${data.amount} KAS sent to your wallet`,
+          ? `${data.amount} KAS claimed! TX: ${data.txHash.slice(0, 8)}...`
+          : `${data.amount} KAS is now claimable`,
       });
       setClaimingId(null);
       setClaimStatus("");
