@@ -1,526 +1,1782 @@
+// BMT University Course Import - 16 Courses, 69 Lessons
+// Peer-reviewed content from bmtuniversity.com
+// Generated for Kaspa University (Kaspathon 2025)
+
 import type { Course, Lesson, QuizQuestion } from "@shared/schema";
 
-export const courses: Course[] = [
-  {
-    id: "course-1",
-    title: "Introduction to Kaspa",
-    description: "Learn the fundamentals of Kaspa blockchain, including its unique BlockDAG architecture and GHOSTDAG consensus.",
-    lessonCount: 3,
-    kasReward: 0.2,
-    difficulty: "beginner",
-    category: "Fundamentals",
-  },
-  {
-    id: "course-2",
-    title: "Bitcoin vs Kaspa: The Next Evolution",
-    description: "Compare Bitcoin and Kaspa architectures, understanding how Kaspa solves the blockchain trilemma.",
-    lessonCount: 3,
-    kasReward: 0.2,
-    difficulty: "beginner",
-    category: "Fundamentals",
-  },
-  {
-    id: "course-3",
-    title: "Understanding BlockDAG Technology",
-    description: "Deep dive into Directed Acyclic Graph structures and how they enable parallel block creation.",
-    lessonCount: 4,
-    kasReward: 0.2,
-    difficulty: "intermediate",
-    category: "Technical",
-  },
-  {
-    id: "course-4",
-    title: "Kaspa Mining Essentials",
-    description: "Everything you need to know about mining Kaspa, from hardware requirements to pool selection.",
-    lessonCount: 3,
-    kasReward: 0.2,
-    difficulty: "beginner",
-    category: "Mining",
-  },
-  {
-    id: "course-5",
-    title: "Building on Kaspa with Kasplex",
-    description: "Learn to create tokens and NFTs on Kaspa using the Kasplex Layer 2 protocol.",
-    lessonCount: 4,
-    kasReward: 0.2,
-    difficulty: "advanced",
-    category: "Development",
-  },
-];
+const courses: Course[] = [
+      {
+        id: "course-1",
+        title: "Bitcoin vs Kaspa: The Next Evolution",
+        description: "Bitcoin revolutionized money. Kaspa revolutionizes Bitcoin.",
+        lessonCount: 15,
+        kasReward: 0.1,
+        difficulty: "beginner",
+        category: "Fundamentals",
+      },
+      {
+        id: "course-2",
+        title: "DAG Terminology",
+        description: "Past, Future, Anticone, Mergeset, K parameter, what does it all mean?",
+        lessonCount: 8,
+        kasReward: 0.1,
+        difficulty: "beginner",
+        category: "Development",
+      },
+      {
+        id: "course-3",
+        title: "DAG and Kaspa: Understanding the Structure",
+        description: "By now you have probably heard that Kaspa is a BlockDAG, but what does that mean? This course assumes no prior knowledge, starting with graph theory fundamentals.",
+        lessonCount: 5,
+        kasReward: 0.1,
+        difficulty: "beginner",
+        category: "Fundamentals",
+      },
+      {
+        id: "course-4",
+        title: "Foundational Concepts",
+        description: "Understanding the basic building blocks of Kaspa's architecture. This course introduces the fundamental concepts that underpin Kaspa's revolutionary consensus system, including Directed Acyclic Graphs (DAGs), essential terminology, the GHOSTDAG proto",
+        lessonCount: 5,
+        kasReward: 0.1,
+        difficulty: "beginner",
+        category: "Fundamentals",
+      },
+      {
+        id: "course-5",
+        title: "Core Data Structures",
+        description: "The fundamental data types that represent blockchain state in Kaspa. This course covers the essential data structures including UTXO (Unspent Transaction Outputs), MuHash for cryptographic commitments, Merkle Roots for transaction verification, and t",
+        lessonCount: 4,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Fundamentals",
+      },
+      {
+        id: "course-6",
+        title: "GHOSTDAG Mechanics",
+        description: "A deep dive into the GHOSTDAG consensus algorithm implementation. This course covers the K Parameter, Parent Selection and Ordering, Mergeset Creation, Blue and Red Classification, and Blue Work Calculation.",
+        lessonCount: 5,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Consensus",
+      },
+      {
+        id: "course-7",
+        title: "Consensus Parameters",
+        description: "Configuration values that govern Kaspa's network behavior. Learn about the mathematical relationships between BPS, K parameter, mergeset limits, merge depth bounds, finality depth, DAA windows, and pruning depth.",
+        lessonCount: 6,
+        kasReward: 0.1,
+        difficulty: "advanced",
+        category: "Consensus",
+      },
+      {
+        id: "course-8",
+        title: "Block Processing",
+        description: "How blocks flow through Kaspa's validation pipeline. Learn the complete journey of a block from creation through header validation, body validation, virtual chain updates, and pruning consideration.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Technical",
+      },
+      {
+        id: "course-9",
+        title: "Difficulty Adjustment (DAA)",
+        description: "How Kaspa maintains consistent block times through its Difficulty Adjustment Algorithm. Learn about DAA windows, the difference between DAA Score and Blue Score, and how non-DAA blocks are handled.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Technical",
+      },
+      {
+        id: "course-10",
+        title: "Transaction Processing",
+        description: "How transactions are validated and included in Kaspa blocks. Learn about the UTXO model in transaction context, selection strategies, mass calculation, and coinbase transactions.",
+        lessonCount: 3,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Technical",
+      },
+      {
+        id: "course-11",
+        title: "Pruning System",
+        description: "Managing blockchain data growth in Kaspa. Learn about MuHash's role, first-order and second-order pruning, and the differences between archival and pruning nodes.",
+        lessonCount: 3,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Technical",
+      },
+      {
+        id: "course-12",
+        title: "Anticone Finalization & Safe Pruning",
+        description: "Mathematical foundations for safe data removal in Kaspa. Learn how DAG terminology, finality depth, merge depth bounds, and K parameter work together to guarantee that pruning old data never compromises security.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "advanced",
+        category: "Technical",
+      },
+      {
+        id: "course-13",
+        title: "Virtual State",
+        description: "Kaspa's unique approach to representing the current DAG tip. Learn about the Virtual Block concept, sink selection, virtual parents, and virtual DAA score.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "advanced",
+        category: "Technical",
+      },
+      {
+        id: "course-14",
+        title: "Timestamps & Median Time",
+        description: "Timestamp consensus and validation in Kaspa. Learn about Past Median Time calculation and timestamp validation rules.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Technical",
+      },
+      {
+        id: "course-15",
+        title: "Finality & Security",
+        description: "Understanding Kaspa's security guarantees. Learn about K parameter security properties, depth-based security, size constraints, probabilistic and deterministic finality.",
+        lessonCount: 3,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Fundamentals",
+      },
+      {
+        id: "course-16",
+        title: "Network & Scaling",
+        description: "Why Kaspa's architecture enables high throughput. Learn about Bitcoin's scaling limitations and how Kaspa overcomes them through BPS configuration, K parameter scaling, and merge depth bounds.",
+        lessonCount: 2,
+        kasReward: 0.1,
+        difficulty: "intermediate",
+        category: "Fundamentals",
+      },
+    ];
 
-export const lessons: Lesson[] = [
-  {
-    id: "lesson-1-1",
-    courseId: "course-1",
-    title: "What is Kaspa?",
-    order: 1,
-    duration: "10 min",
-    content: `
-      <h2>Welcome to Kaspa</h2>
-      <p>Kaspa is a proof-of-work cryptocurrency that implements the GHOSTDAG protocol. Unlike traditional blockchains, Kaspa uses a <strong>BlockDAG</strong> (Directed Acyclic Graph) structure that allows blocks to coexist and be ordered in consensus.</p>
-      
-      <h3>Key Features</h3>
-      <ul>
-        <li><strong>High Block Rate:</strong> 10 blocks per second (targeting 32-100+ BPS)</li>
-        <li><strong>Instant Confirmations:</strong> Sub-second transaction finality</li>
-        <li><strong>Fair Launch:</strong> No pre-mine, no ICO, 100% mined</li>
-        <li><strong>Decentralized:</strong> True proof-of-work security like Bitcoin</li>
-      </ul>
+    const allLessons: Lesson[] = [
+      {
+        id: "lesson-1-1",
+        courseId: "course-1",
+        title: "Bitcoin's Revolutionary Promise",
+        order: 1,
+        duration: "5 min",
+        content: `<p>In 2009, Satoshi Nakamoto published a whitepaper titled:</p>
+<p>"Bitcoin: A Peer-to-Peer Electronic Cash System"</p>
+<p>The very first line stated the vision clearly:</p>
+<p>"A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution."</p>
+<p>This was revolutionary. No banks. No governments. No middlemen. Just math, consensus, and direct person-to-person transactions.</p>
+<p>Satoshi also wrote:</p>
+<p>"What is needed is an electronic payment system based on cryptographic proof instead of trust, allowing any two willing parties to transact directly with each other without the need for a trusted third party."</p>
+<p>Bitcoin proved this was possible. Strangers across the globe could agree on a shared truth without trusting each other.</p>
+<p>But as Bitcoin grew, limitations emerged. To ensure security and decentralization, Bitcoin processes only about 7 transactions per second. A new block appears roughly every 10 minutes. As adoption grew, so did fees and wait times.</p>
+<p>The peer-to-peer electronic CASH system became more of a store of value - digital gold rather than digital cash.</p>
+<p>But what if you didn't have to choose?</p>`,
+      },
+      {
+        id: "lesson-1-2",
+        courseId: "course-1",
+        title: "The Scalability Trilemma",
+        order: 2,
+        duration: "5 min",
+        content: `<p>Satoshi identified the core problem in the whitepaper's opening:</p>
+<p>"Commerce on the Internet has come to rely almost exclusively on financial institutions serving as trusted third parties to process electronic payments. While the system works well enough for most transactions, it still suffers from the inherent weaknesses of the trust based model."</p>
+<p>Bitcoin solved the trust problem. But another challenge emerged - the "scalability trilemma."</p>
+<p>Blockchain developers realized you can only optimize for two of three properties:</p>
+<p>• DECENTRALIZATION - Anyone can participate, no central authority
+• SECURITY - The network is resistant to attacks  
+• SCALABILITY - The network can handle high transaction volume</p>
+<p>Bitcoin chose decentralization and security. Visa chose scalability and security (centralized). Many altcoins chose scalability and decentralization (often at the cost of security).</p>
+<p>The chain structure - one block after another - is what creates the bottleneck. Security requires work. Work takes time. The chain forces blocks to wait in line.</p>
+<p>For years, people believed this trilemma was unsolvable. The blockchain structure itself seemed to force these tradeoffs.</p>
+<p>Then came a question: What if the problem wasn't the consensus mechanism, but the CHAIN structure itself?</p>`,
+      },
+      {
+        id: "lesson-1-3",
+        courseId: "course-1",
+        title: "Enter Kaspa",
+        order: 3,
+        duration: "5 min",
+        content: `<p>Satoshi's vision was clear: peer-to-peer electronic CASH. Not digital gold. Not a settlement layer. CASH - something you could use for everyday transactions.</p>
+<p>But as Bitcoin grew, that vision became impractical. Waiting 10 minutes for coffee. Paying $20 fees for small transactions. The peer-to-peer cash system became a store of value.</p>
+<p>Enter Kaspa.</p>
+<p>Kaspa was created by Dr. Yonatan Sompolinsky - a Harvard doctorate holder and one of the most cited researchers in cryptography worldwide. He had been studying Bitcoin's limitations since 2013. His groundbreaking academic papers on blockchain scaling were so influential they were cited by Ethereum's founders.</p>
+<p>His insight: Bitcoin's bottleneck isn't proof-of-work. It's the CHAIN.</p>
+<p>A blockchain requires blocks to form a single file line. Each block references exactly one parent. If two miners find blocks at the same time, one gets orphaned. Wasted work. Wasted energy.</p>
+<p>Dr. Sompolinsky asked: What if ALL valid blocks counted?</p>
+<p>Instead of a chain, Kaspa uses a BlockDAG (Directed Acyclic Graph) - a structure where blocks can have multiple parents. No orphans. No wasted work. Parallel processing.</p>
+<p>Same proof-of-work security Satoshi designed. Same decentralization he championed. But fundamentally faster by design.</p>
+<p>Kaspa doesn't abandon Bitcoin's principles - it fulfills Satoshi's original vision: true peer-to-peer electronic cash that's actually fast enough to use as cash.</p>`,
+      },
+      {
+        id: "lesson-1-4",
+        courseId: "course-1",
+        title: "Understanding the Chain",
+        order: 4,
+        duration: "5 min",
+        content: `<p>Picture a blockchain like a train track - one rail, one direction. Each train car (block) connects to exactly one car in front of it.</p>
+<p>If two trains try to add cars at the same time, only one wins. The other is abandoned - an "orphan block." All the work that went into mining that orphan? Wasted.</p>
+<p>Bitcoin's solution: slow down. Make blocks so infrequent (10 minutes) that simultaneous discoveries are rare. This works, but it creates a fundamental speed limit.</p>
+<p>The chain structure FORCES this tradeoff. You can't just "make Bitcoin faster" without breaking its security model. The architecture itself is the constraint.</p>`,
+      },
+      {
+        id: "lesson-1-5",
+        courseId: "course-1",
+        title: "The DAG Difference",
+        order: 5,
+        duration: "5 min",
+        content: `<p>Now picture a river delta - water flowing through multiple channels, all heading to the same ocean. Multiple paths. Multiple streams. All valid.</p>
+<p>That's a DAG (Directed Acyclic Graph). In Kaspa's BlockDAG:</p>
+<p>• Blocks can reference MULTIPLE parent blocks
+• Parallel blocks are ALL included, not orphaned  
+• No work is wasted
+• The network processes multiple blocks per second</p>
+<p>When two miners find blocks simultaneously, BOTH blocks become part of the permanent record. They reference each other. The DAG weaves them together.</p>
+<p>This isn't a minor tweak - it's a fundamental reimagining of how distributed consensus can work.</p>`,
+      },
+      {
+        id: "lesson-1-6",
+        courseId: "course-1",
+        title: "GHOSTDAG: Ordering the Chaos",
+        order: 6,
+        duration: "6 min",
+        content: `<p>Having parallel blocks creates a new problem: how do you order transactions when blocks arrive simultaneously?</p>
+<p>Dr. Yonatan Sompolinsky solved this with GHOSTDAG (Greedy Heaviest-Observed SubDAG) - a consensus protocol born from his years of research at Harvard and his deep expertise in distributed systems.</p>
+<p>GHOSTDAG does something clever:
+1. It identifies the "main" chain of blocks (the heaviest path through the DAG)
+2. Parallel blocks are ordered relative to this main chain
+3. Transactions get a deterministic order that all nodes agree on</p>
+<p>The result: you get the speed of parallel processing with the consistency of a sequential chain.</p>
+<p>Bitcoin maximalists often ask: "But how do you prevent double-spends without a single chain?"</p>
+<p>GHOSTDAG is the answer. Dr. Sompolinsky's research proved mathematically that you can achieve the same security guarantees as Bitcoin's longest-chain rule, just faster. This wasn't a guess or a hope - it was rigorous academic work, peer-reviewed and cited by the best minds in cryptography.</p>
+<p>The protocol provides the same guarantees as Bitcoin's longest-chain rule, but without the 10-minute wait.</p>`,
+      },
+      {
+        id: "lesson-1-7",
+        courseId: "course-1",
+        title: "Visual: Chain vs DAG",
+        order: 7,
+        duration: "4 min",
+        content: `<p>BITCOIN (Blockchain):</p>
+<p>Block 1 → Block 2 → Block 3 → Block 4
+                              ↗ (orphaned)
+                    Block 3b </p>
+<p>One path forward. Orphans discarded. Slow and steady.</p>
+<p>---</p>
+<p>KASPA (BlockDAG):</p>
+<p>        Block 2a ──────┐
+       ↗              ↘
+Block 1 → Block 2b → Block 3 → Block 4
+       ↘              ↗
+        Block 2c ──────┘</p>
+<p>Multiple paths merged. All work counts. Fast and secure.</p>
+<p>---</p>
+<p>The key insight: BlockDAG doesn't sacrifice security for speed. It removes the artificial bottleneck that chains create.</p>`,
+      },
+      {
+        id: "lesson-1-8",
+        courseId: "course-1",
+        title: "The Speed Comparison",
+        order: 8,
+        duration: "5 min",
+        content: `<p>Let's talk numbers.</p>
+<p>BITCOIN:
+• Block time: ~10 minutes
+• Blocks per second: 0.0017 (one block every 600 seconds)
+• Transactions per second: ~7
+• Confirmation time: 10-60 minutes (for confidence)</p>
+<p>KASPA (Current):
+• Block time: 100 milliseconds
+• Blocks per second: 10
+• Transactions per second: 100+ (and growing)
+• Confirmation time: ~10 seconds with high confidence</p>
+<p>KASPA (Roadmap - Next 1-3 Years):
+• Blocks per second: 100
+• Even faster confirmations
+• Massive throughput increase</p>
+<p>Kaspa currently produces 10 blocks EVERY SECOND. That's 6,000 times more frequent than Bitcoin. And the network is designed to scale to 100 blocks per second.</p>
+<p>But wait - wouldn't faster blocks mean less security? That's what traditional blockchain thinking says. </p>
+<p>The assumption was: fast blocks = more orphans = wasted work = centralization pressure.</p>
+<p>Dr. Sompolinsky's BlockDAG breaks this assumption. Parallel blocks aren't orphaned - they're all included. Speed doesn't compromise security when you remove the chain bottleneck.</p>
+<p>Kaspa proves that the scalability trilemma was a limitation of CHAINS, not of proof-of-work itself.</p>`,
+      },
+      {
+        id: "lesson-1-9",
+        courseId: "course-1",
+        title: "Security Without Sacrifice",
+        order: 9,
+        duration: "5 min",
+        content: `<p>Bitcoin's security comes from proof-of-work - miners expending real energy to validate blocks. This makes attacks expensive.</p>
+<p>Kaspa uses the EXACT SAME security model:
+• kHeavyHash proof-of-work algorithm
+• ASIC miners securing the network
+• 51% attack resistance
+• No staking, no validators, no trusted parties</p>
+<p>The difference is structural, not security-related. Kaspa's DAG allows parallel blocks without reducing the work required to produce them.</p>
+<p>CURRENT SPEED:
+Kaspa currently runs at 10 blocks per second - that's 600 times faster than Bitcoin. And the roadmap includes scaling to 100 blocks per second within the next 1-3 years.</p>
+<p>ANTI-MEV BY DESIGN:
+Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maximal Extractable Value) attacks nearly impossible.</p>
+<p>MEV is when miners or validators reorder, insert, or censor transactions to extract profit - like front-running your trade on a DEX. On slower chains, attackers have time to see your transaction and jump ahead of it.</p>
+<p>With 10 blocks per second, there's simply no time for these attacks. By the time an attacker sees your transaction and tries to front-run it, your transaction is already confirmed. The attack window is measured in milliseconds, not minutes.</p>
+<p>This isn't just speed for convenience - it's speed as a security feature.</p>
+<p>Think of it this way:
+• Bitcoin: One security guard checking IDs at one door, slowly. Secure, but attackers have time to scheme.
+• Kaspa: Many security guards at many doors, all moving fast. Same security, but no time for manipulation.</p>
+<p>The proof-of-work is just as hard. The energy expenditure is just as real. The security is actually BETTER because speed eliminates entire categories of attacks.</p>`,
+      },
+      {
+        id: "lesson-1-10",
+        courseId: "course-1",
+        title: "Real-World Implications",
+        order: 10,
+        duration: "5 min",
+        content: `<p>What does 1-second block time mean in practice?</p>
+<p>FOR PAYMENTS:
+• Buy a coffee and walk away in seconds, not minutes
+• Merchants get confirmation before you leave the counter
+• No more "waiting for confirmations"</p>
+<p>FOR DEFI:
+• Arbitrage opportunities that require speed
+• Responsive smart contracts
+• Better user experience</p>
+<p>FOR ADOPTION:
+• Newcomers aren't confused by 10-minute waits
+• Kaspa "just works" like modern payment apps
+• Lower barrier to entry</p>
+<p>Bitcoin maximalists sometimes say "just use Lightning Network for speed." But Lightning requires channels, liquidity, and complexity. Kaspa is fast on Layer 1 - no extra steps required.</p>
+<p>Base layer speed matters. It's the foundation everything else is built on.</p>`,
+      },
+      {
+        id: "lesson-1-11",
+        courseId: "course-1",
+        title: "The Fair Launch Principle",
+        order: 11,
+        duration: "5 min",
+        content: `<p>Bitcoin was launched fairly:
+• No premine (Satoshi didn't give himself coins before launch)
+• No ICO (no one "bought in" before mining started)
+• No VC allocation (no investors got special treatment)
+• Open source from day one</p>
+<p>This fair launch is part of what makes Bitcoin legitimate. Everyone had equal opportunity.</p>
+<p>KASPA FOLLOWED THE SAME PRINCIPLES:
+• No premine - Zero coins existed before public mining began
+• No ICO - No token sale, no early investors
+• No dev allocation - The team mines like everyone else
+• Open source - All code is public and auditable</p>
+<p>In a crypto world full of VC-backed projects with massive insider allocations, Kaspa stands out. Like Bitcoin, it earned its place through work, not hype.</p>`,
+      },
+      {
+        id: "lesson-1-12",
+        courseId: "course-1",
+        title: "Decentralization in Practice",
+        order: 12,
+        duration: "5 min",
+        content: `<p>Decentralization isn't just a buzzword - it's the core value proposition of cryptocurrency.</p>
+<p>WHAT MAKES A NETWORK DECENTRALIZED:
+• No single point of failure
+• No single entity can censor transactions
+• No one can change the rules unilaterally
+• Anyone can participate (permissionless)</p>
+<p>KASPA'S DECENTRALIZATION:
+• Over 1,000 public nodes worldwide
+• ASIC mining distributed globally
+• No foundation controls the protocol
+• Community-driven development
+• No corporate backing or VC influence</p>
+<p>Some "fast" blockchains achieve speed by centralizing - using a small number of powerful validators. This creates vulnerabilities:
+• Validators can collude
+• Governments can pressure them
+• Single points of failure exist</p>
+<p>These networks often have just 21, 100, or a few hundred validators - many controlled by the same entities or running in the same data centers.</p>
+<p>Kaspa refuses this shortcut. With over 1,000 nodes spread across the globe, the network is genuinely decentralized. Speed through architecture, not centralization.</p>
+<p>This matters because:
+• No government can shut down 1,000+ nodes in different countries
+• No corporation can push through unwanted changes
+• The network serves users, not insiders</p>
+<p>True decentralization is rare. Kaspa has it.</p>`,
+      },
+      {
+        id: "lesson-1-13",
+        courseId: "course-1",
+        title: "Sound Money Properties",
+        order: 13,
+        duration: "5 min",
+        content: `<p>Bitcoin is often called "digital gold" because it shares gold's monetary properties:
+• Scarce (21 million cap)
+• Durable (exists as long as the network runs)
+• Divisible (satoshis)
+• Portable (send anywhere instantly)
+• Fungible (one BTC = one BTC)</p>
+<p>KASPA SHARES THESE PROPERTIES:
+• Fixed supply with decreasing emission
+• Proof-of-work backed (can't be printed)
+• Highly divisible (sompi = smallest unit)
+• Instant portability (1-second blocks)
+• Censorship resistant</p>
+<p>Both Bitcoin and Kaspa are "sound money" - they can't be inflated away by central banks or governments.</p>
+<p>The difference: Kaspa is sound money you can actually USE for daily transactions without waiting 10 minutes or paying high fees.</p>`,
+      },
+      {
+        id: "lesson-1-14",
+        courseId: "course-1",
+        title: "Why Kaspa Could Win",
+        order: 14,
+        duration: "5 min",
+        content: `<p>Kaspa isn't trying to replace Bitcoin - it's trying to fulfill Bitcoin's original promise.</p>
+<p>THE CASE FOR KASPA:</p>
+<p>1. SAME VALUES
+   - Proof-of-work security
+   - Fair launch, no insiders
+   - Decentralization first
+   - Sound money principles</p>
+<p>2. BETTER ARCHITECTURE
+   - BlockDAG vs blockchain
+   - 1-second blocks vs 10-minute blocks
+   - No orphaned blocks
+   - Scalable by design</p>
+<p>3. ROOM TO GROW
+   - Small market cap = high potential
+   - Active development
+   - Growing community
+   - Real technological innovation</p>
+<p>The question isn't "Bitcoin or Kaspa?" - it's "Why not both?"</p>
+<p>Many Kaspa supporters hold Bitcoin too. They see Kaspa as the evolution, not the enemy.</p>`,
+      },
+      {
+        id: "lesson-1-15",
+        courseId: "course-1",
+        title: "Your Next Steps",
+        order: 15,
+        duration: "5 min",
+        content: `<p>Congratulations! You now understand why Kaspa represents a significant technological advancement over traditional blockchain architecture.</p>
+<p>WHAT YOU'VE LEARNED:
+✓ Bitcoin's blockchain creates inherent speed limitations
+✓ Kaspa's BlockDAG solves this without sacrificing security
+✓ Both share fair launch and decentralization principles
+✓ Kaspa is fast enough for real-world payments
+✓ Smart contracts and L2 are actively developing</p>
+<p>YOUR NEXT STEPS:</p>
+<p>1. SECURE YOUR KASPA
+   - Get a proper wallet (Kasware, Kaspium, or hardware wallet)
+   - Control your own keys
+   - Never leave funds on exchanges</p>
+<p>2. USE THE NETWORK
+   - Send some Kaspa to experience 1-second blocks
+   - Explore Kasplex tokens
+   - Join the community</p>
+<p>3. KEEP LEARNING
+   - Check out other courses on BMT University
+   - Follow Kaspa development
+   - Share what you've learned</p>
+<p>Welcome to the future of proof-of-work cryptocurrency. Welcome to Kaspa.</p>`,
+      },
+      {
+        id: "lesson-2-1",
+        courseId: "course-2",
+        title: "Linear Chain Terminology - Traditional Blockchain",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Linear chain terminology uses simple concepts where blocks form a single sequence.  Each block has one parent and potentially one child, creating straightforward ancestor-descendant relationships.  Terms like "height," "previous block," and "next block" describe the linear progression.  When conflicts occur, blocks are either "accepted" into the main chain or "orphaned" and discarded.</p>`,
+      },
+      {
+        id: "lesson-2-2",
+        courseId: "course-2",
+        title: "DAG Terminology ",
+        order: 2,
+        duration: "10 min",
+        content: `<p>DAG stands for Decentralized Acyclic Graph.
+Allowing blocks to have multiple parents creates new relationships within the DAG.</p>`,
+      },
+      {
+        id: "lesson-2-3",
+        courseId: "course-2",
+        title: "Past and Future Relationships - DAG",
+        order: 3,
+        duration: "10 min",
+        content: `<p>Past relationship defines all blocks reachable by following parent links backward from a given block.  A block is in the past of another if there exists any directed path connecting them.  Future relationship works inversely - if block A is in the past of block B, then B is in the future of A.</p>`,
+      },
+      {
+        id: "lesson-2-4",
+        courseId: "course-2",
+        title: "Anticone Relationship - DAG",
+        order: 4,
+        duration: "10 min",
+        content: `<p>Anticone describes blocks that are neither ancestors nor descendants of each other - they exist concurrently in the DAG.  Two blocks are in each other's Anticone if neither can reach the other through any directed path.  This relationship is crucial for GHOSTDAG's security parameter K, which limits Anticone sizes to maintain consensus safety.  Here, Block A and Block C are in each others Anticone, Block A is not reachable from Block C, and Block C is not reachable from Block A.
+</p>`,
+      },
+      {
+        id: "lesson-2-5",
+        courseId: "course-2",
+        title: "Mergeset and Blue/Red Classification - GHOSTDAG",
+        order: 5,
+        duration: "10 min",
+        content: `<p>Mergeset refers to the collection of blocks that are merged when creating a new block.  The Mergeset contains the direct parents of a block, but can additionally contain blocks that are not direct parents.  GHOSTDAG classifies Mergeset blocks as "Blue" (honest) or "Red" (potentially conflicting) based on Anticone size constraints.  This classification determines which blocks contribute to network security through Blue Work accumulation.  Here is an example of block B classifying its Mergeset into Blue and Red while the Anticone size constraint = 0.</p>`,
+      },
+      {
+        id: "lesson-2-6",
+        courseId: "course-2",
+        title: "K Parameter - GHOSTDAG",
+        order: 6,
+        duration: "10 min",
+        content: `<p>The parameter K controls the maximum allowed Anticone size for blue blocks.  This parameter is calculated based on network delay, block production rate, and desired security guarantees.  In this example, instead of k = 0 like the example above, k = 1 so each blue block has 1 other blue block in its Anticone.</p>`,
+      },
+      {
+        id: "lesson-2-7",
+        courseId: "course-2",
+        title: "Simplified Definitions",
+        order: 7,
+        duration: "10 min",
+        content: `<p>Past Relationship - All blocks reachable by following parent links backward from a given block.</p>
+<p>Future Relationship - All blocks that can reach a given block by following parent links forward.</p>
+<p>Anticone Relationship - Blocks that are neither ancestors nor descendants of each other.</p>
+<p>Mergeset - GHOSTDAG's collection of blocks merged when creating a new block.</p>
+<p>Blue/Red Classification - GHOSTDAG's categorization of blocks as honest (blue) or potentially conflicting (red).</p>
+<p>Security Parameter K - GHOSTDAG's maximum allowed anticone size for maintaining consensus safety.</p>`,
+      },
+      {
+        id: "lesson-2-8",
+        courseId: "course-2",
+        title: "Bitcoin and Kaspa",
+        order: 8,
+        duration: "10 min",
+        content: `<p>Bitcoin - Uses simple linear terminology: "previous block," "next block," "chain height," and "longest chain."  Relationships are straightforward ancestor-descendant connections.  Competing blocks are "orphaned" with no intermediate states.</p>
+<p>Kaspa - Uses additional terminology including DAG Past/Future/Anticone relationships, GHOSTDAG Mergeset, and Mergeset Blue/Red Classification.  Kaspa maintains multiple concurrent blocks, handles their relationships and provides consistent ordering.</p>
+<p></p>`,
+      },
+      {
+        id: "lesson-3-1",
+        courseId: "course-3",
+        title: "What is a Graph?",
+        order: 1,
+        duration: "5 min",
+        content: `<p>Graph theory is a field within mathematics and computer science that focuses on studying graphs - structures that represent relationships between pairs of entities. These graphs consist of vertices (also known as nodes or points) connected by edges (sometimes referred to as arcs, links, or lines).</p>
+<p>Graphs are categorized into undirected graphs, where connections between vertices are mutual, and directed graphs, where connections have a specific direction. As a key area of discrete mathematics, graph theory explores these structures extensively.</p>`,
+      },
+      {
+        id: "lesson-3-2",
+        courseId: "course-3",
+        title: "What is a Directed Graph?",
+        order: 2,
+        duration: "5 min",
+        content: `<p>A directed graph, often called a digraph, is a structure used to show relationships where connections between points have a specific direction. Unlike regular graphs where connections go both ways, in a directed graph, each edge points from one vertex to another.</p>
+<p>In its simplest form, a directed graph consists of two main parts: a collection of vertices and a set of edges, where each edge is a pair of vertices with a clear direction (from one vertex to another, but not the other way around).</p>
+<p>For example, if you have an edge from vertex X to vertex Y, X is the starting point and Y is the endpoint. This edge connects X to Y. A different edge could go from Y to X, but it would be a separate connection.</p>`,
+      },
+      {
+        id: "lesson-3-3",
+        courseId: "course-3",
+        title: "What is a Directed Acyclic Graph (DAG)?",
+        order: 3,
+        duration: "5 min",
+        content: `<p>A Directed Acyclic Graph (DAG) is a directed graph that contains no cycles. It is composed of vertices and edges, where each edge has a direction from one vertex to another, ensuring that following the edge directions never results in a closed loop.</p>
+<p>A directed graph qualifies as a DAG if its vertices can be arranged in a linear sequence that respects the direction of all edges, known as a topological ordering.</p>
+<p>The key insight: In a DAG, you can never return to where you started by following the directed edges. This property is crucial for blockchain technology.</p>`,
+      },
+      {
+        id: "lesson-3-4",
+        courseId: "course-3",
+        title: "Bitcoin and Kaspa: Both are DAGs",
+        order: 4,
+        duration: "10 min",
+        content: `<p>Here is a surprising fact: Bitcoin is a DAG! Even though it is always referred to as a BlockChain, Bitcoin uses the DAG structure. Blocks as vertices, and their relationships as edges. Each block is connected in only one direction and following each connection, you will never make a cycle - you always end up back at Genesis.</p>
+<p>Kaspa is also a DAG, using the same fundamental structure. Blocks as vertices, and their relationships as edges. Each block is connected in only one direction and following each connection, you will never make a cycle, and always end up back at Genesis.</p>
+<p>So what is the difference if both Bitcoin and Kaspa use a DAG? The answer is simple but profound: Bitcoin allows blocks to point to only ONE previous block. Kaspa allows blocks to point to MULTIPLE previous blocks. That is the only structural difference - but it changes everything about performance and scalability.</p>`,
+      },
+      {
+        id: "lesson-3-5",
+        courseId: "course-3",
+        title: "Simplified Definitions Summary",
+        order: 5,
+        duration: "5 min",
+        content: `<p>Let us summarize what we have learned with simplified definitions:</p>
+<p>**Graph** - consists of vertices and edges that connect pairs of vertices, where vertices represent any type of object and edges represent connections between them.</p>
+<p>**Directed Graph** - each edge has a specific direction, pointing from one vertex to another. A path in a directed graph is a sequence of edges where the ending vertex of one edge is the starting vertex of the next edge in the sequence.</p>
+<p>**Directed Acyclic Graph** - a directed graph where no vertex can reach itself through a path that includes one or more edges, ensuring the absence of cycles.</p>
+<p>For our purpose, we only need to know that Kaspa's BlockDAG is just a structure, consisting of edges and vertices, connected in only one direction, and that we never end up in a cycle - it is acyclic.</p>`,
+      },
+      {
+        id: "lesson-4-1",
+        courseId: "course-4",
+        title: "DAG - Directed Acyclic Graph Conceptual Overview",
+        order: 1,
+        duration: "10 min",
+        content: `<p>A Directed Acyclic Graph (DAG) is the fundamental data structure that powers Kaspa. Unlike traditional blockchains that form a single linear chain, Kaspa's BlockDAG allows multiple blocks to be created and referenced simultaneously.</p>
+<p>In a DAG structure:
+- **Directed**: Edges (connections) between blocks point in one direction only
+- **Acyclic**: Following the edges, you can never return to where you started
+- **Graph**: A collection of vertices (blocks) connected by edges (references)</p>
+<p>Traditional blockchains like Bitcoin force miners to compete, with only one winner per round. This creates a bottleneck. Kaspa's DAG structure allows all valid blocks to be included, even if created at the same time. This is why Kaspa can achieve much higher throughput.</p>
+<p>The key insight is that a DAG preserves the security properties of a blockchain while removing the artificial limitation of single-block-per-round. Instead of discarding "orphan" blocks, Kaspa incorporates them all into the consensus.</p>`,
+      },
+      {
+        id: "lesson-4-2",
+        courseId: "course-4",
+        title: "DAG Terminology",
+        order: 2,
+        duration: "10 min",
+        content: `<p>Understanding Kaspa requires familiarity with specific DAG terminology. These terms have precise meanings in the context of Kaspa's consensus system.</p>
+<p>**Past**: The past of a block includes all blocks that can be reached by following parent references backwards. These are the blocks that the current block "knows about."</p>
+<p>**Future**: The future of a block includes all blocks that reference it (directly or indirectly). These are blocks created after that knew about this block.</p>
+<p>**Anticone**: The anticone of a block includes all blocks that are neither in its past nor its future. These blocks were created concurrently and neither knew about each other.</p>
+<p>**Tips**: Tips are blocks that have no future blocks yet - they are the "leading edge" of the DAG.</p>
+<p>**Selected Parent**: Among a block's parents, one is designated as the "selected parent" - this creates the main chain through the DAG.</p>
+<p>These relationships are crucial because GHOSTDAG uses them to order blocks and determine which transactions are valid.</p>`,
+      },
+      {
+        id: "lesson-4-3",
+        courseId: "course-4",
+        title: "GHOSTDAG Overview",
+        order: 3,
+        duration: "10 min",
+        content: `<p>GHOSTDAG (Greedy Heaviest Observed SubTree Directed Acyclic Graph) is Kaspa's consensus protocol. It provides a way to order all blocks in the DAG, enabling agreement on transaction ordering despite parallel block creation.</p>
+<p>GHOSTDAG works through several key mechanisms:</p>
+<p>1. **Block Ordering**: Every block gets assigned a position in a total ordering, even though they may have been created in parallel.</p>
+<p>2. **Blue/Red Classification**: Blocks are classified as either "blue" (honest, well-connected) or "red" (potentially malicious or poorly connected). Blue blocks form the main consensus.</p>
+<p>3. **Selected Parent Chain**: A main chain runs through the DAG, connecting selected parents from each block back to genesis.</p>
+<p>4. **Mergeset Processing**: When a block is added, it processes all blocks in its mergeset (blocks not in its selected parent's past).</p>
+<p>The brilliance of GHOSTDAG is that it achieves the same security guarantees as Bitcoin's Nakamoto consensus, but allows for parallel block creation. This means higher throughput without sacrificing decentralization or security.</p>`,
+      },
+      {
+        id: "lesson-4-4",
+        courseId: "course-4",
+        title: "K-Cluster - The Security Foundation",
+        order: 4,
+        duration: "8 min",
+        content: `<p>The K-Cluster concept is foundational to Kaspa's security model. It defines the maximum number of blocks that can exist in the anticone of any blue block.</p>
+<p>**What is K?**
+K is a security parameter that controls how many parallel blocks are acceptable. If a block has more than K blocks in its anticone, it indicates the block may be part of an attack or was created under abnormal network conditions.</p>
+<p>**K-Cluster Violations**
+When a block has more than K blocks in its anticone relative to another block's blue set, it's classified as "red" - meaning it's excluded from the main consensus ordering. This is how GHOSTDAG detects and handles potentially malicious behavior.</p>
+<p>**Why K Matters**
+- A higher K allows more parallelism (higher throughput) but increases confirmation times
+- A lower K provides faster confirmations but limits throughput
+- Kaspa calculates K based on the blocks-per-second (BPS) target to balance these tradeoffs</p>
+<p>The K parameter essentially defines the boundary between honest concurrent mining and potential attack behavior. Blocks that stay within the K-cluster are considered honest and are colored blue.</p>`,
+      },
+      {
+        id: "lesson-4-5",
+        courseId: "course-4",
+        title: "BPS Configuration - Blocks Per Second",
+        order: 5,
+        duration: "7 min",
+        content: `<p>BPS (Blocks Per Second) is a key configuration parameter that determines Kaspa's throughput target. It represents how many blocks the network aims to produce per second.</p>
+<p>**Current BPS Values**
+Kaspa has progressively increased its BPS through network upgrades:
+- Originally: 1 BPS (one block per second)
+- After upgrades: 10 BPS, then 32 BPS
+- Crescendo hardfork target: Up to 100 BPS</p>
+<p>**Derived Parameters**
+Many other network parameters are mathematically derived from BPS:
+- **K Parameter**: Scales with BPS to maintain security
+- **Block Time**: The inverse of BPS (e.g., 10 BPS = 0.1 second block time)
+- **Difficulty Adjustment**: DAA window sized relative to BPS
+- **Pruning Depth**: Calculated based on BPS and finality requirements</p>
+<p>**Why BPS Matters**
+Higher BPS means:
+- More transactions per second capacity
+- Faster first confirmation times
+- But also requires faster network propagation</p>
+<p>Kaspa's architecture is specifically designed to safely increase BPS while maintaining decentralization. The GHOSTDAG protocol ensures that increasing block rate doesn't compromise security.</p>`,
+      },
+      {
+        id: "lesson-5-1",
+        courseId: "course-5",
+        title: "UTXO - What is that?",
+        order: 1,
+        duration: "10 min",
+        content: `<p>UTXO stands for Unspent Transaction Output. It is the fundamental way Kaspa (and Bitcoin) tracks who owns what.</p>
+<p>**How UTXOs Work**
+Instead of maintaining account balances like a bank, Kaspa tracks individual "coins" - each UTXO is like a specific bill in your wallet:
+- When you receive KAS, a new UTXO is created with you as the owner
+- When you spend, you consume (destroy) one or more UTXOs and create new ones
+- Your "balance" is the sum of all UTXOs you can spend</p>
+<p>**Why UTXOs?**
+1. **Parallel Validation**: Different UTXOs can be validated independently
+2. **Privacy**: No account history linking all your transactions
+3. **Simple Verification**: Just check if a UTXO exists and hasn't been spent
+4. **Pruning Friendly**: Old spent transactions can be safely removed</p>
+<p>**UTXO in Kaspa's DAG**
+In Kaspa, UTXO validation is more complex because transactions in the anticone may try to spend the same UTXO. GHOSTDAG's ordering resolves these conflicts - only the first transaction in the consensus order gets to spend the UTXO.</p>`,
+      },
+      {
+        id: "lesson-5-2",
+        courseId: "course-5",
+        title: "MuHash - What is that?",
+        order: 2,
+        duration: "10 min",
+        content: `<p>MuHash (Multiplicative Hash) is a cryptographic commitment scheme that enables efficient UTXO set verification and is essential for Kaspa's pruning system.</p>
+<p>**The Problem MuHash Solves**
+Nodes need to verify they have the correct UTXO set, but storing a hash of millions of UTXOs would require rehashing everything when one changes. MuHash allows incremental updates.</p>
+<p>**How MuHash Works**
+- Each UTXO is hashed to a large number
+- The MuHash of the entire set is the product of all these numbers (modulo a prime)
+- Adding a UTXO: multiply by its hash
+- Removing a UTXO: divide by its hash (multiply by modular inverse)</p>
+<p>**Why This Matters for Kaspa**
+1. **Fast Updates**: O(1) time to update when UTXOs change
+2. **Pruning Verification**: Pruned nodes can verify their UTXO set matches without full history
+3. **Sync Efficiency**: New nodes can sync UTXO set directly, verified by MuHash
+4. **Commitment**: Blocks commit to the UTXO set state via MuHash</p>
+<p>MuHash is what makes it possible for Kaspa nodes to prune old block data while still being able to prove they have the correct current state.</p>`,
+      },
+      {
+        id: "lesson-5-3",
+        courseId: "course-5",
+        title: "Merkle Root and Accepted Merkle Root",
+        order: 3,
+        duration: "10 min",
+        content: `<p>Merkle Roots are cryptographic commitments that link block bodies to block headers, enabling efficient verification of transaction inclusion.</p>
+<p>**Merkle Root**
+A Merkle Root is the root of a binary tree where:
+- Leaves are transaction hashes
+- Each parent is the hash of its two children
+- The single root hash commits to all transactions</p>
+<p>This allows proving a transaction is in a block by providing just log(n) hashes (the "Merkle proof").</p>
+<p>**Accepted Merkle Root in Kaspa**
+Kaspa has an additional concept: the Accepted Merkle Root. This commits not just to the block's own transactions, but to all accepted transactions from the block's mergeset.</p>
+<p>When a block is added to the DAG, it processes transactions from blocks in its mergeset. The Accepted Merkle Root commits to which of those transactions were actually accepted (valid and not conflicting).</p>
+<p>**Why Two Merkle Roots?**
+- **Hash Merkle Root**: Commits to the block's own transactions (in the body)
+- **Accepted Merkle Root**: Commits to the cumulative accepted transactions (for UTXO state)</p>
+<p>This separation is essential for Kaspa's DAG structure where blocks process transactions from multiple other blocks.</p>`,
+      },
+      {
+        id: "lesson-5-4",
+        courseId: "course-5",
+        title: "Parents and Mergeset",
+        order: 4,
+        duration: "10 min",
+        content: `<p>Understanding the relationship between a block's Parents and its Mergeset is crucial for understanding how GHOSTDAG processes the DAG.</p>
+<p>**Parents**
+Parents are the blocks that a new block directly references. In Kaspa's DAG:
+- A block can have multiple parents (unlike Bitcoin's single parent)
+- One parent is designated as the "Selected Parent" (the one with highest blue work)
+- Other parents are called "Merged Parents"</p>
+<p>**Mergeset**
+The Mergeset is the set of blocks that this block "merges" into its view of the DAG:
+- It includes all blocks in the anticone of the selected parent that are reachable through the block's other parents
+- These are blocks that weren't yet "seen" by the selected parent chain
+- The new block is responsible for ordering these blocks</p>
+<p>**The Relationship**
+- Parents define direct references
+- Selected Parent determines the main chain path
+- Mergeset contains all blocks being incorporated from the "sides"
+- The block must process all mergeset blocks (validating transactions, assigning blue/red colors)</p>
+<p>This parent-mergeset structure is how Kaspa incorporates parallel blocks while maintaining a total ordering.</p>`,
+      },
+      {
+        id: "lesson-6-1",
+        courseId: "course-6",
+        title: "K Parameter - The Security Parameter",
+        order: 1,
+        duration: "10 min",
+        content: `<p>The K parameter is the cornerstone of GHOSTDAG's security model. It defines the maximum acceptable anticone size for honest blocks.</p>
+<p>**Mathematical Definition**
+K is calculated based on:
+- The blocks per second (BPS) rate
+- Network propagation delay (δ)
+- Desired security level (probability bounds)</p>
+<p>The formula ensures that honest blocks, even under worst-case network delays, will have anticone sizes within K.</p>
+<p>**K and BPS Relationship**
+As BPS increases, K must also increase proportionally:
+- At 1 BPS: K ≈ 18
+- At 10 BPS: K ≈ 124  
+- At 32 BPS: K ≈ 292</p>
+<p>**Security Implications**
+- Blocks with anticone size > K relative to the blue set are marked red
+- An attacker would need to create many blocks faster than the honest network
+- The 51% security threshold is preserved, but attacks become more detectable</p>
+<p>**Confirmation Time Tradeoff**
+Higher K means:
+- More blocks can be created in parallel (higher throughput)
+- But more blocks needed to confirm a transaction (longer wait)
+- Kaspa balances this for optimal user experience</p>`,
+      },
+      {
+        id: "lesson-6-2",
+        courseId: "course-6",
+        title: "Parent Selection and Ordering",
+        order: 2,
+        duration: "10 min",
+        content: `<p>When a miner creates a new block, they must select parents from the current DAG tips. This selection process is the first step in GHOSTDAG's algorithm.</p>
+<p>**Step 1: Gather Tips**
+The miner collects all current tips (blocks with no children yet) as potential parents.</p>
+<p>**Step 2: Select the Primary Parent**
+The "Selected Parent" is chosen as the tip with the highest Blue Work. This determines which chain the new block extends.</p>
+<p>**Step 3: Add Merged Parents**
+Additional parents are added to incorporate blocks from other branches of the DAG:
+- Include tips that would otherwise be in the anticone
+- Limit the number of parents to bound mergeset size
+- Parents must not violate K-cluster constraints</p>
+<p>**Ordering the Parents**
+Parents are ordered with the selected parent first, followed by merged parents in a deterministic order. This ordering is crucial for:
+- Consistent mergeset creation across all nodes
+- Deterministic blue/red classification
+- Agreement on transaction ordering</p>
+<p>**Why This Matters**
+Parent selection directly affects:
+- Which blocks get merged into the main chain
+- The final ordering of transactions
+- The efficiency of DAG convergence</p>`,
+      },
+      {
+        id: "lesson-6-3",
+        courseId: "course-6",
+        title: "Mergeset Creation",
+        order: 3,
+        duration: "10 min",
+        content: `<p>After selecting parents, the block must construct its Mergeset - the set of blocks it is responsible for ordering. This is the second step in GHOSTDAG.</p>
+<p>**What Goes in the Mergeset?**
+The mergeset contains:
+- All blocks in the anticone of the selected parent
+- That are reachable through any of the block's parents
+- In other words: blocks visible to this block but not yet ordered by the main chain</p>
+<p>**Algorithm**
+1. Start with the selected parent's blue set (already ordered)
+2. Find all blocks reachable from merged parents
+3. Subtract blocks already in the selected parent's past
+4. The remainder is the mergeset</p>
+<p>**Mergeset Size Limits**
+Kaspa enforces a maximum mergeset size to:
+- Bound computation per block
+- Limit potential DoS attacks
+- Ensure consistent processing time</p>
+<p>If the natural mergeset would exceed the limit, the block cannot include all desired parents.</p>
+<p>**Ordering the Mergeset**
+Blocks in the mergeset are ordered using a deterministic algorithm based on:
+- Blue/red classification
+- Blue score comparisons
+- Hash tiebreakers</p>
+<p>This ensures all nodes process mergesets identically.</p>`,
+      },
+      {
+        id: "lesson-6-4",
+        courseId: "course-6",
+        title: "Blue and Red Classification",
+        order: 4,
+        duration: "10 min",
+        content: `<p>The coloring algorithm - classifying blocks as Blue or Red - is the third step in GHOSTDAG and determines which blocks are considered honest participants.</p>
+<p>**Blue Blocks**
+Blue blocks are considered honest and well-connected:
+- Their anticone size relative to the existing blue set is ≤ K
+- They were likely created by miners who saw and referenced the main DAG
+- Their transactions are prioritized in conflict resolution</p>
+<p>**Red Blocks**
+Red blocks are potentially malicious or created under unusual conditions:
+- Their anticone size relative to blue set exceeds K
+- They may have been withheld or created in isolation
+- Their transactions have lower priority (but aren't necessarily invalid)</p>
+<p>**The Coloring Algorithm**
+For each block in the mergeset:
+1. Count how many existing blue blocks are in its anticone
+2. If count ≤ K: color it blue
+3. If count > K: color it red
+4. Update the blue set and continue</p>
+<p>**Why Coloring Matters**
+- Blue blocks accumulate "blue work" for chain selection
+- Transaction ordering prioritizes blue block transactions
+- Attackers trying to reorder transactions will produce red blocks
+- The blue chain represents honest consensus</p>`,
+      },
+      {
+        id: "lesson-6-5",
+        courseId: "course-6",
+        title: "Blue Work Calculation",
+        order: 5,
+        duration: "10 min",
+        content: `<p>Blue Work is the cumulative metric used for chain selection in GHOSTDAG. It is the final step in block processing and determines the "heaviest" chain.</p>
+<p>**What is Blue Work?**
+Blue Work is analogous to total chain work in Bitcoin, but only counts work from blue blocks:
+- Each blue block contributes its proof-of-work to the chain's blue work
+- Red blocks do not contribute to blue work
+- The chain with highest blue work is the canonical chain</p>
+<p>**Blue Score vs Blue Work**
+- **Blue Score**: Simple count of blue blocks in a chain
+- **Blue Work**: Sum of proof-of-work difficulty from blue blocks</p>
+<p>Blue Work is more accurate because it accounts for varying difficulty levels.</p>
+<p>**Calculation**
+For a block B:
+\`\`\`
+BlueWork(B) = BlueWork(SelectedParent(B)) + Work(B) if B is blue
+BlueWork(B) = BlueWork(SelectedParent(B)) if B is red
+\`\`\`</p>
+<p>**Why Blue Work Matters**
+- Selected parent choice: pick the tip with highest blue work
+- Consensus: all nodes agree on the chain with most blue work
+- Attack resistance: attackers must outpace honest blue work
+- Fork resolution: ties broken by blue work comparison</p>
+<p>Blue Work ensures that honestly-created proof-of-work dominates chain selection.</p>`,
+      },
+      {
+        id: "lesson-7-1",
+        courseId: "course-7",
+        title: "BPS Configuration Details",
+        order: 1,
+        duration: "10 min",
+        content: `<p>BPS (Blocks Per Second) is the foundational parameter from which many others derive. Understanding its configuration is key to understanding Kaspa's behavior.</p>
+<p>**BPS and Network Throughput**
+BPS directly determines theoretical maximum transactions per second:
+- TPS capacity = BPS × transactions per block
+- Higher BPS = more total transaction capacity
+- But also requires faster network propagation</p>
+<p>**Mathematical Relationships**
+From BPS, Kaspa calculates:
+- **Target Block Time** = 1/BPS seconds
+- **K Parameter** = f(BPS, network delay)
+- **DAA Window Size** = proportional to BPS
+- **Pruning Depth** = function of BPS and finality</p>
+<p>**BPS Selection Criteria**
+The chosen BPS must balance:
+1. Hardware requirements for nodes
+2. Network bandwidth and latency
+3. Security margins (K must be large enough)
+4. User experience (confirmation times)</p>
+<p>**Crescendo: Dynamic BPS**
+The Crescendo hardfork introduces dynamic BPS adjustment, allowing the network to optimize throughput based on actual conditions.</p>`,
+      },
+      {
+        id: "lesson-7-2",
+        courseId: "course-7",
+        title: "Mergeset Size Limit",
+        order: 2,
+        duration: "8 min",
+        content: `<p>The Mergeset Size Limit constrains how many blocks can be in a single block's mergeset. This is crucial for bounding computation and preventing attacks.</p>
+<p>**Why Limit Mergeset Size?**
+Without limits, an attacker could craft blocks that reference thousands of other blocks, causing:
+- Excessive computation for validation
+- Denial of service on honest nodes
+- Unpredictable block processing times</p>
+<p>**Current Limits**
+The mergeset size limit is calculated based on:
+- K parameter (security bound)
+- Expected network conditions
+- Computational budget per block</p>
+<p>**Implications**
+When natural mergeset size exceeds the limit:
+- Block cannot include all desired parents
+- Miner must choose which branches to merge
+- Some blocks may take longer to get merged</p>
+<p>**Relationship to K**
+Mergeset limit and K are related but distinct:
+- K bounds anticone size for blue classification
+- Mergeset limit bounds processing load
+- Both scale with BPS but for different reasons</p>`,
+      },
+      {
+        id: "lesson-7-3",
+        courseId: "course-7",
+        title: "Merge Depth Bound",
+        order: 3,
+        duration: "8 min",
+        content: `<p>The Merge Depth Bound prevents deep reorganizations of the DAG. It establishes when blocks are too old to be merged into new blocks.</p>
+<p>**What is Merge Depth?**
+Merge depth measures how "deep" a block is in the DAG:
+- Depth increases as new blocks are added on top
+- Deep blocks are considered finalized
+- New blocks cannot reference blocks beyond merge depth</p>
+<p>**Why This Matters**
+Without merge depth bounds:
+- Attackers could reference very old blocks
+- This could reorganize long-finalized transactions
+- Users could never have certainty about finality</p>
+<p>**Calculation**
+Merge depth bound is set to ensure:
+- Honest blocks always get merged in time
+- Attack attempts create obviously invalid blocks
+- Finality guarantees are mathematically sound</p>
+<p>**Practical Effect**
+- Blocks deeper than merge depth cannot be re-merged
+- Transactions in deep blocks are final
+- Attempts to reference deep blocks are rejected</p>
+<p>This is a key component of Kaspa's finality mechanism.</p>`,
+      },
+      {
+        id: "lesson-7-4",
+        courseId: "course-7",
+        title: "Finality Depth",
+        order: 4,
+        duration: "8 min",
+        content: `<p>Finality Depth determines when blocks become irreversible in Kaspa. It's the point after which a block cannot be reorganized out of the main chain.</p>
+<p>**Types of Finality**
+Kaspa has two types of finality:
+1. **Probabilistic Finality**: Like Bitcoin, probability of reorg decreases exponentially with depth
+2. **Deterministic Finality**: At sufficient depth, reorg is mathematically impossible</p>
+<p>**Finality Depth Calculation**
+The finality depth depends on:
+- K parameter (security margin)
+- Merge depth bound (when merging becomes impossible)
+- Network assumptions (delay, honest hash rate)</p>
+<p>**Confirmation Depth vs Finality Depth**
+- Confirmation depth: When you can be reasonably confident
+- Finality depth: When reversal is impossible</p>
+<p>**Practical Applications**
+- Exchanges set deposit confirmation requirements based on finality
+- Smart contracts can rely on finalized state
+- Users can spend funds after finality without double-spend risk</p>
+<p>At Kaspa's high BPS, finality is reached in minutes rather than hours.</p>`,
+      },
+      {
+        id: "lesson-7-5",
+        courseId: "course-7",
+        title: "DAA Window",
+        order: 5,
+        duration: "8 min",
+        content: `<p>The DAA Window is the sliding window of blocks used for difficulty adjustment. It determines how quickly Kaspa responds to hash rate changes.</p>
+<p>**Window Construction**
+The DAA window consists of:
+- A fixed number of recent blocks
+- Measured in DAA score, not blue score
+- Window size scales with BPS</p>
+<p>**Why a Sliding Window?**
+A sliding window provides:
+- Smooth difficulty transitions (no sudden jumps)
+- Resistance to timestamp manipulation
+- Quick response to hash rate changes</p>
+<p>**Window Size Tradeoffs**
+- Larger window: More stable, slower response
+- Smaller window: Faster response, more volatile</p>
+<p>Kaspa balances these for optimal stability while remaining responsive.</p>
+<p>**Blocks in the Window**
+Not all blocks contribute equally:
+- Blue blocks have more weight
+- Timestamps are validated against window
+- DAA score (not blue score) determines window membership</p>
+<p>**Relationship to BPS**
+As BPS increases, window size (in blocks) increases to maintain the same real-time duration.</p>`,
+      },
+      {
+        id: "lesson-7-6",
+        courseId: "course-7",
+        title: "Pruning Depth",
+        order: 6,
+        duration: "8 min",
+        content: `<p>Pruning Depth defines how far back full block data is required. Beyond this depth, block bodies can be safely deleted.</p>
+<p>**What Gets Pruned?**
+- Block bodies (transactions)
+- Non-essential header data
+- But NOT: proof-of-work chain (headers preserved)</p>
+<p>**Safe Pruning Calculation**
+Pruning depth must be greater than:
+- Finality depth (so finalized blocks are pruned)
+- Merge depth (so pruneable blocks can't be merged)
+- Any sync requirement windows</p>
+<p>**MuHash Verification**
+Pruned nodes verify their UTXO set using MuHash:
+- Store only current UTXO set
+- MuHash commitment proves correctness
+- No need to replay old transactions</p>
+<p>**Pruning vs Archival Nodes**
+- Pruning nodes: Store only recent blocks + UTXO set
+- Archival nodes: Store complete history</p>
+<p>Both can fully validate new blocks. Pruning nodes are sufficient for most users.</p>`,
+      },
+      {
+        id: "lesson-8-1",
+        courseId: "course-8",
+        title: "Block Processing Pipeline Overview",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Kaspa processes blocks through a four-stage pipeline: Header validation, Body validation, Virtual chain update, and Pruning consideration.</p>
+<p>**Stage 1: Header Validation**
+Before downloading the full block:
+- Verify proof-of-work meets difficulty
+- Check parent references exist
+- Validate timestamp bounds
+- Confirm header structure</p>
+<p>**Stage 2: Body Validation**
+After receiving block body:
+- Validate all transaction formats
+- Check Merkle root matches transactions
+- Verify signature validity
+- Confirm no duplicate inputs</p>
+<p>**Stage 3: Virtual Chain Update**
+Integrate into DAG state:
+- Construct mergeset
+- Classify blue/red
+- Process accepted transactions
+- Update UTXO set
+- Recalculate virtual block</p>
+<p>**Stage 4: Pruning Consideration**
+Maintain node efficiency:
+- Check if old blocks can be pruned
+- Update MuHash commitments
+- Remove pruneable data</p>
+<p>Each stage can reject invalid blocks early, saving resources.</p>`,
+      },
+      {
+        id: "lesson-8-2",
+        courseId: "course-8",
+        title: "Blue Score and Blue Work",
+        order: 2,
+        duration: "8 min",
+        content: `<p>During block processing, two related but distinct metrics are calculated: Blue Score and Blue Work.</p>
+<p>**Blue Score**
+Blue Score is the simple count of blue blocks in a chain:
+- Increases by 1 for each blue ancestor
+- Used for DAA calculations
+- Quick to compute</p>
+<p>**Blue Work**
+Blue Work is the cumulative proof-of-work from blue blocks:
+- Accounts for varying difficulty levels
+- Used for chain selection
+- More accurate measure of "weight"</p>
+<p>**When Each is Used**
+- **Chain Selection**: Blue Work determines the canonical chain
+- **DAA Window**: Blue Score may be used for window selection
+- **Confirmations**: Either can indicate depth</p>
+<p>**Calculation During Processing**
+When processing a new block:
+1. Get selected parent's blue score and blue work
+2. If this block is blue: increment both
+3. If red: inherit parent's values unchanged
+4. Store for future blocks to reference</p>
+<p>Understanding both metrics is important for grasping how Kaspa achieves consensus.</p>`,
+      },
+      {
+        id: "lesson-9-1",
+        courseId: "course-9",
+        title: "DAA Window Construction",
+        order: 1,
+        duration: "10 min",
+        content: `<p>The Difficulty Adjustment Algorithm (DAA) in Kaspa uses a sliding window of blocks to calculate target difficulty.</p>
+<p>**Window Purpose**
+The window provides:
+- Historical block times for averaging
+- Resistance to gaming the algorithm
+- Smooth difficulty transitions</p>
+<p>**Building the Window**
+The DAA window is constructed by:
+1. Starting from the current block
+2. Walking back through selected parents
+3. Including blocks within the window size
+4. Using DAA score (not just blue score)</p>
+<p>**Window Parameters**
+Key parameters include:
+- Window size (number of blocks)
+- Sample interval (which blocks to measure)
+- Weight distribution (recent vs old)</p>
+<p>**Kaspa's Approach**
+Kaspa's DAA is designed for high BPS:
+- Larger windows to smooth volatility
+- Frequent adjustments (every block)
+- Quick response to hash rate changes</p>
+<p>The result is stable block times even with rapid hash rate fluctuations.</p>`,
+      },
+      {
+        id: "lesson-9-2",
+        courseId: "course-9",
+        title: "DAA Score vs Blue Score",
+        order: 2,
+        duration: "8 min",
+        content: `<p>Kaspa uses two different scoring systems: DAA Score and Blue Score. Understanding their differences is important.</p>
+<p>**Blue Score**
+Blue Score counts only blue blocks:
+- Ignores red blocks entirely
+- Used for chain selection and GHOSTDAG
+- Represents "honest" block count</p>
+<p>**DAA Score**
+DAA Score may include red blocks:
+- Counts blocks contributing to difficulty calculation
+- Provides more stable time measurement
+- Used specifically for difficulty adjustment</p>
+<p>**Why Different Scores?**
+- Chain selection needs to weight honest work (blue score)
+- Difficulty adjustment needs accurate time measurement (DAA score)
+- Red blocks still represent real elapsed time</p>
+<p>**Practical Implications**
+- A chain with many red blocks may have:
+  - Lower blue score (fewer honest blocks)
+  - Similar DAA score (similar elapsed time)
+- This ensures difficulty stays correct even during attacks</p>
+<p>The separation prevents attackers from manipulating difficulty through red block creation.</p>`,
+      },
+      {
+        id: "lesson-10-1",
+        courseId: "course-10",
+        title: "Transaction Selection",
+        order: 1,
+        duration: "8 min",
+        content: `<p>Transaction selection is how miners choose which transactions to include in blocks. It directly affects user experience and miner revenue.</p>
+<p>**Basic Selection**
+The simplest approach prioritizes by:
+- Fee per byte (transaction size)
+- Time in mempool (older = higher priority)
+- UTXO age (coin days destroyed)</p>
+<p>**Kaspa's Context**
+In a high-BPS environment:
+- Blocks are small but frequent
+- Mempool often empty (transactions get included quickly)
+- Less competition for block space</p>
+<p>**Selection Strategies**
+Miners can choose:
+- **Greedy**: Highest fee first
+- **Fair**: FIFO with fee minimum
+- **Custom**: Prioritize certain transaction types</p>
+<p>**Fee Market**
+Unlike congested chains:
+- Kaspa typically has low fees
+- Fees matter more during high demand
+- No "fee auction" during normal operation</p>
+<p>Good transaction selection balances miner revenue, user experience, and network health.</p>`,
+      },
+      {
+        id: "lesson-10-2",
+        courseId: "course-10",
+        title: "Mass Calculation",
+        order: 2,
+        duration: "8 min",
+        content: `<p>Mass is Kaspa's measure of transaction resource consumption. It determines fees and block limits.</p>
+<p>**Types of Mass**
+Kaspa calculates three types of mass:
+- **Compute Mass**: CPU cost to validate
+- **Storage Mass**: UTXO set growth (KIP-9)
+- **Transient Mass**: Temporary resource usage</p>
+<p>**Compute Mass**
+Based on:
+- Number of inputs (signature verification)
+- Script complexity
+- Transaction size</p>
+<p>**Storage Mass (KIP-9)**
+Storage mass addresses UTXO set bloat:
+- Creating UTXOs incurs mass
+- Consuming UTXOs reduces mass
+- Encourages UTXO consolidation</p>
+<p>**Why Mass Matters**
+- Block mass limit bounds total per-block work
+- Fees are calculated per mass unit
+- Prevents DoS through expensive transactions</p>
+<p>**User Impact**
+Transactions with many small UTXOs have higher mass. Consolidating UTXOs reduces future transaction costs.</p>`,
+      },
+      {
+        id: "lesson-10-3",
+        courseId: "course-10",
+        title: "Coinbase Transactions",
+        order: 3,
+        duration: "8 min",
+        content: `<p>Coinbase transactions are special transactions that create new coins as block rewards.</p>
+<p>**What is a Coinbase Transaction?**
+- First transaction in every block
+- Has no inputs (creates coins from nothing)
+- Outputs go to miner's address
+- Contains the block reward</p>
+<p>**Block Reward Components**
+The coinbase reward includes:
+- Block subsidy (new coin issuance)
+- Transaction fees (from included transactions)</p>
+<p>**Kaspa's Emission Schedule**
+Kaspa uses a unique emission curve:
+- Smooth decay (not halving)
+- Based on chromatic scale
+- Predictable long-term supply</p>
+<p>**Coinbase Maturity**
+Coinbase outputs cannot be spent immediately:
+- Must wait for maturity period
+- Prevents spending rewards from orphaned blocks
+- Maturity measured in blue score</p>
+<p>**In Kaspa's DAG**
+Each block has its own coinbase, but only blue blocks' coinbases are effectively spendable after maturity.</p>`,
+      },
+      {
+        id: "lesson-11-1",
+        courseId: "course-11",
+        title: "First Order Pruning",
+        order: 1,
+        duration: "8 min",
+        content: `<p>First Order Pruning removes old block bodies and transactions from storage. This is the primary mechanism for managing blockchain data growth.</p>
+<p>**What Gets Removed**
+- Transaction data (inputs, outputs, signatures)
+- Block body content
+- Script data and proofs</p>
+<p>**What is Preserved**
+- Block headers
+- Proof-of-work chain
+- UTXO set (current state)
+- MuHash commitments</p>
+<p>**When Pruning Occurs**
+Blocks are eligible for first-order pruning when:
+- They exceed the pruning depth
+- Their anticone is finalized
+- All dependent validation is complete</p>
+<p>**Node Behavior After Pruning**
+Pruned nodes can still:
+- Fully validate new blocks
+- Prove current UTXO state
+- Participate in consensus</p>
+<p>They cannot:
+- Serve historical transaction data
+- Help new nodes sync from genesis
+- Provide block explorers with old data</p>
+<p>Most users can run pruning nodes without issues.</p>`,
+      },
+      {
+        id: "lesson-11-2",
+        courseId: "course-11",
+        title: "Second Order Pruning",
+        order: 2,
+        duration: "8 min",
+        content: `<p>Second Order Pruning goes further than first-order pruning by removing old headers while preserving proof-of-work.</p>
+<p>**The Challenge**
+Even with first-order pruning, headers accumulate:
+- At 10 BPS: ~315 million headers per year
+- At 100 BPS: ~3.15 billion headers per year
+- Storage becomes significant</p>
+<p>**What Second Order Pruning Does**
+- Removes individual block headers at depth
+- Preserves proof-of-work through checkpoints
+- Maintains cryptographic continuity</p>
+<p>**How It Works**
+Instead of storing every header:
+1. Create periodic checkpoints (cryptographic commitments)
+2. Store checkpoint chain linking current state to genesis
+3. Delete intermediate headers</p>
+<p>**Security Preservation**
+The checkpoint chain preserves:
+- Total proof-of-work accumulation
+- Chain of trust to genesis
+- Ability to verify new blocks</p>
+<p>Second-order pruning is still being refined but represents Kaspa's path to truly unlimited scaling.</p>`,
+      },
+      {
+        id: "lesson-11-3",
+        courseId: "course-11",
+        title: "Archival vs Pruning Nodes",
+        order: 3,
+        duration: "8 min",
+        content: `<p>Kaspa supports different node types with varying storage requirements and capabilities.</p>
+<p>**Pruning Nodes**
+Pruning nodes are lightweight and sufficient for most uses:
+- Store only recent blocks + UTXO set
+- Can fully validate new blocks
+- Minimal storage requirements
+- Cannot serve historical data</p>
+<p>**Archival Nodes**
+Archival nodes store complete blockchain history:
+- Keep all blocks since genesis
+- Can serve block explorer queries
+- Help new nodes sync
+- Higher storage requirements</p>
+<p>**Use Cases**
+When to run each type:
+- **Pruning**: Personal use, light infrastructure
+- **Archival**: Block explorers, research, data analysis, helping the network</p>
+<p>**Storage Comparison**
+At 32 BPS:
+- Pruning node: ~10-50 GB
+- Archival node: Grows ~1 TB per year</p>
+<p>Most users should run pruning nodes. The network only needs a modest number of archival nodes for historical data access.</p>`,
+      },
+      {
+        id: "lesson-12-1",
+        courseId: "course-12",
+        title: "Anticone Finalization Depth",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Anticone Finalization is the mathematical foundation for safe pruning in Kaspa. It guarantees when a block's anticone is permanently fixed.</p>
+<p>**The Problem**
+In a DAG, new blocks could theoretically reference any old block, potentially changing its anticone forever. For pruning, we need to know when this can no longer happen.</p>
+<p>**Finalization Guarantee**
+A block's anticone is finalized when:
+- The block has reached sufficient depth
+- No new blocks can legally reference blocks that would enter its anticone
+- The merge depth bound prevents deep references</p>
+<p>**Mathematical Foundation**
+The anticone finalization depth is calculated from:
+- K parameter (anticone size bound)
+- Merge depth bound
+- Network delay assumptions</p>
+<p>**Why This Matters for Pruning**
+Once a block's anticone is finalized:
+- Its final ordering is permanent
+- Its transactions' status is permanent
+- All relevant context for validation is known
+- It becomes safe to prune</p>
+<p>This is the theoretical basis for Kaspa's efficient pruning.</p>`,
+      },
+      {
+        id: "lesson-12-2",
+        courseId: "course-12",
+        title: "Depth Constraints for Pruning Safety",
+        order: 2,
+        duration: "10 min",
+        content: `<p>Multiple depth constraints work together to guarantee pruning safety. Understanding their interaction is key to understanding Kaspa's security.</p>
+<p>**Merge Depth Bound**
+- Prevents referencing blocks too deep in the DAG
+- Ensures finalized transactions stay final
+- Blocks beyond this depth cannot be reorganized</p>
+<p>**Finality Depth**
+- Point of no return for blocks
+- Probability of reorg becomes negligible
+- Used for user-facing confirmation requirements</p>
+<p>**Pruning Depth**
+- When block data can be safely deleted
+- Must be greater than finality depth
+- Ensures all validation is complete before pruning</p>
+<p>**How They Interact**
+These constraints form layers of protection:
+1. Merge depth: Structural finality (impossible to reference)
+2. Finality depth: Probabilistic finality (negligible reorg chance)
+3. Pruning depth: Safe deletion (all checks passed)</p>
+<p>Each layer provides increasing confidence, culminating in safe data removal.</p>`,
+      },
+      {
+        id: "lesson-13-1",
+        courseId: "course-13",
+        title: "Virtual Block Concept",
+        order: 1,
+        duration: "10 min",
+        content: `<p>The Virtual Block is Kaspa's unique way of representing the current state of the DAG without requiring a single "tip" block.</p>
+<p>**What is the Virtual Block?**
+The virtual block is a conceptual construct:
+- Not a real block in the DAG
+- Represents the current state of all tips
+- Has all current tips as parents
+- Contains the merged UTXO state</p>
+<p>**Why Virtual?**
+In a DAG with multiple parallel tips:
+- There is no single "latest" block
+- Different nodes may see different tips
+- But they can agree on the "virtual" state</p>
+<p>**Virtual Block Properties**
+- **Virtual Parents**: All current DAG tips
+- **Virtual UTXO Set**: Merged from all tips
+- **Virtual Blue Score**: Highest blue score + 1
+- **Virtual Timestamp**: Calculated from tips</p>
+<p>**Role in Consensus**
+The virtual block:
+- Determines current spendable UTXOs
+- Provides basis for new block creation
+- Represents "now" in blockchain terms</p>
+<p>Understanding the virtual block is key to understanding how Kaspa handles parallel tips.</p>`,
+      },
+      {
+        id: "lesson-13-2",
+        courseId: "course-13",
+        title: "Sink Selection",
+        order: 2,
+        duration: "8 min",
+        content: `<p>The Sink is the highest block in the DAG that has a valid UTXO state. It's crucial for determining the current virtual state.</p>
+<p>**What is the Sink?**
+The sink is the block with:
+- Highest blue work
+- Valid UTXO set (all transactions resolved)
+- No UTXO conflicts with its past</p>
+<p>**Why Sink Matters**
+Not all tips may have valid UTXO states:
+- Some tips may have conflicting transactions
+- The sink is the "highest valid" point
+- Virtual state is built from the sink</p>
+<p>**Sink Selection Process**
+1. Find the tip with highest blue work
+2. Check if its UTXO state is valid
+3. If conflicts exist, walk back until valid
+4. The valid block is the sink</p>
+<p>**Sink vs Tips**
+- Tips: All blocks with no children
+- Sink: Highest tip with valid UTXO state
+- Virtual block includes all tips as parents
+- But derives UTXO state from sink</p>
+<p>The sink provides the foundation for Kaspa's consistent state management.</p>`,
+      },
+      {
+        id: "lesson-14-1",
+        courseId: "course-14",
+        title: "Past Median Time",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Past Median Time (PMT) is the median timestamp of recent ancestor blocks. It provides a manipulation-resistant time reference.</p>
+<p>**Why Median Time?**
+Individual block timestamps can be manipulated:
+- Miners can set any timestamp within bounds
+- Future timestamps could be used for attacks
+- A single bad timestamp shouldn't break consensus</p>
+<p>**Calculation**
+Past Median Time is calculated by:
+1. Taking the timestamps of recent selected ancestors
+2. Sorting them chronologically
+3. Selecting the median value</p>
+<p>**Uses in Kaspa**
+PMT is used for:
+- **Time-lock validation**: When time-locked UTXOs become spendable
+- **Difficulty adjustment**: As a time reference
+- **Protocol enforcement**: Various time-based rules</p>
+<p>**Properties**
+- Always moves forward (cannot decrease)
+- Resistant to single-miner manipulation
+- Slightly behind real time (median of past blocks)</p>
+<p>PMT ensures time-based consensus rules remain secure even if some miners misbehave.</p>`,
+      },
+      {
+        id: "lesson-14-2",
+        courseId: "course-14",
+        title: "Timestamp Validation Rules",
+        order: 2,
+        duration: "8 min",
+        content: `Kaspa enforces strict rules on block timestamps to prevent manipulation and ensure DAA accuracy.
 
-      <h3>The BlockDAG Difference</h3>
-      <p>In traditional blockchains, when two miners find a block at the same time, one becomes an "orphan" and is discarded. In Kaspa's BlockDAG, <em>all valid blocks are kept</em> and referenced by future blocks, creating a DAG structure instead of a linear chain.</p>
+**Timestamp Bounds**
+Block timestamps must be:
+- Greater than Past Median Time of parents
+- Not too far in the future (bounded by node's clock)
 
-      <p>This innovation allows Kaspa to achieve throughput previously thought impossible for PoW blockchains while maintaining the security guarantees that made Bitcoin revolutionary.</p>
-    `,
-  },
-  {
-    id: "lesson-1-2",
-    courseId: "course-1",
-    title: "The GHOSTDAG Protocol",
-    order: 2,
-    duration: "12 min",
-    content: `
-      <h2>Understanding GHOSTDAG</h2>
-      <p>GHOSTDAG (Greedy Heaviest-Observed Sub-Tree DAG) is the consensus protocol that makes Kaspa possible. It's an extension of the PHANTOM protocol, designed to order blocks in a DAG structure.</p>
+**Why These Rules?**
+- Lower bound (PMT): Ensures time moves forward
+- Upper bound (future limit): Prevents timestamp inflation
 
-      <h3>How GHOSTDAG Works</h3>
-      <ol>
-        <li><strong>Block Creation:</strong> Miners create blocks that reference multiple previous blocks (not just one parent)</li>
-        <li><strong>Blue vs Red Blocks:</strong> Blocks are colored based on connectivity - well-connected "blue" blocks are considered honest</li>
-        <li><strong>Ordering:</strong> The protocol creates a total ordering of all blocks, even those created in parallel</li>
-        <li><strong>Finality:</strong> Transactions achieve finality in seconds, not hours</li>
-      </ol>
+**Validation Process**
+When validating a block timestamp:
+1. Calculate PMT from selected ancestors
+2. Check timestamp > PMT
+3. Check timestamp < current_time + max_future
+4. Reject if either fails
 
-      <h3>Security Guarantees</h3>
-      <p>GHOSTDAG maintains the same security assumptions as Bitcoin's Nakamoto consensus - an attacker needs 51% of hashrate to reverse transactions. The difference is that honest miners don't waste work on orphaned blocks.</p>
+**Impact on DAA**
+Timestamps directly affect difficulty:
+- Timestamps determine block time intervals
+- Manipulated timestamps could skew difficulty
+- Bounds prevent extreme manipulation
 
-      <blockquote>
-        <p>"GHOSTDAG achieves the seemingly impossible: high throughput without sacrificing decentralization or security."</p>
-      </blockquote>
-    `,
-  },
-  {
-    id: "lesson-1-3",
-    courseId: "course-1",
-    title: "Kaspa's Native Token: KAS",
-    order: 3,
-    duration: "8 min",
-    content: `
-      <h2>KAS Token Economics</h2>
-      <p>KAS is the native cryptocurrency of the Kaspa network. It's used for transaction fees, mining rewards, and as a store of value.</p>
+**DAG Considerations**
+In Kaspa's DAG:
+- Multiple parents have different timestamps
+- PMT calculation uses selected parent chain
+- Parallel blocks may have similar timestamps
 
-      <h3>Supply and Emission</h3>
-      <ul>
-        <li><strong>Max Supply:</strong> 28.7 billion KAS</li>
-        <li><strong>Emission:</strong> Geometric decrease (like Bitcoin's halvings, but smoother)</li>
-        <li><strong>Current Circulation:</strong> ~26.78 billion KAS (as of 2025)</li>
-        <li><strong>Block Reward:</strong> Decreasing over time following the chromatic emission schedule</li>
-      </ul>
+These rules ensure consistent timekeeping across the decentralized network.`,
+      },
+      {
+        id: "lesson-15-1",
+        courseId: "course-15",
+        title: "Probabilistic Finality",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Probabilistic finality means that the probability of transaction reversal decreases exponentially with confirmation depth.</p>
+<p>**How It Works**
+With each new block:
+- An attacker would need more hash power to reorg
+- The probability of successful attack decreases
+- After enough confirmations, reversal is practically impossible</p>
+<p>**Confirmation Depth**
+Deeper confirmations mean:
+- More cumulative work to overcome
+- Lower probability of reorg
+- Higher confidence in finality</p>
+<p>**Mathematical Guarantees**
+The security can be quantified:
+- 1 confirmation: Some reorg risk
+- 6 confirmations: Very low risk (Bitcoin standard)
+- 10+ confirmations: Negligible risk</p>
+<p>**In Kaspa**
+Kaspa's high BPS means:
+- More confirmations per unit time
+- Faster probabilistic finality
+- Same security level reached sooner</p>
+<p>For example, at 10 BPS, 60 confirmations take just 6 seconds but provide strong probabilistic guarantees.</p>`,
+      },
+      {
+        id: "lesson-15-2",
+        courseId: "course-15",
+        title: "Deterministic Finality",
+        order: 2,
+        duration: "10 min",
+        content: `<p>Deterministic finality goes beyond probability - at sufficient depth, reversal becomes structurally impossible.</p>
+<p>**What Makes It Deterministic?**
+At a certain depth:
+- Merge depth bound prevents referencing old blocks
+- New blocks cannot reorganize past this point
+- Finality is guaranteed by protocol rules, not just probability</p>
+<p>**How It Works**
+The merge depth bound creates hard finality:
+1. Blocks beyond merge depth cannot be merged
+2. Any attempt to reorganize is invalid
+3. The protocol enforces finality</p>
+<p>**Deterministic vs Probabilistic**
+- Probabilistic: "Attack is extremely unlikely"
+- Deterministic: "Attack is impossible by protocol rules"</p>
+<p>**Depth Requirements**
+Deterministic finality requires:
+- Passing the merge depth bound
+- Anticone finalization
+- All validation complete</p>
+<p>**Practical Impact**
+For users:
+- After deterministic finality, funds are absolutely safe
+- No amount of hash power can reverse transactions
+- Provides ultimate security guarantee</p>
+<p>This is one of Kaspa's most powerful security features.</p>`,
+      },
+      {
+        id: "lesson-15-3",
+        courseId: "course-15",
+        title: "Kaspa's Security Model",
+        order: 3,
+        duration: "10 min",
+        content: `<p>Kaspa inherits Bitcoin's security model while enabling higher performance. Understanding this is key to trusting the system.</p>
+<p>**Inherited from Bitcoin**
+Kaspa maintains:
+- Proof-of-work consensus
+- 51% security threshold
+- Nakamoto-style probabilistic finality
+- Cryptographic transaction security</p>
+<p>**GHOSTDAG Enhancements**
+GHOSTDAG adds:
+- All honest work counts (no orphan waste)
+- Blue/red classification detects attacks
+- Deterministic finality layer
+- Efficient parallel processing</p>
+<p>**Attack Resistance**
+Kaspa is resistant to:
+- Double-spend attacks (confirmation depth)
+- Selfish mining (all blocks included)
+- Long-range attacks (merge depth bound)
+- Timestamp manipulation (PMT and bounds)</p>
+<p>**Security Parameters**
+Key parameters ensure security:
+- K: Bounds honest anticone size
+- Merge depth: Prevents deep reorgs
+- Finality depth: Guarantees irreversibility
+- All derived from network analysis</p>
+<p>**Trust Model**
+Users can trust that:
+- Confirmed transactions are final
+- The network is censorship-resistant
+- No central party controls consensus</p>
+<p>Kaspa provides enterprise-grade security with consumer-grade performance.</p>`,
+      },
+      {
+        id: "lesson-16-1",
+        courseId: "course-16",
+        title: "Bitcoin's Scaling Problem",
+        order: 1,
+        duration: "10 min",
+        content: `<p>Understanding why Bitcoin cannot simply increase its block rate helps appreciate Kaspa's innovation.</p>
+<p>**Bitcoin's Limitation**
+Bitcoin produces one block every ~10 minutes because:
+- Orphan rate increases with faster blocks
+- Orphans waste miner resources
+- Security decreases with high orphan rates</p>
+<p>**The Orphan Problem**
+When blocks are created faster than propagation:
+- Multiple miners may find valid blocks
+- Only one can extend the chain
+- Others become orphans (wasted work)
+- Effective hash rate decreases</p>
+<p>**Security Implications**
+High orphan rates mean:
+- Less work in the main chain
+- Easier to attack (less cumulative work)
+- Miners with better connectivity have advantages</p>
+<p>**Why Not Just Bigger Blocks?**
+Larger blocks also cause problems:
+- Longer propagation times
+- Higher bandwidth requirements
+- Centralization pressure (not everyone can run nodes)</p>
+<p>These tradeoffs force Bitcoin to choose between speed, security, and decentralization. Kaspa's GHOSTDAG breaks this tradeoff.</p>`,
+      },
+      {
+        id: "lesson-16-2",
+        courseId: "course-16",
+        title: "How Kaspa Solves Scaling",
+        order: 2,
+        duration: "10 min",
+        content: `<p>Kaspa's architecture enables high throughput without sacrificing security or decentralization.</p>
+<p>**The Key Insight**
+Instead of discarding orphans:
+- Include all blocks in the DAG
+- Order them with GHOSTDAG
+- All honest work contributes to security</p>
+<p>**No Wasted Work**
+In Kaspa:
+- Parallel blocks are all included
+- All proof-of-work adds to chain security
+- Mining is efficient regardless of connectivity</p>
+<p>**Scaling with BPS**
+Kaspa can increase blocks per second by:
+- Adjusting K parameter proportionally
+- Ensuring network can propagate in time
+- Maintaining security guarantees</p>
+<p>**Crescendo Hard Fork**
+- Upgraded Kaspa from 1 BPS to 10 BPS
+- Activated on mainnet May 5, 2025
+- Already 600x faster than Bitcoin's one block per 10 minutes
+- Future hard forks will enable even higher BPS</p>
+<p>**The Result**
+- Faster confirmations (seconds, not hours)
+- Higher transaction capacity
+- Decentralized (low node requirements)
+- Secure (full PoW contribution)</p>
+<p>Kaspa proves that the blockchain trilemma can be solved with better architecture.</p>`,
+      },
+    ];
 
-      <h3>Fair Distribution</h3>
-      <p>Kaspa had no pre-mine, no ICO, and no venture capital allocation. All KAS tokens were distributed through mining, ensuring a fair and decentralized distribution from day one.</p>
+    const allQuestions: QuizQuestion[] = [
+      { id: "q-1-1-1", lessonId: "lesson-1-1", question: "Which of the following best describes the topic \"Bitcoin's Revolutionary Promise\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"Bitcoin's Revolutionary Promise\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-1-2-1", lessonId: "lesson-1-2", question: "Which of the following best describes the topic \"The Scalability Trilemma\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"The Scalability Trilemma\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-1-3-1", lessonId: "lesson-1-3", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-1-4-1", lessonId: "lesson-1-4", question: "Which of the following best describes the topic \"Understanding the Chain\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"Understanding the Chain\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-1-5-1", lessonId: "lesson-1-5", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-1-6-1", lessonId: "lesson-1-6", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-1-7-1", lessonId: "lesson-1-7", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-1-8-1", lessonId: "lesson-1-8", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-1-9-1", lessonId: "lesson-1-9", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-1-10-1", lessonId: "lesson-1-10", question: "How does Kaspa differ from Bitcoin architecturally?", options: ["Uses PoS instead of PoW", "Uses BlockDAG instead of blockchain", "Uses larger blocks", "Uses different cryptography"], correctIndex: 1, explanation: "Kaspa uses a BlockDAG structure instead of Bitcoin's linear blockchain." },
+      { id: "q-1-11-1", lessonId: "lesson-1-11", question: "How does Kaspa differ from Bitcoin architecturally?", options: ["Uses PoS instead of PoW", "Uses BlockDAG instead of blockchain", "Uses larger blocks", "Uses different cryptography"], correctIndex: 1, explanation: "Kaspa uses a BlockDAG structure instead of Bitcoin's linear blockchain." },
+      { id: "q-1-12-1", lessonId: "lesson-1-12", question: "Which of the following best describes the topic \"Decentralization in Practice\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"Decentralization in Practice\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-1-13-1", lessonId: "lesson-1-13", question: "How does Kaspa differ from Bitcoin architecturally?", options: ["Uses PoS instead of PoW", "Uses BlockDAG instead of blockchain", "Uses larger blocks", "Uses different cryptography"], correctIndex: 1, explanation: "Kaspa uses a BlockDAG structure instead of Bitcoin's linear blockchain." },
+      { id: "q-1-14-1", lessonId: "lesson-1-14", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-1-15-1", lessonId: "lesson-1-15", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-2-1-1", lessonId: "lesson-2-1", question: "Which of the following best describes the topic \"Linear Chain Terminology - Traditional Blockchain\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"Linear Chain Terminology - Traditional Blockchain\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-2-2-1", lessonId: "lesson-2-2", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-2-3-1", lessonId: "lesson-2-3", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-2-4-1", lessonId: "lesson-2-4", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-2-5-1", lessonId: "lesson-2-5", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-2-6-1", lessonId: "lesson-2-6", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-2-7-1", lessonId: "lesson-2-7", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-2-8-1", lessonId: "lesson-2-8", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-3-1-1", lessonId: "lesson-3-1", question: "Which of the following best describes the topic \"What is a Graph?\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"What is a Graph?\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-3-2-1", lessonId: "lesson-3-2", question: "Which of the following best describes the topic \"What is a Directed Graph?\"?", options: ["A key concept in blockchain technology", "A basic principle of cryptocurrency", "An important element of Kaspa's architecture", "All of the above"], correctIndex: 3, explanation: "The lesson \"What is a Directed Graph?\" covers fundamental concepts related to Kaspa's innovative technology." },
+      { id: "q-3-3-1", lessonId: "lesson-3-3", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-3-4-1", lessonId: "lesson-3-4", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-3-5-1", lessonId: "lesson-3-5", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-4-1-1", lessonId: "lesson-4-1", question: "What is a key advantage of BlockDAG over blockchain?", options: ["Lower energy use", "Parallel block creation", "Smaller block size", "Fewer nodes"], correctIndex: 1, explanation: "BlockDAG allows multiple blocks to be created in parallel, increasing throughput." },
+      { id: "q-4-2-1", lessonId: "lesson-4-2", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-4-3-1", lessonId: "lesson-4-3", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-4-4-1", lessonId: "lesson-4-4", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-4-5-1", lessonId: "lesson-4-5", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-5-1-1", lessonId: "lesson-5-1", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-5-2-1", lessonId: "lesson-5-2", question: "What is the purpose of pruning in Kaspa?", options: ["Speed up mining", "Remove old, unneeded data to save space", "Create new blocks", "Increase rewards"], correctIndex: 1, explanation: "Pruning removes historical data that is no longer needed, reducing storage requirements." },
+      { id: "q-5-3-1", lessonId: "lesson-5-3", question: "What is a mergeset in GHOSTDAG?", options: ["Combined blocks", "Blocks merged into the selected parent chain", "Split blocks", "Orphan blocks"], correctIndex: 1, explanation: "The mergeset contains blocks that get ordered relative to the selected parent chain." },
+      { id: "q-5-4-1", lessonId: "lesson-5-4", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-6-1-1", lessonId: "lesson-6-1", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-6-2-1", lessonId: "lesson-6-2", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-6-3-1", lessonId: "lesson-6-3", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-6-4-1", lessonId: "lesson-6-4", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-6-5-1", lessonId: "lesson-6-5", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-7-1-1", lessonId: "lesson-7-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-7-2-1", lessonId: "lesson-7-2", question: "What is an anticone in the DAG?", options: ["Past blocks", "Future blocks", "Blocks with no reachability relationship", "Invalid blocks"], correctIndex: 2, explanation: "The anticone contains blocks that are neither in the past nor future of a given block." },
+      { id: "q-7-3-1", lessonId: "lesson-7-3", question: "What is a mergeset in GHOSTDAG?", options: ["Combined blocks", "Blocks merged into the selected parent chain", "Split blocks", "Orphan blocks"], correctIndex: 1, explanation: "The mergeset contains blocks that get ordered relative to the selected parent chain." },
+      { id: "q-7-4-1", lessonId: "lesson-7-4", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-7-5-1", lessonId: "lesson-7-5", question: "In GHOSTDAG, what distinguishes blue blocks from red blocks?", options: ["Size", "Connectivity and honest behavior", "Age", "Transaction count"], correctIndex: 1, explanation: "Blue blocks are well-connected and considered honest, while red blocks may be from attackers." },
+      { id: "q-7-6-1", lessonId: "lesson-7-6", question: "What does UTXO stand for?", options: ["Universal Transaction eXchange Output", "Unspent Transaction Output", "Unified Token eXchange Order", "User Transaction Operation"], correctIndex: 1, explanation: "UTXO stands for Unspent Transaction Output, the fundamental unit of value in Kaspa." },
+      { id: "q-8-1-1", lessonId: "lesson-8-1", question: "What is a mergeset in GHOSTDAG?", options: ["Combined blocks", "Blocks merged into the selected parent chain", "Split blocks", "Orphan blocks"], correctIndex: 1, explanation: "The mergeset contains blocks that get ordered relative to the selected parent chain." },
+      { id: "q-8-2-1", lessonId: "lesson-8-2", question: "In GHOSTDAG, what distinguishes blue blocks from red blocks?", options: ["Size", "Connectivity and honest behavior", "Age", "Transaction count"], correctIndex: 1, explanation: "Blue blocks are well-connected and considered honest, while red blocks may be from attackers." },
+      { id: "q-9-1-1", lessonId: "lesson-9-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-9-2-1", lessonId: "lesson-9-2", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-10-1-1", lessonId: "lesson-10-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-10-2-1", lessonId: "lesson-10-2", question: "What does UTXO stand for?", options: ["Universal Transaction eXchange Output", "Unspent Transaction Output", "Unified Token eXchange Order", "User Transaction Operation"], correctIndex: 1, explanation: "UTXO stands for Unspent Transaction Output, the fundamental unit of value in Kaspa." },
+      { id: "q-10-3-1", lessonId: "lesson-10-3", question: "In GHOSTDAG, what distinguishes blue blocks from red blocks?", options: ["Size", "Connectivity and honest behavior", "Age", "Transaction count"], correctIndex: 1, explanation: "Blue blocks are well-connected and considered honest, while red blocks may be from attackers." },
+      { id: "q-11-1-1", lessonId: "lesson-11-1", question: "What is an anticone in the DAG?", options: ["Past blocks", "Future blocks", "Blocks with no reachability relationship", "Invalid blocks"], correctIndex: 2, explanation: "The anticone contains blocks that are neither in the past nor future of a given block." },
+      { id: "q-11-2-1", lessonId: "lesson-11-2", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-11-3-1", lessonId: "lesson-11-3", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-12-1-1", lessonId: "lesson-12-1", question: "What is an anticone in the DAG?", options: ["Past blocks", "Future blocks", "Blocks with no reachability relationship", "Invalid blocks"], correctIndex: 2, explanation: "The anticone contains blocks that are neither in the past nor future of a given block." },
+      { id: "q-12-2-1", lessonId: "lesson-12-2", question: "What is transaction finality in Kaspa?", options: ["Initial confirmation", "When a transaction cannot be reversed", "Block creation", "Mining reward"], correctIndex: 1, explanation: "Finality means a transaction is irreversible after sufficient confirmations." },
+      { id: "q-13-1-1", lessonId: "lesson-13-1", question: "What does UTXO stand for?", options: ["Universal Transaction eXchange Output", "Unspent Transaction Output", "Unified Token eXchange Order", "User Transaction Operation"], correctIndex: 1, explanation: "UTXO stands for Unspent Transaction Output, the fundamental unit of value in Kaspa." },
+      { id: "q-13-2-1", lessonId: "lesson-13-2", question: "What does UTXO stand for?", options: ["Universal Transaction eXchange Output", "Unspent Transaction Output", "Unified Token eXchange Order", "User Transaction Operation"], correctIndex: 1, explanation: "UTXO stands for Unspent Transaction Output, the fundamental unit of value in Kaspa." },
+      { id: "q-14-1-1", lessonId: "lesson-14-1", question: "What does UTXO stand for?", options: ["Universal Transaction eXchange Output", "Unspent Transaction Output", "Unified Token eXchange Order", "User Transaction Operation"], correctIndex: 1, explanation: "UTXO stands for Unspent Transaction Output, the fundamental unit of value in Kaspa." },
+      { id: "q-14-2-1", lessonId: "lesson-14-2", question: "What does the DAA (Difficulty Adjustment Algorithm) do?", options: ["Set transaction fees", "Adjust mining difficulty based on network hashrate", "Create new addresses", "Verify signatures"], correctIndex: 1, explanation: "The DAA adjusts mining difficulty to maintain consistent block production." },
+      { id: "q-15-1-1", lessonId: "lesson-15-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa produces 10 blocks per second with plans to scale to 100 BPS." },
+      { id: "q-15-2-1", lessonId: "lesson-15-2", question: "What is transaction finality in Kaspa?", options: ["Initial confirmation", "When a transaction cannot be reversed", "Block creation", "Mining reward"], correctIndex: 1, explanation: "Finality means a transaction is irreversible after sufficient confirmations." },
+      { id: "q-15-3-1", lessonId: "lesson-15-3", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-16-1-1", lessonId: "lesson-16-1", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+      { id: "q-16-2-1", lessonId: "lesson-16-2", question: "What is GHOSTDAG in Kaspa?", options: ["A mining pool", "A consensus protocol for ordering DAG blocks", "A type of wallet", "A transaction fee"], correctIndex: 1, explanation: "GHOSTDAG is the consensus protocol that orders blocks in Kaspa's BlockDAG structure." },
+    ];
 
-      <h3>Transaction Fees</h3>
-      <p>Due to the high throughput of the network, transaction fees on Kaspa are extremely low - typically fractions of a cent. This makes it practical for microtransactions and everyday use.</p>
-    `,
-  },
-  {
-    id: "lesson-2-1",
-    courseId: "course-2",
-    title: "Bitcoin's Limitations",
-    order: 1,
-    duration: "10 min",
-    content: `
-      <h2>Understanding Bitcoin's Constraints</h2>
-      <p>Bitcoin is the original cryptocurrency and remains the most secure blockchain network. However, its design imposes certain limitations that Kaspa addresses.</p>
-
-      <h3>The Block Time Problem</h3>
-      <p>Bitcoin produces one block every ~10 minutes. This slow block time was chosen for security - it gives blocks time to propagate across the network before the next block is mined.</p>
-
-      <h3>Orphan Blocks</h3>
-      <p>When two miners find a block at the same time, only one can be included in the chain. The other becomes an "orphan" - the miner's work is wasted. This creates a ceiling on how fast blocks can be produced.</p>
-
-      <h3>The Blockchain Trilemma</h3>
-      <ul>
-        <li><strong>Security:</strong> Resistance to attacks</li>
-        <li><strong>Decentralization:</strong> No central point of control</li>
-        <li><strong>Scalability:</strong> High transaction throughput</li>
-      </ul>
-      <p>Traditional blockchains must sacrifice one of these three properties. Bitcoin prioritizes security and decentralization at the cost of scalability.</p>
-    `,
-  },
-  {
-    id: "lesson-2-2",
-    courseId: "course-2",
-    title: "How Kaspa Solves the Trilemma",
-    order: 2,
-    duration: "12 min",
-    content: `
-      <h2>Breaking the Trilemma</h2>
-      <p>Kaspa's BlockDAG architecture fundamentally changes the scaling equation. By embracing parallel block creation instead of fighting it, Kaspa achieves all three properties.</p>
-
-      <h3>Security Without Sacrifice</h3>
-      <p>Like Bitcoin, Kaspa uses proof-of-work with the kHeavyHash algorithm. An attacker still needs 51% of hashrate to compromise the network. The security model is unchanged.</p>
-
-      <h3>True Decentralization</h3>
-      <p>Anyone can mine Kaspa with consumer hardware. There's no staking requirement, no validator selection, and no permission needed. The network is as decentralized as Bitcoin.</p>
-
-      <h3>Unprecedented Scalability</h3>
-      <ul>
-        <li>10 blocks per second (vs Bitcoin's 1 block per 10 minutes)</li>
-        <li>Sub-second confirmation times</li>
-        <li>Roadmap to 32-100+ blocks per second</li>
-      </ul>
-
-      <p>The secret is simple: don't throw away orphan blocks. Include them all, order them with GHOSTDAG, and let the network process transactions in parallel.</p>
-    `,
-  },
-  {
-    id: "lesson-2-3",
-    courseId: "course-2",
-    title: "Side-by-Side Comparison",
-    order: 3,
-    duration: "8 min",
-    content: `
-      <h2>Bitcoin vs Kaspa: The Numbers</h2>
-      
-      <table>
-        <tr><th>Feature</th><th>Bitcoin</th><th>Kaspa</th></tr>
-        <tr><td>Block Time</td><td>10 minutes</td><td>100ms (10 blocks per second)</td></tr>
-        <tr><td>Confirmation</td><td>10-60 minutes</td><td>Under 10 seconds</td></tr>
-        <tr><td>Consensus</td><td>Nakamoto</td><td>GHOSTDAG</td></tr>
-        <tr><td>Structure</td><td>Blockchain</td><td>BlockDAG</td></tr>
-        <tr><td>Max Supply</td><td>21 million</td><td>28.7 billion</td></tr>
-        <tr><td>Algorithm</td><td>SHA-256</td><td>kHeavyHash</td></tr>
-        <tr><td>Fair Launch</td><td>Yes</td><td>Yes</td></tr>
-      </table>
-
-      <h3>The Best of Both Worlds</h3>
-      <p>Kaspa isn't trying to replace Bitcoin - it's building on Bitcoin's proven security model while solving its scalability limitations. Both can coexist, serving different use cases in the cryptocurrency ecosystem.</p>
-    `,
-  },
-  {
-    id: "lesson-3-1",
-    courseId: "course-3",
-    title: "DAG Fundamentals",
-    order: 1,
-    duration: "15 min",
-    content: `
-      <h2>Directed Acyclic Graphs Explained</h2>
-      <p>A DAG (Directed Acyclic Graph) is a data structure consisting of nodes connected by directed edges, with no cycles (you can't start at a node and follow edges back to the same node).</p>
-
-      <h3>Why DAGs for Blockchains?</h3>
-      <p>Traditional blockchains form a simple chain: each block points to exactly one parent. This creates a bottleneck - only one block can be added at a time.</p>
-
-      <p>In a BlockDAG:</p>
-      <ul>
-        <li>Each block can reference <strong>multiple</strong> parent blocks</li>
-        <li>Multiple blocks can be created simultaneously</li>
-        <li>The structure naturally handles concurrency</li>
-        <li>No work is wasted on orphaned blocks</li>
-      </ul>
-
-      <h3>The Merkle DAG Connection</h3>
-      <p>If you're familiar with Git version control, you've already used a DAG! Git commits form a DAG structure, allowing branches and merges. Kaspa applies similar principles to blockchain consensus.</p>
-    `,
-  },
-  {
-    id: "lesson-3-2",
-    courseId: "course-3",
-    title: "Parallel Block Creation",
-    order: 2,
-    duration: "12 min",
-    content: `
-      <h2>Mining in a DAG World</h2>
-      <p>In Kaspa, miners don't compete against each other - they contribute to a shared structure. Multiple miners can find valid blocks at the same time, and all blocks are included.</p>
-
-      <h3>The Mining Process</h3>
-      <ol>
-        <li>Miner receives the current DAG state</li>
-        <li>Selects transactions from the mempool</li>
-        <li>Creates a block referencing recent "tips" (blocks with no children)</li>
-        <li>Mines until finding a valid hash</li>
-        <li>Broadcasts the block to the network</li>
-      </ol>
-
-      <p>The key difference: referencing multiple tips. A block might point to 3, 5, or 10 parent blocks, incorporating all recent mining work.</p>
-
-      <h3>No More Orphans</h3>
-      <p>In Bitcoin, if two miners find a block at the same time, one is discarded. In Kaspa, both blocks are included and ordered by GHOSTDAG. Miner efficiency approaches 100%.</p>
-    `,
-  },
-  {
-    id: "lesson-3-3",
-    courseId: "course-3",
-    title: "Block Ordering in GHOSTDAG",
-    order: 3,
-    duration: "15 min",
-    content: `
-      <h2>Creating Order from Chaos</h2>
-      <p>With blocks being created in parallel, how do we know which transactions came first? GHOSTDAG provides a deterministic ordering that all nodes agree on.</p>
-
-      <h3>Blue and Red Blocks</h3>
-      <p>GHOSTDAG colors blocks based on their connectivity:</p>
-      <ul>
-        <li><strong>Blue Blocks:</strong> Well-connected, likely honest blocks</li>
-        <li><strong>Red Blocks:</strong> Poorly connected, potentially malicious</li>
-      </ul>
-
-      <h3>The Ordering Algorithm</h3>
-      <ol>
-        <li>Start from the genesis block</li>
-        <li>Follow the "blue" chain of heaviest blocks</li>
-        <li>Insert red blocks at appropriate positions</li>
-        <li>Result: a total ordering of all blocks and transactions</li>
-      </ol>
-
-      <p>This ordering is deterministic - every node running GHOSTDAG will arrive at the same order, ensuring consensus across the network.</p>
-    `,
-  },
-  {
-    id: "lesson-3-4",
-    courseId: "course-3",
-    title: "Finality and Confirmation",
-    order: 4,
-    duration: "10 min",
-    content: `
-      <h2>When is a Transaction Final?</h2>
-      <p>In blockchains, finality is the point where a transaction cannot be reversed. Kaspa achieves finality faster than any other PoW blockchain.</p>
-
-      <h3>Confirmation Tiers</h3>
-      <ul>
-        <li><strong>1 second:</strong> Transaction visible in DAG, initial confirmation</li>
-        <li><strong>10 seconds:</strong> Transaction deeply embedded, highly secure</li>
-        <li><strong>1 minute:</strong> Practical finality for all use cases</li>
-      </ul>
-
-      <h3>Why So Fast?</h3>
-      <p>With 10 blocks per second, your transaction is quickly buried under subsequent blocks. An attacker would need to out-mine the entire network to reverse it - the same security model as Bitcoin, just faster.</p>
-
-      <h3>Comparison</h3>
-      <ul>
-        <li>Bitcoin: 60+ minutes for good finality</li>
-        <li>Kaspa: 10 seconds for comparable security</li>
-      </ul>
-    `,
-  },
-  {
-    id: "lesson-4-1",
-    courseId: "course-4",
-    title: "Getting Started with Mining",
-    order: 1,
-    duration: "12 min",
-    content: `
-      <h2>Mining Kaspa: An Introduction</h2>
-      <p>Kaspa uses the kHeavyHash algorithm, which is ASIC-compatible. Mining can be done with ASICs, and previously with GPUs before ASICs became dominant.</p>
-
-      <h3>What You Need</h3>
-      <ul>
-        <li><strong>Mining Hardware:</strong> ASIC miners (Bitmain, IceRiver, etc.)</li>
-        <li><strong>Kaspa Wallet:</strong> To receive mining rewards</li>
-        <li><strong>Mining Pool:</strong> Recommended for consistent payouts</li>
-        <li><strong>Electricity:</strong> Cheap power is key to profitability</li>
-      </ul>
-
-      <h3>Solo vs Pool Mining</h3>
-      <p>Solo mining is possible but requires significant hashrate. Most miners join pools to receive smaller, more frequent payouts rather than waiting for a lucky block.</p>
-    `,
-  },
-  {
-    id: "lesson-4-2",
-    courseId: "course-4",
-    title: "Choosing Mining Hardware",
-    order: 2,
-    duration: "10 min",
-    content: `
-      <h2>ASIC Mining Hardware</h2>
-      <p>ASIC miners are specialized devices built specifically for mining. For Kaspa's kHeavyHash algorithm, several manufacturers produce compatible devices.</p>
-
-      <h3>Popular ASIC Options</h3>
-      <ul>
-        <li><strong>Bitmain KS Series:</strong> High hashrate, higher power consumption</li>
-        <li><strong>IceRiver KS Series:</strong> Various models for different budgets</li>
-        <li><strong>Goldshell:</strong> Smaller miners suitable for home use</li>
-      </ul>
-
-      <h3>Key Metrics</h3>
-      <ul>
-        <li><strong>Hashrate (TH/s):</strong> Mining speed</li>
-        <li><strong>Power (W):</strong> Electricity consumption</li>
-        <li><strong>Efficiency (J/TH):</strong> Power per hashrate unit</li>
-      </ul>
-
-      <p>Calculate profitability before purchasing. Consider electricity costs, hardware price, and current network difficulty.</p>
-    `,
-  },
-  {
-    id: "lesson-4-3",
-    courseId: "course-4",
-    title: "Pool Selection and Setup",
-    order: 3,
-    duration: "8 min",
-    content: `
-      <h2>Joining a Mining Pool</h2>
-      <p>Mining pools combine hashpower from many miners, sharing block rewards proportionally. This provides more consistent income than solo mining.</p>
-
-      <h3>Top Kaspa Pools</h3>
-      <ul>
-        <li>Woolypooly</li>
-        <li>Herominers</li>
-        <li>K1Pool</li>
-        <li>ACC Pool</li>
-      </ul>
-
-      <h3>Pool Selection Criteria</h3>
-      <ul>
-        <li><strong>Fee:</strong> Usually 0.5-1%</li>
-        <li><strong>Payout Threshold:</strong> Minimum KAS before withdrawal</li>
-        <li><strong>Server Location:</strong> Choose one close to you for lower latency</li>
-        <li><strong>Reputation:</strong> Check reviews and payment history</li>
-      </ul>
-
-      <p>Most pools provide simple configuration - just point your miner to their server address with your wallet address as the username.</p>
-    `,
-  },
-  {
-    id: "lesson-5-1",
-    courseId: "course-5",
-    title: "Introduction to Kasplex",
-    order: 1,
-    duration: "12 min",
-    content: `
-      <h2>What is Kasplex?</h2>
-      <p>Kasplex is a Layer 2 protocol built on Kaspa that enables token creation, smart contracts, and NFTs while inheriting Kaspa's security.</p>
-
-      <h3>Key Components</h3>
-      <ul>
-        <li><strong>KRC-20:</strong> Fungible token standard (like ERC-20)</li>
-        <li><strong>KRC-721:</strong> NFT standard (like ERC-721)</li>
-        <li><strong>Indexer:</strong> Off-chain service that processes inscriptions</li>
-        <li><strong>APIs:</strong> Query token balances and metadata</li>
-      </ul>
-
-      <h3>How It Works</h3>
-      <p>Kasplex uses a data inscription model. Token operations are embedded as JSON in Kaspa transactions. The indexer reads these inscriptions and maintains state off-chain, while Kaspa L1 provides the canonical ordering and security.</p>
-    `,
-  },
-  {
-    id: "lesson-5-2",
-    courseId: "course-5",
-    title: "Creating KRC-20 Tokens",
-    order: 2,
-    duration: "15 min",
-    content: `
-      <h2>Deploying Your First Token</h2>
-      <p>KRC-20 tokens are fungible tokens on Kaspa. They can represent anything: currencies, points, governance tokens, or utility tokens.</p>
-
-      <h3>Token Deployment</h3>
-      <pre><code>{
-  "p": "krc-20",
-  "op": "deploy",
-  "tick": "MYTOKEN",
-  "max": 1000000,
-  "lim": 1000
-}</code></pre>
-
-      <h3>Parameters</h3>
-      <ul>
-        <li><strong>tick:</strong> Token ticker symbol</li>
-        <li><strong>max:</strong> Maximum supply</li>
-        <li><strong>lim:</strong> Maximum mint per transaction</li>
-      </ul>
-
-      <h3>Minting Tokens</h3>
-      <pre><code>{
-  "p": "krc-20",
-  "op": "mint",
-  "tick": "MYTOKEN"
-}</code></pre>
-      <p>Anyone can mint until max supply is reached.</p>
-    `,
-  },
-  {
-    id: "lesson-5-3",
-    courseId: "course-5",
-    title: "NFTs with KRC-721",
-    order: 3,
-    duration: "15 min",
-    content: `
-      <h2>Creating NFTs on Kaspa</h2>
-      <p>KRC-721 allows you to create unique, non-fungible tokens. Perfect for certificates, art, collectibles, and more.</p>
-
-      <h3>NFT Collection Deployment</h3>
-      <pre><code>{
-  "p": "krc-721",
-  "op": "deploy",
-  "tick": "MYCOLLECTION",
-  "max": 1000,
-  "metadata": {
-    "name": "My Collection",
-    "description": "...",
-    "image": "ipfs://..."
-  }
-}</code></pre>
-
-      <h3>IPFS Integration</h3>
-      <p>NFT images and metadata are stored on IPFS. The blockchain stores references (hashes) to this content, ensuring permanence and decentralization.</p>
-
-      <h3>Commit-Reveal Pattern</h3>
-      <p>KRC-721 uses a two-step minting process to prevent front-running:</p>
-      <ol>
-        <li><strong>Commit:</strong> Lock funds with a hash of your intent</li>
-        <li><strong>Reveal:</strong> After one block, reveal and mint the NFT</li>
-      </ol>
-    `,
-  },
-  {
-    id: "lesson-5-4",
-    courseId: "course-5",
-    title: "Building dApps on Kasplex",
-    order: 4,
-    duration: "18 min",
-    content: `
-      <h2>Developing for Kasplex</h2>
-      <p>Build decentralized applications using Kasplex APIs and Kaspa's transaction system.</p>
-
-      <h3>Developer Tools</h3>
-      <ul>
-        <li><strong>KasplexBuilder:</strong> JavaScript library for inscriptions</li>
-        <li><strong>Kaspa WASM:</strong> Full SDK for transaction building</li>
-        <li><strong>Indexer API:</strong> Query token balances and history</li>
-      </ul>
-
-      <h3>Example: Checking Balances</h3>
-      <pre><code>import { Indexer } from 'KasplexBuilder';
-
-const indexer = new Indexer('https://api.kasplex.org/v1');
-const balances = await indexer.getKRC20Balances({
-  address: "kaspa:your_address"
-});</code></pre>
-
-      <h3>Kasplex L2 Mainnet</h3>
-      <p>In 2025, Kasplex launched full L2 with EVM compatibility. This enables Solidity smart contracts, DEXs, lending protocols, and more - all secured by Kaspa L1.</p>
-    `,
-  },
-];
-
-export const quizQuestions: QuizQuestion[] = [
-  { id: "q-1-1-1", lessonId: "lesson-1-1", question: "What consensus protocol does Kaspa use?", options: ["Proof of Stake", "GHOSTDAG", "Nakamoto Consensus", "Tendermint"], correctIndex: 1, explanation: "Kaspa uses the GHOSTDAG protocol for consensus." },
-  { id: "q-1-1-2", lessonId: "lesson-1-1", question: "How many blocks per second does Kaspa currently produce?", options: ["1", "5", "10", "100"], correctIndex: 2, explanation: "Kaspa currently produces 10 blocks per second." },
-  { id: "q-1-2-1", lessonId: "lesson-1-2", question: "What determines if a block is 'blue' in GHOSTDAG?", options: ["Its size", "Its timestamp", "Its connectivity to other blocks", "Its transaction count"], correctIndex: 2, explanation: "Blocks are colored based on their connectivity - well-connected blocks are considered blue (honest)." },
-  { id: "q-1-3-1", lessonId: "lesson-1-3", question: "What is the maximum supply of KAS?", options: ["21 million", "28.7 billion", "100 billion", "Unlimited"], correctIndex: 1, explanation: "The maximum supply of KAS is 28.7 billion tokens." },
-  { id: "q-2-1-1", lessonId: "lesson-2-1", question: "What is an 'orphan' block in Bitcoin?", options: ["A block with no transactions", "A block that was found but discarded", "A block with invalid signatures", "The first block in a chain"], correctIndex: 1, explanation: "An orphan block is one that was validly mined but not included in the main chain." },
-  { id: "q-2-2-1", lessonId: "lesson-2-2", question: "How does Kaspa handle blocks created simultaneously?", options: ["Discards all but one", "Includes all of them", "Uses random selection", "Requires manual resolution"], correctIndex: 1, explanation: "Kaspa includes all valid blocks in the DAG and orders them with GHOSTDAG." },
-  { id: "q-2-3-1", lessonId: "lesson-2-3", question: "What is Kaspa's block rate compared to Bitcoin?", options: ["Same (1 block per 10 minutes)", "10 blocks per second vs 1 per 10 minutes", "1 block per minute vs 10 per hour", "10 blocks per minute vs 1 per hour"], correctIndex: 1, explanation: "Since the Crescendo upgrade, Kaspa produces 10 blocks per second compared to Bitcoin's 1 block per 10 minutes." },
-  { id: "q-3-1-1", lessonId: "lesson-3-1", question: "In a BlockDAG, how many parent blocks can a new block reference?", options: ["Exactly one", "Multiple", "None", "Exactly two"], correctIndex: 1, explanation: "In a BlockDAG, blocks can reference multiple parent blocks." },
-  { id: "q-3-2-1", lessonId: "lesson-3-2", question: "What happens to simultaneously mined blocks in Kaspa?", options: ["One is discarded", "All are included", "They are merged", "They cancel each other"], correctIndex: 1, explanation: "All valid blocks are included in the DAG structure." },
-  { id: "q-3-3-1", lessonId: "lesson-3-3", question: "What is the purpose of GHOSTDAG coloring?", options: ["Visual display", "Determine block order and validity", "Mining optimization", "Network routing"], correctIndex: 1, explanation: "GHOSTDAG coloring helps determine block ordering and identify honest blocks." },
-  { id: "q-3-4-1", lessonId: "lesson-3-4", question: "How long does Kaspa take for practical transaction finality?", options: ["10 minutes", "1 hour", "About 10 seconds", "24 hours"], correctIndex: 2, explanation: "Kaspa achieves practical finality in about 10 seconds." },
-  { id: "q-4-1-1", lessonId: "lesson-4-1", question: "What mining algorithm does Kaspa use?", options: ["SHA-256", "Ethash", "kHeavyHash", "Scrypt"], correctIndex: 2, explanation: "Kaspa uses the kHeavyHash mining algorithm." },
-  { id: "q-4-2-1", lessonId: "lesson-4-2", question: "What is the best efficiency metric for comparing miners?", options: ["Price", "Hashrate only", "Joules per Terahash (J/TH)", "Weight"], correctIndex: 2, explanation: "J/TH measures power efficiency - lower is better." },
-  { id: "q-4-3-1", lessonId: "lesson-4-3", question: "Why do most miners join pools?", options: ["It's required", "More consistent payouts", "Lower electricity costs", "Better hardware"], correctIndex: 1, explanation: "Pools provide smaller but more frequent and consistent payouts." },
-  { id: "q-5-1-1", lessonId: "lesson-5-1", question: "What is the token standard for NFTs on Kasplex?", options: ["KRC-20", "KRC-721", "ERC-1155", "BRC-20"], correctIndex: 1, explanation: "KRC-721 is the NFT standard on Kasplex, similar to ERC-721." },
-  { id: "q-5-2-1", lessonId: "lesson-5-2", question: "What does the 'lim' parameter control in KRC-20?", options: ["Total supply", "Max mint per transaction", "Decimal places", "Transfer fee"], correctIndex: 1, explanation: "The 'lim' parameter sets the maximum amount that can be minted per transaction." },
-  { id: "q-5-3-1", lessonId: "lesson-5-3", question: "Why does KRC-721 use a commit-reveal pattern?", options: ["To save gas", "To prevent front-running", "For privacy", "For larger files"], correctIndex: 1, explanation: "The commit-reveal pattern prevents others from front-running your mint transaction." },
-  { id: "q-5-4-1", lessonId: "lesson-5-4", question: "Where are NFT images typically stored?", options: ["On the blockchain", "On IPFS", "In the indexer", "In the wallet"], correctIndex: 1, explanation: "NFT images are stored on IPFS with references on the blockchain." },
-];
+export { courses, allLessons as lessons, allQuestions as quizQuestions };
