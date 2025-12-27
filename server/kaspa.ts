@@ -1717,8 +1717,8 @@ class KaspaService {
       scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
     }));
 
-    // Required amount: dust + fee
-    const requiredSompi = BigInt(Math.floor(0.00011 * 100_000_000));
+    // Required amount: 0.2 KAS for proof output + fee (for storage mass compliance)
+    const requiredSompi = BigInt(Math.floor(0.21 * 100_000_000));
 
     // Reserve UTXOs through manager
     const reservation = await utxoManager.selectAndReserve(
@@ -1748,8 +1748,10 @@ class KaspaService {
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
       const privateKey = new PrivateKey(privateKeyHex);
 
-      // Minimal transaction - send dust amount to self (kaspaToSompi expects string)
-      const dustAmount = kaspaToSompi("0.00001"); // 1000 sompi minimum
+      // Send minimum amount to self to keep storage mass under limit (KIP-0009)
+      // Storage mass = 10^12 / output_amount, must be < 100,000
+      // 0.2 KAS = 50,000 mass, safe for payload embedding
+      const proofAmount = kaspaToSompi("0.2");
       const priorityFee = kaspaToSompi("0.0001");
 
       // Create transaction with payload using ONLY reserved entries
@@ -1757,7 +1759,7 @@ class KaspaService {
         entries: reservedEntries,
         outputs: [{
           address: this.treasuryAddress, // Send to self
-          amount: dustAmount
+          amount: proofAmount
         }],
         changeAddress: this.treasuryAddress,
         priorityFee,
