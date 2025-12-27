@@ -1837,20 +1837,87 @@ export async function registerRoutes(
     }
 
     try {
-      const kaspaService = await getKaspaService();
+      // Try direct REST API first for full payload access
+      const apiUrl = `https://api.kaspa.org/transactions/${txHash}`;
+      const apiResponse = await fetch(apiUrl);
+      
+      if (apiResponse.ok) {
+        const txData = await apiResponse.json();
+        
+        if (txData.payload) {
+          const parsed = parseKUPayload(txData.payload);
+          
+          if (parsed) {
+            let type: "quiz" | "qa_question" | "qa_answer" = "quiz";
+            let data: any = {};
+            
+            if (parsed.type === "quiz" && parsed.quiz) {
+              type = "quiz";
+              data = {
+                walletAddress: parsed.quiz.walletAddress,
+                courseId: parsed.quiz.courseId,
+                lessonId: parsed.quiz.lessonId,
+                score: parsed.quiz.score,
+                maxScore: parsed.quiz.maxScore,
+                timestamp: parsed.quiz.timestamp,
+                contentHash: parsed.quiz.contentHash,
+              };
+            } else if (parsed.type === "qa_q" && parsed.question) {
+              type = "qa_question";
+              data = {
+                lessonId: parsed.question.lessonId,
+                walletAddress: parsed.question.authorAddress,
+                timestamp: parsed.question.timestamp,
+                contentHash: parsed.question.contentHash,
+                content: parsed.question.content,
+              };
+            } else if (parsed.type === "qa_a" && parsed.answer) {
+              type = "qa_answer";
+              data = {
+                questionTxId: parsed.answer.questionTxId,
+                walletAddress: parsed.answer.authorAddress,
+                timestamp: parsed.answer.timestamp,
+                contentHash: parsed.answer.contentHash,
+                content: parsed.answer.content,
+              };
+            }
+            
+            return res.json({
+              verified: true,
+              type,
+              data,
+              txExists: true,
+              txConfirmed: txData.is_accepted,
+              blockTime: txData.block_time,
+              source: "blockchain",
+            });
+          }
+        }
+        
+        // Transaction exists but no KU payload
+        return res.json({
+          verified: false,
+          message: "Transaction exists but does not contain KU Protocol data",
+          txExists: true,
+          txConfirmed: txData.is_accepted,
+          type: "unknown",
+        });
+      }
 
-      // First check if transaction exists on L1
+      // Fall back to kaspaService if REST API fails
+      const kaspaService = await getKaspaService();
       const txVerification = await kaspaService.verifyTransaction(txHash);
       
       if (!txVerification.exists) {
         return res.json({
           verified: false,
           message: "Transaction not found on Kaspa network",
-          txExists: false
+          txExists: false,
+          type: "unknown",
         });
       }
 
-      // Try to verify as quiz result first
+      // Try to verify as quiz result
       const quizResult = await kaspaService.verifyQuizResult(txHash);
       if (quizResult) {
         return res.json({
@@ -1874,19 +1941,19 @@ export async function registerRoutes(
         });
       }
 
-      // Transaction exists but no KU protocol payload found
-      // Note: The Kaspa REST API may not expose transaction payloads
       return res.json({
         verified: false,
-        message: "Transaction exists but KU protocol payload not found. Note: The Kaspa API may not expose payload data.",
+        message: "Transaction exists but KU protocol payload not found",
         txExists: true,
         txConfirmed: txVerification.confirmed,
-        outputs: txVerification.outputs
+        type: "unknown",
       });
     } catch (error) {
+      console.error("[Verify] Error:", error);
       return res.json({
         verified: false,
-        message: "Failed to verify transaction"
+        message: "Failed to verify transaction",
+        type: "unknown",
       });
     }
   });
