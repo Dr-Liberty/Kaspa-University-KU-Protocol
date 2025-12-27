@@ -93,49 +93,19 @@ export default function Landing() {
   return (
     <div className="flex flex-col">
       
-      {securityCheck?.rewardsBlocked && (
-        <div 
-          className="sticky top-16 z-40 border-b border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-4"
-          data-testid="banner-vpn-warning"
-        >
-          <div className="mx-auto max-w-4xl">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/50 p-2">
-                <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-amber-900 dark:text-amber-200">
-                  VPN or Proxy Detected
-                </h3>
-                <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
-                  Our anti-fraud system has detected that you may be using a VPN, proxy, or similar service. 
-                  To protect the integrity of our reward system, KAS rewards are temporarily disabled.
-                </p>
-                <div className="mt-3 rounded-lg bg-white dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3">
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200 mb-2">To resume earning rewards:</p>
-                  <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                      Disable your VPN or proxy service
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                      Refresh this page after disconnecting
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                      You can still browse courses and take quizzes in demo mode
-                    </li>
-                  </ul>
-                </div>
-                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                  VPN Score: {securityCheck.vpnScore?.toFixed(2) || "N/A"} | This helps prevent abuse of the reward system.
-                </p>
-              </div>
-            </div>
+      <div 
+        className="sticky top-16 z-40 border-b border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-3"
+        data-testid="banner-vpn-warning"
+      >
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
+            </p>
           </div>
         </div>
-      )}
+      </div>
       
       <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-20">
         <div className="absolute inset-0 -z-10">
