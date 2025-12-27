@@ -31,6 +31,7 @@ interface BlockchainTransaction {
   timestamp: number;
   walletAddress?: string;
   courseId?: string;
+  courseTitle?: string;
   lessonId?: string;
   score?: number;
   maxScore?: number;
@@ -167,9 +168,9 @@ function TransactionCard({ tx }: { tx: BlockchainTransaction }) {
                 {truncateHash(tx.walletAddress)}
               </span>
             )}
-            {tx.courseId && (
+            {(tx.courseTitle || tx.courseId) && (
               <span className="text-xs text-muted-foreground">
-                Course: {tx.courseId}
+                Course: {tx.courseTitle || tx.courseId}
               </span>
             )}
             {tx.score !== undefined && tx.maxScore !== undefined && (

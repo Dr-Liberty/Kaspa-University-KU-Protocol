@@ -1681,17 +1681,24 @@ export async function registerRoutes(
       const transactions = await response.json();
       const kuTransactions: any[] = [];
       
+      // Get courses for title mapping
+      const courses = await storage.getCourses();
+      const courseMap = new Map(courses.map((c: any) => [c.id, c.title]));
+      
       for (const tx of transactions) {
         if (tx.payload) {
           // Try to parse as KU protocol
           const parsed = parseKUPayload(tx.payload);
           if (parsed) {
+            // Kaspa block_time is in milliseconds already (verified from API response)
+            const timestamp = tx.block_time || Date.now();
+            
             const kuTx: any = {
               txHash: tx.transaction_id,
               type: parsed.type === "quiz" ? "quiz" : 
                     parsed.type === "qa_q" ? "qa_question" : 
                     parsed.type === "qa_a" ? "qa_answer" : "unknown",
-              timestamp: tx.block_time || Date.now(),
+              timestamp,
               blockHash: tx.accepting_block_hash,
               confirmed: tx.is_accepted,
               rawPayload: tx.payload,
@@ -1700,6 +1707,7 @@ export async function registerRoutes(
             if (parsed.quiz) {
               kuTx.walletAddress = parsed.quiz.walletAddress;
               kuTx.courseId = parsed.quiz.courseId;
+              kuTx.courseTitle = courseMap.get(parsed.quiz.courseId) || parsed.quiz.courseId;
               kuTx.lessonId = parsed.quiz.lessonId;
               kuTx.score = parsed.quiz.score;
               kuTx.maxScore = parsed.quiz.maxScore;
@@ -1837,11 +1845,13 @@ export async function registerRoutes(
     }
 
     try {
-      // Try direct REST API first for full payload access
+      // Try direct REST API first for full payload access (with timeout)
       const apiUrl = `https://api.kaspa.org/transactions/${txHash}`;
-      const apiResponse = await fetch(apiUrl);
+      const apiResponse = await fetch(apiUrl, { 
+        signal: AbortSignal.timeout(8000) // 8 second timeout
+      }).catch(() => null);
       
-      if (apiResponse.ok) {
+      if (apiResponse?.ok) {
         const txData = await apiResponse.json();
         
         if (txData.payload) {
