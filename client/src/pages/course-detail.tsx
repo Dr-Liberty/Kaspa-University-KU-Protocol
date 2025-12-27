@@ -305,7 +305,7 @@ export default function CourseDetail() {
   const { wallet, isDemoMode } = useWallet();
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
-  const isAuthenticated = wallet || isDemoMode;
+  const isAuthenticated = !!wallet || isDemoMode;
 
   const { data: course, isLoading: courseLoading } = useQuery<Course>({
     queryKey: ["/api/courses", courseId],
@@ -317,7 +317,7 @@ export default function CourseDetail() {
 
   const { data: progressList } = useQuery<UserProgress[]>({
     queryKey: ["/api/progress"],
-    enabled: !!wallet,
+    enabled: isAuthenticated,
   });
 
   const progress = useMemo(() => {

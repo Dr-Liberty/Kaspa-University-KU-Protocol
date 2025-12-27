@@ -10,7 +10,7 @@ import { Search, BookOpen, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export default function Courses() {
-  const { wallet } = useWallet();
+  const { wallet, isDemoMode } = useWallet();
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
 
@@ -20,7 +20,7 @@ export default function Courses() {
 
   const { data: progressList } = useQuery<UserProgress[]>({
     queryKey: ["/api/progress"],
-    enabled: !!wallet,
+    enabled: !!wallet || isDemoMode,
   });
 
   const progressMap = useMemo(() => {

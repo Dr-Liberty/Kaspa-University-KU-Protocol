@@ -42,8 +42,9 @@ interface EnrichedReward extends CourseReward {
 }
 
 export default function Dashboard() {
-  const { wallet, connect, isConnecting, truncatedAddress } = useWallet();
+  const { wallet, connect, isConnecting, truncatedAddress, isDemoMode } = useWallet();
   const [activeTab, setActiveTab] = useState("courses");
+  const isAuthenticated = !!wallet || isDemoMode;
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
     queryKey: ["/api/security/check"],
@@ -52,7 +53,7 @@ export default function Dashboard() {
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
-    enabled: !!wallet,
+    enabled: isAuthenticated,
   });
 
   const { data: courses } = useQuery<Course[]>({
@@ -61,21 +62,20 @@ export default function Dashboard() {
 
   const { data: progressList } = useQuery<UserProgress[]>({
     queryKey: ["/api/progress"],
-    enabled: !!wallet,
+    enabled: isAuthenticated,
   });
 
   const { data: certificates } = useQuery<Certificate[]>({
     queryKey: ["/api/certificates"],
-    enabled: !!wallet,
+    enabled: isAuthenticated,
   });
 
   const { data: allRewards } = useQuery<EnrichedReward[]>({
     queryKey: ["/api/rewards"],
-    enabled: !!wallet,
+    enabled: isAuthenticated,
   });
 
   const { toast } = useToast();
-  const isDemoMode = wallet?.address?.startsWith("demo:");
 
   const claimMutation = useMutation({
     mutationFn: async (rewardId: string) => {
