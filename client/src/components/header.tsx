@@ -103,7 +103,7 @@ export function Header() {
             </div>
           ) : isDemoMode ? (
             <div className="flex items-center gap-2">
-              <Badge className="gap-1.5 text-[#7ed1bd] bg-[#232429]">
+              <Badge variant="secondary" className="gap-1.5 text-[#7ed1bd]">
                 <Play className="h-3 w-3" />
                 Demo Mode
               </Badge>
