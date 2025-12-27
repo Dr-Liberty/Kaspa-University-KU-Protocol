@@ -911,25 +911,25 @@ const balances = await indexer.getKRC20Balances({
 
   async resetUserData(userId: string): Promise<void> {
     // Delete quiz results for this user
-    for (const [id, result] of this.quizResults) {
+    for (const [id, result] of Array.from(this.quizResults.entries())) {
       if (result.userId === userId) {
         this.quizResults.delete(id);
       }
     }
     // Delete course rewards for this user
-    for (const [id, reward] of this.courseRewards) {
+    for (const [id, reward] of Array.from(this.courseRewards.entries())) {
       if (reward.userId === userId) {
         this.courseRewards.delete(id);
       }
     }
     // Delete certificates for this user
-    for (const [id, cert] of this.certificates) {
+    for (const [id, cert] of Array.from(this.certificates.entries())) {
       if (cert.userId === userId) {
         this.certificates.delete(id);
       }
     }
     // Delete progress for this user
-    for (const [id, progress] of this.userProgress) {
+    for (const [id, progress] of Array.from(this.userProgress.entries())) {
       if (progress.userId === userId) {
         this.userProgress.delete(id);
       }

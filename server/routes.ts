@@ -30,6 +30,8 @@ import {
   getClientIP,
   validatePayloadLength,
   sanitizePayloadContent,
+  sanitizeError,
+  safeErrorLog,
 } from "./security";
 import { getSecurityMetrics } from "./security-metrics";
 import { checkVpn } from "./vpn-detection";
@@ -242,7 +244,7 @@ export async function registerRoutes(
         treasuryAddress: "Not configured",
         treasuryBalance: 0,
         utxoCount: 0,
-        issues: [`Service initialization error: ${error.message}`],
+        issues: [`Service initialization error: ${sanitizeError(error)}`],
       });
     }
   });
@@ -377,7 +379,7 @@ export async function registerRoutes(
         note: "If payloadTest.payloadReturned is true, this RPC node supports getTransactionsByIds with payload data",
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -451,7 +453,7 @@ export async function registerRoutes(
         },
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -637,7 +639,7 @@ export async function registerRoutes(
           console.log(`[Quiz] On-chain TX failed for lesson ${lessonId}: ${txResult.error}`);
         }
       } catch (error: any) {
-        console.error(`[Quiz] On-chain TX error: ${error.message}`);
+        safeErrorLog("[Quiz] On-chain TX error:", error);
         await storage.updateQuizResult(result.id, { txStatus: "failed" });
       }
     })();
@@ -685,7 +687,7 @@ export async function registerRoutes(
               completionDate
             );
           } catch (error: any) {
-            console.error("[Certificate] Image generation failed:", error.message);
+            safeErrorLog("[Certificate] Image generation failed:", error);
           }
           
           await storage.createCertificate({
@@ -975,7 +977,7 @@ export async function registerRoutes(
         });
       }
     } catch (error: any) {
-      return res.status(500).json({ error: "Verification failed", message: error.message });
+      return res.status(500).json({ error: "Verification failed", message: sanitizeError(error) });
     }
   });
 
@@ -1148,7 +1150,7 @@ export async function registerRoutes(
       const info = await krc721Service.getCollectionInfo();
       res.json(info);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -1306,13 +1308,13 @@ export async function registerRoutes(
         });
       }
     } catch (error: any) {
-      console.error(`[Prepare] Error: ${error.message}`);
+      safeErrorLog("[Prepare] Error:", error);
       const { logError } = await import("./error-logger");
       await logError("nft", "prepare", error.message, {
         certificateId: id,
         stack: error.stack,
       }, walletAddress, getClientIP(req));
-      return res.status(500).json({ error: "Prepare failed", message: error.message });
+      return res.status(500).json({ error: "Prepare failed", message: sanitizeError(error) });
     }
   });
 
@@ -1412,7 +1414,7 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       await storage.updateCertificate(id, { nftStatus: "pending" });
-      console.error(`[Finalize] Error: ${error.message}`);
+      safeErrorLog("[Finalize] Error:", error);
       
       const { logError } = await import("./error-logger");
       await logError("nft", "finalize", error.message, {
@@ -1422,7 +1424,7 @@ export async function registerRoutes(
         stack: error.stack,
       }, walletAddress, getClientIP(req));
       
-      return res.status(500).json({ success: false, error: "Finalize failed", message: error.message });
+      return res.status(500).json({ success: false, error: "Finalize failed", message: sanitizeError(error) });
     }
   });
 
@@ -1582,8 +1584,8 @@ export async function registerRoutes(
     } catch (error: any) {
       // Revert to pending on error
       await storage.updateCertificate(id, { nftStatus: "pending" });
-      console.error("[Claim] Error:", error.message);
-      return res.status(500).json({ error: error.message });
+      safeErrorLog("[Claim] Error:", error);
+      return res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -1612,8 +1614,8 @@ export async function registerRoutes(
         expiresAt: reservation.expiresAt.getTime(),
       });
     } catch (error: any) {
-      console.error("[NFT] Failed to get reservation:", error.message);
-      res.status(500).json({ error: error.message });
+      safeErrorLog("[NFT] Failed to get reservation:", error);
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -1632,7 +1634,7 @@ export async function registerRoutes(
         network: collectionInfo.network,
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -1655,7 +1657,7 @@ export async function registerRoutes(
       
       res.json({ imageUrl });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -1992,7 +1994,7 @@ export async function registerRoutes(
       const diagnostics = await kaspaService.getDiagnostics();
       res.json(diagnostics);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2014,7 +2016,7 @@ export async function registerRoutes(
       const allCerts = await storage.getAllCertificates();
       res.json(allCerts);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2024,7 +2026,7 @@ export async function registerRoutes(
       const reservations = await mintStorage.getAllReservations();
       res.json(reservations);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2036,7 +2038,7 @@ export async function registerRoutes(
       const errors = await getRecentErrors(limit);
       res.json(errors);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2047,7 +2049,7 @@ export async function registerRoutes(
       const success = await markErrorResolved(req.params.id);
       res.json({ success });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2091,7 +2093,7 @@ export async function registerRoutes(
         p2shPreserved: existingReservation ? p2shAddress : null
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2128,7 +2130,7 @@ export async function registerRoutes(
       
       res.json(stats);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2138,7 +2140,7 @@ export async function registerRoutes(
       await mintStorage.deleteReservationById(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 
@@ -2216,7 +2218,7 @@ export async function registerRoutes(
         errors: apiErrors.slice(0, 10), // Limit error output
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: sanitizeError(error) });
     }
   });
 

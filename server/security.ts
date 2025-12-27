@@ -418,3 +418,66 @@ export function sanitizePayloadContent(content: string): string {
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
     .trim();
 }
+
+/**
+ * Sanitize error messages before returning to clients.
+ * Prevents information disclosure of internal paths, database schema, or stack traces.
+ * Per BMT University Security Audit H-1.
+ */
+export function sanitizeError(error: unknown): string {
+  if (!error) return "An unexpected error occurred";
+  
+  const message = error instanceof Error ? error.message : String(error);
+  
+  // Remove file paths (absolute and relative)
+  let sanitized = message.replace(/\/[^\s:]+\.(ts|js|tsx|jsx)/gi, "[file]");
+  sanitized = sanitized.replace(/[A-Za-z]:\\[^\s:]+\.(ts|js|tsx|jsx)/gi, "[file]");
+  sanitized = sanitized.replace(/\b(src|server|client|node_modules)\/[^\s]+/gi, "[path]");
+  
+  // Remove database-related info
+  sanitized = sanitized.replace(/table\s+"?\w+"?/gi, "[table]");
+  sanitized = sanitized.replace(/column\s+"?\w+"?/gi, "[column]");
+  sanitized = sanitized.replace(/relation\s+"?\w+"?/gi, "[relation]");
+  sanitized = sanitized.replace(/constraint\s+"?\w+"?/gi, "[constraint]");
+  sanitized = sanitized.replace(/duplicate\s+key\s+value/gi, "duplicate entry");
+  sanitized = sanitized.replace(/violates\s+\w+\s+constraint/gi, "constraint violation");
+  
+  // Remove stack trace elements and line numbers
+  sanitized = sanitized.replace(/\s+at\s+[^\n]+/g, "");
+  sanitized = sanitized.replace(/:\d+:\d+/g, "");
+  sanitized = sanitized.replace(/\(line\s+\d+\)/gi, "");
+  
+  // Remove IP addresses (except localhost patterns)
+  sanitized = sanitized.replace(/\b(?!127\.0\.0\.1|0\.0\.0\.0)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, "[ip]");
+  
+  // Remove wallet addresses (kaspa format)
+  sanitized = sanitized.replace(/kaspa:[a-z0-9]{60,}/gi, "[wallet]");
+  
+  // Remove potential secrets, keys, or hashes
+  sanitized = sanitized.replace(/[a-zA-Z0-9_]{32,}/g, "[key]");
+  sanitized = sanitized.replace(/0x[a-fA-F0-9]{40,}/g, "[hash]");
+  
+  // Remove error codes that might reveal internals
+  sanitized = sanitized.replace(/\bECONN[A-Z]+\b/g, "connection error");
+  sanitized = sanitized.replace(/\bETIMEDOUT\b/g, "timeout");
+  sanitized = sanitized.replace(/\bENOENT\b/g, "not found");
+  
+  // Truncate to reasonable length
+  if (sanitized.length > 200) {
+    sanitized = sanitized.substring(0, 200) + "...";
+  }
+  
+  return sanitized.trim() || "An unexpected error occurred";
+}
+
+/**
+ * Safe error logging that doesn't leak credentials
+ */
+export function safeErrorLog(prefix: string, error: unknown): void {
+  const safeError = {
+    message: error instanceof Error ? error.message?.substring(0, 200) : String(error).substring(0, 200),
+    code: (error as any)?.code || undefined,
+    name: error instanceof Error ? error.name : undefined,
+  };
+  console.error(prefix, JSON.stringify(safeError));
+}

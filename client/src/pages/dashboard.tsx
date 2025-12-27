@@ -300,54 +300,135 @@ export default function Dashboard() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="courses" className="space-y-4">
-            {enrolledCourses.length > 0 ? (
-              <>
-                {enrolledCourses.map((course) => {
-                  const p = progressMap.get(course.id);
-                  const completed = p?.completedLessons?.length ?? 0;
-                  const percent = Math.round((completed / course.lessonCount) * 100);
-                  const isComplete = completed >= course.lessonCount;
-                  
-                  return (
-                    <Link key={course.id} href={`/courses/${course.id}`}>
-                      <Card
-                        className="group transition-colors hover:border-primary/50"
-                        data-testid={`progress-course-${course.id}`}
-                      >
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                            {isComplete ? (
-                              <CheckCircle2 className="h-5 w-5 text-primary" />
-                            ) : (
-                              <BookOpen className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="truncate font-medium group-hover:text-primary">
-                                {course.title}
-                              </h4>
-                              {isComplete && (
-                                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                  Completed
-                                </Badge>
-                              )}
+          <TabsContent value="courses" className="space-y-6">
+            {inProgressCourses.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="flex items-center gap-2 text-lg font-semibold">
+                  <Clock className="h-5 w-5 text-primary" />
+                  In Progress
+                </h3>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {inProgressCourses.map((course) => {
+                    const p = progressMap.get(course.id);
+                    const completed = p?.completedLessons?.length ?? 0;
+                    const percent = Math.round((completed / course.lessonCount) * 100);
+                    
+                    return (
+                      <Link key={course.id} href={`/courses/${course.id}`}>
+                        <Card
+                          className="group overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg"
+                          data-testid={`progress-course-${course.id}`}
+                        >
+                          <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
+                            <div className="flex h-full items-center justify-center">
+                              <BookOpen className="h-12 w-12 text-primary/50" />
                             </div>
-                            <div className="mt-2 flex items-center gap-2">
-                              <Progress value={percent} className="h-2 flex-1" />
-                              <span className="text-sm text-muted-foreground">
-                                {completed}/{course.lessonCount}
+                          </div>
+                          <CardContent className="p-4">
+                            <h4 className="truncate font-semibold group-hover:text-primary">
+                              {course.title}
+                            </h4>
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                              {course.description}
+                            </p>
+                            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                {course.duration || 20}m
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="h-3.5 w-3.5" />
+                                {course.lessonCount} lessons
                               </span>
                             </div>
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Progress</span>
+                              <span className="text-sm font-semibold text-primary">{percent}%</span>
+                            </div>
+                            <Progress value={percent} className="mt-1 h-2" />
+                            <div className="mt-4 flex items-center justify-between">
+                              <span className="font-bold text-primary">{course.kasReward || 0.2} KAS</span>
+                              <Button size="sm" variant="outline">
+                                Continue
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {enrolledCourses.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="flex items-center gap-2 text-lg font-semibold">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  All Enrolled Courses
+                </h3>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {enrolledCourses.map((course) => {
+                    const p = progressMap.get(course.id);
+                    const completed = p?.completedLessons?.length ?? 0;
+                    const percent = Math.round((completed / course.lessonCount) * 100);
+                    const isComplete = completed >= course.lessonCount;
+                    
+                    return (
+                      <Link key={course.id} href={`/courses/${course.id}`}>
+                        <Card
+                          className="group overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg"
+                          data-testid={`enrolled-course-${course.id}`}
+                        >
+                          <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
+                            <div className="flex h-full items-center justify-center">
+                              {isComplete ? (
+                                <CheckCircle2 className="h-12 w-12 text-primary" />
+                              ) : (
+                                <BookOpen className="h-12 w-12 text-primary/50" />
+                              )}
+                            </div>
+                            {isComplete && (
+                              <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground">
+                                Completed
+                              </Badge>
+                            )}
                           </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
-              </>
+                          <CardContent className="p-4">
+                            <h4 className="truncate font-semibold group-hover:text-primary">
+                              {course.title}
+                            </h4>
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                              {course.description}
+                            </p>
+                            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                {course.duration || 20}m
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="h-3.5 w-3.5" />
+                                {course.lessonCount} lessons
+                              </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Progress</span>
+                              <span className="text-sm font-semibold text-primary">{percent}%</span>
+                            </div>
+                            <Progress value={percent} className="mt-1 h-2" />
+                            <div className="mt-4 flex items-center justify-between">
+                              <span className="font-bold text-primary">{course.kasReward || 0.2} KAS</span>
+                              <Button size="sm" variant={isComplete ? "secondary" : "outline"}>
+                                {isComplete ? "Review" : "Continue"}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
