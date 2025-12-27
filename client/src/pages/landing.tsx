@@ -93,20 +93,6 @@ export default function Landing() {
   return (
     <div className="flex flex-col">
       
-      <div 
-        className="sticky top-16 z-40 border-b border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-3"
-        data-testid="banner-vpn-warning"
-      >
-        <div className="mx-auto max-w-4xl">
-          <div className="flex items-center gap-3">
-            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <p className="text-sm text-amber-800 dark:text-amber-300">
-              <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
-            </p>
-          </div>
-        </div>
-      </div>
-      
       <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-20">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
@@ -185,12 +171,22 @@ export default function Landing() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            {benefits.slice(0, 3).map((benefit) => (
+            {benefits.map((benefit) => (
               <div key={benefit} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span>{benefit}</span>
               </div>
             ))}
+          </div>
+
+          <div 
+            className="mt-6 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-2"
+            data-testid="banner-vpn-warning"
+          >
+            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <p className="text-xs text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
+            </p>
           </div>
         </div>
       </section>
