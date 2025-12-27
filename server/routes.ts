@@ -3,7 +3,16 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import { getKaspaService } from "./kaspa";
-import { createQuizPayload } from "./ku-protocol.js";
+import { 
+  createQuizPayload, 
+  createTxBitmask, 
+  parseTxBitmask, 
+  matchesTxMask,
+  bitmaskToHex,
+  TX_TYPE,
+  TX_STATUS,
+  TX_FLAGS,
+} from "./ku-protocol.js";
 import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation } from "./krc721";
 import { getPinataService } from "./pinata";
 import { getAntiSybilService } from "./anti-sybil";
@@ -333,6 +342,80 @@ export async function registerRoutes(
     
     console.log(`[Admin] Full reset for wallet: ${walletAddress}`);
     res.json({ success: true, message: `All data reset for ${walletAddress}` });
+  });
+
+  // Transaction monitoring with bitmasks
+  app.get("/api/admin/tx-monitor", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const { type, status, hasFlag, limit = "50" } = req.query;
+    
+    try {
+      const quizResults = await storage.getAllQuizResults();
+      const rewards = await storage.getStats();
+      
+      // Build bitmask for each transaction
+      const transactions = quizResults.map(r => {
+        const flags: (keyof typeof TX_FLAGS)[] = ["HAS_PAYLOAD"];
+        if (r.txHash && r.txStatus === "confirmed") flags.push("VERIFIED");
+        if (r.txHash?.startsWith("demo_")) flags.push("DEMO_MODE");
+        
+        const mask = createTxBitmask({
+          type: "QUIZ",
+          status: r.txStatus === "confirmed" ? "CONFIRMED" : 
+                  r.txStatus === "failed" ? "FAILED" : "PENDING",
+          scorePercent: r.score,
+          flags,
+        });
+        
+        return {
+          id: r.id,
+          lessonId: r.lessonId,
+          txHash: r.txHash,
+          txStatus: r.txStatus,
+          score: r.score,
+          passed: r.passed,
+          completedAt: r.completedAt,
+          bitmask: mask,
+          bitmaskHex: bitmaskToHex(mask),
+          parsed: parseTxBitmask(mask),
+        };
+      });
+      
+      // Filter by criteria if provided
+      let filtered = transactions;
+      if (type || status || hasFlag) {
+        filtered = transactions.filter(tx => {
+          return matchesTxMask(tx.bitmask, {
+            type: type as keyof typeof TX_TYPE | undefined,
+            status: status as keyof typeof TX_STATUS | undefined,
+            hasFlag: hasFlag as keyof typeof TX_FLAGS | undefined,
+          });
+        });
+      }
+      
+      // Sort by most recent and limit
+      filtered.sort((a, b) => 
+        new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+      filtered = filtered.slice(0, parseInt(limit as string));
+      
+      res.json({
+        total: transactions.length,
+        filtered: filtered.length,
+        transactions: filtered,
+        bitmaskLegend: {
+          types: TX_TYPE,
+          statuses: TX_STATUS,
+          flags: TX_FLAGS,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.get("/api/courses", async (_req: Request, res: Response) => {
