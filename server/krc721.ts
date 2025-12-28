@@ -741,13 +741,16 @@ class KRC721Service {
 
       // Create MINIMAL mint data per KRC-721 spec
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-      // CRITICAL: Reference uses ONLY { p, op, tick } - NO extra fields!
-      // The recipient is determined by who submits the reveal transaction
-      // Metadata is handled separately by the KRC-721 indexer
+      // CRITICAL: Add a random nonce to ensure unique P2SH address for each mint attempt
+      // This prevents "duplicate key" constraint violations on retry
+      const crypto = await import("crypto");
+      const nonce = crypto.randomBytes(8).toString("hex");
+      
       const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
+        nonce, // Random nonce ensures unique P2SH address per attempt
       };
 
       // Calculate data size to prevent 520-byte limit errors
