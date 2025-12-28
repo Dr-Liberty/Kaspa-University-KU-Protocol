@@ -349,6 +349,24 @@ export async function registerRoutes(
     res.json({ success: true, message: `All data reset for ${walletAddress}` });
   });
 
+  // Test WASM RPC with Resolver connection
+  app.get("/api/admin/wasm-rpc-test", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const kaspaService = await getKaspaService();
+    
+    try {
+      // This will test the WASM RPC Resolver connection used for tx submission
+      const wasmTest = await kaspaService.testWasmRpcConnection();
+      res.json(wasmTest);
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error), wasmRpcConnected: false });
+    }
+  });
+
   // Test RPC payload capability
   app.get("/api/admin/rpc-test", async (req: Request, res: Response) => {
     const adminKey = req.headers["x-admin-key"];

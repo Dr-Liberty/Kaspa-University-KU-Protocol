@@ -1565,6 +1565,103 @@ class KaspaService {
   }
 
   /**
+   * Test WASM RPC connection with PNN Resolver
+   * This tests the connection used for transaction submission
+   */
+  async testWasmRpcConnection(): Promise<{
+    wasmRpcConnected: boolean;
+    connectionMethod: string;
+    endpoint?: string;
+    blockCount?: string;
+    error?: string;
+  }> {
+    console.log("[Kaspa] Testing WASM RPC connection with Resolver...");
+    
+    try {
+      if (!this.kaspaModule) {
+        return { wasmRpcConnected: false, connectionMethod: "none", error: "Kaspa module not loaded" };
+      }
+
+      const { RpcClient, Resolver, Encoding } = this.kaspaModule;
+      if (!RpcClient) {
+        return { wasmRpcConnected: false, connectionMethod: "none", error: "RpcClient not available" };
+      }
+
+      // Try Resolver-based connection first
+      let testClient = null;
+      let connectionMethod = "none";
+      
+      if (Resolver) {
+        try {
+          console.log("[Kaspa] Testing PNN Resolver connection...");
+          const resolver = new Resolver();
+          testClient = new RpcClient({
+            resolver,
+            networkId: this.config.network,
+          });
+
+          const connectPromise = testClient.connect({
+            timeoutDuration: 5000,
+            blockAsyncConnect: true,
+          });
+          
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("Resolver connect timeout")), 8000);
+          });
+
+          await Promise.race([connectPromise, timeoutPromise]);
+          connectionMethod = "resolver";
+          console.log(`[Kaspa] WASM RPC test connected via Resolver to: ${testClient.url || 'PNN node'}`);
+        } catch (resolverError: any) {
+          console.log(`[Kaspa] Resolver test failed: ${resolverError.message}, trying direct URL...`);
+          testClient = null;
+        }
+      }
+
+      // Fallback to direct URL if Resolver fails
+      if (!testClient) {
+        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        console.log(`[Kaspa] Testing direct wRPC connection: ${wRpcUrl}`);
+        
+        testClient = new RpcClient({
+          url: wRpcUrl,
+          encoding: Encoding?.Borsh || 0,
+          networkId: this.config.network,
+        });
+
+        await testClient.connect({
+          timeoutDuration: 5000,
+          blockAsyncConnect: true,
+        });
+        connectionMethod = "direct";
+        console.log(`[Kaspa] WASM RPC test connected to direct URL: ${wRpcUrl}`);
+      }
+
+      // Get block info to verify connection
+      const info = await testClient.getBlockDagInfo();
+      const endpoint = testClient.url || "PNN Resolver";
+      
+      // Disconnect test client
+      try {
+        await testClient.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      
+      console.log(`[Kaspa] WASM RPC test successful via ${connectionMethod}: block count ${info?.blockCount}`);
+      return {
+        wasmRpcConnected: true,
+        connectionMethod,
+        endpoint,
+        blockCount: info?.blockCount?.toString(),
+      };
+    } catch (error: any) {
+      console.error(`[Kaspa] WASM RPC test failed: ${error.message}`);
+      return { wasmRpcConnected: false, connectionMethod: "none", error: error.message };
+    }
+  }
+
+  /**
    * Disconnect from the network
    */
   async disconnect(): Promise<void> {
