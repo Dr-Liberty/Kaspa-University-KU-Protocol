@@ -785,6 +785,13 @@ class KRC721Service {
       const p2shAddressStr = P2SHAddress.toString();
       const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minute expiry
 
+      // Clean up any existing reservation for this certificate before creating new one
+      const existingReservation = await mintStorage.getByCertificateId(certificateId);
+      if (existingReservation) {
+        console.log(`[KRC721] Cleaning up existing reservation for certificate ${certificateId}`);
+        await mintStorage.deleteReservation(existingReservation.p2shAddress);
+      }
+
       // Store pending mint in database for finalization
       // CRITICAL: Store xOnlyPubKey AND exact mintDataStr for byte-perfect script reconstruction
       const reservation = await mintStorage.createReservation({
