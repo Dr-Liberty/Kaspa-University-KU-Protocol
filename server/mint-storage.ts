@@ -29,6 +29,12 @@ class MintStorageService {
   /**
    * Create a new pending mint reservation
    */
+  private _lastError: string | null = null;
+  
+  getLastError(): string | null {
+    return this._lastError;
+  }
+
   async createReservation(data: {
     certificateId: string;
     recipientAddress: string;
@@ -39,8 +45,11 @@ class MintStorageService {
     mintData: any;
     expiresAt: Date;
   }): Promise<PendingMintReservation | null> {
+    this._lastError = null;
     try {
       console.log(`[MintStorage] Creating reservation for cert ${data.certificateId}, P2SH: ${data.p2shAddress.slice(0, 25)}...`);
+      console.log(`[MintStorage] Data: tokenId=${data.tokenId}, recipient=${data.recipientAddress.slice(0, 20)}...`);
+      
       // scriptData is already a string (the exact mintDataStr used in the script)
       // mintData is an object that needs to be stringified
       const scriptDataStr = typeof data.scriptData === 'string' 
@@ -50,6 +59,7 @@ class MintStorageService {
         ? data.mintData 
         : JSON.stringify(data.mintData);
       
+      console.log(`[MintStorage] Inserting into database...`);
       const [reservation] = await db.insert(pendingMintReservations).values({
         certificateId: data.certificateId,
         recipientAddress: data.recipientAddress,
@@ -65,7 +75,10 @@ class MintStorageService {
       console.log(`[MintStorage] Reservation created successfully, ID: ${reservation?.id}`);
       return reservation as PendingMintReservation;
     } catch (error: any) {
+      this._lastError = error.message || "Unknown database error";
       console.error("[MintStorage] Failed to create reservation:", error.message);
+      console.error("[MintStorage] Error code:", error.code);
+      console.error("[MintStorage] Error detail:", error.detail);
       console.error("[MintStorage] Full error:", error);
       return null;
     }

@@ -799,7 +799,9 @@ class KRC721Service {
       });
 
       if (!reservation) {
-        return { success: false, error: "Failed to store mint reservation" };
+        const dbError = mintStorage.getLastError();
+        console.error(`[KRC721] Reservation creation failed: ${dbError}`);
+        return { success: false, error: `Failed to store mint reservation: ${dbError || 'unknown error'}` };
       }
 
       // Also keep in memory for the current session (faster lookup)
