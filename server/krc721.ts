@@ -925,11 +925,14 @@ class KRC721Service {
       const { createTransactions, kaspaToSompi } = this.kaspaModule;
 
       // Step 1: Verify UTXO exists at P2SH address (user's commit transaction)
+      // Use WASM RpcClient for consistent entry format with createTransactions
       console.log(`[KRC721] Checking for UTXO at ${p2shAddress.slice(0, 25)}...`);
       
-      const { entries: p2shEntries } = await this.rpcClient.getUtxosByAddresses({
-        addresses: [p2shAddress],
-      });
+      if (!this.wasmRpcClient) {
+        return { success: false, error: "WASM RpcClient not initialized" };
+      }
+      
+      const { entries: p2shEntries } = await this.wasmRpcClient.getUtxosByAddresses([p2shAddress]);
 
       if (p2shEntries.length === 0) {
         return { 
@@ -938,9 +941,9 @@ class KRC721Service {
         };
       }
 
-      // Verify amount is sufficient (use the constant we defined above)
+      // Verify amount is sufficient - WASM RpcClient stores amount at entry.amount
       const p2shUtxo = p2shEntries[0];
-      const receivedAmount = BigInt(p2shUtxo.utxoEntry?.amount || p2shUtxo.entry?.utxoEntry?.amount || 0);
+      const receivedAmount = BigInt(p2shUtxo.amount ?? p2shUtxo.utxoEntry?.amount ?? 0);
       
       if (receivedAmount < KRC721_MINT_FEE_SOMPI) {
         return {
@@ -951,12 +954,10 @@ class KRC721Service {
 
       console.log(`[KRC721] Found ${Number(receivedAmount) / 1e8} KAS at P2SH. Proceeding with reveal...`);
 
-      // Step 2: Get treasury UTXOs for reveal transaction fees
-      const { entries: treasuryEntries } = await this.rpcClient.getUtxosByAddresses({
-        addresses: [this.address!],
-      });
+      // Step 2: Get treasury UTXOs for reveal transaction fees using WASM RpcClient
+      const { entries: treasuryEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.address!]);
 
-      // Step 3: Create reveal transaction
+      // Step 3: Create reveal transaction - pass entries directly without transformation
       const { transactions: revealTxs } = await createTransactions({
         priorityEntries: [p2shUtxo], // P2SH UTXO first
         entries: treasuryEntries, // Treasury UTXOs for fee
@@ -1031,8 +1032,7 @@ class KRC721Service {
    * 1. Commit: Send KAS to P2SH address (locks the inscription)
    * 2. Reveal: Spend from P2SH, revealing the inscription data
    * 
-   * SECURITY: Uses UTXO manager to prevent race conditions with concurrent
-   * quiz reward transactions. All UTXOs are reserved before use.
+   * Based on coinchimp/kaspa-krc721-apps reference implementation
    */
   private async executeCommitReveal(
     script: any,
@@ -1040,11 +1040,9 @@ class KRC721Service {
     commitAmountKas: string
   ): Promise<DeployResult> {
     const { createTransactions, kaspaToSompi } = this.kaspaModule;
-    const utxoManager = getUTXOManager();
 
     let commitTxHash: string | undefined;
     let revealTxHash: string | undefined;
-    let commitReservation: { selected: UTXO[]; total: bigint } | null = null;
 
     try {
       // Step 1: Commit Transaction
@@ -1077,10 +1075,10 @@ class KRC721Service {
       }
 
       // Calculate total available from entries
-      let totalAvailable = 0n;
+      let totalAvailable = BigInt(0);
       for (const e of entries) {
         // WASM RpcClient may store amount at different paths
-        const amt = e.utxoEntry?.amount ?? e.amount ?? 0n;
+        const amt = e.utxoEntry?.amount ?? e.amount ?? BigInt(0);
         totalAvailable += BigInt(amt);
       }
       console.log(`[KRC721] Total available in wallet: ${totalAvailable} sompi (${Number(totalAvailable) / 1e8} KAS)`);
@@ -1130,10 +1128,6 @@ class KRC721Service {
         console.log(`[KRC721] Commit tx: ${commitTxHash}`);
       }
 
-      // Mark UTXOs as spent in the manager
-      if (commitTxHash && commitReservation) {
-        await utxoManager.markAsSpent(commitReservation.selected, commitTxHash);
-      }
 
       // Wait for commit to confirm (poll for UTXO at P2SH address)
       await this.waitForUtxo(P2SHAddress.toString(), 60000);
@@ -1198,12 +1192,6 @@ class KRC721Service {
       console.error("[KRC721] Commit-reveal failed:", errorMessage);
       console.error("[KRC721] Full error:", error);
       
-      // Release reservation if commit failed before broadcast
-      if (commitReservation && !commitTxHash) {
-        await utxoManager.releaseReservation(commitReservation.selected);
-        console.log("[KRC721] Released UTXO reservation after failure");
-      }
-      
       return {
         success: false,
         commitTxHash,
@@ -1220,9 +1208,9 @@ class KRC721Service {
     const startTime = Date.now();
     
     while (Date.now() - startTime < timeoutMs) {
-      const { entries } = await this.rpcClient.getUtxosByAddresses({
-        addresses: [address],
-      });
+      // Use WASM RpcClient for consistency
+      const rpc = this.wasmRpcClient || this.rpcClient;
+      const { entries } = await rpc.getUtxosByAddresses([address]);
 
       if (entries.length > 0) {
         console.log(`[KRC721] UTXO confirmed at ${address.slice(0, 20)}...`);
@@ -1243,10 +1231,9 @@ class KRC721Service {
     
     while (Date.now() - startTime < timeoutMs) {
       try {
-        // Check if our UTXOs have been updated (indicates confirmation)
-        const { entries } = await this.rpcClient.getUtxosByAddresses({
-          addresses: [this.address!],
-        });
+        // Use WASM RpcClient for consistency
+        const rpc = this.wasmRpcClient || this.rpcClient;
+        const { entries } = await rpc.getUtxosByAddresses([this.address!]);
 
         // Transaction is likely confirmed if we have UTXOs
         if (entries.length > 0) {
