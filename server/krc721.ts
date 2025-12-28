@@ -1183,7 +1183,9 @@ class KRC721Service {
         revealTxHash,
       };
     } catch (error: any) {
-      console.error("[KRC721] Commit-reveal failed:", error.message);
+      const errorMessage = error?.message || error?.toString?.() || JSON.stringify(error) || "Unknown error";
+      console.error("[KRC721] Commit-reveal failed:", errorMessage);
+      console.error("[KRC721] Full error:", error);
       
       // Release reservation if commit failed before broadcast
       if (commitReservation && !commitTxHash) {
@@ -1195,7 +1197,7 @@ class KRC721Service {
         success: false,
         commitTxHash,
         revealTxHash,
-        error: error.message,
+        error: errorMessage,
       };
     }
   }
