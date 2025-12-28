@@ -400,42 +400,73 @@ class KaspaService {
   }
 
   /**
-   * Try to connect via kaspa-wasm RPC (fallback if kaspa-rpc-client fails)
-   * Note: This is now primarily a fallback, as we have initWasmRpcClient() for tx submission
+   * Try to connect via kaspa-wasm RPC using PNN Resolver (fallback if kaspa-rpc-client fails)
+   * Uses Resolver for: load balancing, DDoS protection, automatic failover
+   * Reference: https://kaspa-mdbook.aspectron.com/
    */
   private async tryWasmRpcConnection(): Promise<void> {
     try {
-      console.log("[Kaspa] Trying WASM RPC connection (fallback)...");
+      console.log("[Kaspa] Trying WASM RPC connection via PNN Resolver...");
       
       if (!this.kaspaModule) {
         throw new Error("Kaspa module not loaded");
       }
 
-      const { RpcClient, Encoding } = this.kaspaModule;
+      const { RpcClient, Resolver, Encoding } = this.kaspaModule;
 
       if (!RpcClient) {
         throw new Error("RpcClient not available");
       }
 
-      // Public wRPC endpoints for Kaspa mainnet
-      const wRpcUrl = "wss://wrpc.kaspa.net:443";
-      
-      console.log(`[Kaspa] Connecting to wRPC: ${wRpcUrl}`);
+      // Try Resolver-based connection first (preferred for load balancing and failover)
+      let resolverSuccess = false;
+      if (Resolver) {
+        try {
+          console.log("[Kaspa] Using PNN Resolver for node discovery...");
+          const resolver = new Resolver();
+          
+          this.wasmRpcClient = new RpcClient({
+            resolver,
+            networkId: this.config.network,
+          });
 
-      // Create WASM RPC client (store in wasmRpcClient, not rpcClient)
-      this.wasmRpcClient = new RpcClient({
-        url: wRpcUrl,
-        encoding: Encoding?.Borsh || 0,
-        networkId: this.config.network,
-      });
+          // Connect with timeout
+          const connectPromise = this.wasmRpcClient.connect({
+            timeoutDuration: 5000,
+            blockAsyncConnect: true,
+          });
+          
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("Resolver connect timeout")), 8000);
+          });
 
-      // Connect with timeout
-      await this.wasmRpcClient.connect({
-        timeoutDuration: 5000,
-        blockAsyncConnect: true,
-      });
+          await Promise.race([connectPromise, timeoutPromise]);
 
-      console.log(`[Kaspa] WASM RPC connected to: ${this.wasmRpcClient.url}`);
+          console.log(`[Kaspa] WASM RPC connected via Resolver to: ${this.wasmRpcClient.url || 'PNN node'}`);
+          resolverSuccess = true;
+        } catch (resolverError: any) {
+          console.log(`[Kaspa] Resolver connection failed: ${resolverError.message}, trying direct URL...`);
+        }
+      }
+
+      // Fallback to direct URL if Resolver fails
+      if (!resolverSuccess) {
+        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        console.log(`[Kaspa] Falling back to direct wRPC: ${wRpcUrl}`);
+        
+        this.wasmRpcClient = new RpcClient({
+          url: wRpcUrl,
+          encoding: Encoding?.Borsh || 0,
+          networkId: this.config.network,
+        });
+
+        await this.wasmRpcClient.connect({
+          timeoutDuration: 5000,
+          blockAsyncConnect: true,
+        });
+
+        console.log(`[Kaspa] WASM RPC connected to direct URL: ${wRpcUrl}`);
+      }
 
       // Test connection
       const info = await this.wasmRpcClient.getBlockDagInfo();
@@ -470,6 +501,9 @@ class KaspaService {
    * Initialize WASM RpcClient for PendingTransaction.submit()
    * This is separate from tryWasmRpcConnection because Generator/PendingTransaction
    * specifically requires the WASM RpcClient class, not kaspa-rpc-client
+   * 
+   * Uses PNN Resolver for: load balancing, DDoS protection, automatic failover
+   * Falls back to direct URL if Resolver fails
    */
   private async initWasmRpcClient(): Promise<void> {
     // Skip if already connected
@@ -484,36 +518,68 @@ class KaspaService {
         return;
       }
 
-      const { RpcClient, Encoding } = this.kaspaModule;
+      const { RpcClient, Resolver, Encoding } = this.kaspaModule;
       if (!RpcClient) {
         console.log("[Kaspa] Cannot init WASM RpcClient - RpcClient not available");
         return;
       }
 
-      // Public wRPC endpoints for Kaspa mainnet
-      const wRpcUrl = "wss://wrpc.kaspa.net:443";
-      console.log(`[Kaspa] Initializing WASM RpcClient for tx submission: ${wRpcUrl}`);
+      // Try Resolver-based connection first (preferred for load balancing and failover)
+      let resolverSuccess = false;
+      if (Resolver) {
+        try {
+          console.log("[Kaspa] Initializing WASM RpcClient via PNN Resolver...");
+          const resolver = new Resolver();
+          
+          this.wasmRpcClient = new RpcClient({
+            resolver,
+            networkId: this.config.network,
+          });
 
-      this.wasmRpcClient = new RpcClient({
-        url: wRpcUrl,
-        encoding: Encoding?.Borsh || 0,
-        networkId: this.config.network,
-      });
+          const connectPromise = this.wasmRpcClient.connect({
+            timeoutDuration: 5000,
+            blockAsyncConnect: true,
+          });
+          
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("Resolver connect timeout")), 8000);
+          });
 
-      // Wrap connect() in a timeout to prevent indefinite blocking
-      const connectPromise = this.wasmRpcClient.connect({
-        timeoutDuration: 5000,
-        blockAsyncConnect: true,
-      });
-      
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("WASM RpcClient connect timeout")), 8000);
-      });
+          await Promise.race([connectPromise, timeoutPromise]);
 
-      await Promise.race([connectPromise, timeoutPromise]);
+          this.wasmRpcConnected = true;
+          console.log(`[Kaspa] WASM RpcClient ready via Resolver (tx submission)`);
+          resolverSuccess = true;
+        } catch (resolverError: any) {
+          console.log(`[Kaspa] Resolver init failed: ${resolverError.message}, trying direct URL...`);
+        }
+      }
 
-      this.wasmRpcConnected = true;
-      console.log(`[Kaspa] WASM RpcClient ready for tx submission`);
+      // Fallback to direct URL if Resolver fails
+      if (!resolverSuccess) {
+        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        console.log(`[Kaspa] Initializing WASM RpcClient via direct URL: ${wRpcUrl}`);
+
+        this.wasmRpcClient = new RpcClient({
+          url: wRpcUrl,
+          encoding: Encoding?.Borsh || 0,
+          networkId: this.config.network,
+        });
+
+        const connectPromise = this.wasmRpcClient.connect({
+          timeoutDuration: 5000,
+          blockAsyncConnect: true,
+        });
+        
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("WASM RpcClient connect timeout")), 8000);
+        });
+
+        await Promise.race([connectPromise, timeoutPromise]);
+
+        this.wasmRpcConnected = true;
+        console.log(`[Kaspa] WASM RpcClient ready via direct URL (tx submission)`);
+      }
     } catch (error: any) {
       console.log(`[Kaspa] Failed to init WASM RpcClient: ${error.message}`);
       this.wasmRpcClient = null;
