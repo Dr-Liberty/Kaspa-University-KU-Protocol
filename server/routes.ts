@@ -2515,5 +2515,350 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Recover P2SH using a specific X-only public key and private key
+  // Use this when the treasury key has changed since the P2SH was created
+  app.post("/api/admin/recover-p2sh-with-key", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { 
+        p2shAddress, 
+        xOnlyPubKey, 
+        privateKeyHex, 
+        recipientAddress,
+        dryRun = true  // Default to dry run for safety
+      } = req.body;
+      
+      if (!p2shAddress || !xOnlyPubKey) {
+        return res.status(400).json({ 
+          error: "Required: p2shAddress, xOnlyPubKey. Optional: privateKeyHex (for actual recovery), recipientAddress, dryRun" 
+        });
+      }
+
+      console.log(`[Admin Recovery] Attempting P2SH recovery with provided key: ${p2shAddress.slice(0, 30)}...`);
+      
+      const krc721Service = await getKRC721Service();
+      
+      // @ts-ignore - accessing private property for admin recovery
+      const kaspaModule = krc721Service.kaspaModule;
+      // @ts-ignore
+      const config = krc721Service.config;
+      
+      if (!kaspaModule) {
+        return res.status(500).json({ error: "KRC721 service not properly initialized" });
+      }
+      
+      const { ScriptBuilder, Opcodes, addressFromScriptPublicKey, createTransactions, kaspaToSompi, PrivateKey } = kaspaModule;
+      
+      // Try different mint data variations to find matching P2SH
+      // First try the new minimal format, then the old format with "to" field
+      const mintDataVariations: any[] = [
+        // New minimal format (current implementation)
+        { p: "krc-721", op: "mint", tick: config.ticker },
+      ];
+      
+      // If recipientAddress provided, also try old format with "to" field
+      if (recipientAddress) {
+        mintDataVariations.push(
+          { p: "krc-721", op: "mint", tick: config.ticker, to: recipientAddress },
+          { p: "krc-721", op: "mint", tick: config.ticker, to: recipientAddress, meta: undefined }
+        );
+      }
+      
+      // Also try with different token IDs since that could be stored differently
+      const tokenIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      for (const tid of tokenIds) {
+        mintDataVariations.push(
+          { p: "krc-721", op: "mint", tick: config.ticker, id: tid },
+          { p: "krc-721", op: "mint", tick: config.ticker, id: tid.toString() }
+        );
+        if (recipientAddress) {
+          mintDataVariations.push(
+            { p: "krc-721", op: "mint", tick: config.ticker, to: recipientAddress, id: tid }
+          );
+        }
+      }
+      
+      let matchedScript: any = null;
+      let matchedMintDataStr: string = "";
+      
+      for (const mintData of mintDataVariations) {
+        const mintDataStr = JSON.stringify(mintData, null, 0);
+        
+        try {
+          const script = new ScriptBuilder()
+            .addData(xOnlyPubKey)
+            .addOp(Opcodes.OpCheckSig)
+            .addOp(Opcodes.OpFalse)
+            .addOp(Opcodes.OpIf)
+            .addData(Buffer.from("kspr"))
+            .addI64(BigInt(0))
+            .addData(Buffer.from(mintDataStr))
+            .addOp(Opcodes.OpEndIf);
+          
+          const reconstructedP2sh = addressFromScriptPublicKey(
+            script.createPayToScriptHashScript(),
+            config.network
+          );
+          
+          if (reconstructedP2sh && reconstructedP2sh.toString() === p2shAddress) {
+            console.log(`[Admin Recovery] Found matching script with mintData: ${mintDataStr}`);
+            matchedScript = script;
+            matchedMintDataStr = mintDataStr;
+            break;
+          }
+        } catch (scriptError: any) {
+          console.log(`[Admin Recovery] Script build failed for variation: ${scriptError.message}`);
+        }
+      }
+      
+      if (!matchedScript) {
+        return res.status(404).json({ 
+          error: "Could not reconstruct matching P2SH script. Try providing recipientAddress parameter.",
+          tried: mintDataVariations.length,
+          xOnlyPubKeyUsed: xOnlyPubKey.slice(0, 20) + "...",
+          ticker: config.ticker,
+        });
+      }
+      
+      // Check P2SH balance
+      const balanceRes = await fetch(`https://api.kaspa.org/addresses/${p2shAddress}/balance`);
+      if (!balanceRes.ok) {
+        return res.status(500).json({ error: "Failed to check P2SH balance" });
+      }
+      const balanceData = await balanceRes.json() as { balance: number };
+      const balanceSompi = balanceData.balance;
+      const balanceKas = balanceSompi / 100000000;
+      
+      if (balanceSompi <= 0) {
+        return res.json({ 
+          success: false, 
+          error: "P2SH address has no balance - funds may have already been recovered",
+          matchedMintData: matchedMintDataStr,
+        });
+      }
+      
+      console.log(`[Admin Recovery] P2SH balance: ${balanceKas} KAS`);
+      
+      // If dry run or no private key, return info only
+      if (dryRun || !privateKeyHex) {
+        return res.json({
+          success: true,
+          dryRun: true,
+          message: "P2SH script matched! Provide privateKeyHex and set dryRun=false to recover.",
+          p2shAddress,
+          balanceKas: balanceKas.toFixed(8) + " KAS",
+          balanceSompi,
+          matchedMintData: matchedMintDataStr,
+          xOnlyPubKeyUsed: xOnlyPubKey,
+        });
+      }
+      
+      // Actual recovery - need private key
+      console.log(`[Admin Recovery] Proceeding with actual recovery...`);
+      
+      // Get UTXOs from P2SH
+      const utxoRes = await fetch(`https://api.kaspa.org/addresses/${p2shAddress}/utxos`);
+      if (!utxoRes.ok) {
+        return res.status(500).json({ error: "Failed to fetch P2SH UTXOs" });
+      }
+      const utxos = await utxoRes.json() as any[];
+      
+      if (!utxos || utxos.length === 0) {
+        return res.json({ 
+          success: false, 
+          error: "No UTXOs found at P2SH address",
+        });
+      }
+      
+      // Create private key from hex
+      let recoveryPrivateKey: any;
+      try {
+        recoveryPrivateKey = new PrivateKey(privateKeyHex);
+      } catch (pkError: any) {
+        return res.status(400).json({ error: "Invalid privateKeyHex: " + pkError.message });
+      }
+      
+      // Get current treasury address for output
+      // @ts-ignore
+      const treasuryAddress = krc721Service.address;
+      // @ts-ignore
+      const rpcClient = krc721Service.rpcClient;
+      // @ts-ignore
+      const wasmRpcClient = krc721Service.wasmRpcClient;
+      
+      // Get treasury UTXOs for fees
+      const { entries: treasuryEntries } = await rpcClient.getUtxosByAddresses({
+        addresses: [treasuryAddress],
+      });
+      
+      // Format P2SH UTXOs for transaction
+      const p2shEntries = utxos.map((utxo: any) => ({
+        outpoint: {
+          transactionId: utxo.outpoint?.transactionId || utxo.transactionId,
+          index: utxo.outpoint?.index ?? utxo.index ?? 0,
+        },
+        utxoEntry: {
+          amount: utxo.utxoEntry?.amount || utxo.amount,
+          scriptPublicKey: utxo.utxoEntry?.scriptPublicKey || utxo.scriptPublicKey,
+          blockDaaScore: utxo.utxoEntry?.blockDaaScore || utxo.blockDaaScore || "0",
+          isCoinbase: utxo.utxoEntry?.isCoinbase || false,
+        },
+      }));
+      
+      console.log(`[Admin Recovery] Building reveal tx with ${p2shEntries.length} P2SH UTXOs`);
+      
+      // Create reveal transaction
+      const { transactions } = await createTransactions({
+        priorityEntries: p2shEntries,
+        entries: treasuryEntries,
+        outputs: [],
+        changeAddress: treasuryAddress,
+        priorityFee: kaspaToSompi("1")!,
+        networkId: config.network,
+      });
+      
+      if (!transactions || transactions.length === 0) {
+        return res.json({ 
+          success: false, 
+          error: "Failed to create reveal transaction",
+        });
+      }
+      
+      // Sign and submit
+      let revealTxHash: string | undefined;
+      
+      for (const tx of transactions) {
+        tx.sign([recoveryPrivateKey], false);
+        
+        // Find and fill P2SH inputs
+        for (let i = 0; i < tx.transaction.inputs.length; i++) {
+          if (tx.transaction.inputs[i].signatureScript === "") {
+            const signature = await tx.createInputSignature(i, recoveryPrivateKey);
+            tx.fillInput(i, matchedScript.encodePayToScriptHashSignatureScript(signature));
+          }
+        }
+        
+        const rpcForSubmit = wasmRpcClient || rpcClient;
+        revealTxHash = await tx.submit(rpcForSubmit);
+        console.log(`[Admin Recovery] Reveal tx submitted: ${revealTxHash}`);
+      }
+      
+      return res.json({
+        success: true,
+        message: "P2SH funds recovered successfully!",
+        revealTxHash,
+        recoveredAmount: balanceKas.toFixed(8) + " KAS",
+        sentTo: treasuryAddress,
+      });
+      
+    } catch (error: any) {
+      console.error(`[Admin Recovery] Recovery with key error:`, error);
+      res.status(500).json({ error: sanitizeError(error), details: error.message });
+    }
+  });
+
+  // Admin: Batch check multiple P2SH addresses with a specific X-only public key
+  app.post("/api/admin/verify-p2sh-batch", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { p2shAddresses, xOnlyPubKey, recipientAddresses } = req.body;
+      
+      if (!p2shAddresses || !Array.isArray(p2shAddresses) || !xOnlyPubKey) {
+        return res.status(400).json({ 
+          error: "Required: p2shAddresses (array), xOnlyPubKey. Optional: recipientAddresses (array)" 
+        });
+      }
+
+      const krc721Service = await getKRC721Service();
+      // @ts-ignore
+      const kaspaModule = krc721Service.kaspaModule;
+      // @ts-ignore
+      const config = krc721Service.config;
+      
+      const { ScriptBuilder, Opcodes, addressFromScriptPublicKey } = kaspaModule;
+      
+      const results: Array<{
+        p2shAddress: string;
+        matched: boolean;
+        matchedMintData?: string;
+        balanceKas?: string;
+        error?: string;
+      }> = [];
+      
+      for (let i = 0; i < p2shAddresses.length; i++) {
+        const p2shAddress = p2shAddresses[i];
+        const recipientAddress = recipientAddresses?.[i];
+        
+        // Build mint data variations
+        const mintDataVariations: any[] = [
+          { p: "krc-721", op: "mint", tick: config.ticker },
+        ];
+        
+        if (recipientAddress) {
+          mintDataVariations.push(
+            { p: "krc-721", op: "mint", tick: config.ticker, to: recipientAddress }
+          );
+        }
+        
+        let matched = false;
+        let matchedMintData = "";
+        
+        for (const mintData of mintDataVariations) {
+          const mintDataStr = JSON.stringify(mintData, null, 0);
+          
+          try {
+            const script = new ScriptBuilder()
+              .addData(xOnlyPubKey)
+              .addOp(Opcodes.OpCheckSig)
+              .addOp(Opcodes.OpFalse)
+              .addOp(Opcodes.OpIf)
+              .addData(Buffer.from("kspr"))
+              .addI64(BigInt(0))
+              .addData(Buffer.from(mintDataStr))
+              .addOp(Opcodes.OpEndIf);
+            
+            const reconstructedP2sh = addressFromScriptPublicKey(
+              script.createPayToScriptHashScript(),
+              config.network
+            );
+            
+            if (reconstructedP2sh && reconstructedP2sh.toString() === p2shAddress) {
+              matched = true;
+              matchedMintData = mintDataStr;
+              break;
+            }
+          } catch {}
+        }
+        
+        // Check balance
+        let balanceKas = "0";
+        try {
+          const balanceRes = await fetch(`https://api.kaspa.org/addresses/${p2shAddress}/balance`);
+          if (balanceRes.ok) {
+            const balanceData = await balanceRes.json() as { balance: number };
+            balanceKas = (balanceData.balance / 100000000).toFixed(8);
+          }
+          await new Promise(r => setTimeout(r, 100)); // Rate limit
+        } catch {}
+        
+        results.push({
+          p2shAddress,
+          matched,
+          matchedMintData: matched ? matchedMintData : undefined,
+          balanceKas,
+        });
+      }
+      
+      res.json({
+        xOnlyPubKey,
+        ticker: config.ticker,
+        results,
+        totalMatched: results.filter(r => r.matched).length,
+        totalWithBalance: results.filter(r => parseFloat(r.balanceKas || "0") > 0).length,
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   return httpServer;
 }
