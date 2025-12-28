@@ -18,6 +18,17 @@ interface UploadResult {
   error?: string;
 }
 
+interface QuizProof {
+  course_id: string;
+  lesson_id?: string;
+  score: number;
+  max_score: number;
+  timestamp: number;
+  content_hash: string;
+  proof_tx?: string;
+  payload_hex?: string;
+}
+
 interface CertificateMetadata {
   name: string;
   description: string;
@@ -26,6 +37,7 @@ interface CertificateMetadata {
     trait_type: string;
     value: string | number;
   }>;
+  quiz_proof?: QuizProof;
 }
 
 class PinataService {
@@ -165,7 +177,8 @@ class PinataService {
     courseName: string,
     score: number,
     recipientAddress: string,
-    completionDate: Date
+    completionDate: Date,
+    quizProof?: QuizProof
   ): Promise<UploadResult> {
     if (!this.isConfigured()) {
       return { success: false, error: "Pinata not configured" };
@@ -192,6 +205,12 @@ class PinataService {
           { trait_type: "Network", value: "Kaspa Mainnet" },
         ],
       };
+
+      // Add quiz proof if available (makes NFT self-verifying)
+      if (quizProof) {
+        metadata.quiz_proof = quizProof;
+        console.log(`[Pinata] Including quiz proof in metadata: course=${quizProof.course_id}, score=${quizProof.score}/${quizProof.max_score}`);
+      }
 
       const metadataResult = await this.uploadMetadata(metadata, `ku-cert-meta-${certificateId}`);
       if (!metadataResult.success) {
@@ -228,3 +247,4 @@ export function getPinataService(): PinataService {
 }
 
 export { PinataService };
+export type { QuizProof };

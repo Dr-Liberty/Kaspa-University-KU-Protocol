@@ -15,7 +15,8 @@ import {
   TX_FLAGS,
 } from "./ku-protocol.js";
 import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation } from "./krc721";
-import { getPinataService } from "./pinata";
+import { getPinataService, type QuizProof } from "./pinata";
+import { createContentHash } from "./ku-protocol.js";
 import { getAntiSybilService } from "./anti-sybil";
 import { 
   securityMiddleware, 
@@ -1266,6 +1267,31 @@ export async function registerRoutes(
           certificate.issuedAt
         );
         
+        // Build quiz proof for NFT metadata (makes NFT self-verifying)
+        let quizProof: QuizProof | undefined;
+        try {
+          const quizResults = await storage.getQuizResultsForCourse(certificate.userId, certificate.courseId);
+          if (quizResults.length > 0) {
+            // Get the most recent quiz result with a confirmed tx
+            const confirmedResult = quizResults.find(r => r.txHash && r.txStatus === "confirmed");
+            const latestResult = confirmedResult || quizResults[0];
+            
+            quizProof = {
+              course_id: certificate.courseId,
+              lesson_id: latestResult.lessonId,
+              score: certificate.score || 100,
+              max_score: 100,
+              timestamp: latestResult.completedAt.getTime(),
+              content_hash: createContentHash(`${certificate.courseId}:${certificate.recipientAddress}:${certificate.score}`),
+              proof_tx: latestResult.txHash,
+              payload_hex: latestResult.payloadHex,
+            };
+            console.log(`[Prepare] Built quiz proof for NFT: course=${quizProof.course_id}, tx=${quizProof.proof_tx?.slice(0, 16)}...`);
+          }
+        } catch (err: any) {
+          console.warn(`[Prepare] Could not build quiz proof: ${err.message}`);
+        }
+        
         const pinataService = getPinataService();
         if (pinataService.isConfigured()) {
           console.log(`[Prepare] Uploading certificate to IPFS...`);
@@ -1275,7 +1301,8 @@ export async function registerRoutes(
             certificate.courseName,
             certificate.score || 100,
             certificate.recipientAddress,
-            certificate.issuedAt
+            certificate.issuedAt,
+            quizProof
           );
           
           if (uploadResult.success && uploadResult.ipfsUrl) {
@@ -1546,6 +1573,29 @@ export async function registerRoutes(
           certificate.issuedAt
         );
         
+        // Build quiz proof for NFT metadata
+        let quizProof: QuizProof | undefined;
+        try {
+          const quizResults = await storage.getQuizResultsForCourse(certificate.userId, certificate.courseId);
+          if (quizResults.length > 0) {
+            const confirmedResult = quizResults.find(r => r.txHash && r.txStatus === "confirmed");
+            const latestResult = confirmedResult || quizResults[0];
+            
+            quizProof = {
+              course_id: certificate.courseId,
+              lesson_id: latestResult.lessonId,
+              score: certificate.score || 100,
+              max_score: 100,
+              timestamp: latestResult.completedAt.getTime(),
+              content_hash: createContentHash(`${certificate.courseId}:${certificate.recipientAddress}:${certificate.score}`),
+              proof_tx: latestResult.txHash,
+              payload_hex: latestResult.payloadHex,
+            };
+          }
+        } catch (err: any) {
+          console.warn(`[Claim] Could not build quiz proof: ${err.message}`);
+        }
+        
         // Try to upload to Pinata IPFS
         const pinataService = getPinataService();
         if (pinataService.isConfigured()) {
@@ -1556,7 +1606,8 @@ export async function registerRoutes(
             certificate.courseName,
             certificate.score || 100,
             certificate.recipientAddress,
-            certificate.issuedAt
+            certificate.issuedAt,
+            quizProof
           );
           
           if (uploadResult.success && uploadResult.ipfsUrl) {
