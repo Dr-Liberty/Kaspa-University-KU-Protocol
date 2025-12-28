@@ -1088,18 +1088,36 @@ class KRC721Service {
         commitReservation.selected.map(u => `${u.txId}:${u.index}`)
       );
 
-      // Filter original entries to only include reserved UTXOs
-      const reservedEntries = entries.filter((e: any) => {
-        const txId = e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "";
-        const index = e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0;
-        return reservedKeys.has(`${txId}:${index}`);
-      });
+      // Filter original entries to only include reserved UTXOs and transform to WASM format
+      const reservedEntries = entries
+        .filter((e: any) => {
+          const txId = e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "";
+          const index = e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0;
+          return reservedKeys.has(`${txId}:${index}`);
+        })
+        .map((e: any) => {
+          // Transform kaspa-rpc-client format to WASM createTransactions format
+          const outpoint = e.outpoint || e.entry?.outpoint || {};
+          const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
+          return {
+            outpoint: {
+              transactionId: outpoint.transactionId || "",
+              index: outpoint.index ?? 0,
+            },
+            utxoEntry: {
+              amount: BigInt(utxoEntry.amount || 0),
+              scriptPublicKey: utxoEntry.scriptPublicKey || {},
+              blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
+              isCoinbase: utxoEntry.isCoinbase || false,
+            },
+          };
+        });
 
       console.log(`[KRC721] Using ${reservedEntries.length} reserved entries for commit`);
 
       const { transactions: commitTxs } = await createTransactions({
         priorityEntries: [],
-        entries: reservedEntries, // Use only reserved entries to prevent race conditions
+        entries: reservedEntries,
         outputs: [{
           address: P2SHAddress.toString(),
           amount: kaspaToSompi(commitAmountKas)!,
@@ -1142,11 +1160,32 @@ class KRC721Service {
         throw new Error("P2SH UTXO not found after commit");
       }
 
+      // Transform entries to WASM format
+      const transformEntry = (e: any) => {
+        const outpoint = e.outpoint || e.entry?.outpoint || {};
+        const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
+        return {
+          outpoint: {
+            transactionId: outpoint.transactionId || "",
+            index: outpoint.index ?? 0,
+          },
+          utxoEntry: {
+            amount: BigInt(utxoEntry.amount || 0),
+            scriptPublicKey: utxoEntry.scriptPublicKey || {},
+            blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
+            isCoinbase: utxoEntry.isCoinbase || false,
+          },
+        };
+      };
+
+      const transformedNewEntries = newEntries.map(transformEntry);
+      const transformedP2shEntry = transformEntry(revealUTXOs.entries[0]);
+
       // For reveal, we need fresh UTXOs (change from commit) + P2SH UTXO
       // The P2SH UTXO doesn't need reservation as it's unique to this mint
       const { transactions: revealTxs } = await createTransactions({
-        priorityEntries: [revealUTXOs.entries[0]],
-        entries: newEntries,
+        priorityEntries: [transformedP2shEntry],
+        entries: transformedNewEntries,
         outputs: [],
         changeAddress: this.address!,
         priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
