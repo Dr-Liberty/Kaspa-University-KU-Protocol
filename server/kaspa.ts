@@ -45,7 +45,6 @@ globalThis.WebSocket = W3CWebSocket;
 interface KaspaConfig {
   network: "mainnet" | "testnet-10" | "testnet-11";
   apiUrl: string;
-  treasuryMnemonic?: string;
 }
 
 interface RewardTransaction {
@@ -81,7 +80,6 @@ class KaspaService {
   private rpcClient: any = null;                // kaspa-rpc-client (npm) for UTXO fetching
   private wasmRpcClient: any = null;            // WASM RpcClient for PendingTransaction.submit()
   private kaspaModule: any = null;
-  private treasuryMnemonic: string | null = null;
 
   constructor(config: Partial<KaspaConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -95,12 +93,12 @@ class KaspaService {
     if (this.initialized) return true;
 
     try {
-      // Check if treasury private key is available (supports new and legacy names)
-      const privateKeyOrMnemonic = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY || process.env.KASPA_TREASURY_MNEMONIC;
+      // Get treasury private key from environment
+      const privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
       
-      if (!privateKeyOrMnemonic) {
+      if (!privateKeyHex) {
         console.log("[Kaspa] No treasury private key configured - running in demo mode");
-        console.log("[Kaspa] Set KASPA_TREASURY_PRIVATE_KEY secret to enable real rewards");
+        console.log("[Kaspa] Set KASPA_TREASURY_PRIVATEKEY secret to enable real rewards");
         this.initialized = true;
         return true;
       }
@@ -108,8 +106,8 @@ class KaspaService {
       // Load kaspa module with K-Kluster approach
       await this.loadKaspaModule();
 
-      // Derive treasury address from private key or mnemonic
-      await this.deriveKeysFromMnemonic(privateKeyOrMnemonic);
+      // Derive treasury address from private key hex
+      await this.deriveKeysFromPrivateKey(privateKeyHex);
 
       // Try kaspa-rpc-client first (pure TypeScript, most reliable in Node.js)
       await this.tryRpcClientConnection();
@@ -217,119 +215,28 @@ class KaspaService {
   }
 
   /**
-   * Derive keys from mnemonic using BIP44 path for Kaspa
-   * Kaspa BIP44 coin type: 111111
-   * Path: m/44'/111111'/0'/0/0
-   * Uses standard bip39/hdkey libraries for reliable derivation
-   * 
-   * Also supports raw private keys (64 hex characters)
+   * Derive keys from private key hex
+   * Uses raw 64-character hex private key directly
    */
-  private async deriveKeysFromMnemonic(mnemonicPhrase: string): Promise<void> {
+  private async deriveKeysFromPrivateKey(privateKeyHex: string): Promise<void> {
     try {
       // Clean up input - trim whitespace
-      const cleanInput = mnemonicPhrase.trim();
+      const cleanInput = privateKeyHex.trim();
       
-      // Check if this is a raw private key (64 hex characters)
+      // Validate that this is a raw private key (64 hex characters)
       const isRawPrivateKey = /^[0-9a-fA-F]{64}$/.test(cleanInput);
       
-      if (isRawPrivateKey) {
-        console.log("[Kaspa] Detected raw private key (64 hex chars) - using directly");
-        await this.useRawPrivateKey(cleanInput);
-        return;
+      if (!isRawPrivateKey) {
+        throw new Error("Invalid private key format. Expected 64 hex characters.");
       }
       
-      // Otherwise treat as mnemonic
-      const cleanMnemonic = cleanInput.replace(/\s+/g, " ");
-      const wordCount = cleanMnemonic.split(" ").length;
-      
-      console.log(`[Kaspa] Mnemonic word count: ${wordCount}`);
-      
-      // Validate mnemonic (supports 12, 15, 18, 21, or 24 words)
-      if (!bip39.validateMnemonic(cleanMnemonic)) {
-        console.log("[Kaspa] BIP39 validation failed, trying with passphrase derivation");
-        // Even if BIP39 validation fails, we can still derive from any passphrase
-        // This allows for custom mnemonics or passphrases
-      } else {
-        console.log("[Kaspa] Mnemonic validated as BIP39");
-      }
-
-      // Derive seed from mnemonic (512-bit seed)
-      // Use cleaned mnemonic for consistent derivation
-      const seed = await bip39.mnemonicToSeed(cleanMnemonic);
-      console.log("[Kaspa] Seed derived from mnemonic");
-
-      // Create HD key from seed
-      const hdkey = HDKey.fromMasterSeed(seed);
-
-      // Derive using Kaspa BIP44 path: m/44'/111111'/0'/0/0
-      const derivationPath = "m/44'/111111'/0'/0/0";
-      const derivedKey = hdkey.derive(derivationPath);
-      
-      if (!derivedKey.privateKey) {
-        throw new Error("Failed to derive private key");
-      }
-
-      // Store private key (32 bytes)
-      this.treasuryPrivateKey = derivedKey.privateKey;
-      
-      // Derive Kaspa address from public key
-      // Kaspa uses schnorr signatures with 32-byte x-only public keys
-      const publicKey = derivedKey.publicKey;
-      if (!publicKey) {
-        throw new Error("Failed to derive public key");
-      }
-
-      // Kaspa address format: prefix + version + schnorr pubkey hash
-      // For P2PK-Schnorr: version = 0x00, prefix = "kaspa:"
-      const pubKeyX = publicKey.slice(1); // Remove 0x02/0x03 prefix for x-only
-      
-      // Create address payload: version byte + pubkey hash
-      const versionByte = Buffer.from([0x00]); // P2PK-Schnorr
-      const addressPayload = Buffer.concat([versionByte, pubKeyX]);
-      
-      // Kaspa uses bech32 encoding, but for simplicity we use base58check with prefix
-      // Proper format: kaspa:qr... for P2PK-Schnorr addresses
-      const payloadHash = createHash("blake2b512").update(addressPayload).digest().slice(0, 32);
-      
-      // Try to use kaspa WASM module for address generation (most accurate)
-      const publicKeyHex = publicKey.toString("hex");
-      
-      if (this.kaspaModule && this.kaspaModule.createAddress) {
-        try {
-          const kaspaAddress = this.kaspaModule.createAddress(
-            publicKeyHex, 
-            this.kaspaModule.NetworkType.Mainnet
-          );
-          this.treasuryAddress = kaspaAddress.toString();
-          console.log(`[Kaspa] Treasury address (WASM): ${this.treasuryAddress}`);
-        } catch (wasmError: any) {
-          console.log(`[Kaspa] WASM createAddress failed: ${wasmError.message}`);
-          // Fallback to our bech32 implementation
-          this.treasuryAddress = this.createKaspaAddress(pubKeyX);
-          console.log(`[Kaspa] Treasury address (bech32): ${this.treasuryAddress}`);
-        }
-      } else {
-        // Use our bech32 implementation
-        this.treasuryAddress = this.createKaspaAddress(pubKeyX);
-        console.log(`[Kaspa] Treasury address (bech32): ${this.treasuryAddress}`);
-      }
-
-      // Store mnemonic for kaspa-rpc-client (if it's a valid BIP39 phrase)
-      if (bip39.validateMnemonic(mnemonicPhrase)) {
-        this.treasuryMnemonic = mnemonicPhrase;
-        console.log(`[Kaspa] Valid BIP39 mnemonic stored for transaction signing`);
-      }
-
-      console.log(`[Kaspa] Using BIP44 path: ${derivationPath}`);
-      console.log(`[Kaspa] Private key available: YES (${this.treasuryPrivateKey.length} bytes)`);
+      console.log("[Kaspa] Using raw private key (64 hex chars)");
+      await this.useRawPrivateKey(cleanInput);
 
     } catch (error: any) {
-      console.error("[Kaspa] Failed to derive keys from mnemonic:", error.message);
-      // Fallback - but mark that we don't have signing capability
-      this.treasuryAddress = this.fallbackAddressDerivation(mnemonicPhrase);
+      console.error("[Kaspa] Failed to derive keys from private key:", error.message);
       this.treasuryPrivateKey = null;
-      console.log(`[Kaspa] Fallback treasury address: ${this.treasuryAddress}`);
-      console.log(`[Kaspa] WARNING: No signing capability with fallback address`);
+      console.log(`[Kaspa] WARNING: No signing capability - check your KASPA_TREASURY_PRIVATEKEY`);
     }
   }
 
@@ -1008,17 +915,6 @@ class KaspaService {
       }
     }
 
-    // Fallback: If we have a BIP39 mnemonic, try kaspa-rpc-client's Wallet
-    if (this.rpcConnected && this.rpcClient && this.treasuryMnemonic) {
-      try {
-        return await this.sendTransactionViaRpcClient(recipientAddress, amountKas, lessonId, score, quizPayload);
-      } catch (error: any) {
-        console.error("[Kaspa] kaspa-rpc-client wallet failed:", error.message);
-        lastError = `Transaction failed: ${error.message}`;
-        // Fall through to error response
-      }
-    }
-
     // Return error with detailed message
     console.error(`[Kaspa] All transaction methods failed: ${lastError}`);
     return { success: false, error: lastError };
@@ -1345,62 +1241,7 @@ class KaspaService {
   }
 
   /**
-   * Send transaction via kaspa-rpc-client (pure TypeScript)
-   * More reliable in Node.js/tsx environment than WASM
-   * Embeds quiz proof payload for on-chain verification
-   */
-  private async sendTransactionViaRpcClient(
-    recipientAddress: string,
-    amountKas: number,
-    lessonId: string,
-    score: number,
-    quizPayload?: string
-  ): Promise<TransactionResult> {
-    const { Wallet } = require("kaspa-rpc-client");
-
-    if (!this.treasuryMnemonic) {
-      throw new Error("No valid BIP39 mnemonic for transaction signing");
-    }
-
-    console.log(`[Kaspa] Sending ${amountKas} KAS via kaspa-rpc-client...`);
-    if (quizPayload) {
-      console.log(`[Kaspa] Embedding quiz proof payload: ${quizPayload.length / 2} bytes`);
-    }
-
-    // Create wallet from treasury mnemonic
-    const wallet = Wallet.fromPhrase(this.rpcClient, this.treasuryMnemonic);
-    const account = await wallet.account();
-
-    // Convert KAS to sompi (1 KAS = 100,000,000 sompi)
-    const amountSompi = BigInt(Math.floor(amountKas * 100_000_000));
-
-    // Build send options with optional payload
-    const sendOptions: any = {
-      outputs: [{
-        address: recipientAddress,
-        amount: amountSompi
-      }],
-      priorityFee: BigInt(10000),
-    };
-
-    // Embed KU protocol quiz proof in transaction payload
-    if (quizPayload) {
-      sendOptions.payload = quizPayload;
-      console.log(`[Kaspa] Embedding quiz proof with wallet: ${recipientAddress.slice(0, 25)}...`);
-    }
-
-    // Send transaction
-    const txIds = await account.send(sendOptions);
-
-    const txHash = txIds[0] || "";
-    console.log(`[Kaspa] Transaction sent! TxHash: ${txHash}`);
-    console.log(`[Kaspa] Reward: ${amountKas} KAS for lesson ${lessonId} (score: ${score})${quizPayload ? ' with on-chain proof' : ''}`);
-
-    return { success: true, txHash };
-  }
-
-  /**
-   * Send transaction via WASM SDK
+   * Send transaction via WASM SDK (legacy - not used with private key approach)
    */
   private async sendTransactionViaWasm(
     recipientAddress: string,
