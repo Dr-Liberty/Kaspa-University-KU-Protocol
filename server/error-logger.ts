@@ -1,4 +1,4 @@
-Nfimport { db } from "./db";
+import { db } from "./db";
 import { errorLogs } from "./db/schema";
 import { desc, eq } from "drizzle-orm";
 
