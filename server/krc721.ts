@@ -938,14 +938,14 @@ class KRC721Service {
         };
       }
 
-      // Verify amount is sufficient
+      // Verify amount is sufficient (use the constant we defined above)
       const p2shUtxo = p2shEntries[0];
       const receivedAmount = BigInt(p2shUtxo.utxoEntry?.amount || p2shUtxo.entry?.utxoEntry?.amount || 0);
       
-      if (receivedAmount < BigInt(kaspaToSompi("10")!)) {
+      if (receivedAmount < KRC721_MINT_FEE_SOMPI) {
         return {
           success: false,
-          error: `Insufficient funds at P2SH. Received: ${Number(receivedAmount) / 1e8} KAS, Required: 10 KAS minimum`,
+          error: `Insufficient funds at P2SH. Received: ${Number(receivedAmount) / 1e8} KAS, Required: ${KRC721_MINT_FEE_KAS} KAS minimum`,
         };
       }
 
@@ -1021,7 +1021,7 @@ class KRC721Service {
     return {
       kasAmount: KRC721_MINT_FEE_KAS,
       sompiAmount: KRC721_MINT_FEE_SOMPI.toString(),
-      description: "KRC-721 NFT mint fee (10 KAS minimum per spec + network fees)",
+      description: "KRC-721 NFT mint fee (based on coinchimp reference implementation)",
     };
   }
 
