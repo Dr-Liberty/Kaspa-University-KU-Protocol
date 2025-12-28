@@ -1063,28 +1063,37 @@ class KRC721Service {
         throw new Error("No UTXOs available for transaction");
       }
 
-      // Convert entries to UTXO format for manager (for reservation tracking only)
-      const utxos: UTXO[] = entries.map((e: any) => ({
-        txId: e.outpoint?.transactionId || "",
-        index: e.outpoint?.index ?? 0,
-        amount: BigInt(e.utxoEntry?.amount || 0),
-        scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
-      }));
+      // Debug: Log entry structure to understand WASM format
+      if (entries.length > 0) {
+        const sample = entries[0];
+        console.log(`[KRC721] Sample UTXO structure:`, JSON.stringify({
+          hasOutpoint: !!sample.outpoint,
+          hasAddress: !!sample.address,
+          hasUtxoEntry: !!sample.utxoEntry,
+          outpointKeys: sample.outpoint ? Object.keys(sample.outpoint) : [],
+          utxoEntryKeys: sample.utxoEntry ? Object.keys(sample.utxoEntry) : [],
+          amount: sample.utxoEntry?.amount?.toString() || sample.amount?.toString() || 'not found',
+        }));
+      }
+
+      // Calculate total available from entries
+      let totalAvailable = 0n;
+      for (const e of entries) {
+        // WASM RpcClient may store amount at different paths
+        const amt = e.utxoEntry?.amount ?? e.amount ?? 0n;
+        totalAvailable += BigInt(amt);
+      }
+      console.log(`[KRC721] Total available in wallet: ${totalAvailable} sompi (${Number(totalAvailable) / 1e8} KAS)`);
 
       // Calculate required amount (commit + fee buffer)
       const commitSompi = kaspaToSompi(commitAmountKas)!;
       const feeBuffer = kaspaToSompi("3")!; // Extra for fees
       const requiredAmount = BigInt(commitSompi) + BigInt(feeBuffer);
 
-      // Reserve UTXOs through the manager to prevent race conditions
-      commitReservation = await utxoManager.selectAndReserve(
-        utxos,
-        requiredAmount,
-        `KRC721_commit_${P2SHAddress.toString().slice(0, 16)}`
-      );
-
-      if (!commitReservation) {
-        throw new Error(`Insufficient unreserved UTXOs for ${commitAmountKas} KAS NFT mint`);
+      if (totalAvailable < requiredAmount) {
+        const requiredKas = Number(requiredAmount) / 1e8;
+        const availableKas = Number(totalAvailable) / 1e8;
+        throw new Error(`Insufficient funds: need ${requiredKas} KAS, have ${availableKas} KAS`);
       }
 
       console.log(`[KRC721] Using ${entries.length} entries for commit (passing directly to createTransactions)`);
