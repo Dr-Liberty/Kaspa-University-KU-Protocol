@@ -2223,6 +2223,220 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Recover orphaned P2SH (no reservation in database)
+  // This tries to reconstruct the script by matching the P2SH address
+  app.post("/api/admin/recover-orphan-p2sh", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { p2shAddress, recipientAddress, ipfsUrl } = req.body;
+      
+      if (!p2shAddress || !recipientAddress) {
+        return res.status(400).json({ 
+          error: "Required: p2shAddress, recipientAddress. Optional: ipfsUrl" 
+        });
+      }
+
+      console.log(`[Admin Recovery] Attempting orphan P2SH recovery: ${p2shAddress.slice(0, 30)}...`);
+      console.log(`[Admin Recovery] Recipient: ${recipientAddress.slice(0, 30)}...`);
+      
+      const krc721Service = await getKRC721Service();
+      
+      // Access the kaspa module from the service
+      // @ts-ignore - accessing private property for admin recovery
+      const kaspaModule = krc721Service.kaspaModule;
+      // @ts-ignore
+      const publicKey = krc721Service.publicKey;
+      // @ts-ignore
+      const privateKey = krc721Service.privateKey;
+      // @ts-ignore
+      const config = krc721Service.config;
+      
+      if (!kaspaModule || !publicKey || !privateKey) {
+        return res.status(500).json({ error: "KRC721 service not properly initialized" });
+      }
+      
+      const { ScriptBuilder, Opcodes, addressFromScriptPublicKey } = kaspaModule;
+      const xOnlyPubKey = publicKey.toXOnlyPublicKey().toString();
+      
+      // Try different mint data variations to find matching P2SH
+      const mintDataVariations: any[] = [];
+      
+      // Variation 1: With IPFS URL
+      if (ipfsUrl) {
+        mintDataVariations.push({
+          p: "krc-721",
+          op: "mint",
+          tick: config.ticker,
+          to: recipientAddress,
+          meta: ipfsUrl,
+        });
+      }
+      
+      // Variation 2: Without IPFS URL
+      mintDataVariations.push({
+        p: "krc-721",
+        op: "mint",
+        tick: config.ticker,
+        to: recipientAddress,
+      });
+      
+      let matchedScript: any = null;
+      let matchedMintDataStr: string = "";
+      
+      for (const mintData of mintDataVariations) {
+        const mintDataStr = JSON.stringify(mintData, null, 0);
+        
+        const script = new ScriptBuilder()
+          .addData(xOnlyPubKey)
+          .addOp(Opcodes.OpCheckSig)
+          .addOp(Opcodes.OpFalse)
+          .addOp(Opcodes.OpIf)
+          .addData(Buffer.from("kspr"))
+          .addI64(BigInt(0))
+          .addData(Buffer.from(mintDataStr))
+          .addOp(Opcodes.OpEndIf);
+        
+        const reconstructedP2sh = addressFromScriptPublicKey(
+          script.createPayToScriptHashScript(),
+          config.network
+        );
+        
+        if (reconstructedP2sh && reconstructedP2sh.toString() === p2shAddress) {
+          console.log(`[Admin Recovery] Found matching script with mintData: ${mintDataStr}`);
+          matchedScript = script;
+          matchedMintDataStr = mintDataStr;
+          break;
+        }
+      }
+      
+      if (!matchedScript) {
+        return res.status(404).json({ 
+          error: "Could not reconstruct matching P2SH script. The public key may have changed or parameters are incorrect.",
+          tried: mintDataVariations.length,
+          xOnlyPubKey: xOnlyPubKey.slice(0, 20) + "...",
+        });
+      }
+      
+      // Check P2SH balance
+      const balanceRes = await fetch(`https://api.kaspa.org/addresses/${p2shAddress}/balance`);
+      if (!balanceRes.ok) {
+        return res.status(500).json({ error: "Failed to check P2SH balance" });
+      }
+      const balanceData = await balanceRes.json() as { balance: number };
+      const balanceSompi = balanceData.balance;
+      
+      if (balanceSompi <= 0) {
+        return res.json({ 
+          success: false, 
+          error: "P2SH address has no balance - funds may have already been recovered",
+          matchedMintData: matchedMintDataStr,
+        });
+      }
+      
+      console.log(`[Admin Recovery] P2SH balance: ${balanceSompi / 100000000} KAS`);
+      
+      // Get UTXOs from P2SH
+      const utxoRes = await fetch(`https://api.kaspa.org/addresses/${p2shAddress}/utxos`);
+      if (!utxoRes.ok) {
+        return res.status(500).json({ error: "Failed to fetch P2SH UTXOs" });
+      }
+      const utxos = await utxoRes.json() as any[];
+      
+      if (!utxos || utxos.length === 0) {
+        return res.json({ 
+          success: false, 
+          error: "No UTXOs found at P2SH address",
+          matchedMintData: matchedMintDataStr,
+        });
+      }
+      
+      // Build and submit reveal transaction
+      // @ts-ignore
+      const rpcClient = krc721Service.rpcClient;
+      // @ts-ignore
+      const wasmRpcClient = krc721Service.wasmRpcClient;
+      
+      // Get treasury address for the output
+      // @ts-ignore
+      const treasuryAddress = krc721Service.address;
+      
+      console.log(`[Admin Recovery] Building reveal tx with ${utxos.length} UTXOs, sending to ${treasuryAddress}`);
+      
+      // Calculate total input and output (minus network fee)
+      const totalInput = utxos.reduce((sum: bigint, utxo: any) => sum + BigInt(utxo.utxoEntry?.amount || 0), BigInt(0));
+      const networkFee = BigInt(50000000); // 0.5 KAS network fee
+      const outputAmount = totalInput - networkFee;
+      
+      if (outputAmount <= BigInt(0)) {
+        return res.json({ 
+          success: false, 
+          error: "Insufficient balance after network fees",
+          balance: totalInput.toString(),
+          fee: networkFee.toString(),
+        });
+      }
+      
+      // Build the reveal transaction
+      const { createTransactions, kaspaToSompi, UtxoEntryReference, PrivateKey } = kaspaModule;
+      
+      // Convert UTXOs to proper format
+      const utxoEntries = utxos.map((utxo: any) => {
+        return new UtxoEntryReference({
+          outpoint: {
+            transactionId: utxo.outpoint?.transactionId,
+            index: utxo.outpoint?.index,
+          },
+          utxoEntry: {
+            amount: BigInt(utxo.utxoEntry?.amount || 0),
+            scriptPublicKey: utxo.utxoEntry?.scriptPublicKey,
+            blockDaaScore: BigInt(utxo.utxoEntry?.blockDaaScore || 0),
+            isCoinbase: utxo.utxoEntry?.isCoinbase || false,
+          },
+        });
+      });
+      
+      // Create reveal transaction using createTransactions
+      const { transactions } = await createTransactions({
+        entries: utxoEntries,
+        outputs: [{
+          address: treasuryAddress,
+          amount: outputAmount,
+        }],
+        priorityFee: BigInt(0),
+        changeAddress: treasuryAddress,
+        networkId: config.network,
+      });
+      
+      if (!transactions || transactions.length === 0) {
+        return res.json({ 
+          success: false, 
+          error: "Failed to create reveal transaction",
+        });
+      }
+      
+      // Sign and submit the transaction
+      const revealTx = transactions[0];
+      revealTx.sign([privateKey], false);
+      revealTx.setSignatures(matchedScript.encodePayToScriptHashSignatureScript(revealTx.transaction.inputs[0].signatureScript));
+      
+      // Submit via WASM RPC
+      const revealTxHash = await revealTx.submit(wasmRpcClient);
+      
+      console.log(`[Admin Recovery] Successfully recovered orphan P2SH! Reveal TX: ${revealTxHash}`);
+      
+      return res.json({
+        success: true,
+        message: "Orphan P2SH recovered successfully",
+        revealTxHash,
+        recoveredAmount: (Number(outputAmount) / 100000000).toFixed(8) + " KAS",
+        sentTo: treasuryAddress,
+      });
+      
+    } catch (error: any) {
+      console.error(`[Admin Recovery] Orphan recovery error:`, error);
+      res.status(500).json({ error: sanitizeError(error), details: error.message });
+    }
+  });
+
   // Check all P2SH addresses for stuck funds (admin recovery tool)
   app.get("/api/admin/p2sh-recovery", adminAuth, async (_req: Request, res: Response) => {
     try {
