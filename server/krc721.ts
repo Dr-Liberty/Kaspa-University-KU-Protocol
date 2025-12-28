@@ -153,6 +153,9 @@ class KRC721Service {
       // Connect to RPC
       await this.connectRpc();
 
+      // Load deployment status from database
+      await this.loadDeploymentStatus();
+
       // Log live mode status with reasons if not live
       if (this.isLive()) {
         console.log(`[KRC721] Live mode enabled - RPC connected, keys ready`);
@@ -340,6 +343,50 @@ class KRC721Service {
   }
 
   /**
+   * Load deployment status from database
+   */
+  private async loadDeploymentStatus(): Promise<void> {
+    try {
+      const { db } = await import("./db");
+      const { appSettings } = await import("./db/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const result = await db.select().from(appSettings).where(eq(appSettings.key, `krc721_deployed_${this.config.ticker}`));
+      if (result.length > 0 && result[0].value === "true") {
+        this.collectionDeployed = true;
+        console.log(`[KRC721] Collection ${this.config.ticker} is already deployed (from database)`);
+      }
+    } catch (error: any) {
+      console.log(`[KRC721] Could not load deployment status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Save deployment status to database
+   */
+  private async saveDeploymentStatus(deployed: boolean): Promise<void> {
+    try {
+      const { db } = await import("./db");
+      const { appSettings } = await import("./db/schema");
+      
+      await db.insert(appSettings)
+        .values({
+          key: `krc721_deployed_${this.config.ticker}`,
+          value: deployed ? "true" : "false",
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: appSettings.key,
+          set: { value: deployed ? "true" : "false", updatedAt: new Date() },
+        });
+      
+      console.log(`[KRC721] Deployment status saved to database: ${deployed}`);
+    } catch (error: any) {
+      console.error(`[KRC721] Could not save deployment status: ${error.message}`);
+    }
+  }
+
+  /**
    * Runtime health check - verifies RPC is actually responsive before transactions
    */
   private async checkRpcHealth(): Promise<{ healthy: boolean; error?: string }> {
@@ -446,6 +493,7 @@ class KRC721Service {
       
       if (result.success) {
         this.collectionDeployed = true;
+        await this.saveDeploymentStatus(true);
         console.log(`[KRC721] Collection deployed successfully!`);
       }
 
