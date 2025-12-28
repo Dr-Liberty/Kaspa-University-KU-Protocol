@@ -932,7 +932,10 @@ class KaspaService {
             proofTxHash // Include proof tx for verification
           };
         } else {
+          // Reward failed after proof succeeded - return failure but include proof hash
+          console.error(`[Kaspa] Reward tx failed after proof succeeded. Proof: ${proofTxHash}`);
           lastError = rewardResult.error || "Reward transaction failed";
+          // Fall through to error return, but we'll include proofTxHash there too
         }
       } catch (error: any) {
         console.error("[Kaspa] Transaction failed:", error.message);
@@ -940,9 +943,13 @@ class KaspaService {
       }
     }
 
-    // Return error with detailed message
+    // Return error with detailed message, including any successful proof tx for debugging
     console.error(`[Kaspa] All transaction methods failed: ${lastError}`);
-    return { success: false, error: lastError };
+    return { 
+      success: false, 
+      error: lastError,
+      proofTxHash: proofTxHash || undefined // Include if proof succeeded before reward failed
+    };
   }
 
   /**
