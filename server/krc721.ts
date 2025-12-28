@@ -1143,7 +1143,7 @@ class KRC721Service {
       for (const tx of commitTxs) {
         console.log(`[KRC721] Signing tx with ${tx.transaction?.inputs?.length || 0} inputs`);
         try {
-          tx.sign([this.privateKey]);
+          await tx.sign([this.privateKey]);
           console.log(`[KRC721] Signing successful, submitting...`);
         } catch (signError: any) {
           console.error(`[KRC721] Sign error details:`, signError);
