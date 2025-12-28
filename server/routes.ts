@@ -2170,6 +2170,59 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Attempt to recover and finalize a stuck mint reservation
+  app.post("/api/admin/recover-mint/:p2shAddress", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { p2shAddress } = req.params;
+      
+      if (!p2shAddress) {
+        return res.status(400).json({ error: "P2SH address required" });
+      }
+      
+      // Get the reservation
+      const reservation = await mintStorage.getByP2shAddress(p2shAddress);
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservation not found" });
+      }
+      
+      console.log(`[Admin Recovery] Attempting to finalize stuck mint: ${p2shAddress.slice(0, 30)}...`);
+      
+      const krc721Service = await getKRC721Service();
+      
+      // Attempt to finalize the mint
+      const result = await krc721Service.finalizeMint(
+        p2shAddress,
+        reservation.certificateId,
+        reservation.commitTxHash || undefined
+      );
+      
+      if (result.success) {
+        // Update the certificate status
+        await storage.updateCertificate(reservation.certificateId, {
+          nftStatus: "claimed",
+          nftTxHash: result.revealTxHash,
+        });
+        
+        console.log(`[Admin Recovery] Successfully recovered mint: ${result.revealTxHash}`);
+        return res.json({
+          success: true,
+          message: "Mint recovered successfully",
+          revealTxHash: result.revealTxHash,
+          tokenId: result.tokenId,
+        });
+      } else {
+        console.log(`[Admin Recovery] Failed to recover mint: ${result.error}`);
+        return res.json({
+          success: false,
+          error: result.error,
+        });
+      }
+    } catch (error: any) {
+      console.error(`[Admin Recovery] Error:`, error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Check all P2SH addresses for stuck funds (admin recovery tool)
   app.get("/api/admin/p2sh-recovery", adminAuth, async (_req: Request, res: Response) => {
     try {

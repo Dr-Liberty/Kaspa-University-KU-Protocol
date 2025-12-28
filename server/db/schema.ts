@@ -72,6 +72,7 @@ export const pendingMintReservations = pgTable("pending_mint_reservations", {
   recipientAddress: text("recipient_address").notNull(),
   tokenId: integer("token_id").notNull(),
   p2shAddress: text("p2sh_address").notNull().unique(),
+  xOnlyPubKey: text("x_only_pub_key"), // Store the pubkey used for script - CRITICAL for restart recovery
   scriptData: text("script_data").notNull(), // JSON-serialized script data
   mintData: text("mint_data").notNull(), // JSON-serialized mint metadata
   commitTxHash: text("commit_tx_hash"), // User's commit transaction hash

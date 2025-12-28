@@ -15,6 +15,7 @@ export interface PendingMintReservation {
   recipientAddress: string;
   tokenId: number;
   p2shAddress: string;
+  xOnlyPubKey?: string | null; // Store pubkey for script reconstruction on restart
   scriptData: string;
   mintData: string;
   commitTxHash?: string | null;
@@ -33,6 +34,7 @@ class MintStorageService {
     recipientAddress: string;
     tokenId: number;
     p2shAddress: string;
+    xOnlyPubKey?: string; // CRITICAL: Store pubkey for script reconstruction
     scriptData: any;
     mintData: any;
     expiresAt: Date;
@@ -43,6 +45,7 @@ class MintStorageService {
         recipientAddress: data.recipientAddress,
         tokenId: data.tokenId,
         p2shAddress: data.p2shAddress,
+        xOnlyPubKey: data.xOnlyPubKey,
         scriptData: JSON.stringify(data.scriptData),
         mintData: JSON.stringify(data.mintData),
         status: "pending",

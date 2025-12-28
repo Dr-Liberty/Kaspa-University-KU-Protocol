@@ -712,6 +712,7 @@ class KRC721Service {
       }
 
       // Calculate data size to prevent 520-byte limit errors
+      // CRITICAL: Store this EXACT string - it must be reproduced byte-for-byte for script reconstruction
       const mintDataStr = JSON.stringify(mintData, null, 0);
       console.log(`[KRC721] Mint data: ${mintDataStr}`);
       console.log(`[KRC721] Mint data size: ${mintDataStr.length} bytes (limit: 520)`);
@@ -722,6 +723,7 @@ class KRC721Service {
       }
 
       // Build inscription script per coinchimp reference implementation
+      // CRITICAL: Store the xOnlyPubKey for script reconstruction after server restart
       const xOnlyPubKey = this.publicKey.toXOnlyPublicKey().toString();
       console.log(`[KRC721] Building script with pubkey: ${xOnlyPubKey.slice(0, 16)}...`);
       
@@ -745,12 +747,14 @@ class KRC721Service {
       const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minute expiry
 
       // Store pending mint in database for finalization
+      // CRITICAL: Store xOnlyPubKey AND exact mintDataStr for byte-perfect script reconstruction
       const reservation = await mintStorage.createReservation({
         certificateId,
         recipientAddress,
         tokenId,
         p2shAddress: p2shAddressStr,
-        scriptData: script.toString(), // Serialize script for storage
+        xOnlyPubKey, // Store pubkey for script reconstruction - prevents lost funds on restart
+        scriptData: mintDataStr, // Store the EXACT string used in script (not script.toString())
         mintData,
         expiresAt: new Date(expiresAt),
       });
@@ -850,16 +854,58 @@ class KRC721Service {
           Opcodes,
         } = this.kaspaModule;
 
-        // Rebuild the inscription script
+        // CRITICAL: Use the stored xOnlyPubKey, NOT the current publicKey
+        // This ensures the P2SH address matches even if the server key changes
+        let xOnlyPubKey = dbReservation.xOnlyPubKey;
+        
+        if (!xOnlyPubKey) {
+          // Fallback for old reservations without stored pubkey
+          // Check if P2SH would match with current key
+          console.log(`[KRC721] WARNING: No stored xOnlyPubKey, using current key (may fail if key changed)`);
+          xOnlyPubKey = this.publicKey.toXOnlyPublicKey().toString();
+        }
+
+        // CRITICAL: Use the stored scriptData (exact mintDataStr) - NOT regenerated JSON
+        // The scriptData field now stores the exact string used in the original script
+        // This ensures byte-for-byte matching for P2SH address derivation
+        const storedMintDataStr = dbReservation.scriptData;
+        
+        // Verify it looks like JSON (not hex from old script.toString())
+        const isValidJson = storedMintDataStr.startsWith("{") && storedMintDataStr.endsWith("}");
+        const mintDataStrToUse = isValidJson 
+          ? storedMintDataStr 
+          : JSON.stringify(mintData, null, 0); // Fallback for old format
+        
+        if (!isValidJson) {
+          console.log(`[KRC721] WARNING: scriptData appears to be old format, regenerating mintData string`);
+        }
+
+        // Rebuild the inscription script with the EXACT pubkey and EXACT data string
         const script = new ScriptBuilder()
-          .addData(this.publicKey.toXOnlyPublicKey().toString())
+          .addData(xOnlyPubKey)
           .addOp(Opcodes.OpCheckSig)
           .addOp(Opcodes.OpFalse)
           .addOp(Opcodes.OpIf)
           .addData(Buffer.from("kspr"))
           .addI64(BigInt(0))
-          .addData(Buffer.from(JSON.stringify(mintData, null, 0)))
+          .addData(Buffer.from(mintDataStrToUse))
           .addOp(Opcodes.OpEndIf);
+
+        // Verify the reconstructed P2SH matches what's stored
+        const { addressFromScriptPublicKey } = this.kaspaModule;
+        const reconstructedP2sh = addressFromScriptPublicKey(
+          script.createPayToScriptHashScript(),
+          this.config.network
+        )!.toString();
+        
+        if (reconstructedP2sh !== p2shAddress) {
+          console.error(`[KRC721] P2SH mismatch! Stored: ${p2shAddress.slice(0, 30)}, Rebuilt: ${reconstructedP2sh.slice(0, 30)}`);
+          return { 
+            success: false, 
+            error: "Script reconstruction failed - P2SH address mismatch. Funds may be recoverable by admin.",
+            tokenId 
+          };
+        }
 
         pending = {
           script,
@@ -869,7 +915,7 @@ class KRC721Service {
           recipientAddress: dbReservation.recipientAddress,
         };
         
-        console.log(`[KRC721] Rebuilt script from database for certificate ${certificateId}`);
+        console.log(`[KRC721] Successfully rebuilt script from database for certificate ${certificateId}`);
       } catch (rebuildError: any) {
         console.error(`[KRC721] Failed to rebuild script: ${rebuildError.message}`);
         return { 
