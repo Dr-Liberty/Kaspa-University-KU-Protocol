@@ -131,7 +131,7 @@ class KaspaService {
       
       if (canEnableLive) {
         this.isLiveMode = true;
-        console.log(`[Kaspa] Live mode enabled - RPC connected, treasury: ${this.treasuryAddress.slice(0, 25)}...`);
+        console.log(`[Kaspa] Live mode enabled - RPC connected, treasury: ${this.treasuryAddress?.slice(0, 25)}...`);
       } else {
         this.isLiveMode = false;
         const reasons: string[] = [];
@@ -1118,7 +1118,7 @@ class KaspaService {
       }
 
       console.log(`[Kaspa] Creating transactions with ${wasmEntries.length} UTXOs...`);
-      console.log(`[Kaspa] Transaction settings: entries=${wasmEntries.length}, outputs=[{address: ${recipientAddress.slice(0,25)}..., amount: ${amountSompi}}], changeAddress=${this.treasuryAddress.slice(0,25)}..., priorityFee=${priorityFee}, hasPayload=${!!txSettings.payload}`);
+      console.log(`[Kaspa] Transaction settings: entries=${wasmEntries.length}, outputs=[{address: ${recipientAddress.slice(0,25)}..., amount: ${amountSompi}}], changeAddress=${this.treasuryAddress?.slice(0,25) || 'N/A'}..., priorityFee=${priorityFee}, hasPayload=${!!txSettings.payload}`);
 
       // Use createTransactions() which returns Transaction objects with toRpcTransaction()
       // This is the same pattern that works for payload transactions
@@ -1676,7 +1676,7 @@ class KaspaService {
             // Extract payload from RPC response
             if (tx.payload) {
               payloadHex = tx.payload;
-              console.log(`[Kaspa] RPC returned payload for ${txHash}: ${payloadHex.length} chars`);
+              console.log(`[Kaspa] RPC returned payload for ${txHash}: ${payloadHex?.length || 0} chars`);
             } else {
               console.log(`[Kaspa] RPC TX found but no payload field: ${txHash}`);
             }
@@ -1698,7 +1698,7 @@ class KaspaService {
             
             if (tx.payload) {
               payloadHex = tx.payload;
-              console.log(`[Kaspa] WASM RPC returned payload for ${txHash}: ${payloadHex.length} chars`);
+              console.log(`[Kaspa] WASM RPC returned payload for ${txHash}: ${payloadHex?.length || 0} chars`);
             }
           }
         } catch (wasmError: any) {
