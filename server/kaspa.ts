@@ -59,6 +59,7 @@ interface RewardTransaction {
 interface TransactionResult {
   success: boolean;
   txHash?: string;
+  proofTxHash?: string;
   error?: string;
 }
 
@@ -902,16 +903,40 @@ class KaspaService {
       return { success: false, error: `Treasury offline: ${health.error}` };
     }
 
-    // Try hybrid approach: kaspa-rpc-client for RPC + WASM for signing
+    // Two-step approach for KIP-0009 storage mass compliance:
+    // 1. Send quiz proof to SELF (0.2 KAS with payload) - this stores the on-chain proof
+    // 2. Send reward to USER (0.1 KAS, NO payload) - this is the actual reward
     let lastError: string = "Treasury not properly configured";
+    let proofTxHash: string | null = null;
     
     if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
       try {
-        return await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score, quizPayload);
+        // Step 1: Send quiz proof to self (with payload)
+        console.log(`[Kaspa] Step 1: Sending quiz proof to self (0.2 KAS with ${quizPayload.length / 2} byte payload)`);
+        proofTxHash = await this.sendPayloadTransaction(quizPayload, recipientAddress);
+        console.log(`[Kaspa] Quiz proof tx: ${proofTxHash}`);
+        
+        // Small delay between transactions to let UTXO manager update
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Step 2: Send reward to user (NO payload - keeps storage mass low)
+        console.log(`[Kaspa] Step 2: Sending reward ${amountKas} KAS to ${recipientAddress.slice(0, 25)}...`);
+        const rewardResult = await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score);
+        
+        if (rewardResult.success) {
+          console.log(`[Kaspa] Reward sent: ${rewardResult.txHash}, proof: ${proofTxHash}`);
+          // Return the reward tx hash (user cares about this one)
+          return { 
+            success: true, 
+            txHash: rewardResult.txHash,
+            proofTxHash // Include proof tx for verification
+          };
+        } else {
+          lastError = rewardResult.error || "Reward transaction failed";
+        }
       } catch (error: any) {
-        console.error("[Kaspa] Hybrid transaction failed:", error.message);
+        console.error("[Kaspa] Transaction failed:", error.message);
         lastError = `Transaction failed: ${error.message}`;
-        // Fall through to next method
       }
     }
 
