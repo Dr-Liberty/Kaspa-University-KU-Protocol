@@ -921,6 +921,44 @@ class KaspaService {
   }
 
   /**
+   * Send a simple transaction with custom payload
+   * Used for certificate proofs and other on-chain data embedding
+   * This is a simplified wrapper around sendTransactionHybrid
+   */
+  async sendTransactionWithPayload(
+    recipientAddress: string,
+    amountKas: number,
+    payloadHex: string
+  ): Promise<TransactionResult> {
+    const validation = this.validateAddress(recipientAddress);
+    if (!validation.valid) {
+      return { success: false, error: `Invalid recipient address: ${validation.error}` };
+    }
+
+    if (!this.isLive()) {
+      const demoTxHash = `demo_cert_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
+      console.log(`[Kaspa] Demo mode - simulated cert proof: ${amountKas} KAS to ${recipientAddress}`);
+      return { success: true, txHash: demoTxHash };
+    }
+
+    const health = await this.checkRpcHealth();
+    if (!health.healthy) {
+      return { success: false, error: `Treasury offline: ${health.error}` };
+    }
+
+    if (this.rpcConnected && this.rpcClient && this.treasuryPrivateKey && this.kaspaModule) {
+      try {
+        return await this.sendTransactionHybrid(recipientAddress, amountKas, "cert-proof", 100, payloadHex);
+      } catch (error: any) {
+        console.error("[Kaspa] Certificate proof transaction failed:", error.message);
+        return { success: false, error: error.message };
+      }
+    }
+
+    return { success: false, error: "Treasury not properly configured" };
+  }
+
+  /**
    * Hybrid transaction: kaspa-rpc-client for RPC + WASM for signing
    * Uses the private key directly for signing (when mnemonic isn't available)
    * Integrates UTXOManager for concurrent transaction safety

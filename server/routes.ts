@@ -38,6 +38,7 @@ import { checkVpn } from "./vpn-detection";
 import { getJobQueue } from "./job-queue";
 import { statsCache, analyticsCache } from "./cache";
 import { mintStorage } from "./mint-storage";
+import { issueCertificateProof, CERT_PROOF_AMOUNT_KAS, generateVerificationCode } from "./certificate-proof";
 
 export async function registerRoutes(
   httpServer: Server,
