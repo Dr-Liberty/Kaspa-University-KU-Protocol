@@ -1050,21 +1050,25 @@ class KRC721Service {
       // Step 1: Commit Transaction
       console.log("[KRC721] Creating commit transaction...");
       
-      const { entries } = await this.rpcClient.getUtxosByAddresses({
-        addresses: [this.address!],
-      });
+      // Use WASM RpcClient for getUtxosByAddresses - it returns entries in the exact format
+      // that createTransactions expects (matching the coinchimp/kaspa-krc721-apps reference)
+      if (!this.wasmRpcClient) {
+        throw new Error("WASM RpcClient not initialized");
+      }
+      
+      const { entries } = await this.wasmRpcClient.getUtxosByAddresses([this.address!]);
+      console.log(`[KRC721] Got ${entries.length} UTXOs from WASM RpcClient`);
 
       if (entries.length === 0) {
         throw new Error("No UTXOs available for transaction");
       }
 
-      // Convert entries to UTXO format for manager
+      // Convert entries to UTXO format for manager (for reservation tracking only)
       const utxos: UTXO[] = entries.map((e: any) => ({
-        txId: e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "",
-        index: e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0,
-        amount: BigInt(e.utxoEntry?.amount || e.entry?.utxoEntry?.amount || 0),
-        scriptPublicKey: e.utxoEntry?.scriptPublicKey?.scriptPublicKey || 
-                        e.entry?.utxoEntry?.scriptPublicKey?.scriptPublicKey || "",
+        txId: e.outpoint?.transactionId || "",
+        index: e.outpoint?.index ?? 0,
+        amount: BigInt(e.utxoEntry?.amount || 0),
+        scriptPublicKey: e.utxoEntry?.scriptPublicKey?.toString() || "",
       }));
 
       // Calculate required amount (commit + fee buffer)
@@ -1083,49 +1087,13 @@ class KRC721Service {
         throw new Error(`Insufficient unreserved UTXOs for ${commitAmountKas} KAS NFT mint`);
       }
 
-      // Build a Set of reserved UTXO keys for filtering
-      const reservedKeys = new Set(
-        commitReservation.selected.map(u => `${u.txId}:${u.index}`)
-      );
+      console.log(`[KRC721] Using ${entries.length} entries for commit (passing directly to createTransactions)`);
 
-      // Filter original entries to only include reserved UTXOs and transform to WASM format
-      const reservedEntries = entries
-        .filter((e: any) => {
-          const txId = e.outpoint?.transactionId || e.entry?.outpoint?.transactionId || "";
-          const index = e.outpoint?.index ?? e.entry?.outpoint?.index ?? 0;
-          return reservedKeys.has(`${txId}:${index}`);
-        })
-        .map((e: any) => {
-          // Transform kaspa-rpc-client format to WASM createTransactions format
-          const outpoint = e.outpoint || e.entry?.outpoint || {};
-          const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
-          
-          // scriptPublicKey can be nested - extract the hex string
-          const spk = utxoEntry.scriptPublicKey || {};
-          const scriptPublicKeyHex = spk.scriptPublicKey || spk.script || spk;
-          
-          return {
-            outpoint: {
-              transactionId: outpoint.transactionId || "",
-              index: outpoint.index ?? 0,
-            },
-            utxoEntry: {
-              amount: BigInt(utxoEntry.amount || 0),
-              scriptPublicKey: typeof scriptPublicKeyHex === 'string' ? scriptPublicKeyHex : (scriptPublicKeyHex?.scriptPublicKey || ""),
-              blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
-              isCoinbase: utxoEntry.isCoinbase || false,
-            },
-          };
-        });
-
-      console.log(`[KRC721] Using ${reservedEntries.length} reserved entries for commit`);
-      if (reservedEntries.length > 0) {
-        console.log(`[KRC721] First entry sample:`, JSON.stringify(reservedEntries[0], (_, v) => typeof v === 'bigint' ? v.toString() : v));
-      }
-
+      // Pass entries DIRECTLY to createTransactions without transformation
+      // This matches the reference implementation from coinchimp/kaspa-krc721-apps
       const { transactions: commitTxs } = await createTransactions({
         priorityEntries: [],
-        entries: reservedEntries,
+        entries: entries,
         outputs: [{
           address: P2SHAddress.toString(),
           amount: kaspaToSompi(commitAmountKas)!,
@@ -1164,50 +1132,23 @@ class KRC721Service {
       // Step 2: Reveal Transaction
       console.log("[KRC721] Creating reveal transaction...");
 
-      // Get fresh UTXOs after commit (change outputs)
-      const { entries: newEntries } = await this.rpcClient.getUtxosByAddresses({
-        addresses: [this.address!],
-      });
-
-      const revealUTXOs = await this.rpcClient.getUtxosByAddresses({
-        addresses: [P2SHAddress.toString()],
-      });
+      // Get fresh UTXOs after commit using WASM RpcClient (change outputs)
+      const { entries: newEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.address!]);
+      
+      // Get P2SH UTXO using WASM RpcClient
+      const revealUTXOs = await this.wasmRpcClient.getUtxosByAddresses([P2SHAddress.toString()]);
 
       if (revealUTXOs.entries.length === 0) {
         throw new Error("P2SH UTXO not found after commit");
       }
 
-      // Transform entries to WASM format
-      const transformEntry = (e: any) => {
-        const outpoint = e.outpoint || e.entry?.outpoint || {};
-        const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
-        
-        // scriptPublicKey can be nested - extract the hex string
-        const spk = utxoEntry.scriptPublicKey || {};
-        const scriptPublicKeyHex = spk.scriptPublicKey || spk.script || spk;
-        
-        return {
-          outpoint: {
-            transactionId: outpoint.transactionId || "",
-            index: outpoint.index ?? 0,
-          },
-          utxoEntry: {
-            amount: BigInt(utxoEntry.amount || 0),
-            scriptPublicKey: typeof scriptPublicKeyHex === 'string' ? scriptPublicKeyHex : (scriptPublicKeyHex?.scriptPublicKey || ""),
-            blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
-            isCoinbase: utxoEntry.isCoinbase || false,
-          },
-        };
-      };
+      console.log(`[KRC721] Got ${newEntries.length} new entries and ${revealUTXOs.entries.length} P2SH entries for reveal`);
 
-      const transformedNewEntries = newEntries.map(transformEntry);
-      const transformedP2shEntry = transformEntry(revealUTXOs.entries[0]);
-
-      // For reveal, we need fresh UTXOs (change from commit) + P2SH UTXO
-      // The P2SH UTXO doesn't need reservation as it's unique to this mint
+      // Pass entries DIRECTLY to createTransactions without transformation
+      // This matches the reference implementation from coinchimp/kaspa-krc721-apps
       const { transactions: revealTxs } = await createTransactions({
-        priorityEntries: [transformedP2shEntry],
-        entries: transformedNewEntries,
+        priorityEntries: [revealUTXOs.entries[0]],
+        entries: newEntries,
         outputs: [],
         changeAddress: this.address!,
         priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
