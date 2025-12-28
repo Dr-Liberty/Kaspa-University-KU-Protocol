@@ -416,6 +416,10 @@ export class MemStorage implements IStorage {
 
 import { DbStorage } from "./db-storage";
 
-export const storage: IStorage = process.env.DATABASE_URL 
+// Log which storage is being used at startup
+const useDatabase = !!process.env.DATABASE_URL;
+console.log(`[Storage] DATABASE_URL ${useDatabase ? 'is set' : 'NOT SET'} - using ${useDatabase ? 'DbStorage (PostgreSQL)' : 'MemStorage (in-memory)'}`);
+
+export const storage: IStorage = useDatabase 
   ? new DbStorage() 
   : new MemStorage();
