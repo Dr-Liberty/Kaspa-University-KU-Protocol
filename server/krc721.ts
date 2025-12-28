@@ -60,10 +60,11 @@ interface CertificateMetadata {
   }>;
 }
 
-// KRC-721 spec fees (per aspectron/krc721)
-// Deploy = 1000 KAS minimum, Mint = 10 KAS minimum
-const KRC721_MINT_FEE_KAS = "10.5"; // 10 KAS minimum + buffer for network fees
-const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
+// KRC-721 fees based on coinchimp reference implementation
+// Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
+// Reference uses 3.3 KAS for commit transaction
+const KRC721_MINT_FEE_KAS = "3.5"; // 3.3 KAS (reference) + 0.2 buffer for network fees
+const KRC721_MINT_FEE_SOMPI = BigInt(350000000); // 3.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
 // Import the database-backed mint storage service
 import { mintStorage, PendingMintReservation } from "./mint-storage";
@@ -561,18 +562,13 @@ class KRC721Service {
 
       // Create MINIMAL mint data per KRC-721 spec to avoid 520-byte limit
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-      // Keep `to` field for recipient and minimal metadata reference
+      // CRITICAL: Reference uses ONLY { p, op, tick } - NO extra fields!
+      // The "to" and metadata are handled by the indexer based on tx recipient
       const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
-        to: recipientAddress, // REQUIRED: recipient of the NFT
       };
-      
-      // Add IPFS metadata reference if available (keeps payload minimal)
-      if (imageUrl.startsWith("ipfs://")) {
-        mintData.meta = imageUrl; // Reference to full metadata on IPFS
-      }
 
       console.log(`[KRC721] Minting certificate #${tokenId} for ${recipientAddress}`);
 
@@ -696,20 +692,15 @@ class KRC721Service {
       } = this.kaspaModule;
 
       // Create MINIMAL mint data per KRC-721 spec
-      // Metadata must be stored in IPFS to avoid 520-byte script element limit
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-      // Keep `to` field for recipient and minimal IPFS reference
+      // CRITICAL: Reference uses ONLY { p, op, tick } - NO extra fields!
+      // The recipient is determined by who submits the reveal transaction
+      // Metadata is handled separately by the KRC-721 indexer
       const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
-        to: recipientAddress, // REQUIRED: recipient of the NFT
       };
-      
-      // Add IPFS metadata reference if available (keeps payload minimal)
-      if (imageUrl.startsWith("ipfs://")) {
-        mintData.meta = imageUrl; // Reference to full metadata on IPFS
-      }
 
       // Calculate data size to prevent 520-byte limit errors
       // CRITICAL: Store this EXACT string - it must be reproduced byte-for-byte for script reconstruction
@@ -971,7 +962,7 @@ class KRC721Service {
         entries: treasuryEntries, // Treasury UTXOs for fee
         outputs: [], // All funds go to change
         changeAddress: this.address!, // Change goes to treasury (covers reveal fee)
-        priorityFee: kaspaToSompi("0.5")!,
+        priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
         networkId: this.config.network,
       });
 
@@ -1161,7 +1152,7 @@ class KRC721Service {
         entries: newEntries,
         outputs: [],
         changeAddress: this.address!,
-        priorityFee: kaspaToSompi("0.5")!, // Higher fee for reveal inscription
+        priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
         networkId: this.config.network,
       });
 
