@@ -1099,6 +1099,11 @@ class KRC721Service {
           // Transform kaspa-rpc-client format to WASM createTransactions format
           const outpoint = e.outpoint || e.entry?.outpoint || {};
           const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
+          
+          // scriptPublicKey can be nested - extract the hex string
+          const spk = utxoEntry.scriptPublicKey || {};
+          const scriptPublicKeyHex = spk.scriptPublicKey || spk.script || spk;
+          
           return {
             outpoint: {
               transactionId: outpoint.transactionId || "",
@@ -1106,7 +1111,7 @@ class KRC721Service {
             },
             utxoEntry: {
               amount: BigInt(utxoEntry.amount || 0),
-              scriptPublicKey: utxoEntry.scriptPublicKey || {},
+              scriptPublicKey: typeof scriptPublicKeyHex === 'string' ? scriptPublicKeyHex : (scriptPublicKeyHex?.scriptPublicKey || ""),
               blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
               isCoinbase: utxoEntry.isCoinbase || false,
             },
@@ -1164,6 +1169,11 @@ class KRC721Service {
       const transformEntry = (e: any) => {
         const outpoint = e.outpoint || e.entry?.outpoint || {};
         const utxoEntry = e.utxoEntry || e.entry?.utxoEntry || {};
+        
+        // scriptPublicKey can be nested - extract the hex string
+        const spk = utxoEntry.scriptPublicKey || {};
+        const scriptPublicKeyHex = spk.scriptPublicKey || spk.script || spk;
+        
         return {
           outpoint: {
             transactionId: outpoint.transactionId || "",
@@ -1171,7 +1181,7 @@ class KRC721Service {
           },
           utxoEntry: {
             amount: BigInt(utxoEntry.amount || 0),
-            scriptPublicKey: utxoEntry.scriptPublicKey || {},
+            scriptPublicKey: typeof scriptPublicKeyHex === 'string' ? scriptPublicKeyHex : (scriptPublicKeyHex?.scriptPublicKey || ""),
             blockDaaScore: BigInt(utxoEntry.blockDaaScore || 0),
             isCoinbase: utxoEntry.isCoinbase || false,
           },
