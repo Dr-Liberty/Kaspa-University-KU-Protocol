@@ -27,7 +27,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Backend Runtime**: Node.js with Express, serving a RESTful JSON API.
 - **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
-- **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations.
+- **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
 - **KRC-721 NFT Certificates**: Implements non-custodial minting flow, adhering to KRC-721 standard, using IPFS for metadata.
 - **KU Protocol**: Custom on-chain data format for quiz proofs and Q&A content.
 - **Security**:
