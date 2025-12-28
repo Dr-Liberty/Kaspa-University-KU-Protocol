@@ -1042,9 +1042,6 @@ class KRC721Service {
     const { createTransactions, kaspaToSompi } = this.kaspaModule;
     const utxoManager = getUTXOManager();
 
-    // Subscribe to UTXO changes for confirmation
-    await this.rpcClient.subscribeUtxosChanged([this.address!]);
-
     let commitTxHash: string | undefined;
     let revealTxHash: string | undefined;
     let commitReservation: { selected: UTXO[]; total: bigint } | null = null;
