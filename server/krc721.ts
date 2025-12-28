@@ -1119,6 +1119,9 @@ class KRC721Service {
         });
 
       console.log(`[KRC721] Using ${reservedEntries.length} reserved entries for commit`);
+      if (reservedEntries.length > 0) {
+        console.log(`[KRC721] First entry sample:`, JSON.stringify(reservedEntries[0], (_, v) => typeof v === 'bigint' ? v.toString() : v));
+      }
 
       const { transactions: commitTxs } = await createTransactions({
         priorityEntries: [],
@@ -1132,11 +1135,20 @@ class KRC721Service {
         networkId: this.config.network,
       });
 
+      console.log(`[KRC721] Created ${commitTxs.length} commit transactions`);
+
       // Sign and submit commit transaction
       // Use WASM RpcClient for PendingTransaction.submit() - kaspa-rpc-client won't work
       const rpcForSubmit = this.wasmRpcClient || this.rpcClient;
       for (const tx of commitTxs) {
-        tx.sign([this.privateKey]);
+        console.log(`[KRC721] Signing tx with ${tx.transaction?.inputs?.length || 0} inputs`);
+        try {
+          tx.sign([this.privateKey]);
+          console.log(`[KRC721] Signing successful, submitting...`);
+        } catch (signError: any) {
+          console.error(`[KRC721] Sign error details:`, signError);
+          throw signError;
+        }
         commitTxHash = await tx.submit(rpcForSubmit);
         console.log(`[KRC721] Commit tx: ${commitTxHash}`);
       }
