@@ -128,6 +128,48 @@ export default function AdminPage() {
     staleTime: 60000,
   });
 
+  const { data: collectionStatus, refetch: refetchCollection } = useQuery<{
+    ticker: string;
+    name: string;
+    isDeployed: boolean;
+    isLive: boolean;
+    address: string | null;
+    nextTokenId: number;
+  }>({
+    queryKey: ["/api/admin/collection-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/collection-status", { headers });
+      if (!res.ok) throw new Error("Failed to fetch collection status");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 30000,
+  });
+
+  const deployCollectionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/deploy-collection", {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Deployment failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Collection Deployed", 
+        description: `Commit: ${data.commitTxHash?.slice(0, 12)}... Reveal: ${data.revealTxHash?.slice(0, 12)}...` 
+      });
+      refetchCollection();
+    },
+    onError: (error: any) => {
+      toast({ title: "Deploy failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const resetCertMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/certificates/${id}/reset`, {
@@ -336,6 +378,47 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {collectionStatus && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                KRC-721 Collection: {collectionStatus.ticker}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span>Status: {collectionStatus.isDeployed ? (
+                  <Badge className="bg-green-500/20 text-green-400">Deployed</Badge>
+                ) : (
+                  <Badge className="bg-yellow-500/20 text-yellow-400">Not Deployed</Badge>
+                )}</span>
+                <span>Live: {collectionStatus.isLive ? "Yes" : "No"}</span>
+                <span>Next Token ID: {collectionStatus.nextTokenId}</span>
+              </div>
+              {!collectionStatus.isDeployed && collectionStatus.isLive && (
+                <Button
+                  onClick={() => deployCollectionMutation.mutate()}
+                  disabled={deployCollectionMutation.isPending}
+                  data-testid="button-deploy-collection"
+                >
+                  {deployCollectionMutation.isPending ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wallet className="w-4 h-4 mr-2" />
+                  )}
+                  Deploy Collection (10 KAS)
+                </Button>
+              )}
+              {!collectionStatus.isDeployed && !collectionStatus.isLive && (
+                <p className="text-sm text-muted-foreground">
+                  KRC-721 service is not live. Check RPC connection and treasury keys.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         <Tabs defaultValue="certificates" className="w-full">

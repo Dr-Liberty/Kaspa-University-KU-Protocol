@@ -2171,6 +2171,82 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Deploy the KRC-721 NFT collection (one-time operation)
+  app.post("/api/admin/deploy-collection", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const collectionInfo = await krc721Service.getCollectionInfo();
+      
+      if (collectionInfo.isDeployed) {
+        return res.json({ 
+          success: true, 
+          message: "Collection already deployed",
+          collection: collectionInfo 
+        });
+      }
+
+      if (!krc721Service.isLive()) {
+        return res.status(503).json({ 
+          error: "KRC-721 service not live. Check RPC connection and treasury keys." 
+        });
+      }
+
+      // Generate collection image and upload to IPFS
+      const { getPinataService } = await import("./pinata");
+      const pinataService = getPinataService();
+      const collectionSvg = krc721Service.generateCertificateImageSvg(
+        "kaspa:collection",
+        "Kaspa University Certificate Collection",
+        100,
+        new Date()
+      );
+      
+      let collectionImageUrl = "ipfs://placeholder";
+      
+      if (pinataService.isConfigured()) {
+        const uploadResult = await pinataService.uploadImage(
+          collectionSvg,
+          `KPROOF-collection-${Date.now()}`
+        );
+        if (uploadResult.success && uploadResult.ipfsUrl) {
+          collectionImageUrl = uploadResult.ipfsUrl;
+          console.log(`[Admin] Collection image uploaded: ${collectionImageUrl}`);
+        }
+      }
+
+      console.log(`[Admin] Deploying collection with image: ${collectionImageUrl}`);
+      const result = await krc721Service.deployCollection(collectionImageUrl);
+      
+      if (result.success) {
+        console.log(`[Admin] Collection deployed! Commit: ${result.commitTxHash}, Reveal: ${result.revealTxHash}`);
+        res.json({
+          success: true,
+          message: "Collection deployed successfully",
+          commitTxHash: result.commitTxHash,
+          revealTxHash: result.revealTxHash,
+          collection: await krc721Service.getCollectionInfo()
+        });
+      } else {
+        console.error(`[Admin] Collection deployment failed: ${result.error}`);
+        res.status(500).json({ error: result.error || "Deployment failed" });
+      }
+    } catch (error: any) {
+      console.error("[Admin] Deploy collection error:", error.message);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Get KRC-721 collection status
+  app.get("/api/admin/collection-status", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const collectionInfo = await krc721Service.getCollectionInfo();
+      res.json(collectionInfo);
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Admin: Attempt to recover and finalize a stuck mint reservation
   app.post("/api/admin/recover-mint/:p2shAddress", adminAuth, async (req: Request, res: Response) => {
     try {

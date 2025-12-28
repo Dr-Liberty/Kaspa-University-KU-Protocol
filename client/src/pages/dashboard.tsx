@@ -334,7 +334,7 @@ export default function Dashboard() {
                             <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3.5 w-3.5" />
-                                {course.duration || 20}m
+                                {course.lessonCount * 5}m
                               </span>
                               <span className="flex items-center gap-1">
                                 <BookOpen className="h-3.5 w-3.5" />
@@ -404,7 +404,7 @@ export default function Dashboard() {
                             <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3.5 w-3.5" />
-                                {course.duration || 20}m
+                                {course.lessonCount * 5}m
                               </span>
                               <span className="flex items-center gap-1">
                                 <BookOpen className="h-3.5 w-3.5" />
