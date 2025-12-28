@@ -40,21 +40,33 @@ class MintStorageService {
     expiresAt: Date;
   }): Promise<PendingMintReservation | null> {
     try {
+      console.log(`[MintStorage] Creating reservation for cert ${data.certificateId}, P2SH: ${data.p2shAddress.slice(0, 25)}...`);
+      // scriptData is already a string (the exact mintDataStr used in the script)
+      // mintData is an object that needs to be stringified
+      const scriptDataStr = typeof data.scriptData === 'string' 
+        ? data.scriptData 
+        : JSON.stringify(data.scriptData);
+      const mintDataStr = typeof data.mintData === 'string' 
+        ? data.mintData 
+        : JSON.stringify(data.mintData);
+      
       const [reservation] = await db.insert(pendingMintReservations).values({
         certificateId: data.certificateId,
         recipientAddress: data.recipientAddress,
         tokenId: data.tokenId,
         p2shAddress: data.p2shAddress,
         xOnlyPubKey: data.xOnlyPubKey,
-        scriptData: JSON.stringify(data.scriptData),
-        mintData: JSON.stringify(data.mintData),
+        scriptData: scriptDataStr,
+        mintData: mintDataStr,
         status: "pending",
         expiresAt: data.expiresAt,
       }).returning();
       
+      console.log(`[MintStorage] Reservation created successfully, ID: ${reservation?.id}`);
       return reservation as PendingMintReservation;
     } catch (error: any) {
       console.error("[MintStorage] Failed to create reservation:", error.message);
+      console.error("[MintStorage] Full error:", error);
       return null;
     }
   }
@@ -64,12 +76,18 @@ class MintStorageService {
    */
   async getByP2shAddress(p2shAddress: string): Promise<PendingMintReservation | null> {
     try {
+      console.log(`[MintStorage] Looking up reservation for P2SH: ${p2shAddress.slice(0, 25)}...`);
       const [reservation] = await db
         .select()
         .from(pendingMintReservations)
         .where(eq(pendingMintReservations.p2shAddress, p2shAddress))
         .limit(1);
       
+      if (reservation) {
+        console.log(`[MintStorage] Found reservation: ID=${reservation.id}, status=${reservation.status}`);
+      } else {
+        console.log(`[MintStorage] No reservation found for P2SH address`);
+      }
       return reservation as PendingMintReservation | null;
     } catch (error: any) {
       console.error("[MintStorage] Failed to get reservation:", error.message);
