@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, CheckCircle2, Loader2, Sparkles, Wallet } from "lucide-react";
+import { Download, ExternalLink, CheckCircle2, Loader2, Sparkles, Wallet, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
@@ -506,7 +506,11 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
 
   const nftStatus = certificate.nftStatus || (certificate.nftTxHash ? "claimed" : "pending");
   const isPending = nftStatus === "pending";
-  const isMinting = nftStatus === "minting" || mintMutation.isPending;
+  // Only show as actively minting if this specific card's mutation is pending OR we have local state
+  const isActivelyMinting = mintMutation.isPending || mintStep !== "idle";
+  // Database shows minting but no active local state = needs retry
+  const needsRetry = nftStatus === "minting" && !isActivelyMinting;
+  const isMinting = isActivelyMinting;
   const isClaimed = nftStatus === "claimed";
 
   const getMintButtonText = () => {
@@ -541,11 +545,20 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             </div>
           )}
           
-          {isPending && !isMinting && (
+          {isPending && !isMinting && !needsRetry && (
             <div className="absolute right-2 top-2">
               <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
                 <Sparkles className="h-3 w-3" />
                 Mint NFT
+              </Badge>
+            </div>
+          )}
+          
+          {needsRetry && (
+            <div className="absolute right-2 top-2">
+              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-amber-500">
+                <AlertCircle className="h-3 w-3" />
+                Retry Mint
               </Badge>
             </div>
           )}
@@ -562,7 +575,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
 
         {showActions && (
           <div className="flex flex-col gap-2 border-t border-border/50 p-3">
-            {isPending && !isMinting && (
+            {isPending && !isMinting && !needsRetry && (
               <div className="space-y-2">
                 <Button
                   className="w-full gap-2"
@@ -586,6 +599,27 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                     You pay the mint fee directly from your wallet
                   </p>
                 )}
+              </div>
+            )}
+            
+            {needsRetry && (
+              <div className="space-y-2">
+                <Button 
+                  className="w-full gap-2"
+                  onClick={() => mintMutation.mutate()}
+                  disabled={mintMutation.isPending || isDemoMode}
+                  data-testid={`button-retry-mint-${certificate.id}`}
+                >
+                  {mintMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wallet className="h-4 w-4" />
+                  )}
+                  Retry Mint
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Previous mint attempt incomplete. Click to try again.
+                </p>
               </div>
             )}
             
@@ -623,21 +657,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                     >
                       Cancel
                     </Button>
-                  </>
-                ) : nftStatus === "minting" && mintStep === "idle" && !mintMutation.isPending ? (
-                  <>
-                    <Button 
-                      className="w-full gap-2"
-                      onClick={() => mintMutation.mutate()}
-                      disabled={isDemoMode}
-                      data-testid={`button-retry-mint-${certificate.id}`}
-                    >
-                      <Wallet className="h-4 w-4" />
-                      Retry Mint
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground">
-                      Previous mint attempt incomplete. Click to try again.
-                    </p>
                   </>
                 ) : (
                   <>
