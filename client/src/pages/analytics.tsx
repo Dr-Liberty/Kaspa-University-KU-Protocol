@@ -293,36 +293,53 @@ export default function Analytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
-              Course Popularity
+              Course Leaderboard
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.coursePopularity} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    width={100}
-                    tick={{ fontSize: 11 }}
-                    className="fill-muted-foreground"
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                  />
-                  <Bar 
-                    dataKey="completions" 
-                    fill="hsl(var(--primary))" 
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="space-y-3">
+              {analytics.coursePopularity
+                .sort((a, b) => b.completions - a.completions)
+                .map((course, index) => (
+                  <div
+                    key={course.name}
+                    className="flex items-start gap-4 p-3 rounded-lg border border-border/50 hover-elevate"
+                    data-testid={`row-course-leaderboard-${index}`}
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-sm ${
+                      index === 0 
+                        ? "bg-yellow-500/20 text-yellow-500" 
+                        : index === 1 
+                          ? "bg-gray-300/20 text-gray-400" 
+                          : index === 2 
+                            ? "bg-orange-500/20 text-orange-500" 
+                            : "bg-muted text-muted-foreground"
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{course.name}</p>
+                      <p className="text-xs text-muted-foreground">{course.category}</p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="flex items-center gap-1 text-xs">
+                          <Users className="h-3 w-3" />
+                          <span className="text-primary font-medium">{course.completions}</span>
+                          <span className="text-muted-foreground">students</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Coins className="h-3 w-3 text-yellow-500" />
+                          <span className="text-primary font-medium">{(course.completions * 0.1).toFixed(1)} KAS</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              {analytics.coursePopularity.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No course data yet</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
