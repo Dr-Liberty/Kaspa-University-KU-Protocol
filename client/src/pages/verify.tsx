@@ -183,7 +183,7 @@ export default function VerifyPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Activity className="h-8 w-8 text-primary animate-pulse" />
           </div>
-          <h1 className="text-2xl font-bold">KU Protocol Live Stats</h1>
+          <h1 className="text-2xl font-bold">KU Protocol Explorer</h1>
           <p className="text-muted-foreground">
             Real-time blockchain data from Kaspa University
           </p>
@@ -354,9 +354,9 @@ export default function VerifyPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Shield className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-xl">Verify Transaction</CardTitle>
+          <CardTitle className="text-xl">Transaction Lookup</CardTitle>
           <CardDescription>
-            Enter a transaction hash to verify KU Protocol data on-chain
+            Enter a transaction hash to decode KU Protocol data on-chain
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

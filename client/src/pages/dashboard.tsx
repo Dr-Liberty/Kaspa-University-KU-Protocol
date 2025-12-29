@@ -368,7 +368,8 @@ export default function Dashboard() {
             </TabsTrigger>
             <TabsTrigger value="verify" className="gap-2" data-testid="tab-verify">
               <Shield className="h-4 w-4" />
-              <span>Verify</span>
+              <span className="hidden sm:inline">KU Explorer</span>
+              <span className="sm:hidden">Explorer</span>
             </TabsTrigger>
           </TabsList>
 
@@ -833,12 +834,12 @@ export default function Dashboard() {
                 </Card>
               )}
 
-              {/* Link to verify explorer */}
+              {/* Link to KU Protocol Explorer */}
               <div className="flex justify-center pt-4">
                 <Link href="/verify">
                   <Button variant="outline" className="gap-2">
                     <Link2 className="h-4 w-4" />
-                    Open Verification Explorer
+                    Open KU Protocol Explorer
                   </Button>
                 </Link>
               </div>

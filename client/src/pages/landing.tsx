@@ -316,7 +316,7 @@ export default function Landing() {
             <Link href="/verify">
               <Button variant="outline" className="mt-4 gap-2" data-testid="button-verify-cta">
                 <Shield className="h-4 w-4" />
-                Verify Achievements
+                KU Protocol Explorer
               </Button>
             </Link>
           </div>
