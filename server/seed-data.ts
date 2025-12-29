@@ -6,7 +6,7 @@ import type { Course, Lesson, QuizQuestion } from "@shared/schema";
 
 const courses: Course[] = [
       {
-        id: "course-1",
+        id: "bitcoin-vs-kaspa",
         title: "Bitcoin vs Kaspa: The Next Evolution",
         description: "Bitcoin revolutionized money. Kaspa revolutionizes Bitcoin.",
         thumbnail: "/thumbnails/bitcoin_evolving_to_kaspa.png",
@@ -16,7 +16,7 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "course-2",
+        id: "dag-terminology",
         title: "DAG Terminology",
         description: "Past, Future, Anticone, Mergeset, K parameter, what does it all mean?",
         thumbnail: "/thumbnails/dag_terminology_visualization.png",
@@ -26,7 +26,7 @@ const courses: Course[] = [
         category: "Development",
       },
       {
-        id: "course-3",
+        id: "dag-and-kaspa",
         title: "DAG and Kaspa: Understanding the Structure",
         description: "By now you have probably heard that Kaspa is a BlockDAG, but what does that mean? This course assumes no prior knowledge, starting with graph theory fundamentals.",
         thumbnail: "/thumbnails/dag_structure_visualization.png",
@@ -36,7 +36,7 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "course-4",
+        id: "foundational-concepts",
         title: "Foundational Concepts",
         description: "Understanding the basic building blocks of Kaspa's architecture. This course introduces the fundamental concepts that underpin Kaspa's revolutionary consensus system, including Directed Acyclic Graphs (DAGs), essential terminology, the GHOSTDAG proto",
         thumbnail: "/thumbnails/foundational_concepts_building_blocks.png",
@@ -46,7 +46,7 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "course-5",
+        id: "core-data-structures",
         title: "Core Data Structures",
         description: "The fundamental data types that represent blockchain state in Kaspa. This course covers the essential data structures including UTXO (Unspent Transaction Outputs), MuHash for cryptographic commitments, Merkle Roots for transaction verification, and t",
         thumbnail: "/thumbnails/core_data_structures_visual.png",
@@ -56,7 +56,7 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "course-6",
+        id: "ghostdag-mechanics",
         title: "GHOSTDAG Mechanics",
         description: "A deep dive into the GHOSTDAG consensus algorithm implementation. This course covers the K Parameter, Parent Selection and Ordering, Mergeset Creation, Blue and Red Classification, and Blue Work Calculation.",
         thumbnail: "/thumbnails/ghostdag_mechanics_visualization.png",
@@ -66,7 +66,7 @@ const courses: Course[] = [
         category: "Consensus",
       },
       {
-        id: "course-7",
+        id: "consensus-parameters",
         title: "Consensus Parameters",
         description: "Configuration values that govern Kaspa's network behavior. Learn about the mathematical relationships between BPS, K parameter, mergeset limits, merge depth bounds, finality depth, DAA windows, and pruning depth.",
         thumbnail: "/thumbnails/consensus_parameters_controls.png",
@@ -76,7 +76,7 @@ const courses: Course[] = [
         category: "Consensus",
       },
       {
-        id: "course-8",
+        id: "block-processing",
         title: "Block Processing",
         description: "How blocks flow through Kaspa's validation pipeline. Learn the complete journey of a block from creation through header validation, body validation, virtual chain updates, and pruning consideration.",
         thumbnail: "/thumbnails/block_processing_pipeline.png",
@@ -86,7 +86,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-9",
+        id: "difficulty-adjustment",
         title: "Difficulty Adjustment (DAA)",
         description: "How Kaspa maintains consistent block times through its Difficulty Adjustment Algorithm. Learn about DAA windows, the difference between DAA Score and Blue Score, and how non-DAA blocks are handled.",
         thumbnail: "/thumbnails/difficulty_adjustment_algorithm.png",
@@ -96,7 +96,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-10",
+        id: "transaction-processing",
         title: "Transaction Processing",
         description: "How transactions are validated and included in Kaspa blocks. Learn about the UTXO model in transaction context, selection strategies, mass calculation, and coinbase transactions.",
         thumbnail: "/thumbnails/transaction_processing_flow.png",
@@ -106,7 +106,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-11",
+        id: "pruning-system",
         title: "Pruning System",
         description: "Managing blockchain data growth in Kaspa. Learn about MuHash's role, first-order and second-order pruning, and the differences between archival and pruning nodes.",
         thumbnail: "/thumbnails/blockchain_pruning_system.png",
@@ -116,7 +116,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-12",
+        id: "anticone-finalization",
         title: "Anticone Finalization & Safe Pruning",
         description: "Mathematical foundations for safe data removal in Kaspa. Learn how DAG terminology, finality depth, merge depth bounds, and K parameter work together to guarantee that pruning old data never compromises security.",
         thumbnail: "/thumbnails/anticone_finalization_concept.png",
@@ -126,7 +126,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-13",
+        id: "virtual-state",
         title: "Virtual State",
         description: "Kaspa's unique approach to representing the current DAG tip. Learn about the Virtual Block concept, sink selection, virtual parents, and virtual DAA score.",
         thumbnail: "/thumbnails/virtual_state_visualization.png",
@@ -136,7 +136,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-14",
+        id: "timestamps-median-time",
         title: "Timestamps & Median Time",
         description: "Timestamp consensus and validation in Kaspa. Learn about Past Median Time calculation and timestamp validation rules.",
         thumbnail: "/thumbnails/timestamps_and_median_time.png",
@@ -146,7 +146,7 @@ const courses: Course[] = [
         category: "Technical",
       },
       {
-        id: "course-15",
+        id: "finality-security",
         title: "Finality & Security",
         description: "Understanding Kaspa's security guarantees. Learn about K parameter security properties, depth-based security, size constraints, probabilistic and deterministic finality.",
         thumbnail: "/thumbnails/finality_and_security_shield.png",
@@ -156,7 +156,7 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "course-16",
+        id: "network-scaling",
         title: "Network & Scaling",
         description: "Why Kaspa's architecture enables high throughput. Learn about Bitcoin's scaling limitations and how Kaspa overcomes them through BPS configuration, K parameter scaling, and merge depth bounds.",
         thumbnail: "/thumbnails/network_scaling_visualization.png",
@@ -170,7 +170,7 @@ const courses: Course[] = [
     const allLessons: Lesson[] = [
       {
         id: "lesson-1-1",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Bitcoin's Revolutionary Promise",
         order: 1,
         duration: "5 min",
@@ -188,7 +188,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-2",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "The Scalability Trilemma",
         order: 2,
         duration: "5 min",
@@ -206,7 +206,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-3",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Enter Kaspa",
         order: 3,
         duration: "5 min",
@@ -223,7 +223,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-4",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Understanding the Chain",
         order: 4,
         duration: "5 min",
@@ -234,7 +234,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-5",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "The DAG Difference",
         order: 5,
         duration: "5 min",
@@ -249,7 +249,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-6",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "GHOSTDAG: Ordering the Chaos",
         order: 6,
         duration: "6 min",
@@ -266,7 +266,7 @@ const courses: Course[] = [
       },
       {
         id: "lesson-1-7",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Visual: Chain vs DAG",
         order: 7,
         duration: "4 min",
@@ -288,7 +288,7 @@ Block 1 → Block 2b → Block 3 → Block 4
       },
       {
         id: "lesson-1-8",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "The Speed Comparison",
         order: 8,
         duration: "5 min",
@@ -315,7 +315,7 @@ Block 1 → Block 2b → Block 3 → Block 4
       },
       {
         id: "lesson-1-9",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Security Without Sacrifice",
         order: 9,
         duration: "5 min",
@@ -340,7 +340,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-10",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Real-World Implications",
         order: 10,
         duration: "5 min",
@@ -362,7 +362,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-11",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "The Fair Launch Principle",
         order: 11,
         duration: "5 min",
@@ -381,7 +381,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-12",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Decentralization in Practice",
         order: 12,
         duration: "5 min",
@@ -411,7 +411,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-13",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Sound Money Properties",
         order: 13,
         duration: "5 min",
@@ -432,7 +432,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-14",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Why Kaspa Could Win",
         order: 14,
         duration: "5 min",
@@ -458,7 +458,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-1-15",
-        courseId: "course-1",
+        courseId: "bitcoin-vs-kaspa",
         title: "Your Next Steps",
         order: 15,
         duration: "5 min",
@@ -486,7 +486,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-2-1",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Linear Chain Terminology - Traditional Blockchain",
         order: 1,
         duration: "10 min",
@@ -494,7 +494,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
       },
       {
         id: "lesson-2-2",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "DAG Terminology ",
         order: 2,
         duration: "10 min",
@@ -503,7 +503,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-3",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Past and Future Relationships - DAG",
         order: 3,
         duration: "10 min",
@@ -511,7 +511,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-4",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Anticone Relationship - DAG",
         order: 4,
         duration: "10 min",
@@ -520,7 +520,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-5",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Mergeset and Blue/Red Classification - GHOSTDAG",
         order: 5,
         duration: "10 min",
@@ -528,7 +528,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-6",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "K Parameter - GHOSTDAG",
         order: 6,
         duration: "10 min",
@@ -536,7 +536,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-7",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Simplified Definitions",
         order: 7,
         duration: "10 min",
@@ -549,7 +549,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-2-8",
-        courseId: "course-2",
+        courseId: "dag-terminology",
         title: "Bitcoin and Kaspa",
         order: 8,
         duration: "10 min",
@@ -559,7 +559,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-3-1",
-        courseId: "course-3",
+        courseId: "dag-and-kaspa",
         title: "What is a Graph?",
         order: 1,
         duration: "5 min",
@@ -568,7 +568,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-3-2",
-        courseId: "course-3",
+        courseId: "dag-and-kaspa",
         title: "What is a Directed Graph?",
         order: 2,
         duration: "5 min",
@@ -578,7 +578,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-3-3",
-        courseId: "course-3",
+        courseId: "dag-and-kaspa",
         title: "What is a Directed Acyclic Graph (DAG)?",
         order: 3,
         duration: "5 min",
@@ -588,7 +588,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-3-4",
-        courseId: "course-3",
+        courseId: "dag-and-kaspa",
         title: "Bitcoin and Kaspa: Both are DAGs",
         order: 4,
         duration: "10 min",
@@ -598,7 +598,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-3-5",
-        courseId: "course-3",
+        courseId: "dag-and-kaspa",
         title: "Simplified Definitions Summary",
         order: 5,
         duration: "5 min",
@@ -610,7 +610,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-4-1",
-        courseId: "course-4",
+        courseId: "foundational-concepts",
         title: "DAG - Directed Acyclic Graph Conceptual Overview",
         order: 1,
         duration: "10 min",
@@ -624,7 +624,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-4-2",
-        courseId: "course-4",
+        courseId: "foundational-concepts",
         title: "DAG Terminology",
         order: 2,
         duration: "10 min",
@@ -638,7 +638,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-4-3",
-        courseId: "course-4",
+        courseId: "foundational-concepts",
         title: "GHOSTDAG Overview",
         order: 3,
         duration: "10 min",
@@ -652,7 +652,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       },
       {
         id: "lesson-4-4",
-        courseId: "course-4",
+        courseId: "foundational-concepts",
         title: "K-Cluster - The Security Foundation",
         order: 4,
         duration: "8 min",
@@ -669,7 +669,7 @@ When a block has more than K blocks in its anticone relative to another block's 
       },
       {
         id: "lesson-4-5",
-        courseId: "course-4",
+        courseId: "foundational-concepts",
         title: "BPS Configuration - Blocks Per Second",
         order: 5,
         duration: "7 min",
@@ -694,7 +694,7 @@ Higher BPS means:
       },
       {
         id: "lesson-5-1",
-        courseId: "course-5",
+        courseId: "core-data-structures",
         title: "UTXO - What is that?",
         order: 1,
         duration: "10 min",
@@ -714,7 +714,7 @@ In Kaspa, UTXO validation is more complex because transactions in the anticone m
       },
       {
         id: "lesson-5-2",
-        courseId: "course-5",
+        courseId: "core-data-structures",
         title: "MuHash - What is that?",
         order: 2,
         duration: "10 min",
@@ -735,7 +735,7 @@ Nodes need to verify they have the correct UTXO set, but storing a hash of milli
       },
       {
         id: "lesson-5-3",
-        courseId: "course-5",
+        courseId: "core-data-structures",
         title: "Merkle Root and Accepted Merkle Root",
         order: 3,
         duration: "10 min",
@@ -756,7 +756,7 @@ Kaspa has an additional concept: the Accepted Merkle Root. This commits not just
       },
       {
         id: "lesson-5-4",
-        courseId: "course-5",
+        courseId: "core-data-structures",
         title: "Parents and Mergeset",
         order: 4,
         duration: "10 min",
@@ -780,7 +780,7 @@ The Mergeset is the set of blocks that this block "merges" into its view of the 
       },
       {
         id: "lesson-6-1",
-        courseId: "course-6",
+        courseId: "ghostdag-mechanics",
         title: "K Parameter - The Security Parameter",
         order: 1,
         duration: "10 min",
@@ -808,7 +808,7 @@ Higher K means:
       },
       {
         id: "lesson-6-2",
-        courseId: "course-6",
+        courseId: "ghostdag-mechanics",
         title: "Parent Selection and Ordering",
         order: 2,
         duration: "10 min",
@@ -835,7 +835,7 @@ Parent selection directly affects:
       },
       {
         id: "lesson-6-3",
-        courseId: "course-6",
+        courseId: "ghostdag-mechanics",
         title: "Mergeset Creation",
         order: 3,
         duration: "10 min",
@@ -865,7 +865,7 @@ Blocks in the mergeset are ordered using a deterministic algorithm based on:
       },
       {
         id: "lesson-6-4",
-        courseId: "course-6",
+        courseId: "ghostdag-mechanics",
         title: "Blue and Red Classification",
         order: 4,
         duration: "10 min",
@@ -894,7 +894,7 @@ For each block in the mergeset:
       },
       {
         id: "lesson-6-5",
-        courseId: "course-6",
+        courseId: "ghostdag-mechanics",
         title: "Blue Work Calculation",
         order: 5,
         duration: "10 min",
@@ -923,7 +923,7 @@ BlueWork(B) = BlueWork(SelectedParent(B)) if B is red
       },
       {
         id: "lesson-7-1",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "BPS Configuration Details",
         order: 1,
         duration: "10 min",
@@ -950,7 +950,7 @@ The Crescendo hardfork introduces dynamic BPS adjustment, allowing the network t
       },
       {
         id: "lesson-7-2",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "Mergeset Size Limit",
         order: 2,
         duration: "8 min",
@@ -978,7 +978,7 @@ Mergeset limit and K are related but distinct:
       },
       {
         id: "lesson-7-3",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "Merge Depth Bound",
         order: 3,
         duration: "8 min",
@@ -1006,7 +1006,7 @@ Merge depth bound is set to ensure:
       },
       {
         id: "lesson-7-4",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "Finality Depth",
         order: 4,
         duration: "8 min",
@@ -1031,7 +1031,7 @@ The finality depth depends on:
       },
       {
         id: "lesson-7-5",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "DAA Window",
         order: 5,
         duration: "8 min",
@@ -1060,7 +1060,7 @@ As BPS increases, window size (in blocks) increases to maintain the same real-ti
       },
       {
         id: "lesson-7-6",
-        courseId: "course-7",
+        courseId: "consensus-parameters",
         title: "Pruning Depth",
         order: 6,
         duration: "8 min",
@@ -1086,7 +1086,7 @@ Pruned nodes verify their UTXO set using MuHash:
       },
       {
         id: "lesson-8-1",
-        courseId: "course-8",
+        courseId: "block-processing",
         title: "Block Processing Pipeline Overview",
         order: 1,
         duration: "10 min",
@@ -1119,7 +1119,7 @@ Maintain node efficiency:
       },
       {
         id: "lesson-8-2",
-        courseId: "course-8",
+        courseId: "block-processing",
         title: "Blue Score and Blue Work",
         order: 2,
         duration: "8 min",
@@ -1148,7 +1148,7 @@ When processing a new block:
       },
       {
         id: "lesson-9-1",
-        courseId: "course-9",
+        courseId: "difficulty-adjustment",
         title: "DAA Window Construction",
         order: 1,
         duration: "10 min",
@@ -1178,7 +1178,7 @@ Kaspa's DAA is designed for high BPS:
       },
       {
         id: "lesson-9-2",
-        courseId: "course-9",
+        courseId: "difficulty-adjustment",
         title: "DAA Score vs Blue Score",
         order: 2,
         duration: "8 min",
@@ -1206,7 +1206,7 @@ DAA Score may include red blocks:
       },
       {
         id: "lesson-10-1",
-        courseId: "course-10",
+        courseId: "transaction-processing",
         title: "Transaction Selection",
         order: 1,
         duration: "8 min",
@@ -1235,7 +1235,7 @@ Unlike congested chains:
       },
       {
         id: "lesson-10-2",
-        courseId: "course-10",
+        courseId: "transaction-processing",
         title: "Mass Calculation",
         order: 2,
         duration: "8 min",
@@ -1264,7 +1264,7 @@ Transactions with many small UTXOs have higher mass. Consolidating UTXOs reduces
       },
       {
         id: "lesson-10-3",
-        courseId: "course-10",
+        courseId: "transaction-processing",
         title: "Coinbase Transactions",
         order: 3,
         duration: "8 min",
@@ -1293,7 +1293,7 @@ Each block has its own coinbase, but only blue blocks' coinbases are effectively
       },
       {
         id: "lesson-11-1",
-        courseId: "course-11",
+        courseId: "pruning-system",
         title: "First Order Pruning",
         order: 1,
         duration: "8 min",
@@ -1325,7 +1325,7 @@ Pruned nodes can still:
       },
       {
         id: "lesson-11-2",
-        courseId: "course-11",
+        courseId: "pruning-system",
         title: "Second Order Pruning",
         order: 2,
         duration: "8 min",
@@ -1353,7 +1353,7 @@ The checkpoint chain preserves:
       },
       {
         id: "lesson-11-3",
-        courseId: "course-11",
+        courseId: "pruning-system",
         title: "Archival vs Pruning Nodes",
         order: 3,
         duration: "8 min",
@@ -1382,7 +1382,7 @@ At 32 BPS:
       },
       {
         id: "lesson-12-1",
-        courseId: "course-12",
+        courseId: "anticone-finalization",
         title: "Anticone Finalization Depth",
         order: 1,
         duration: "10 min",
@@ -1409,7 +1409,7 @@ Once a block's anticone is finalized:
       },
       {
         id: "lesson-12-2",
-        courseId: "course-12",
+        courseId: "anticone-finalization",
         title: "Depth Constraints for Pruning Safety",
         order: 2,
         duration: "10 min",
@@ -1435,7 +1435,7 @@ These constraints form layers of protection:
       },
       {
         id: "lesson-13-1",
-        courseId: "course-13",
+        courseId: "virtual-state",
         title: "Virtual Block Concept",
         order: 1,
         duration: "10 min",
@@ -1465,7 +1465,7 @@ The virtual block:
       },
       {
         id: "lesson-13-2",
-        courseId: "course-13",
+        courseId: "virtual-state",
         title: "Sink Selection",
         order: 2,
         duration: "8 min",
@@ -1494,7 +1494,7 @@ Not all tips may have valid UTXO states:
       },
       {
         id: "lesson-14-1",
-        courseId: "course-14",
+        courseId: "timestamps-median-time",
         title: "Past Median Time",
         order: 1,
         duration: "10 min",
@@ -1522,7 +1522,7 @@ PMT is used for:
       },
       {
         id: "lesson-14-2",
-        courseId: "course-14",
+        courseId: "timestamps-median-time",
         title: "Timestamp Validation Rules",
         order: 2,
         duration: "8 min",
@@ -1560,7 +1560,7 @@ These rules ensure consistent timekeeping across the decentralized network.`,
       },
       {
         id: "lesson-15-1",
-        courseId: "course-15",
+        courseId: "finality-security",
         title: "Probabilistic Finality",
         order: 1,
         duration: "10 min",
@@ -1589,7 +1589,7 @@ Kaspa's high BPS means:
       },
       {
         id: "lesson-15-2",
-        courseId: "course-15",
+        courseId: "finality-security",
         title: "Deterministic Finality",
         order: 2,
         duration: "10 min",
@@ -1621,7 +1621,7 @@ For users:
       },
       {
         id: "lesson-15-3",
-        courseId: "course-15",
+        courseId: "finality-security",
         title: "Kaspa's Security Model",
         order: 3,
         duration: "10 min",
@@ -1659,7 +1659,7 @@ Users can trust that:
       },
       {
         id: "lesson-16-1",
-        courseId: "course-16",
+        courseId: "network-scaling",
         title: "Bitcoin's Scaling Problem",
         order: 1,
         duration: "10 min",
@@ -1689,7 +1689,7 @@ Larger blocks also cause problems:
       },
       {
         id: "lesson-16-2",
-        courseId: "course-16",
+        courseId: "network-scaling",
         title: "How Kaspa Solves Scaling",
         order: 2,
         duration: "10 min",
