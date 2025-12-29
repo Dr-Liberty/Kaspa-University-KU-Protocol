@@ -44,6 +44,20 @@ interface EnrichedReward extends CourseReward {
   courseTitle: string;
 }
 
+interface EnrichedQuizResult {
+  id: string;
+  lessonId: string;
+  userId: string;
+  score: number;
+  passed: boolean;
+  completedAt: Date;
+  txHash?: string;
+  txStatus: "none" | "pending" | "confirmed" | "failed";
+  courseId?: string;
+  courseTitle: string;
+  lessonTitle: string;
+}
+
 export default function Dashboard() {
   const { wallet, connect, isConnecting, truncatedAddress, isDemoMode } = useWallet();
   const [activeTab, setActiveTab] = useState("courses");
@@ -75,6 +89,11 @@ export default function Dashboard() {
 
   const { data: allRewards } = useQuery<EnrichedReward[]>({
     queryKey: ["/api/rewards"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: quizResults } = useQuery<EnrichedQuizResult[]>({
+    queryKey: ["/api/quiz-results"],
     enabled: isAuthenticated,
   });
 
@@ -340,7 +359,8 @@ export default function Dashboard() {
             </TabsTrigger>
             <TabsTrigger value="certificates" className="gap-2" data-testid="tab-certificates">
               <Award className="h-4 w-4" />
-              <span>Certificates</span>
+              <span className="hidden sm:inline">NFT Certificates</span>
+              <span className="sm:hidden">NFTs</span>
             </TabsTrigger>
             <TabsTrigger value="rewards" className="gap-2" data-testid="tab-rewards">
               <Coins className="h-4 w-4" />
@@ -680,7 +700,7 @@ export default function Dashboard() {
               </div>
 
               {/* Quiz Completions with KU Protocol data */}
-              {progressList && progressList.filter(p => p.txHash && !p.txHash.startsWith("demo_")).length > 0 && (
+              {quizResults && quizResults.filter(r => r.txHash && !r.txHash.startsWith("demo_")).length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -692,48 +712,51 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {progressList
-                      .filter(p => p.txHash && !p.txHash.startsWith("demo_"))
-                      .map((progress) => {
-                        const course = courses?.find(c => c.id === progress.courseId);
-                        return (
-                          <div
-                            key={progress.id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
-                            data-testid={`verify-progress-${progress.id}`}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate font-medium text-sm">
-                                {course?.title || progress.courseId}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                <span>Score: {progress.score ?? 0}%</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {progress.txStatus === "confirmed" ? "Confirmed" : progress.txStatus}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={`https://explorer.kaspa.org/txs/${progress.txHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-xs text-primary hover:underline"
-                                data-testid={`link-tx-${progress.id}`}
+                    {quizResults
+                      .filter(r => r.txHash && !r.txHash.startsWith("demo_"))
+                      .map((result) => (
+                        <div
+                          key={result.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+                          data-testid={`verify-quiz-${result.id}`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-sm">
+                              {result.courseTitle}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {result.lessonTitle}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <span>Score: {result.score}%</span>
+                              <Badge 
+                                variant="outline" 
+                                className={result.txStatus === "confirmed" ? "border-green-500/50 text-green-600 dark:text-green-400" : ""}
                               >
-                                <span className="font-mono">{progress.txHash?.slice(0, 16)}...</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                              <Link href={`/verify/${progress.txHash}`}>
-                                <Button size="sm" variant="ghost" className="gap-1">
-                                  <Shield className="h-3 w-3" />
-                                  Decode
-                                </Button>
-                              </Link>
+                                {result.txStatus === "confirmed" ? "Verified" : result.txStatus}
+                              </Badge>
                             </div>
                           </div>
-                        );
-                      })}
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`https://explorer.kaspa.org/txs/${result.txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-primary hover:underline"
+                              data-testid={`link-tx-${result.id}`}
+                            >
+                              <span className="font-mono">{result.txHash?.slice(0, 16)}...</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <Link href={`/verify/${result.txHash}`}>
+                              <Button size="sm" variant="ghost" className="gap-1">
+                                <Shield className="h-3 w-3" />
+                                Decode
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
                   </CardContent>
                 </Card>
               )}
@@ -791,7 +814,7 @@ export default function Dashboard() {
               )}
 
               {/* Empty state */}
-              {(!progressList || progressList.filter(p => p.txHash && !p.txHash.startsWith("demo_")).length === 0) &&
+              {(!quizResults || quizResults.filter(r => r.txHash && !r.txHash.startsWith("demo_")).length === 0) &&
                (!allRewards || allRewards.filter(r => r.txHash && !r.txHash.startsWith("demo_") && !r.txHash.startsWith("pending_")).length === 0) && (
                 <Card className="border-dashed">
                   <CardContent className="flex flex-col items-center justify-center py-12">

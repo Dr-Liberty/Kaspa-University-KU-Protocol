@@ -930,6 +930,37 @@ export async function registerRoutes(
     res.json(progress);
   });
 
+  // Get user's quiz results with on-chain verification data
+  app.get("/api/quiz-results", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.json([]);
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.json([]);
+    }
+
+    const quizResults = await storage.getQuizResultsByUser(user.id);
+    
+    // Enrich with lesson/course info
+    const enrichedResults = await Promise.all(
+      quizResults.map(async (result) => {
+        const lesson = await storage.getLesson(result.lessonId);
+        const course = lesson ? await storage.getCourse(lesson.courseId) : null;
+        return {
+          ...result,
+          courseId: lesson?.courseId,
+          courseTitle: course?.title || "Unknown Course",
+          lessonTitle: lesson?.title || "Unknown Lesson",
+        };
+      })
+    );
+    
+    res.json(enrichedResults);
+  });
+
   app.get("/api/certificates", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
