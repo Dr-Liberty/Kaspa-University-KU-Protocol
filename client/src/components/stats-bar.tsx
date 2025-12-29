@@ -2,15 +2,32 @@ import { useQuery } from "@tanstack/react-query";
 import type { Stats } from "@shared/schema";
 import { Coins, Award, Users, BookOpen } from "lucide-react";
 
+interface ExplorerTransaction {
+  type: string;
+}
+
+interface ExplorerScanResult {
+  transactions?: ExplorerTransaction[];
+}
+
 export function StatsBar() {
   const { data: stats } = useQuery<Stats>({
     queryKey: ["/api/stats"],
   });
 
+  const { data: explorerData } = useQuery<ExplorerScanResult>({
+    queryKey: ["/api/explorer/scan"],
+    refetchInterval: 30000,
+  });
+
+  // Use on-chain data when available (more accurate than database)
+  const onChainQuizProofs = explorerData?.transactions?.filter(t => t.type === "quiz").length || 0;
+  const onChainKasDistributed = onChainQuizProofs * 0.101;
+
   const items = [
     {
       label: "Total KAS Distributed",
-      value: stats?.totalKasDistributed?.toLocaleString() ?? "0",
+      value: (onChainKasDistributed > 0 ? onChainKasDistributed : (stats?.totalKasDistributed ?? 0)).toFixed(2),
       icon: Coins,
       suffix: " KAS",
     },

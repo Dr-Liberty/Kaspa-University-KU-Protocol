@@ -161,10 +161,27 @@ function LoadingSkeleton() {
   );
 }
 
+interface ExplorerTransaction {
+  type: string;
+}
+
+interface ExplorerScanResult {
+  transactions?: ExplorerTransaction[];
+}
+
 export default function Analytics() {
   const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/analytics"],
   });
+
+  const { data: explorerData } = useQuery<ExplorerScanResult>({
+    queryKey: ["/api/explorer/scan"],
+    refetchInterval: 30000,
+  });
+
+  // Use on-chain data when available (more accurate than database)
+  const onChainQuizProofs = explorerData?.transactions?.filter(t => t.type === "quiz").length || 0;
+  const onChainKasDistributed = onChainQuizProofs * 0.101;
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -214,7 +231,7 @@ export default function Analytics() {
         />
         <StatCard
           title="KAS Distributed"
-          value={`${analytics.overview.totalKasDistributed.toFixed(2)} KAS`}
+          value={`${(onChainKasDistributed > 0 ? onChainKasDistributed : analytics.overview.totalKasDistributed).toFixed(2)} KAS`}
           icon={Coins}
           description="Learn-to-earn rewards"
           trend={18}
