@@ -26,6 +26,9 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  Shield,
+  FileCheck,
+  Link2,
 } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
 
@@ -329,7 +332,7 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
             <TabsTrigger value="courses" className="gap-2" data-testid="tab-courses">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">My Courses</span>
@@ -342,6 +345,10 @@ export default function Dashboard() {
             <TabsTrigger value="rewards" className="gap-2" data-testid="tab-rewards">
               <Coins className="h-4 w-4" />
               <span>Rewards</span>
+            </TabsTrigger>
+            <TabsTrigger value="verify" className="gap-2" data-testid="tab-verify">
+              <Shield className="h-4 w-4" />
+              <span>Verify</span>
             </TabsTrigger>
           </TabsList>
 
@@ -658,6 +665,161 @@ export default function Dashboard() {
                 Connect a real wallet to claim rewards
               </p>
             )}
+          </TabsContent>
+
+          <TabsContent value="verify" className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <Shield className="h-5 w-5 text-primary" />
+                  On-Chain Verification
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  All your learning achievements are recorded on Kaspa L1
+                </p>
+              </div>
+
+              {/* Quiz Completions with KU Protocol data */}
+              {progressList && progressList.filter(p => p.txHash && !p.txHash.startsWith("demo_")).length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <FileCheck className="h-4 w-4 text-primary" />
+                      Quiz Proofs (KU Protocol)
+                    </CardTitle>
+                    <CardDescription>
+                      Your quiz completions stored on-chain with KU Protocol data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {progressList
+                      .filter(p => p.txHash && !p.txHash.startsWith("demo_"))
+                      .map((progress) => {
+                        const course = courses?.find(c => c.id === progress.courseId);
+                        return (
+                          <div
+                            key={progress.id}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+                            data-testid={`verify-progress-${progress.id}`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-sm">
+                                {course?.title || progress.courseId}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span>Score: {progress.score ?? 0}%</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {progress.txStatus === "confirmed" ? "Confirmed" : progress.txStatus}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`https://explorer.kaspa.org/txs/${progress.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                data-testid={`link-tx-${progress.id}`}
+                              >
+                                <span className="font-mono">{progress.txHash?.slice(0, 16)}...</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                              <Link href={`/verify/${progress.txHash}`}>
+                                <Button size="sm" variant="ghost" className="gap-1">
+                                  <Shield className="h-3 w-3" />
+                                  Decode
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Reward Payment Transactions */}
+              {allRewards && allRewards.filter(r => r.txHash && !r.txHash.startsWith("demo_") && !r.txHash.startsWith("pending_")).length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Coins className="h-4 w-4 text-primary" />
+                      Reward Payments
+                    </CardTitle>
+                    <CardDescription>
+                      Your KAS reward transactions on Kaspa L1
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {allRewards
+                      .filter(r => r.txHash && !r.txHash.startsWith("demo_") && !r.txHash.startsWith("pending_"))
+                      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                      .map((reward) => (
+                        <div
+                          key={reward.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+                          data-testid={`verify-reward-${reward.id}`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-sm">
+                              {reward.courseTitle}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-semibold text-primary">+{reward.kasAmount.toFixed(2)} KAS</span>
+                              <Badge 
+                                variant="outline" 
+                                className={reward.status === "claimed" ? "border-green-500/50 text-green-600 dark:text-green-400" : ""}
+                              >
+                                {reward.status === "claimed" ? "Confirmed" : reward.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <a
+                            href={`https://explorer.kaspa.org/txs/${reward.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                            data-testid={`link-reward-tx-${reward.id}`}
+                          >
+                            <span className="font-mono">{reward.txHash?.slice(0, 16)}...</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty state */}
+              {(!progressList || progressList.filter(p => p.txHash && !p.txHash.startsWith("demo_")).length === 0) &&
+               (!allRewards || allRewards.filter(r => r.txHash && !r.txHash.startsWith("demo_") && !r.txHash.startsWith("pending_")).length === 0) && (
+                <Card className="border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Shield className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="mt-4 text-lg font-medium">No on-chain records yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Complete quizzes and claim rewards to create verifiable on-chain records
+                    </p>
+                    <Link href="/courses">
+                      <Button className="mt-4 gap-2">
+                        Start Learning
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Link to verify explorer */}
+              <div className="flex justify-center pt-4">
+                <Link href="/verify-explorer">
+                  <Button variant="outline" className="gap-2">
+                    <Link2 className="h-4 w-4" />
+                    Open Verification Explorer
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
