@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Copy, CheckCircle2, Loader2, Sparkles, Wallet } from "lucide-react";
+import { Download, ExternalLink, CheckCircle2, Loader2, Sparkles, Wallet } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
@@ -47,7 +47,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const { toast } = useToast();
   const { isDemoMode } = useWallet();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
   const [mintStep, setMintStep] = useState<"idle" | "preparing" | "awaiting_payment" | "finalizing">("idle");
   const [pendingP2sh, setPendingP2sh] = useState<string | null>(null);
   const [pendingCommitTx, setPendingCommitTx] = useState<string | null>(null);
@@ -289,14 +288,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     }
   };
 
-  const handleCopyLink = async () => {
-    const url = `${window.location.origin}/certificates/${certificate.id}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast({ title: "Link copied!", description: "Certificate link copied to clipboard" });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleDownload = () => {
     if (displayImageUrl) {
       const link = document.createElement("a");
@@ -505,20 +496,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   variant="ghost"
                   size="sm"
                   className="gap-1.5"
-                  onClick={handleCopyLink}
-                  data-testid={`button-copy-${certificate.id}`}
-                >
-                  {copied ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                  <span className="text-xs">Copy Link</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5"
                   onClick={handleDownload}
                   data-testid={`button-download-${certificate.id}`}
                 >
@@ -535,7 +512,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   data-testid={`button-view-${certificate.id}`}
                 >
                   <a
-                    href={`https://kas.fyi/transaction/${certificate.nftTxHash}`}
+                    href={`https://kaspa.stream/tx/${certificate.nftTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
