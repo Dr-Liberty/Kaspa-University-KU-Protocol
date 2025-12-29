@@ -50,6 +50,14 @@ class MintStorageService {
       console.log(`[MintStorage] Creating reservation for cert ${data.certificateId}, P2SH: ${data.p2shAddress.slice(0, 25)}...`);
       console.log(`[MintStorage] Data: tokenId=${data.tokenId}, recipient=${data.recipientAddress.slice(0, 20)}...`);
       
+      // CRITICAL: Delete ALL existing reservations for this certificate first
+      // This prevents race conditions where multiple reservations exist
+      const existingByCert = await this.getByCertificateId(data.certificateId);
+      if (existingByCert) {
+        console.log(`[MintStorage] Found existing reservation for cert ${data.certificateId}, deleting...`);
+        await this.deleteReservation(existingByCert.p2shAddress);
+      }
+      
       // scriptData is already a string (the exact mintDataStr used in the script)
       // mintData is an object that needs to be stringified
       const scriptDataStr = typeof data.scriptData === 'string' 
@@ -75,6 +83,16 @@ class MintStorageService {
       console.log(`[MintStorage] Reservation created successfully, ID: ${reservation?.id}`);
       return reservation as PendingMintReservation;
     } catch (error: any) {
+      // Handle duplicate key constraint - return existing reservation if available
+      if (error.code === "23505" && error.constraint?.includes("p2sh_address")) {
+        console.log(`[MintStorage] P2SH address collision, checking for existing reservation...`);
+        const existing = await this.getByCertificateId(data.certificateId);
+        if (existing) {
+          console.log(`[MintStorage] Returning existing reservation for cert ${data.certificateId}`);
+          return existing;
+        }
+      }
+      
       this._lastError = error.message || "Unknown database error";
       console.error("[MintStorage] Failed to create reservation:", error.message);
       console.error("[MintStorage] Error code:", error.code);
