@@ -288,6 +288,7 @@ export async function registerRoutes(
         timestamp: string,
         fullTimestamp: string, 
         txHash?: string,
+        txStatus?: string,
         score?: number,
         courseTitle?: string,
         verified?: boolean
@@ -316,6 +317,7 @@ export async function registerRoutes(
           timestamp: timeStr,
           fullTimestamp: fullTimeStr,
           txHash: result.txHash || undefined,
+          txStatus: result.txStatus || "none",
           score: result.score,
           courseTitle: course?.title,
           verified: result.txStatus === "confirmed",

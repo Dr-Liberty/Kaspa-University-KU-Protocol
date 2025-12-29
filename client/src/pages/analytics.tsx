@@ -70,6 +70,7 @@ interface AnalyticsData {
     timestamp: string;
     fullTimestamp: string;
     txHash?: string;
+    txStatus?: string;
     score?: number;
     courseTitle?: string;
     verified?: boolean;
@@ -485,19 +486,27 @@ export default function Analytics() {
                   </div>
                 </div>
                 
-                {activity.txHash && !activity.txHash.startsWith("demo") && (
+                {activity.type === "verification" && (
                   <div className="flex items-center gap-2 pl-11">
-                    <span className="text-xs text-muted-foreground">TX:</span>
-                    <a
-                      href={`https://explorer.kaspa.org/txs/${activity.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline font-mono"
-                      data-testid={`link-tx-${index}`}
-                    >
-                      {activity.txHash.slice(0, 20)}...{activity.txHash.slice(-8)}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                    <span className="text-xs text-muted-foreground">Proof:</span>
+                    {activity.txHash && !activity.txHash.startsWith("demo") ? (
+                      <a
+                        href={`https://explorer.kaspa.org/txs/${activity.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline font-mono"
+                        data-testid={`link-tx-${index}`}
+                      >
+                        {activity.txHash.slice(0, 20)}...{activity.txHash.slice(-8)}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : activity.txStatus === "pending" ? (
+                      <span className="text-xs text-yellow-600 dark:text-yellow-400">Broadcasting...</span>
+                    ) : activity.txStatus === "failed" ? (
+                      <span className="text-xs text-red-600 dark:text-red-400">Transaction failed</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not yet on-chain</span>
+                    )}
                   </div>
                 )}
               </div>
