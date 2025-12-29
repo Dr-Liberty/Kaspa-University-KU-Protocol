@@ -15,6 +15,7 @@ interface UploadResult {
   success: boolean;
   ipfsHash?: string;
   ipfsUrl?: string;
+  imageIpfsUrl?: string; // Direct image URL for display (separate from metadata URL)
   error?: string;
 }
 
@@ -221,6 +222,7 @@ class PinataService {
         success: true,
         ipfsHash: metadataResult.ipfsHash,
         ipfsUrl: metadataResult.ipfsUrl,
+        imageIpfsUrl: imageResult.ipfsUrl, // Also return the direct image URL for display
       };
     } catch (error: any) {
       console.error("[Pinata] Certificate upload failed:", error.message);

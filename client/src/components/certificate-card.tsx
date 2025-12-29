@@ -10,11 +10,13 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 // Convert IPFS URLs to gateway URLs for browser display
+// Try multiple gateways for better reliability
 function toGatewayUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (url.startsWith("ipfs://")) {
     const cid = url.replace("ipfs://", "");
-    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    // Use Cloudflare IPFS gateway for better reliability and CORS support
+    return `https://cloudflare-ipfs.com/ipfs/${cid}`;
   }
   return url;
 }
@@ -342,6 +344,10 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
               src={displayImageUrl}
               alt={`Certificate for ${certificate.courseName}`}
               className="h-full w-full object-contain"
+              onError={(e) => {
+                console.error("[CertImage] Failed to load:", displayImageUrl);
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">

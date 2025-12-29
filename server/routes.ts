@@ -1324,8 +1324,9 @@ export async function registerRoutes(
           );
           
           if (uploadResult.success && uploadResult.ipfsUrl) {
-            imageUrl = uploadResult.ipfsUrl;
-            console.log(`[Prepare] IPFS upload successful: ${imageUrl}`);
+            // Use the direct image URL for display, not the metadata URL
+            imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
+            console.log(`[Prepare] IPFS upload successful - image: ${imageUrl}, metadata: ${uploadResult.ipfsUrl}`);
           } else {
             console.error(`[Prepare] IPFS upload failed: ${uploadResult.error}`);
             return res.status(500).json({
@@ -1629,8 +1630,9 @@ export async function registerRoutes(
           );
           
           if (uploadResult.success && uploadResult.ipfsUrl) {
-            imageUrl = uploadResult.ipfsUrl;
-            console.log(`[Claim] Certificate uploaded to IPFS: ${imageUrl}`);
+            // Use the direct image URL for display, not the metadata URL
+            imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
+            console.log(`[Claim] Certificate uploaded to IPFS - image: ${imageUrl}`);
           } else {
             console.log(`[Claim] IPFS upload failed, using data URI fallback`);
             imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
