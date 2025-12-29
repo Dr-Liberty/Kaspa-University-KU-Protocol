@@ -9,16 +9,207 @@ import { useWallet } from "@/lib/wallet-context";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-// Convert IPFS URLs to gateway URLs for browser display
-// Try multiple gateways for better reliability
-function toGatewayUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  if (url.startsWith("ipfs://")) {
-    const cid = url.replace("ipfs://", "");
-    // Use Cloudflare IPFS gateway for better reliability and CORS support
-    return `https://cloudflare-ipfs.com/ipfs/${cid}`;
-  }
-  return url;
+
+// Generate certificate SVG string for download
+function generateCertificateSvgString(
+  recipientAddress: string,
+  courseName: string,
+  score: number,
+  issuedAt: Date
+): string {
+  const dateStr = new Date(issuedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const shortAddress = `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-8)}`;
+  
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a" />
+      <stop offset="50%" style="stop-color:#0f0f0f" />
+      <stop offset="100%" style="stop-color:#0a0a0a" />
+    </linearGradient>
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981" />
+      <stop offset="100%" style="stop-color:#059669" />
+    </linearGradient>
+    <linearGradient id="hexGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981" />
+      <stop offset="100%" style="stop-color:#047857" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <g opacity="0.4">
+    <circle cx="60" cy="80" r="4" fill="#10b981" />
+    <circle cx="120" cy="50" r="3" fill="#10b981" />
+    <circle cx="680" cy="60" r="4" fill="#10b981" />
+    <circle cx="740" cy="90" r="3" fill="#10b981" />
+    <circle cx="70" cy="480" r="4" fill="#10b981" />
+    <circle cx="690" cy="470" r="4" fill="#10b981" />
+    <line x1="60" y1="80" x2="120" y2="50" stroke="#10b981" stroke-width="1" opacity="0.5"/>
+    <line x1="680" y1="60" x2="740" y2="90" stroke="#10b981" stroke-width="1" opacity="0.5"/>
+  </g>
+  <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#green)" stroke-width="2" rx="12"/>
+  <rect x="28" y="28" width="744" height="544" fill="none" stroke="#1f2937" stroke-width="1" rx="10"/>
+  <g transform="translate(400, 70)">
+    <polygon points="0,-38 33,-19 33,19 0,38 -33,19 -33,-19" fill="#0a0a0a" stroke="url(#hexGreen)" stroke-width="2"/>
+    <polygon points="0,-28 24,-14 24,14 0,28 -24,14 -24,-14" fill="none" stroke="#10b981" stroke-width="1" opacity="0.5"/>
+    <text x="0" y="8" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="22" fill="url(#green)" font-weight="bold">KU</text>
+  </g>
+  <text x="400" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#10b981" letter-spacing="4" font-weight="bold">KASPA UNIVERSITY</text>
+  <text x="400" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="36" fill="#ffffff" font-weight="bold" filter="url(#glow)">Certificate of Completion</text>
+  <line x1="150" y1="205" x2="650" y2="205" stroke="url(#green)" stroke-width="1" opacity="0.5"/>
+  <text x="400" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">This is to certify that</text>
+  <text x="400" y="290" text-anchor="middle" font-family="monospace" font-size="18" fill="#10b981" font-weight="bold">${shortAddress}</text>
+  <text x="400" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">has successfully completed the course</text>
+  <text x="400" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#ffffff" font-weight="bold">${courseName}</text>
+  <rect x="340" y="405" width="120" height="40" rx="20" fill="#0a0a0a" stroke="url(#green)" stroke-width="1"/>
+  <text x="400" y="432" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#10b981" font-weight="bold">${score}% Score</text>
+  <text x="400" y="485" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">Awarded on ${dateStr}</text>
+  <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
+  <circle cx="165" cy="521" r="8" fill="#10b981"/>
+  <text x="400" y="526" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981">Quiz data has been embedded on Kaspa layer one for future verification</text>
+  <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">KRC-721 NFT Certificate | KPROOF Collection</text>
+</svg>`;
+}
+
+// Inline SVG Certificate Component matching the KU design
+function CertificateSVG({ 
+  recipientAddress, 
+  courseName, 
+  score, 
+  issuedAt 
+}: { 
+  recipientAddress: string; 
+  courseName: string; 
+  score: number; 
+  issuedAt: Date;
+}) {
+  const dateStr = new Date(issuedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const shortAddress = `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-8)}`;
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" className="w-full h-full">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0a0a0a" />
+          <stop offset="50%" stopColor="#0f0f0f" />
+          <stop offset="100%" stopColor="#0a0a0a" />
+        </linearGradient>
+        <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#10b981" />
+          <stop offset="100%" stopColor="#059669" />
+        </linearGradient>
+        <linearGradient id="hexGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#10b981" />
+          <stop offset="100%" stopColor="#047857" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      
+      {/* Background */}
+      <rect width="800" height="600" fill="url(#bg)"/>
+      
+      {/* DAG Nodes - simplified */}
+      <g opacity="0.4">
+        <circle cx="60" cy="80" r="4" fill="#10b981" />
+        <circle cx="120" cy="50" r="3" fill="#10b981" />
+        <circle cx="680" cy="60" r="4" fill="#10b981" />
+        <circle cx="740" cy="90" r="3" fill="#10b981" />
+        <circle cx="70" cy="480" r="4" fill="#10b981" />
+        <circle cx="690" cy="470" r="4" fill="#10b981" />
+        <line x1="60" y1="80" x2="120" y2="50" stroke="#10b981" strokeWidth="1" opacity="0.5"/>
+        <line x1="680" y1="60" x2="740" y2="90" stroke="#10b981" strokeWidth="1" opacity="0.5"/>
+      </g>
+      
+      {/* Border */}
+      <rect x="20" y="20" width="760" height="560" fill="none" stroke="url(#green)" strokeWidth="2" rx="12"/>
+      <rect x="28" y="28" width="744" height="544" fill="none" stroke="#1f2937" strokeWidth="1" rx="10"/>
+      
+      {/* KU Hexagon Logo */}
+      <g transform="translate(400, 70)">
+        <polygon points="0,-38 33,-19 33,19 0,38 -33,19 -33,-19" fill="#0a0a0a" stroke="url(#hexGreen)" strokeWidth="2"/>
+        <polygon points="0,-28 24,-14 24,14 0,28 -24,14 -24,-14" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.5"/>
+        <text x="0" y="8" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="22" fill="url(#green)" fontWeight="bold">KU</text>
+      </g>
+      
+      {/* Header */}
+      <text x="400" y="135" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fill="#10b981" letterSpacing="4" fontWeight="bold">
+        KASPA UNIVERSITY
+      </text>
+      
+      {/* Certificate Title */}
+      <text x="400" y="180" textAnchor="middle" fontFamily="Georgia, serif" fontSize="36" fill="#ffffff" fontWeight="bold" filter="url(#glow)">
+        Certificate of Completion
+      </text>
+      
+      {/* Divider */}
+      <line x1="150" y1="205" x2="650" y2="205" stroke="url(#green)" strokeWidth="1" opacity="0.5"/>
+      
+      {/* This certifies */}
+      <text x="400" y="250" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="16" fill="#9ca3af">
+        This is to certify that
+      </text>
+      
+      {/* Recipient Address */}
+      <text x="400" y="290" textAnchor="middle" fontFamily="monospace" fontSize="18" fill="#10b981" fontWeight="bold">
+        {shortAddress}
+      </text>
+      
+      {/* Has completed */}
+      <text x="400" y="330" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="16" fill="#9ca3af">
+        has successfully completed the course
+      </text>
+      
+      {/* Course Name */}
+      <text x="400" y="380" textAnchor="middle" fontFamily="Georgia, serif" fontSize="28" fill="#ffffff" fontWeight="bold">
+        {courseName}
+      </text>
+      
+      {/* Score Badge */}
+      <rect x="340" y="405" width="120" height="40" rx="20" fill="#0a0a0a" stroke="url(#green)" strokeWidth="1"/>
+      <text x="400" y="432" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="18" fill="#10b981" fontWeight="bold">
+        {score}% Score
+      </text>
+      
+      {/* Date */}
+      <text x="400" y="485" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fill="#6b7280">
+        Awarded on {dateStr}
+      </text>
+      
+      {/* Verification Badge */}
+      <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" strokeWidth="1" opacity="0.8"/>
+      <circle cx="165" cy="521" r="8" fill="#10b981"/>
+      <text x="400" y="526" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fill="#10b981">
+        Quiz data has been embedded on Kaspa layer one for future verification
+      </text>
+      
+      {/* Footer */}
+      <text x="400" y="555" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#4b5563">
+        KRC-721 NFT Certificate | KPROOF Collection
+      </text>
+    </svg>
+  );
 }
 
 interface CertificateCardProps {
@@ -50,9 +241,6 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const [mintStep, setMintStep] = useState<"idle" | "preparing" | "awaiting_payment" | "finalizing">("idle");
   const [pendingP2sh, setPendingP2sh] = useState<string | null>(null);
   const [pendingCommitTx, setPendingCommitTx] = useState<string | null>(null);
-
-  // Get displayable image URL (convert IPFS to gateway)
-  const displayImageUrl = toGatewayUrl(certificate.imageUrl);
 
   // Check for existing reservation when certificate is in "minting" status
   const { data: reservationData } = useQuery({
@@ -289,17 +477,23 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   };
 
   const handleDownload = () => {
-    if (displayImageUrl) {
-      const link = document.createElement("a");
-      link.href = displayImageUrl;
-      link.download = `kaspa-university-certificate-${certificate.verificationCode}.svg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({ title: "Download started!", description: "Your certificate is being downloaded" });
-    } else {
-      toast({ title: "No image available", description: "Certificate image not yet generated", variant: "destructive" });
-    }
+    // Generate SVG on demand for download
+    const svgString = generateCertificateSvgString(
+      certificate.recipientAddress,
+      certificate.courseName,
+      certificate.score || 100,
+      certificate.issuedAt
+    );
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kaspa-university-certificate-${certificate.verificationCode}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Download started!", description: "Your certificate is being downloaded" });
   };
 
   const formatDate = (date: Date) => {
@@ -330,57 +524,13 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
     >
       <CardContent className="p-0">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-background via-card to-background">
-          {displayImageUrl ? (
-            <img
-              src={displayImageUrl}
-              alt={`Certificate for ${certificate.courseName}`}
-              className="h-full w-full object-contain"
-              onError={(e) => {
-                console.error("[CertImage] Failed to load:", displayImageUrl);
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <div className="rounded-full bg-primary/10 p-3">
-                <CheckCircle2 className="h-8 w-8 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <Badge className="bg-primary/10 text-primary border-primary/20">
-                  Certificate of Completion
-                </Badge>
-                <h3 className="mt-2 font-semibold leading-tight">{certificate.courseName}</h3>
-              </div>
-              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                <p>Issued on {formatDate(certificate.issuedAt)}</p>
-                <p className="font-mono text-[10px]">
-                  {certificate.verificationCode}
-                </p>
-                {certificate.score && (
-                  <p className="font-medium">Score: {certificate.score}%</p>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
-                <span className="text-sm font-semibold text-primary">
-                  +{certificate.kasReward} KAS
-                </span>
-              </div>
-            </div>
-          )}
-          
-          {displayImageUrl && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent p-3 pt-6">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-sm leading-tight truncate">{certificate.courseName}</h3>
-                  <p className="text-xs text-muted-foreground">{formatDate(certificate.issuedAt)}</p>
-                </div>
-                <Badge className="bg-primary/10 text-primary border-primary/20 shrink-0 text-xs">
-                  +{certificate.kasReward} KAS
-                </Badge>
-              </div>
-            </div>
-          )}
+          {/* Always render inline SVG certificate for reliable display */}
+          <CertificateSVG
+            recipientAddress={certificate.recipientAddress}
+            courseName={certificate.courseName}
+            score={certificate.score || 100}
+            issuedAt={certificate.issuedAt}
+          />
 
           {isClaimed && (
             <div className="absolute right-2 top-2">
