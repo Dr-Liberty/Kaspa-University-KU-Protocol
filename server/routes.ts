@@ -281,37 +281,79 @@ export async function registerRoutes(
         };
       }));
 
-      // Build recent activity from real data
-      const recentActivity: Array<{ type: string, description: string, timestamp: string, txHash?: string }> = [];
+      // Build recent activity from real data with full verification info
+      const recentActivity: Array<{ 
+        type: string, 
+        description: string, 
+        timestamp: string,
+        fullTimestamp: string, 
+        txHash?: string,
+        score?: number,
+        courseTitle?: string,
+        verified?: boolean
+      }> = [];
       
-      // Add recent quiz completions
-      for (const result of recentQuizResults.slice(0, 3)) {
+      // Add recent quiz completions with verification data
+      for (const result of recentQuizResults.slice(0, 5)) {
         const lesson = await storage.getLesson(result.lessonId);
         const course = lesson ? await storage.getCourse(lesson.courseId) : null;
-        const timeDiff = Date.now() - new Date(result.completedAt).getTime();
+        const completedDate = new Date(result.completedAt);
+        const timeDiff = Date.now() - completedDate.getTime();
         const minutes = Math.floor(timeDiff / 60000);
         const timeStr = minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hours ago`;
+        const fullTimeStr = completedDate.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
         
         recentActivity.push({
-          type: "completion",
-          description: `User completed '${course?.title || "Quiz"}'`,
+          type: "verification",
+          description: `Quiz verified: '${course?.title || "Course"}'`,
           timestamp: timeStr,
+          fullTimestamp: fullTimeStr,
+          txHash: result.txHash || undefined,
+          score: result.score,
+          courseTitle: course?.title,
+          verified: result.txStatus === "confirmed",
         });
       }
       
-      // Add recent Q&A posts
-      for (const post of recentQAPosts.slice(0, 2)) {
-        const timeDiff = Date.now() - new Date(post.createdAt).getTime();
+      // Add recent Q&A posts with verification data
+      for (const post of recentQAPosts.slice(0, 3)) {
+        const createdDate = new Date(post.createdAt);
+        const timeDiff = Date.now() - createdDate.getTime();
         const minutes = Math.floor(timeDiff / 60000);
         const timeStr = minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hours ago`;
+        const fullTimeStr = createdDate.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
         
         recentActivity.push({
           type: post.parentId ? "answer" : "question",
-          description: post.parentId ? "New answer posted in Q&A" : "New question asked in Q&A",
+          description: post.parentId ? "Q&A answer posted" : "Q&A question asked",
           timestamp: timeStr,
+          fullTimestamp: fullTimeStr,
           txHash: post.txHash || undefined,
+          verified: !!post.txHash,
         });
       }
+      
+      // Sort by most recent
+      recentActivity.sort((a, b) => {
+        // Parse timestamps for sorting - newer first
+        const aTime = a.fullTimestamp ? new Date(a.fullTimestamp).getTime() : 0;
+        const bTime = b.fullTimestamp ? new Date(b.fullTimestamp).getTime() : 0;
+        return bTime - aTime;
+      });
 
       const analyticsData = {
         overview: {

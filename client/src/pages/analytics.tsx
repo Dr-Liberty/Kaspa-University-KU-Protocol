@@ -14,6 +14,10 @@ import {
   BarChart3,
   Clock,
   ExternalLink,
+  Shield,
+  CheckCircle2,
+  FileQuestion,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,7 +68,11 @@ interface AnalyticsData {
     type: string;
     description: string;
     timestamp: string;
+    fullTimestamp: string;
     txHash?: string;
+    score?: number;
+    courseTitle?: string;
+    verified?: boolean;
   }>;
 }
 
@@ -401,8 +409,8 @@ export default function Analytics() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Recent Activity
+            <Shield className="h-5 w-5" />
+            Recent Verifications
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -410,49 +418,80 @@ export default function Analytics() {
             {analytics.recentActivity.map((activity, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between gap-2 p-3 rounded-md border border-border/50"
+                className="flex flex-col gap-2 p-4 rounded-lg border border-border/50"
                 data-testid={`row-activity-${index}`}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {activity.type === "completion" && (
-                    <Award className="h-4 w-4 text-primary shrink-0" />
-                  )}
-                  {activity.type === "reward" && (
-                    <Coins className="h-4 w-4 text-yellow-500 shrink-0" />
-                  )}
-                  {activity.type === "certificate" && (
-                    <Trophy className="h-4 w-4 text-purple-500 shrink-0" />
-                  )}
-                  {(activity.type === "question" || activity.type === "answer") && (
-                    <Activity className="h-4 w-4 text-blue-500 shrink-0" />
-                  )}
-                  <span className="text-sm truncate">{activity.description}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      activity.verified 
+                        ? "bg-green-500/10" 
+                        : "bg-muted"
+                    }`}>
+                      {activity.type === "verification" && (
+                        <Shield className={`h-4 w-4 ${activity.verified ? "text-green-500" : "text-muted-foreground"}`} />
+                      )}
+                      {activity.type === "question" && (
+                        <FileQuestion className="h-4 w-4 text-blue-500" />
+                      )}
+                      {activity.type === "answer" && (
+                        <MessageSquare className="h-4 w-4 text-purple-500" />
+                      )}
+                      {activity.type === "reward" && (
+                        <Coins className="h-4 w-4 text-yellow-500" />
+                      )}
+                      {activity.type === "certificate" && (
+                        <Award className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {activity.courseTitle || activity.description}
+                        </span>
+                        {activity.verified && (
+                          <Badge variant="outline" className="border-green-500/50 text-green-600 dark:text-green-400 text-xs gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Verified
+                          </Badge>
+                        )}
+                        {activity.score !== undefined && (
+                          <Badge variant="secondary" className="text-xs">
+                            Score: {activity.score}%
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {activity.fullTimestamp}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {activity.timestamp}
-                  </span>
-                  {activity.txHash && !activity.txHash.startsWith("demo") && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      asChild
-                      data-testid={`button-view-tx-${index}`}
+                
+                {activity.txHash && !activity.txHash.startsWith("demo") && (
+                  <div className="flex items-center gap-2 pl-11">
+                    <span className="text-xs text-muted-foreground">TX:</span>
+                    <a
+                      href={`https://explorer.kaspa.org/txs/${activity.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-primary hover:underline font-mono"
+                      data-testid={`link-tx-${index}`}
                     >
-                      <a
-                        href={`https://kaspa.stream/tx/${activity.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="View on kaspa.stream"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                      {activity.txHash.slice(0, 20)}...{activity.txHash.slice(-8)}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
               </div>
             ))}
+            
+            {analytics.recentActivity.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No recent verifications</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
