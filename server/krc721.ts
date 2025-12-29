@@ -412,11 +412,17 @@ class KRC721Service {
   }
 
   /**
-   * Get next token ID (based on current certificate count + 1)
+   * Get next token ID (based on highest existing token ID + 1)
+   * Uses the mint reservations table to track the highest minted token
    */
   async getNextTokenId(): Promise<number> {
-    const count = await storage.getCertificateCount();
-    return count + 1;
+    const highestFromReservations = await mintStorage.getHighestTokenId();
+    const certificateCount = await storage.getCertificateCount();
+    
+    // Use the maximum of reservation highest or certificate count to avoid duplicates
+    const nextId = Math.max(highestFromReservations, certificateCount) + 1;
+    console.log(`[KRC721] Next token ID: ${nextId} (reservations max: ${highestFromReservations}, cert count: ${certificateCount})`);
+    return nextId;
   }
 
   /**

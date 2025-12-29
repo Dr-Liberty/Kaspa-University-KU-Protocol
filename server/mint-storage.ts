@@ -7,7 +7,7 @@
 
 import { db } from "./db";
 import { pendingMintReservations } from "./db/schema";
-import { eq, lt, and, or } from "drizzle-orm";
+import { eq, lt, and, or, sql, desc } from "drizzle-orm";
 
 export interface PendingMintReservation {
   id: string;
@@ -153,6 +153,24 @@ class MintStorageService {
     
     const now = new Date();
     return reservation.expiresAt > now && reservation.status === "pending";
+  }
+
+  /**
+   * Get the highest token ID from all reservations (for generating next token ID)
+   */
+  async getHighestTokenId(): Promise<number> {
+    try {
+      const result = await db
+        .select({ maxTokenId: sql<number>`COALESCE(MAX(${pendingMintReservations.tokenId}), 0)` })
+        .from(pendingMintReservations);
+      
+      const highestId = result[0]?.maxTokenId || 0;
+      console.log(`[MintStorage] Highest token ID in reservations: ${highestId}`);
+      return highestId;
+    } catch (error: any) {
+      console.error("[MintStorage] Failed to get highest token ID:", error.message);
+      return 0;
+    }
   }
 
   /**
