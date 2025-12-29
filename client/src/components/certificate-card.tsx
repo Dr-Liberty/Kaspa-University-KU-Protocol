@@ -526,7 +526,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   <span className="text-xs">Download</span>
                 </Button>
               </div>
-              {isClaimed && certificate.nftTxHash && (
+              {isClaimed && certificate.nftTxHash && certificate.nftTxHash.length > 10 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -535,7 +535,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   data-testid={`button-view-${certificate.id}`}
                 >
                   <a
-                    href={`https://kaspa.stream/tx/${certificate.nftTxHash}`}
+                    href={`https://kas.fyi/transaction/${certificate.nftTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
