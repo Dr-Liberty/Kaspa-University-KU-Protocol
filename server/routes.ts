@@ -1557,7 +1557,7 @@ export async function registerRoutes(
       const krc721Service = await getKRC721Service();
       const kaspaService = await getKaspaService();
       const collectionInfo = await krc721Service.getCollectionInfo();
-      const MINTING_FEE = 3.5;
+      const MINTING_FEE = 10.5;
 
       if (!collectionInfo.address) {
         await storage.updateCertificate(id, { nftStatus: "pending" });
@@ -1576,7 +1576,7 @@ export async function registerRoutes(
         await storage.updateCertificate(id, { nftStatus: "pending" });
         return res.status(400).json({ 
           error: "Payment verification failed",
-          message: "Could not verify payment to treasury. Please ensure you sent at least 3.5 KAS."
+          message: "Could not verify payment to treasury. Please ensure you sent at least 10.5 KAS."
         });
       }
 
@@ -1654,7 +1654,7 @@ export async function registerRoutes(
 
       if (mintResult.success && mintResult.revealTxHash) {
         // Mark payment tx as used to prevent double-claiming
-        await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 3.5);
+        await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10.5);
         
         // Update certificate with NFT info
         await storage.updateCertificate(id, {

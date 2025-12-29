@@ -63,8 +63,8 @@ interface CertificateMetadata {
 // KRC-721 fees based on coinchimp reference implementation
 // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
 // Reference uses 3.3 KAS for commit transaction
-const KRC721_MINT_FEE_KAS = "3.5"; // 3.3 KAS (reference) + 0.2 buffer for network fees
-const KRC721_MINT_FEE_SOMPI = BigInt(350000000); // 3.5 KAS in sompi (1 KAS = 100,000,000 sompi)
+const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee
+const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
 // Import the database-backed mint storage service
 import { mintStorage, PendingMintReservation } from "./mint-storage";
