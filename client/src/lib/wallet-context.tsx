@@ -1,18 +1,20 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { WalletConnection } from "@shared/schema";
-import { setWalletAddress, queryClient } from "@/lib/queryClient";
+import { setWalletAddress, setAuthToken, queryClient } from "@/lib/queryClient";
 
 declare global {
   interface Window {
     kasware?: {
       requestAccounts: () => Promise<string[]>;
       getAccounts: () => Promise<string[]>;
+      getPublicKey: () => Promise<string>;
       getNetwork: () => Promise<number>;
       switchNetwork: (network: string) => Promise<void>;
       disconnect: (origin: string) => Promise<void>;
       getVersion: () => Promise<string>;
       sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number }) => Promise<string>;
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
+      signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
       on: (event: string, callback: (...args: any[]) => void) => void;
       removeListener: (event: string, callback: (...args: any[]) => void) => void;
     };
@@ -153,21 +155,69 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const accounts = await window.kasware.requestAccounts();
         
         if (accounts && accounts.length > 0) {
+          const walletAddr = accounts[0];
           const networkId = await window.kasware.getNetwork();
           const networkName = getNetworkName(networkId);
           
+          // Step 1: Request a challenge from the server
+          console.log(`[Wallet] Requesting auth challenge for ${walletAddr.slice(0, 15)}...`);
+          const challengeRes = await fetch("/api/auth/challenge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress: walletAddr }),
+          });
+          
+          if (!challengeRes.ok) {
+            const err = await challengeRes.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to get authentication challenge");
+          }
+          
+          const { nonce, message } = await challengeRes.json();
+          
+          // Step 2: Get public key for cryptographic verification
+          console.log("[Wallet] Getting public key...");
+          const publicKey = await window.kasware.getPublicKey();
+          
+          // Step 3: Sign the challenge message with the wallet (ECDSA)
+          console.log("[Wallet] Signing auth challenge...");
+          const signature = await window.kasware.signMessage(message, { type: "ecdsa" });
+          
+          // Step 4: Verify the signature with the server
+          console.log("[Wallet] Verifying signature...");
+          const verifyRes = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: walletAddr,
+              message,
+              signature,
+              publicKey,
+              nonce,
+            }),
+          });
+          
+          if (!verifyRes.ok) {
+            const err = await verifyRes.json().catch(() => ({}));
+            throw new Error(err.error || "Signature verification failed");
+          }
+          
+          const { token } = await verifyRes.json();
+          
+          // Step 4: Store the auth token and complete connection
+          setAuthToken(token);
+          
           const newWallet: WalletConnection = {
-            address: accounts[0],
+            address: walletAddr,
             connected: true,
             network: networkName,
           };
           
           setWallet(newWallet);
-          setWalletAddress(accounts[0]);
+          setWalletAddress(walletAddr);
           setWalletType("kasware");
           queryClient.invalidateQueries();
           
-          console.log(`[Wallet] Connected via KasWare: ${accounts[0]} (${networkName})`);
+          console.log(`[Wallet] Connected and authenticated via KasWare: ${walletAddr.slice(0, 15)}... (${networkName})`);
         } else {
           throw new Error("No accounts returned from wallet");
         }
@@ -179,7 +229,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.error("[Wallet] Connection failed:", error);
       
       if (error.message?.includes("User rejected")) {
-        setConnectionError("Connection rejected. Please approve the connection request in your wallet.");
+        setConnectionError("Connection rejected. Please approve the request in your wallet.");
       } else if (error.message?.includes("No accounts")) {
         setConnectionError("No accounts found. Please unlock your wallet and try again.");
       } else {
@@ -192,6 +242,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(async () => {
     try {
+      // Notify server to invalidate session
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "x-auth-token": localStorage.getItem("kaspa-university-auth-token") || "" },
+      }).catch(() => {});
+      
       if (walletType === "kasware" && window.kasware) {
         await window.kasware.disconnect(window.location.origin);
       }
@@ -201,6 +257,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     setWallet(null);
     setWalletAddress(null);
+    setAuthToken(null);
     setWalletType(null);
     setIsDemoMode(false);
     setConnectionError(null);

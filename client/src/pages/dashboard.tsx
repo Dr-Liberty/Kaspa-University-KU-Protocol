@@ -27,7 +27,7 @@ import {
   ExternalLink,
   RefreshCw,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 interface SecurityCheck {
   isFlagged: boolean;
@@ -128,6 +128,51 @@ export default function Dashboard() {
       });
     },
   });
+
+  // Auto-verify rewards in "confirming" status every 3 seconds
+  const confirmingRewards = useMemo(() => {
+    return allRewards?.filter((r) => r.status === "confirming") || [];
+  }, [allRewards]);
+  
+  const autoVerifyRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    // Clear any existing interval
+    if (autoVerifyRef.current) {
+      clearInterval(autoVerifyRef.current);
+      autoVerifyRef.current = null;
+    }
+    
+    // If there are confirming rewards, start polling
+    if (confirmingRewards.length > 0 && !isDemoMode) {
+      console.log(`[Dashboard] Starting auto-verify for ${confirmingRewards.length} confirming rewards`);
+      
+      autoVerifyRef.current = setInterval(async () => {
+        // Verify all confirming rewards in parallel
+        for (const reward of confirmingRewards) {
+          try {
+            // Use apiRequest to include auth token
+            const response = await apiRequest("POST", `/api/rewards/${reward.id}/verify`);
+            const data = await response.json();
+            if (data.verified || data.confirmed) {
+              // Refresh rewards list when verification succeeds
+              queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+            }
+          } catch (err) {
+            // Silent fail for auto-verify - user can manually verify if needed
+          }
+        }
+      }, 3000);
+    }
+    
+    return () => {
+      if (autoVerifyRef.current) {
+        clearInterval(autoVerifyRef.current);
+        autoVerifyRef.current = null;
+      }
+    };
+  }, [confirmingRewards.length, isDemoMode, wallet?.address]);
 
   const progressMap = useMemo(() => {
     if (!progressList) return new Map<string, UserProgress>();

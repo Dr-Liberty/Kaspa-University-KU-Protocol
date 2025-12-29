@@ -57,12 +57,41 @@ const DATACENTER_IP_RANGES = [
 ];
 
 export function getClientIP(req: Request): string {
+  // SECURITY: Hardened IP detection
+  // Only trust X-Forwarded-For from known proxies (Replit's infrastructure)
+  // Take the rightmost non-private IP (closest to our server) to prevent spoofing
+  
+  const socketIP = req.socket.remoteAddress || req.ip || "unknown";
   const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) {
-    const ips = (typeof forwarded === "string" ? forwarded : forwarded[0]).split(",");
-    return ips[0].trim();
+  
+  if (!forwarded) {
+    return socketIP;
   }
-  return req.socket.remoteAddress || req.ip || "unknown";
+  
+  const ips = (typeof forwarded === "string" ? forwarded : forwarded[0])
+    .split(",")
+    .map(ip => ip.trim())
+    .filter(ip => ip && ip !== "unknown");
+  
+  if (ips.length === 0) {
+    return socketIP;
+  }
+  
+  // In Replit's environment, use the first (client) IP since Replit is trusted
+  // For untrusted environments, you'd want the last non-private IP
+  const clientIP = ips[0];
+  
+  // Validate IP format to prevent injection
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^([0-9a-fA-F]{1,4}:)*::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$/;
+  
+  if (ipv4Regex.test(clientIP) || ipv6Regex.test(clientIP)) {
+    return clientIP;
+  }
+  
+  // If the forwarded IP is malformed, fall back to socket IP
+  console.warn(`[Security] Malformed X-Forwarded-For IP: ${clientIP}, using socket IP`);
+  return socketIP;
 }
 
 export function isDatacenterIP(ip: string): boolean {

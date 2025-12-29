@@ -40,6 +40,14 @@ import { getJobQueue } from "./job-queue";
 import { statsCache, analyticsCache } from "./cache";
 import { mintStorage } from "./mint-storage";
 import { issueCertificateProof, CERT_PROOF_AMOUNT_KAS, generateVerificationCode } from "./certificate-proof";
+import { 
+  generateChallenge, 
+  verifySignature, 
+  createSession, 
+  validateSession, 
+  invalidateSession,
+  getSessionByToken 
+} from "./wallet-auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -48,6 +56,123 @@ export async function registerRoutes(
   // Apply security middleware globally for API routes
   app.use("/api", securityMiddleware);
   app.use("/api", generalRateLimiter);
+
+  // ============================================
+  // WALLET AUTHENTICATION ENDPOINTS
+  // ============================================
+
+  // Get a challenge for wallet authentication
+  app.post("/api/auth/challenge", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress || typeof walletAddress !== "string") {
+        return res.status(400).json({ error: "Wallet address required" });
+      }
+      
+      // Validate Kaspa address format
+      if (!walletAddress.startsWith("kaspa:") || walletAddress.length < 60) {
+        return res.status(400).json({ error: "Invalid Kaspa address format" });
+      }
+      
+      const challenge = generateChallenge(walletAddress);
+      
+      res.json({
+        success: true,
+        nonce: challenge.nonce,
+        message: challenge.message,
+        expiresAt: challenge.expiresAt,
+      });
+    } catch (error: any) {
+      console.error("[Auth] Challenge generation failed:", error.message);
+      res.status(500).json({ error: "Failed to generate challenge" });
+    }
+  });
+
+  // Verify signature and create session
+  app.post("/api/auth/verify", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, message, signature, publicKey, nonce } = req.body;
+      
+      if (!walletAddress || !message || !signature || !publicKey || !nonce) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const result = await verifySignature(walletAddress, message, signature, publicKey, nonce);
+      
+      if (!result.valid) {
+        return res.status(401).json({ error: result.error || "Signature verification failed" });
+      }
+      
+      // Create authenticated session
+      const clientIP = getClientIP(req);
+      const session = createSession(walletAddress, clientIP);
+      
+      res.json({
+        success: true,
+        token: session.token,
+        expiresAt: session.expiresAt,
+      });
+    } catch (error: any) {
+      console.error("[Auth] Verification failed:", error.message);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  // Logout / invalidate session
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    const token = req.headers["x-auth-token"] as string;
+    if (token) {
+      invalidateSession(token);
+    }
+    res.json({ success: true });
+  });
+
+  // Check session validity
+  app.get("/api/auth/session", async (req: Request, res: Response) => {
+    const token = req.headers["x-auth-token"] as string;
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    
+    if (!token || !walletAddress) {
+      return res.json({ authenticated: false });
+    }
+    
+    const result = validateSession(token, walletAddress);
+    res.json({ 
+      authenticated: result.valid,
+      error: result.error 
+    });
+  });
+
+  // Middleware to require verified session for protected routes
+  const requireVerifiedSession = (req: Request, res: Response, next: Function) => {
+    const token = req.headers["x-auth-token"] as string;
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    
+    // Demo mode bypass (for testing)
+    if (walletAddress?.startsWith("demo:")) {
+      return next();
+    }
+    
+    if (!token || !walletAddress) {
+      return res.status(401).json({ 
+        error: "Authentication required",
+        code: "AUTH_REQUIRED"
+      });
+    }
+    
+    // Pass client IP for IP binding enforcement
+    const clientIP = getClientIP(req);
+    const result = validateSession(token, walletAddress, clientIP);
+    if (!result.valid) {
+      return res.status(401).json({ 
+        error: result.error || "Invalid session",
+        code: "SESSION_INVALID"
+      });
+    }
+    
+    next();
+  };
 
   app.get("/api/stats", async (_req: Request, res: Response) => {
     const cached = statsCache.get("platform_stats");
@@ -1582,6 +1707,10 @@ export async function registerRoutes(
 
       console.log(`[Claim] Payment verified for certificate ${id}`);
 
+      // SECURITY: Mark payment TX as used IMMEDIATELY to prevent double-claiming race conditions
+      // We mark it before minting to prevent concurrent requests using the same TX
+      await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10.5);
+
       // Generate certificate image and upload to IPFS if configured
       let imageUrl = certificate.imageUrl;
       if (!imageUrl) {
@@ -1653,9 +1782,6 @@ export async function registerRoutes(
       );
 
       if (mintResult.success && mintResult.revealTxHash) {
-        // Mark payment tx as used to prevent double-claiming
-        await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10.5);
-        
         // Update certificate with NFT info
         await storage.updateCertificate(id, {
           nftStatus: "claimed",

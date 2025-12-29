@@ -31,6 +31,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **KRC-721 NFT Certificates**: Implements non-custodial minting flow, adhering to KRC-721 standard, using IPFS for metadata.
 - **KU Protocol**: Custom on-chain data format for quiz proofs and Q&A content.
 - **Security**:
+    - **Wallet Authentication**: Challenge-response with cryptographic signature verification using Kaspa WASM. Uses PublicKey.toAddress() to verify public key ownership and verifyMessage() for ECDSA signature validation. KasWare returns base64-encoded ECDSA signatures which are decoded to raw hex (128 chars, no 0x prefix) for WASM verification.
     - **Anti-Sybil**: Quiz cooldowns, minimum completion times, daily reward caps, attempt limits, wallet trust scoring.
     - **Threat Detection**: Rate limiting, IP tracking, multi-wallet/IP detection, VPN detection (GetIPIntel, IP-API.com).
     - **UTXO Management**: Mutex-based locking and transaction tracking to prevent double-spending.

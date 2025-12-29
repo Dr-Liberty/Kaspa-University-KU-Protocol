@@ -1,6 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 let walletAddress: string | null = null;
+let authToken: string | null = null;
+
+const AUTH_TOKEN_KEY = "kaspa-university-auth-token";
+
+// Restore auth token from storage on load
+if (typeof window !== "undefined") {
+  authToken = localStorage.getItem(AUTH_TOKEN_KEY);
+}
 
 export function setWalletAddress(address: string | null) {
   walletAddress = address;
@@ -8,6 +16,21 @@ export function setWalletAddress(address: string | null) {
 
 export function getWalletAddress(): string | null {
   return walletAddress;
+}
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+  }
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -42,8 +65,11 @@ export async function apiRequest(
   if (walletAddress) {
     headers["x-wallet-address"] = walletAddress;
   }
+  if (authToken) {
+    headers["x-auth-token"] = authToken;
+  }
 
-  console.log(`[API] ${method} ${url}`, { hasWallet: !!walletAddress, walletPreview: walletAddress?.slice(0, 15) });
+  console.log(`[API] ${method} ${url}`, { hasWallet: !!walletAddress, hasAuth: !!authToken, walletPreview: walletAddress?.slice(0, 15) });
 
   try {
     const res = await fetch(url, {
@@ -70,6 +96,9 @@ export const getQueryFn: <T>(options: {
     const headers: Record<string, string> = {};
     if (walletAddress) {
       headers["x-wallet-address"] = walletAddress;
+    }
+    if (authToken) {
+      headers["x-auth-token"] = authToken;
     }
 
     const res = await fetch(queryKey.join("/") as string, {
