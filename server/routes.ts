@@ -2128,6 +2128,82 @@ export async function registerRoutes(
     }
   });
 
+  // Get blockchain statistics for KU Protocol
+  app.get("/api/blockchain-stats", async (_req: Request, res: Response) => {
+    try {
+      // Get KU Protocol stats from our database
+      const allQuizResults = await storage.getAllQuizResults();
+      const allRewards = await storage.getAllCourseRewards();
+      const allCertificates = await storage.getAllCertificates();
+      const users = await storage.getAllUsers();
+      
+      // Count confirmed on-chain transactions
+      const confirmedQuizProofs = allQuizResults.filter(r => r.txHash && r.txStatus === "confirmed" && !r.txHash.startsWith("demo_"));
+      const confirmedRewards = allRewards.filter(r => r.txHash && r.status === "claimed" && !r.txHash.startsWith("demo_") && !r.txHash.startsWith("pending_"));
+      
+      // Calculate daily activity (last 7 days)
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const dailyActivity: { date: string; quizProofs: number; rewards: number }[] = [];
+      
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(now - (i * oneDayMs));
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart.getTime() + oneDayMs);
+        
+        const dayQuizProofs = confirmedQuizProofs.filter(r => {
+          const completedAt = new Date(r.completedAt).getTime();
+          return completedAt >= dayStart.getTime() && completedAt < dayEnd.getTime();
+        }).length;
+        
+        const dayRewards = confirmedRewards.filter(r => {
+          const completedAt = new Date(r.completedAt).getTime();
+          return completedAt >= dayStart.getTime() && completedAt < dayEnd.getTime();
+        }).length;
+        
+        dailyActivity.push({
+          date: dayStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+          quizProofs: dayQuizProofs,
+          rewards: dayRewards,
+        });
+      }
+      
+      // Calculate total KAS distributed
+      const totalKasDistributed = confirmedRewards.reduce((sum, r) => sum + (r.kasAmount || 0), 0);
+      
+      // Get network info from Kaspa RPC
+      let networkInfo: { blockCount?: number; difficulty?: number; networkName?: string } = {};
+      try {
+        const kaspaService = await import("./kaspa");
+        const service = await kaspaService.getKaspaService();
+        const diagnostics = await service.getDiagnostics();
+        networkInfo = {
+          blockCount: diagnostics.blockCount,
+          networkName: diagnostics.networkName,
+        };
+      } catch (e) {
+        console.log("[Stats] Could not fetch network info:", (e as Error).message);
+      }
+      
+      res.json({
+        kuProtocol: {
+          totalQuizProofs: confirmedQuizProofs.length,
+          totalRewards: confirmedRewards.length,
+          totalCertificates: allCertificates.length,
+          totalUsers: users.length,
+          totalKasDistributed: Math.round(totalKasDistributed * 100) / 100,
+          pendingQuizProofs: allQuizResults.filter(r => r.txStatus === "pending").length,
+        },
+        dailyActivity,
+        network: networkInfo,
+        lastUpdated: Date.now(),
+      });
+    } catch (error: any) {
+      console.error("[API] Error fetching blockchain stats:", error);
+      res.status(500).json({ error: "Failed to fetch blockchain stats" });
+    }
+  });
+
   // Verify on-chain Q&A or quiz result
   app.get("/api/verify/:txHash", async (req: Request, res: Response) => {
     const { txHash } = req.params;

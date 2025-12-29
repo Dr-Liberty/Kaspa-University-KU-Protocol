@@ -208,6 +208,12 @@ export class DbStorage implements IStorage {
     return results as CourseReward[];
   }
 
+  async getAllCourseRewards(): Promise<CourseReward[]> {
+    const results = await db.select().from(schema.courseRewards)
+      .orderBy(desc(schema.courseRewards.completedAt));
+    return results as CourseReward[];
+  }
+
   async checkCourseCompletion(userId: string, courseId: string): Promise<{completed: boolean; averageScore: number; lessonsCompleted: number; totalLessons: number}> {
     const lessons = await this.getLessonsByCourse(courseId);
     const quizResults = await this.getQuizResultsForCourse(userId, courseId);

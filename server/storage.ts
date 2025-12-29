@@ -40,6 +40,7 @@ export interface IStorage {
   createCourseReward(reward: Omit<CourseReward, "id" | "completedAt">): Promise<CourseReward>;
   updateCourseReward(id: string, updates: Partial<CourseReward>): Promise<CourseReward | undefined>;
   getClaimableCourseRewards(userId: string): Promise<CourseReward[]>;
+  getAllCourseRewards(): Promise<CourseReward[]>;
   checkCourseCompletion(userId: string, courseId: string): Promise<{completed: boolean; averageScore: number; lessonsCompleted: number; totalLessons: number}>;
 
   getCertificatesByUser(userId: string): Promise<Certificate[]>;
@@ -213,6 +214,11 @@ export class MemStorage implements IStorage {
   async getClaimableCourseRewards(userId: string): Promise<CourseReward[]> {
     return Array.from(this.courseRewards.values())
       .filter((r) => r.userId === userId && ["pending", "failed", "confirming"].includes(r.status))
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }
+
+  async getAllCourseRewards(): Promise<CourseReward[]> {
+    return Array.from(this.courseRewards.values())
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
 
