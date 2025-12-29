@@ -835,7 +835,7 @@ export default function Dashboard() {
 
               {/* Link to verify explorer */}
               <div className="flex justify-center pt-4">
-                <Link href="/verify-explorer">
+                <Link href="/verify">
                   <Button variant="outline" className="gap-2">
                     <Link2 className="h-4 w-4" />
                     Open Verification Explorer
