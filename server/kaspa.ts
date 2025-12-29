@@ -1004,8 +1004,9 @@ class KaspaService {
           // Fall through to error return, but we'll include proofTxHash there too
         }
       } catch (error: any) {
-        console.error("[Kaspa] Transaction failed:", error.message);
-        lastError = `Transaction failed: ${error.message}`;
+        const errorMsg = error?.message || error?.toString?.() || JSON.stringify(error) || "Unknown error";
+        console.error("[Kaspa] Transaction failed:", errorMsg, error);
+        lastError = `Transaction failed: ${errorMsg}`;
       }
     }
 
@@ -1229,7 +1230,17 @@ class KaspaService {
       const privateKey = new PrivateKey(privateKeyHex);
 
       // Convert amount to sompi (kaspaToSompi expects string parameter)
-      const amountSompi = kaspaToSompi(String(amountKas));
+      // KIP-0009: storage_mass = 10^12 / output_amount_sompi, must be < 100,000
+      // 0.1 KAS = 100,000 mass exactly, so we need slightly more to avoid the limit
+      // Add safety margin: minimum output is 0.101 KAS (10,100,000 sompi) = ~99,010 mass
+      const minSafeSompi = BigInt(10_100_000); // 0.101 KAS - safely under storage mass limit
+      let amountSompi = kaspaToSompi(String(amountKas));
+      
+      if (amountSompi < minSafeSompi) {
+        console.log(`[Kaspa] Output ${amountSompi} sompi too low for KIP-0009, bumping to ${minSafeSompi} sompi (0.101 KAS)`);
+        amountSompi = minSafeSompi;
+      }
+      
       const priorityFee = kaspaToSompi("0.0001");
       console.log(`[Kaspa] Output: ${amountSompi} sompi, priority fee: ${priorityFee}`);
 
@@ -1835,6 +1846,53 @@ class KaspaService {
       return reservedKeys.has(`${txId}:${index}`);
     });
 
+    // Debug: Log the entry structure
+    if (reservedEntries.length > 0) {
+      console.log(`[Kaspa] Reserved entry sample structure:`, JSON.stringify(reservedEntries[0], (_, v) => 
+        typeof v === 'bigint' ? v.toString() : v, 2
+      ));
+    }
+
+    // Transform entries to the format expected by WASM createTransactions (IUtxoEntry FLAT structure)
+    // Per kaspa.d.ts: { address, outpoint: {transactionId, index}, amount, scriptPublicKey: {version, script}, blockDaaScore, isCoinbase }
+    // Note: scriptPublicKey from kaspa-rpc-client is an object { version, scriptPublicKey } - we need to rename it to { version, script }
+    const transformedEntries = reservedEntries.map((e: any) => {
+      const txId = e.outpoint?.transactionId || e.transactionId || "";
+      const index = e.outpoint?.index ?? e.index ?? 0;
+      const amount = e.utxoEntry?.amount || e.amount || 0;
+      const blockDaaScore = e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0;
+      
+      // Handle scriptPublicKey - extract hex and version
+      let scriptHex = "";
+      let scriptVersion = 0;
+      const spk = e.utxoEntry?.scriptPublicKey || e.scriptPublicKey;
+      if (typeof spk === "string") {
+        scriptHex = spk;
+      } else if (spk && typeof spk === "object") {
+        // Extract version and hex (note: RPC uses 'scriptPublicKey', WASM uses 'script')
+        scriptHex = spk.scriptPublicKey || spk.script || "";
+        scriptVersion = spk.version ?? 0;
+      }
+      
+      // Build IUtxoEntry with FLAT structure (same as sendTransactionHybrid)
+      return {
+        address: e.address || this.treasuryAddress,
+        outpoint: {
+          transactionId: txId,
+          index: index
+        },
+        amount: BigInt(amount),
+        scriptPublicKey: {
+          version: scriptVersion,
+          script: scriptHex
+        },
+        blockDaaScore: BigInt(blockDaaScore),
+        isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
+      };
+    });
+
+    console.log(`[Kaspa] Transformed ${transformedEntries.length} entries for WASM createTransactions`);
+
     try {
       // Create private key object
       const privateKeyHex = this.treasuryPrivateKey.toString('hex');
@@ -1846,9 +1904,10 @@ class KaspaService {
       const proofAmount = kaspaToSompi("0.2");
       const priorityFee = kaspaToSompi("0.0001");
 
-      // Create transaction with payload using ONLY reserved entries
+      // Create transaction with payload using ONLY reserved entries (transformed)
       const { transactions } = await createTransactions({
-        entries: reservedEntries,
+        networkId: this.config.network,
+        entries: transformedEntries,
         outputs: [{
           address: this.treasuryAddress, // Send to self
           amount: proofAmount
@@ -1858,19 +1917,60 @@ class KaspaService {
         payload: payloadHex, // Embed the KU protocol payload
       });
 
-      console.log(`[Kaspa] Created payload transaction with ${payloadHex.length / 2} bytes`);
+      console.log(`[Kaspa] Created ${transactions?.length || 0} payload transaction(s) with ${payloadHex.length / 2} bytes`);
 
-      // Sign and submit
-      let finalTxHash = "";
-      for (const tx of transactions) {
-        tx.sign([privateKey]);
-        
-        const submitResult = await this.rpcClient.submitTransaction({
-          transaction: tx.toRpcTransaction()
+      if (!transactions || transactions.length === 0) {
+        throw new Error("createTransactions returned no transactions");
+      }
+
+      // Create WASM SDK's RpcClient for submission (same as sendTransactionHybrid)
+      const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
+      console.log(`[Kaspa] Creating WASM RpcClient with Resolver for payload submission...`);
+      
+      let wasmRpc: any = null;
+      try {
+        const resolver = new Resolver();
+        wasmRpc = new WasmRpcClient({
+          resolver,
+          networkId: this.config.network
         });
         
-        finalTxHash = submitResult?.transactionId || tx.id;
-        console.log(`[Kaspa] Payload transaction submitted: ${finalTxHash}`);
+        await wasmRpc.connect();
+        console.log(`[Kaspa] WASM RpcClient connected for payload transaction`);
+      } catch (rpcErr: any) {
+        throw new Error(`Cannot submit payload transaction: Failed to connect WASM RPC: ${rpcErr?.message}`);
+      }
+
+      // Sign and submit each transaction using WASM SDK
+      let finalTxHash = "";
+      try {
+        for (let i = 0; i < transactions.length; i++) {
+          const pendingTx = transactions[i];
+          console.log(`[Kaspa] Signing payload transaction ${i + 1}/${transactions.length}...`);
+          
+          // Sign the PendingTransaction with private key array (must be awaited)
+          await pendingTx.sign([privateKey]);
+          console.log(`[Kaspa] Payload transaction ${i + 1} signed`);
+          
+          // Submit using WASM SDK's native submit() method
+          console.log(`[Kaspa] Submitting payload via WASM SDK...`);
+          const txId = await pendingTx.submit(wasmRpc);
+          finalTxHash = txId;
+          console.log(`[Kaspa] Payload transaction ${i + 1} submitted: ${finalTxHash}`);
+        }
+      } finally {
+        // Disconnect WASM RpcClient
+        if (wasmRpc) {
+          try {
+            await wasmRpc.disconnect();
+          } catch (e) {
+            // Ignore disconnect errors
+          }
+        }
+      }
+
+      if (!finalTxHash) {
+        throw new Error("Transaction submission returned no transaction ID");
       }
 
       // Mark UTXOs as spent
@@ -1880,7 +1980,11 @@ class KaspaService {
     } catch (error: any) {
       // Release reservation on failure
       await utxoManager.releaseReservation(reservation.selected);
-      throw error;
+      
+      // Ensure we throw a proper Error with message
+      const errorMsg = error?.message || error?.toString?.() || JSON.stringify(error) || "Unknown transaction error";
+      console.error(`[Kaspa] Payload transaction error: ${errorMsg}`, error);
+      throw new Error(errorMsg);
     }
   }
 
