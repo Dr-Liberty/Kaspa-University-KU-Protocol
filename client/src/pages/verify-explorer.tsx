@@ -303,6 +303,10 @@ export default function VerifyExplorerPage() {
   const chartData = stats?.dailyActivity || [];
   const totalDailyTx = chartData.reduce((sum, d) => sum + d.quizProofs + d.rewards, 0);
 
+  // Derive blockchain stats from actual explorer data (prioritize on-chain data)
+  const onChainQuizProofs = explorerData?.transactions?.filter(t => t.type === "quiz").length || 0;
+  const onChainKasDistributed = onChainQuizProofs * 0.101; // Each quiz proof = 0.101 KAS reward
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8 text-center">
@@ -328,15 +332,15 @@ export default function VerifyExplorerPage() {
             <StatCard
               icon={Shield}
               label="On-Chain Quiz Proofs"
-              value={stats.kuProtocol.totalQuizProofs}
+              value={onChainQuizProofs > 0 ? onChainQuizProofs : stats.kuProtocol.totalQuizProofs}
               subValue={stats.kuProtocol.pendingQuizProofs > 0 ? `${stats.kuProtocol.pendingQuizProofs} pending` : undefined}
               color="primary"
             />
             <StatCard
               icon={Coins}
               label="KAS Distributed"
-              value={`${stats.kuProtocol.totalKasDistributed.toFixed(2)} KAS`}
-              subValue={`${stats.kuProtocol.totalRewards} reward transactions`}
+              value={`${(onChainKasDistributed > 0 ? onChainKasDistributed : stats.kuProtocol.totalKasDistributed).toFixed(2)} KAS`}
+              subValue={`${onChainQuizProofs > 0 ? onChainQuizProofs : stats.kuProtocol.totalRewards} reward transactions`}
               color="green"
             />
             <StatCard
