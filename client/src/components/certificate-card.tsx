@@ -624,6 +624,21 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                       Cancel
                     </Button>
                   </>
+                ) : nftStatus === "minting" && mintStep === "idle" && !mintMutation.isPending ? (
+                  <>
+                    <Button 
+                      className="w-full gap-2"
+                      onClick={() => mintMutation.mutate()}
+                      disabled={isDemoMode}
+                      data-testid={`button-retry-mint-${certificate.id}`}
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Retry Mint
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Previous mint attempt incomplete. Click to try again.
+                    </p>
+                  </>
                 ) : (
                   <>
                     <Button className="w-full gap-2" disabled>
