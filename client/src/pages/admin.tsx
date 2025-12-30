@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Certificate {
@@ -146,6 +146,28 @@ export default function AdminPage() {
     staleTime: 30000,
   });
 
+  const { data: demoCerts, refetch: refetchDemoCerts } = useQuery<{
+    count: number;
+    certificates: Array<{
+      id: string;
+      recipientAddress: string;
+      courseId: string;
+      courseName: string;
+      nftStatus: string;
+      nftTxHash: string;
+      issuedAt: string;
+    }>;
+  }>({
+    queryKey: ["/api/admin/demo-certificates"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/demo-certificates", { headers });
+      if (!res.ok) throw new Error("Failed to fetch demo certificates");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 30000,
+  });
+
   const deployCollectionMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/deploy-collection", {
@@ -247,6 +269,32 @@ export default function AdminPage() {
     },
   });
 
+  const remintCertMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/certificates/${id}/remint`, {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Re-mint failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Re-minted successfully", 
+        description: `TX: ${data.nftTxHash?.slice(0, 16)}...` 
+      });
+      refetchCerts();
+      refetchDemoCerts();
+      refetchStats();
+    },
+    onError: (error: any) => {
+      toast({ title: "Re-mint failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleLogin = async () => {
     try {
       const res = await fetch("/api/admin/stats", { headers: { "x-admin-password": password } });
@@ -267,6 +315,7 @@ export default function AdminPage() {
     refetchReservations();
     refetchErrors();
     refetchP2SH();
+    refetchDemoCerts();
     toast({ title: "Refreshed", description: "All data refreshed" });
   };
 
@@ -422,9 +471,12 @@ export default function AdminPage() {
         )}
 
         <Tabs defaultValue="certificates" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="certificates" data-testid="tab-certificates">
               Certificates ({certificates.length})
+            </TabsTrigger>
+            <TabsTrigger value="demo" data-testid="tab-demo">
+              Demo Certs {demoCerts && demoCerts.count > 0 && `(${demoCerts.count})`}
             </TabsTrigger>
             <TabsTrigger value="reservations" data-testid="tab-reservations">
               Reservations ({reservations.length})
@@ -484,6 +536,72 @@ export default function AdminPage() {
                     {certificates.length === 0 && (
                       <div className="text-center text-muted-foreground py-8">
                         No certificates found
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="demo" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Demo Certificates
+                </CardTitle>
+                <CardDescription>
+                  Certificates minted in demo mode (fake hashes). Re-mint them to the live blockchain.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!collectionStatus?.isLive && (
+                  <div className="p-4 mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md">
+                    <div className="text-sm font-medium text-yellow-400">KRC-721 Service Not Live</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Re-minting requires live blockchain connection. Check RPC and treasury key configuration.
+                    </p>
+                  </div>
+                )}
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-3">
+                    {demoCerts?.certificates.map((cert) => (
+                      <div
+                        key={cert.id}
+                        className="p-4 border rounded-md space-y-2"
+                        data-testid={`demo-cert-${cert.id}`}
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-medium">{cert.courseName}</div>
+                          <Badge className="bg-orange-500/20 text-orange-400">Demo Minted</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>ID: {cert.id}</div>
+                          <div>Wallet: {formatAddress(cert.recipientAddress)}</div>
+                          <div>Issued: {formatDate(cert.issuedAt)}</div>
+                          <div className="truncate">Demo TX: {cert.nftTxHash}</div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => remintCertMutation.mutate(cert.id)}
+                          disabled={remintCertMutation.isPending || !collectionStatus?.isLive}
+                          data-testid={`button-remint-${cert.id}`}
+                        >
+                          {remintCertMutation.isPending ? (
+                            <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                          ) : (
+                            <Zap className="w-3 h-3 mr-1" />
+                          )}
+                          Re-mint to Live Blockchain
+                        </Button>
+                      </div>
+                    ))}
+                    {(!demoCerts || demoCerts.certificates.length === 0) && (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No demo certificates found</p>
+                        <p className="text-sm mt-1">All certificates have real blockchain transactions</p>
                       </div>
                     )}
                   </div>
