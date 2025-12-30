@@ -696,7 +696,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   data-testid={`button-view-${certificate.id}`}
                 >
                   <a
-                    href={`https://kaspa.stream/tx/${certificate.nftTxHash}`}
+                    href={`https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
