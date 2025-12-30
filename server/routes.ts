@@ -2797,6 +2797,68 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Verify deployment status against KRC-721 indexer
+  // This checks if the local "deployed" status matches what the indexer knows
+  app.get("/api/admin/verify-deployment", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const verification = await krc721Service.verifyDeploymentWithIndexer();
+      const networkInfo = krc721Service.getNetworkInfo();
+      
+      res.json({
+        ...verification,
+        ticker: networkInfo.ticker,
+        network: networkInfo.network,
+        indexerUrl: networkInfo.indexerUrl,
+        recommendation: verification.mismatch 
+          ? (verification.localStatus && !verification.indexerStatus
+            ? "Local status says deployed but indexer shows NOT indexed. Use POST /api/admin/reset-deployment to reset."
+            : "Indexer shows deployed but local status is false. Collection may have been deployed externally.")
+          : (verification.indexerStatus 
+            ? "Status verified: Collection is deployed and indexed."
+            : "Status verified: Collection is not deployed.")
+      });
+    } catch (error: any) {
+      console.error("[Admin] Verify deployment error:", error.message);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Reset deployment status to undeployed
+  // Use this when the database incorrectly shows "deployed" but indexer doesn't have the collection
+  app.post("/api/admin/reset-deployment", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      
+      // First verify current status
+      const verification = await krc721Service.verifyDeploymentWithIndexer();
+      
+      if (verification.indexerStatus) {
+        // Collection IS in the indexer - don't reset!
+        return res.status(400).json({
+          error: "Cannot reset - collection IS indexed. The deployment is valid.",
+          verification
+        });
+      }
+      
+      // Reset the deployment status
+      await krc721Service.resetDeploymentStatus();
+      const networkInfo = krc721Service.getNetworkInfo();
+      
+      res.json({
+        success: true,
+        message: "Deployment status reset to FALSE. Collection needs to be redeployed.",
+        ticker: networkInfo.ticker,
+        network: networkInfo.network,
+        previousStatus: verification.localStatus,
+        newStatus: false
+      });
+    } catch (error: any) {
+      console.error("[Admin] Reset deployment error:", error.message);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Admin: Attempt to recover and finalize a stuck mint reservation
   app.post("/api/admin/recover-mint/:p2shAddress", adminAuth, async (req: Request, res: Response) => {
     try {

@@ -68,6 +68,120 @@ const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
 const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee (above 10 KAS minimum)
 const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
+// Get the indexer URL based on network
+function getIndexerUrl(): string {
+  return useTestnet 
+    ? "https://testnet-10.krc721.stream"
+    : "https://kaspa-krc721d.kaspa.com";
+}
+
+/**
+ * Verify that a collection is indexed by the KRC-721 indexer
+ * This confirms the deploy transaction was actually accepted
+ */
+async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boolean; error?: string }> {
+  try {
+    const indexerUrl = getIndexerUrl();
+    const response = await fetch(`${indexerUrl}/api/collection/${ticker}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Check if the collection exists and has valid data
+      if (data && (data.ticker === ticker || data.name)) {
+        console.log(`[KRC721] Collection ${ticker} verified in indexer`);
+        return { indexed: true };
+      }
+    }
+    
+    if (response.status === 404) {
+      return { indexed: false, error: "Collection not found in indexer" };
+    }
+    
+    return { indexed: false, error: `Indexer returned status ${response.status}` };
+  } catch (error: any) {
+    console.log(`[KRC721] Indexer verification failed: ${error.message}`);
+    return { indexed: false, error: error.message };
+  }
+}
+
+/**
+ * Verify that a token is indexed by the KRC-721 indexer
+ * This confirms the mint transaction was actually accepted
+ */
+async function verifyTokenIndexed(ticker: string, tokenId: number): Promise<{ indexed: boolean; error?: string }> {
+  try {
+    const indexerUrl = getIndexerUrl();
+    const response = await fetch(`${indexerUrl}/api/token/${ticker}/${tokenId}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.tokenId !== undefined) {
+        console.log(`[KRC721] Token ${ticker}#${tokenId} verified in indexer`);
+        return { indexed: true };
+      }
+    }
+    
+    if (response.status === 404) {
+      return { indexed: false, error: "Token not found in indexer" };
+    }
+    
+    return { indexed: false, error: `Indexer returned status ${response.status}` };
+  } catch (error: any) {
+    console.log(`[KRC721] Token verification failed: ${error.message}`);
+    return { indexed: false, error: error.message };
+  }
+}
+
+/**
+ * Poll the indexer until collection is indexed or timeout
+ */
+async function waitForCollectionIndexed(ticker: string, timeoutMs: number = 120000): Promise<{ indexed: boolean; error?: string }> {
+  const startTime = Date.now();
+  const pollIntervalMs = 3000; // Check every 3 seconds
+  
+  console.log(`[KRC721] Waiting for collection ${ticker} to be indexed (timeout: ${timeoutMs/1000}s)...`);
+  
+  while (Date.now() - startTime < timeoutMs) {
+    const result = await verifyCollectionIndexed(ticker);
+    if (result.indexed) {
+      return result;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+  }
+  
+  return { indexed: false, error: `Timeout waiting for collection ${ticker} to be indexed after ${timeoutMs/1000}s` };
+}
+
+/**
+ * Poll the indexer until token is indexed or timeout
+ */
+async function waitForTokenIndexed(ticker: string, tokenId: number, timeoutMs: number = 120000): Promise<{ indexed: boolean; error?: string }> {
+  const startTime = Date.now();
+  const pollIntervalMs = 3000; // Check every 3 seconds
+  
+  console.log(`[KRC721] Waiting for token ${ticker}#${tokenId} to be indexed (timeout: ${timeoutMs/1000}s)...`);
+  
+  while (Date.now() - startTime < timeoutMs) {
+    const result = await verifyTokenIndexed(ticker, tokenId);
+    if (result.indexed) {
+      return result;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+  }
+  
+  return { indexed: false, error: `Timeout waiting for token ${ticker}#${tokenId} to be indexed after ${timeoutMs/1000}s` };
+}
+
 // Testnet mode - controlled by environment variable or runtime toggle
 // Set KRC721_TESTNET=true to use testnet-10 for testing before mainnet deployment
 let useTestnet = process.env.KRC721_TESTNET === "true";
@@ -603,9 +717,24 @@ class KRC721Service {
       const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_DEPLOY_FEE_KAS);
       
       if (result.success) {
-        this.collectionDeployed = true;
-        await this.saveDeploymentStatus(true);
-        console.log(`[KRC721] Collection deployed successfully!`);
+        // CRITICAL: Verify the collection was actually indexed before marking as deployed
+        console.log(`[KRC721] Transactions submitted, verifying with indexer...`);
+        const indexerResult = await waitForCollectionIndexed(this.config.ticker, 180000); // 3 minute timeout
+        
+        if (indexerResult.indexed) {
+          this.collectionDeployed = true;
+          await this.saveDeploymentStatus(true);
+          console.log(`[KRC721] Collection ${this.config.ticker} deployed and VERIFIED in indexer!`);
+        } else {
+          // Transaction was submitted but indexer rejected or didn't process it
+          console.error(`[KRC721] Deploy transactions submitted but NOT indexed: ${indexerResult.error}`);
+          return { 
+            success: false, 
+            commitTxHash: result.commitTxHash,
+            revealTxHash: result.revealTxHash,
+            error: `Transactions submitted but collection not indexed: ${indexerResult.error}. Check reveal tx fees meet minimum (1000 KAS).`
+          };
+        }
       }
 
       return result;
@@ -772,9 +901,24 @@ class KRC721Service {
       const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_MINT_FEE_KAS);
 
       if (result.success) {
-        // Token ID is persisted via certificate creation in storage
-        console.log(`[KRC721] Certificate #${tokenId} minted successfully!`);
-        return { ...result, tokenId };
+        // CRITICAL: Verify the token was actually indexed before marking as minted
+        console.log(`[KRC721] Mint transactions submitted, verifying with indexer...`);
+        const indexerResult = await waitForTokenIndexed(this.config.ticker, tokenId, 180000); // 3 minute timeout
+        
+        if (indexerResult.indexed) {
+          console.log(`[KRC721] Certificate #${tokenId} minted and VERIFIED in indexer!`);
+          return { ...result, tokenId };
+        } else {
+          // Transaction was submitted but indexer rejected or didn't process it
+          console.error(`[KRC721] Mint transactions submitted but NOT indexed: ${indexerResult.error}`);
+          return { 
+            success: false, 
+            commitTxHash: result.commitTxHash,
+            revealTxHash: result.revealTxHash,
+            tokenId,
+            error: `Mint transactions submitted but token not indexed: ${indexerResult.error}. Check reveal tx fees meet minimum (10 KAS).`
+          };
+        }
       }
 
       return { ...result, tokenId };
@@ -1415,7 +1559,8 @@ class KRC721Service {
   }
 
   /**
-   * Wait for a transaction to be confirmed
+   * Wait for a transaction to be confirmed (change outputs to appear in treasury)
+   * This is a basic check - the indexer verification provides the real confirmation
    */
   private async waitForConfirmation(txHash: string, timeoutMs: number): Promise<void> {
     const startTime = Date.now();
@@ -1426,9 +1571,9 @@ class KRC721Service {
         const rpc = this.wasmRpcClient || this.rpcClient;
         const { entries } = await rpc.getUtxosByAddresses([this.address!]);
 
-        // Transaction is likely confirmed if we have UTXOs
+        // Transaction is likely confirmed if we have UTXOs (change outputs)
         if (entries.length > 0) {
-          console.log(`[KRC721] Transaction confirmed: ${txHash.slice(0, 16)}...`);
+          console.log(`[KRC721] Transaction broadcast confirmed: ${txHash.slice(0, 16)}...`);
           return;
         }
       } catch (error) {
@@ -1438,8 +1583,8 @@ class KRC721Service {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    // Don't throw - transaction may still succeed
-    console.log(`[KRC721] Confirmation timeout for ${txHash.slice(0, 16)}... (may still succeed)`);
+    // Throw error - if we can't confirm the tx was broadcast, something is wrong
+    throw new Error(`Timeout waiting for transaction ${txHash.slice(0, 16)}... to be confirmed on network`);
   }
 
   /**
@@ -1681,6 +1826,38 @@ class KRC721Service {
       isLive: this.isLive(),
     };
   }
+
+  /**
+   * Verify deployment status against the KRC-721 indexer
+   * Returns true if the collection exists in the indexer
+   */
+  async verifyDeploymentWithIndexer(): Promise<{ 
+    localStatus: boolean; 
+    indexerStatus: boolean; 
+    mismatch: boolean;
+    error?: string;
+  }> {
+    const localStatus = this.collectionDeployed;
+    const result = await verifyCollectionIndexed(this.config.ticker);
+    
+    return {
+      localStatus,
+      indexerStatus: result.indexed,
+      mismatch: localStatus !== result.indexed,
+      error: result.error,
+    };
+  }
+
+  /**
+   * Reset deployment status to undeployed
+   * Use this when the database says deployed but indexer shows otherwise
+   */
+  async resetDeploymentStatus(): Promise<void> {
+    console.log(`[KRC721] Resetting deployment status for ${this.config.ticker}...`);
+    this.collectionDeployed = false;
+    await this.saveDeploymentStatus(false);
+    console.log(`[KRC721] Deployment status reset to FALSE`);
+  }
 }
 
 // Singleton instance
@@ -1693,5 +1870,8 @@ export async function getKRC721Service(): Promise<KRC721Service> {
   }
   return krc721ServiceInstance;
 }
+
+// Export verification functions for admin routes
+export { verifyCollectionIndexed, verifyTokenIndexed };
 
 export { KRC721Service, KRC721Config, DeployResult, MintResult, CertificateMetadata };
