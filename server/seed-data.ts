@@ -622,6 +622,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "DAG - Directed Acyclic Graph Conceptual Overview",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>A Directed Acyclic Graph (DAG) is the fundamental data structure that powers Kaspa. Unlike traditional blockchains that form a single linear chain, Kaspa's BlockDAG allows multiple blocks to be created and referenced simultaneously.</p>
 <p>In a DAG structure:
 - **Directed**: Edges (connections) between blocks point in one direction only
@@ -636,6 +637,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "DAG Terminology",
         order: 2,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>Understanding Kaspa requires familiarity with specific DAG terminology. These terms have precise meanings in the context of Kaspa's consensus system.</p>
 <p>**Past**: The past of a block includes all blocks that can be reached by following parent references backwards. These are the blocks that the current block "knows about."</p>
 <p>**Future**: The future of a block includes all blocks that reference it (directly or indirectly). These are blocks created after that knew about this block.</p>
@@ -650,6 +652,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "GHOSTDAG Overview",
         order: 3,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>GHOSTDAG (Greedy Heaviest Observed SubTree Directed Acyclic Graph) is Kaspa's consensus protocol. It provides a way to order all blocks in the DAG, enabling agreement on transaction ordering despite parallel block creation.</p>
 <p>GHOSTDAG works through several key mechanisms:</p>
 <p>1. **Block Ordering**: Every block gets assigned a position in a total ordering, even though they may have been created in parallel.</p>
@@ -664,6 +667,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "K-Cluster - The Security Foundation",
         order: 4,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/LmCePYd7Q8CnHVE2ayVE",
         content: `<p>The K-Cluster concept is foundational to Kaspa's security model. It defines the maximum number of blocks that can exist in the anticone of any blue block.</p>
 <p>**What is K?**
 K is a security parameter that controls how many parallel blocks are acceptable. If a block has more than K blocks in its anticone, it indicates the block may be part of an attack or was created under abnormal network conditions.</p>
@@ -681,6 +685,7 @@ When a block has more than K blocks in its anticone relative to another block's 
         title: "BPS Configuration - Blocks Per Second",
         order: 5,
         duration: "7 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>BPS (Blocks Per Second) is a key configuration parameter that determines Kaspa's throughput target. It represents how many blocks the network aims to produce per second.</p>
 <p>**Current BPS Values**
 Kaspa has progressively increased its BPS through network upgrades:
@@ -792,6 +797,7 @@ The Mergeset is the set of blocks that this block "merges" into its view of the 
         title: "K Parameter - The Security Parameter",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/LmCePYd7Q8CnHVE2ayVE",
         content: `<p>The K parameter is the cornerstone of GHOSTDAG's security model. It defines the maximum acceptable anticone size for honest blocks.</p>
 <p>**Mathematical Definition**
 K is calculated based on:
@@ -877,6 +883,7 @@ Blocks in the mergeset are ordered using a deterministic algorithm based on:
         title: "Blue and Red Classification",
         order: 4,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/gYCi4AK2QCG1HRd7UzmB",
         content: `<p>The coloring algorithm - classifying blocks as Blue or Red - is the third step in GHOSTDAG and determines which blocks are considered honest participants.</p>
 <p>**Blue Blocks**
 Blue blocks are considered honest and well-connected:
@@ -906,6 +913,7 @@ For each block in the mergeset:
         title: "Blue Work Calculation",
         order: 5,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/gYCi4AK2QCG1HRd7UzmB",
         content: `<p>Blue Work is the cumulative metric used for chain selection in GHOSTDAG. It is the final step in block processing and determines the "heaviest" chain.</p>
 <p>**What is Blue Work?**
 Blue Work is analogous to total chain work in Bitcoin, but only counts work from blue blocks:
@@ -935,6 +943,7 @@ BlueWork(B) = BlueWork(SelectedParent(B)) if B is red
         title: "BPS Configuration Details",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>BPS (Blocks Per Second) is the foundational parameter from which many others derive. Understanding its configuration is key to understanding Kaspa's behavior.</p>
 <p>**BPS and Network Throughput**
 BPS directly determines theoretical maximum transactions per second:
@@ -962,6 +971,7 @@ The Crescendo hardfork introduces dynamic BPS adjustment, allowing the network t
         title: "Mergeset Size Limit",
         order: 2,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/Fcosu9vtTUmuwmts7EWR",
         content: `<p>The Mergeset Size Limit constrains how many blocks can be in a single block's mergeset. This is crucial for bounding computation and preventing attacks.</p>
 <p>**Why Limit Mergeset Size?**
 Without limits, an attacker could craft blocks that reference thousands of other blocks, causing:
@@ -990,6 +1000,7 @@ Mergeset limit and K are related but distinct:
         title: "Merge Depth Bound",
         order: 3,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>The Merge Depth Bound prevents deep reorganizations of the DAG. It establishes when blocks are too old to be merged into new blocks.</p>
 <p>**What is Merge Depth?**
 Merge depth measures how "deep" a block is in the DAG:
@@ -1018,6 +1029,7 @@ Merge depth bound is set to ensure:
         title: "Finality Depth",
         order: 4,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Finality Depth determines when blocks become irreversible in Kaspa. It's the point after which a block cannot be reorganized out of the main chain.</p>
 <p>**Types of Finality**
 Kaspa has two types of finality:
@@ -1043,6 +1055,7 @@ The finality depth depends on:
         title: "DAA Window",
         order: 5,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>The DAA Window is the sliding window of blocks used for difficulty adjustment. It determines how quickly Kaspa responds to hash rate changes.</p>
 <p>**Window Construction**
 The DAA window consists of:
@@ -1072,6 +1085,7 @@ As BPS increases, window size (in blocks) increases to maintain the same real-ti
         title: "Pruning Depth",
         order: 6,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Pruning Depth defines how far back full block data is required. Beyond this depth, block bodies can be safely deleted.</p>
 <p>**What Gets Pruned?**
 - Block bodies (transactions)
@@ -1131,6 +1145,7 @@ Maintain node efficiency:
         title: "Blue Score and Blue Work",
         order: 2,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/gYCi4AK2QCG1HRd7UzmB",
         content: `<p>During block processing, two related but distinct metrics are calculated: Blue Score and Blue Work.</p>
 <p>**Blue Score**
 Blue Score is the simple count of blue blocks in a chain:
@@ -1160,6 +1175,7 @@ When processing a new block:
         title: "DAA Window Construction",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>The Difficulty Adjustment Algorithm (DAA) in Kaspa uses a sliding window of blocks to calculate target difficulty.</p>
 <p>**Window Purpose**
 The window provides:
@@ -1190,6 +1206,7 @@ Kaspa's DAA is designed for high BPS:
         title: "DAA Score vs Blue Score",
         order: 2,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/qalZKo6tQneM7ap62nFQ",
         content: `<p>Kaspa uses two different scoring systems: DAA Score and Blue Score. Understanding their differences is important.</p>
 <p>**Blue Score**
 Blue Score counts only blue blocks:
@@ -1218,6 +1235,7 @@ DAA Score may include red blocks:
         title: "Transaction Selection",
         order: 1,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/6yB2YGeOSPaBOD8zBJLY",
         content: `<p>Transaction selection is how miners choose which transactions to include in blocks. It directly affects user experience and miner revenue.</p>
 <p>**Basic Selection**
 The simplest approach prioritizes by:
@@ -1247,6 +1265,7 @@ Unlike congested chains:
         title: "Mass Calculation",
         order: 2,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/dBIlYtYTTmuiq41TKiL7",
         content: `<p>Mass is Kaspa's measure of transaction resource consumption. It determines fees and block limits.</p>
 <p>**Types of Mass**
 Kaspa calculates three types of mass:
@@ -1276,6 +1295,7 @@ Transactions with many small UTXOs have higher mass. Consolidating UTXOs reduces
         title: "Coinbase Transactions",
         order: 3,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>Coinbase transactions are special transactions that create new coins as block rewards.</p>
 <p>**What is a Coinbase Transaction?**
 - First transaction in every block
@@ -1305,6 +1325,7 @@ Each block has its own coinbase, but only blue blocks' coinbases are effectively
         title: "First Order Pruning",
         order: 1,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>First Order Pruning removes old block bodies and transactions from storage. This is the primary mechanism for managing blockchain data growth.</p>
 <p>**What Gets Removed**
 - Transaction data (inputs, outputs, signatures)
@@ -1337,6 +1358,7 @@ Pruned nodes can still:
         title: "Second Order Pruning",
         order: 2,
         duration: "8 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Second Order Pruning goes further than first-order pruning by removing old headers while preserving proof-of-work.</p>
 <p>**The Challenge**
 Even with first-order pruning, headers accumulate:
@@ -1394,6 +1416,7 @@ At 32 BPS:
         title: "Anticone Finalization Depth",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Anticone Finalization is the mathematical foundation for safe pruning in Kaspa. It guarantees when a block's anticone is permanently fixed.</p>
 <p>**The Problem**
 In a DAG, new blocks could theoretically reference any old block, potentially changing its anticone forever. For pruning, we need to know when this can no longer happen.</p>
@@ -1447,6 +1470,7 @@ These constraints form layers of protection:
         title: "Virtual Block Concept",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/bUf1oCzQR1CcRHjHlXRZ",
         content: `<p>The Virtual Block is Kaspa's unique way of representing the current state of the DAG without requiring a single "tip" block.</p>
 <p>**What is the Virtual Block?**
 The virtual block is a conceptual construct:
@@ -1506,6 +1530,7 @@ Not all tips may have valid UTXO states:
         title: "Past Median Time",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>Past Median Time (PMT) is the median timestamp of recent ancestor blocks. It provides a manipulation-resistant time reference.</p>
 <p>**Why Median Time?**
 Individual block timestamps can be manipulated:
@@ -1572,6 +1597,7 @@ These rules ensure consistent timekeeping across the decentralized network.`,
         title: "Probabilistic Finality",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Probabilistic finality means that the probability of transaction reversal decreases exponentially with confirmation depth.</p>
 <p>**How It Works**
 With each new block:
@@ -1601,6 +1627,7 @@ Kaspa's high BPS means:
         title: "Deterministic Finality",
         order: 2,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/3qZId5Y0REyL9SALjRsH",
         content: `<p>Deterministic finality goes beyond probability - at sufficient depth, reversal becomes structurally impossible.</p>
 <p>**What Makes It Deterministic?**
 At a certain depth:
@@ -1633,6 +1660,7 @@ For users:
         title: "Kaspa's Security Model",
         order: 3,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>Kaspa inherits Bitcoin's security model while enabling higher performance. Understanding this is key to trusting the system.</p>
 <p>**Inherited from Bitcoin**
 Kaspa maintains:
@@ -1671,6 +1699,7 @@ Users can trust that:
         title: "Bitcoin's Scaling Problem",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
         content: `<p>Understanding why Bitcoin cannot simply increase its block rate helps appreciate Kaspa's innovation.</p>
 <p>**Bitcoin's Limitation**
 Bitcoin produces one block every ~10 minutes because:
@@ -1701,6 +1730,7 @@ Larger blocks also cause problems:
         title: "How Kaspa Solves Scaling",
         order: 2,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>Kaspa's architecture enables high throughput without sacrificing security or decentralization.</p>
 <p>**The Key Insight**
 Instead of discarding orphans:
