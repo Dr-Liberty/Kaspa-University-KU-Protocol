@@ -447,6 +447,14 @@ export default function AdminPage() {
                 <span>Live: {collectionStatus.isLive ? "Yes" : "No"}</span>
                 <span>Next Token ID: {collectionStatus.nextTokenId}</span>
               </div>
+              {collectionStatus.address && (
+                <div className="text-sm space-y-1">
+                  <div className="text-muted-foreground">Treasury Wallet:</div>
+                  <div className="font-mono text-xs bg-muted/50 px-2 py-1 rounded break-all" data-testid="text-treasury-address">
+                    {collectionStatus.address}
+                  </div>
+                </div>
+              )}
               {!collectionStatus.isDeployed && collectionStatus.isLive && (
                 <Button
                   onClick={() => deployCollectionMutation.mutate()}
