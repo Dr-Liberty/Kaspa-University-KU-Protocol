@@ -28,7 +28,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
-- **KRC-721 NFT Certificates**: Implements non-custodial minting flow, adhering to KRC-721 standard, using IPFS for metadata.
+- **KRC-721 NFT Certificates**: Implements non-custodial minting flow, adhering to KRC-721 standard, using IPFS for metadata. **Note**: KRC-721 indexer currently only runs on testnet-10 (https://testnet-10.krc721.stream). Mainnet indexer not yet launched - transactions submit successfully but won't appear in indexer until mainnet launch.
 - **On-Chain Protocols**:
     - **Kasia Protocol**: Used for Q&A discussions and comments. Format: `1:bcast:{plain text content}`. This enables ecosystem compatibility with Kasia indexers (https://github.com/K-Kluster/Kasia) and cross-platform discovery. Metadata (lesson ID, author) is stored server-side. Implementation: `server/kasia-protocol.ts`.
     - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.
