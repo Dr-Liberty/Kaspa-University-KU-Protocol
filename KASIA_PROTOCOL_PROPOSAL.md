@@ -2,7 +2,7 @@
 
 **From:** Kaspa University Team  
 **To:** Kasia Protocol / K-Kluster Team  
-**Date:** December 2024  
+**Date:** December 2025  
 **Subject:** Proposal for Standardized Q&A/Discussion Message Types
 
 ---
@@ -144,17 +144,10 @@ We recommend:
 
 We're happy to:
 1. Draft a formal protocol specification
-2. Contribute indexer code for the new message types
+2. try to Contribute indexer code for the new message types
 3. Test implementation across Kaspa University and Kasia
 4. Collaborate on any preferred approach
 
----
-
-## Contact
-
-- **GitHub**: [Kaspa University Repository]
-- **Discord**: [Kaspa University Discord]
-- **Kaspathon 2026**: Competing entry
 
 We believe standardized Q&A will benefit the entire Kaspa ecosystem by enabling decentralized, permanent, on-chain discussions that any app can read and display.
 

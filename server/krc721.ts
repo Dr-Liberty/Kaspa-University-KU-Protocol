@@ -652,12 +652,8 @@ class KRC721Service {
    */
   async deployCollection(imageUrl: string): Promise<DeployResult> {
     if (!this.isLive()) {
-      console.log("[KRC721] Demo mode - simulating collection deployment");
-      return {
-        success: true,
-        commitTxHash: `demo_deploy_commit_${Date.now().toString(16)}`,
-        revealTxHash: `demo_deploy_reveal_${Date.now().toString(16)}`,
-      };
+      console.error("[KRC721] Cannot deploy - service not in live mode");
+      return { success: false, error: "NFT service not configured. Treasury private key required." };
     }
 
     try {
@@ -829,25 +825,13 @@ class KRC721Service {
     const tokenId = await this.getNextTokenId();
 
     if (!this.isLive()) {
-      // Check WHY we're not live - provide specific error for real wallet users
+      // Check WHY we're not live - provide specific error
       const reasons: string[] = [];
       if (!this.rpcClient) reasons.push("RPC not connected to Kaspa network");
       if (!this.privateKey) reasons.push("Treasury private key not configured");
       
-      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
-        // Real wallet user but service not ready - return error
-        console.error(`[KRC721] Cannot mint - not live: ${reasons.join(", ")}`);
-        return { success: false, error: `NFT service offline: ${reasons.join(", ")}`, tokenId };
-      }
-      
-      console.log(`[KRC721] Demo mode - simulating certificate mint #${tokenId}`);
-      // Note: Token ID will be persisted when certificate is created in storage
-      return {
-        success: true,
-        commitTxHash: `demo_mint_commit_${Date.now().toString(16)}`,
-        revealTxHash: `demo_mint_reveal_${Date.now().toString(16)}`,
-        tokenId,
-      };
+      console.error(`[KRC721] Cannot mint - not live: ${reasons.join(", ")}`);
+      return { success: false, error: `NFT service offline: ${reasons.join(", ")}`, tokenId };
     }
 
     // In production mode, require IPFS URLs (indexer rejects data URIs)
@@ -968,28 +952,14 @@ class KRC721Service {
     const tokenId = await this.getNextTokenId();
 
     if (!this.isLive()) {
-      // Check WHY we're not live - provide specific error for real wallet users
+      // Check WHY we're not live - provide specific error
       const reasons: string[] = [];
       if (!this.rpcClient) reasons.push("RPC not connected to Kaspa network");
       if (!this.privateKey) reasons.push("Treasury private key not configured");
       if (!this.publicKey) reasons.push("Public key not derived");
       
-      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
-        // Real wallet user but service not ready - return error
-        console.error(`[KRC721] Cannot prepare mint - not live: ${reasons.join(", ")}`);
-        return { success: false, error: `NFT service offline: ${reasons.join(", ")}` };
-      }
-      
-      // Demo mode for demo users - return simulated data
-      const demoP2sh = `kaspa:demo_p2sh_${Date.now().toString(16)}`;
-      console.log(`[KRC721] Demo mode - simulating mint preparation for token #${tokenId}`);
-      return {
-        success: true,
-        p2shAddress: demoP2sh,
-        amountSompi: KRC721_MINT_FEE_SOMPI.toString(),
-        tokenId,
-        expiresAt: Date.now() + 15 * 60 * 1000, // 15 minute expiry
-      };
+      console.error(`[KRC721] Cannot prepare mint - not live: ${reasons.join(", ")}`);
+      return { success: false, error: `NFT service offline: ${reasons.join(", ")}` };
     }
 
     // Production mode - require IPFS URLs
@@ -1157,16 +1127,8 @@ class KRC721Service {
     const tokenId = pending?.tokenId || dbReservation?.tokenId || 0;
 
     if (!this.isLive()) {
-      // Demo mode - simulate success
-      this._pendingMints.delete(p2shAddress);
-      if (dbReservation) await mintStorage.markFinalized(p2shAddress);
-      console.log(`[KRC721] Demo mode - simulating finalization for token #${tokenId}`);
-      return {
-        success: true,
-        commitTxHash: commitTxHash || `demo_commit_${Date.now().toString(16)}`,
-        revealTxHash: `demo_reveal_${Date.now().toString(16)}`,
-        tokenId,
-      };
+      console.error(`[KRC721] Cannot finalize mint - service not in live mode`);
+      return { success: false, error: "NFT service not configured", tokenId };
     }
 
     // In production, we need the script object for signing

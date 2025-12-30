@@ -944,23 +944,14 @@ class KaspaService {
     console.log(`[Kaspa] Quiz proof payload created: ${quizPayload.length / 2} bytes`);
     
     if (!this.isLive()) {
-      // Check WHY we're not live - provide specific error for real wallet users
+      // Check WHY we're not live - provide specific error
       const reasons: string[] = [];
       if (!this.rpcConnected) reasons.push("RPC not connected to Kaspa network");
       if (!this.treasuryAddress) reasons.push("Treasury wallet not configured");
       if (!this.treasuryPrivateKey) reasons.push("Treasury private key missing");
       
-      if (reasons.length > 0 && !recipientAddress.startsWith("demo:")) {
-        // Real wallet user but treasury not ready - return error
-        console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
-        return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
-      }
-      
-      // Demo mode for demo users
-      const demoTxHash = `demo_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated reward: ${amountKas} KAS to ${recipientAddress}`);
-      console.log(`[Kaspa] Demo payload would contain wallet: ${recipientAddress.slice(0, 20)}...`);
-      return { success: true, txHash: demoTxHash };
+      console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
+      return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
     }
 
     // Runtime health check before attempting transaction
@@ -1036,9 +1027,8 @@ class KaspaService {
     }
 
     if (!this.isLive()) {
-      const demoTxHash = `demo_cert_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated cert proof: ${amountKas} KAS to ${recipientAddress}`);
-      return { success: true, txHash: demoTxHash };
+      console.error(`[Kaspa] Cannot send cert proof - service not in live mode`);
+      return { success: false, error: "Treasury not configured" };
     }
 
     const health = await this.checkRpcHealth();
@@ -1707,9 +1697,8 @@ class KaspaService {
     console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
 
     if (!this.isLive()) {
-      const demoTxHash = `demo_bcast_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated broadcast`);
-      return { success: true, txHash: demoTxHash };
+      console.error(`[Kaspa] Cannot post comment - service not in live mode`);
+      return { success: false, error: "Treasury not configured" };
     }
 
     try {
@@ -1754,9 +1743,8 @@ class KaspaService {
     walletAddress: string
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     if (!this.isLive()) {
-      const demoTxHash = `demo_quiz_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated quiz proof`);
-      return { success: true, txHash: demoTxHash };
+      console.error(`[Kaspa] Cannot send quiz proof - service not in live mode`);
+      return { success: false, error: "Treasury not configured" };
     }
 
     try {

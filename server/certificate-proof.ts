@@ -123,12 +123,10 @@ export async function issueCertificateProof(
   console.log(`[CertProof] Payload: ${payloadHex.length / 2} bytes, verification: ${verificationCode}`);
   
   if (!kaspaService.isLive()) {
-    console.log(`[CertProof] Demo mode - simulating certificate proof`);
-    const demoTxHash = `demo_cert_${Date.now().toString(16)}_${randomBytes(8).toString("hex")}`;
+    console.error(`[CertProof] Cannot issue certificate proof - service not in live mode`);
     return {
-      success: true,
-      txHash: demoTxHash,
-      verificationCode,
+      success: false,
+      error: "Treasury not configured",
     };
   }
   
