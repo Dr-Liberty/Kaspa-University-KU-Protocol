@@ -60,10 +60,12 @@ interface CertificateMetadata {
   }>;
 }
 
-// KRC-721 fees based on coinchimp reference implementation
-// Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-// Reference uses 3.3 KAS for commit transaction
-const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee
+// KRC-721 fees per official spec (https://mainnet.krc721.stream)
+// Deploy: Minimum 1,000 KAS reveal transaction fee required
+// Mint: Minimum 10 KAS reveal transaction fee required
+const KRC721_DEPLOY_FEE_KAS = "1000"; // 1000 KAS deploy fee (REQUIRED by indexer)
+const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
+const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee (above 10 KAS minimum)
 const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
 // Import the database-backed mint storage service
@@ -497,8 +499,8 @@ class KRC721Service {
 
       console.log(`[KRC721] P2SH Address: ${P2SHAddress.toString()}`);
 
-      // Execute commit-reveal pattern
-      const result = await this.executeCommitReveal(script, P2SHAddress, "10");
+      // Execute commit-reveal pattern with 1000 KAS deploy fee (required by indexer)
+      const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_DEPLOY_FEE_KAS);
       
       if (result.success) {
         this.collectionDeployed = true;
