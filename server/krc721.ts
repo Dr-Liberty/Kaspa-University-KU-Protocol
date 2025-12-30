@@ -236,7 +236,7 @@ function getDefaultConfig(): KRC721Config {
     ticker: useTestnet ? "KTEST" : "KPROOF", // Use different ticker for testnet
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
-    maxSupply: 1000000, // 1 million certificates max
+    maxSupply: 10000, // 10,000 certificates max
     royaltyFee: 0, // No royalties on educational certificates
     royaltyOwner: "",
   };
