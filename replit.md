@@ -32,10 +32,13 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **KU Protocol**: Custom on-chain data format for quiz proofs and Q&A content.
 - **Security**:
     - **Wallet Authentication**: Challenge-response with cryptographic signature verification using Kaspa WASM. Uses PublicKey.toAddress() to verify public key ownership and verifyMessage() for ECDSA signature validation. KasWare returns base64-encoded ECDSA signatures which are decoded to raw hex (128 chars, no 0x prefix) for WASM verification.
-    - **Anti-Sybil**: Quiz cooldowns, minimum completion times, daily reward caps, attempt limits, wallet trust scoring.
-    - **Threat Detection**: Rate limiting, IP tracking, multi-wallet/IP detection, VPN detection (GetIPIntel, IP-API.com).
+    - **IP Session Binding**: Sessions track original login IP with optional strict enforcement via `STRICT_IP_BINDING=true` env var (default: permissive for mobile compatibility).
+    - **Anti-Sybil**: Quiz cooldowns, minimum completion times, daily reward caps, attempt limits, wallet trust scoring, concurrent quiz submission locking.
+    - **Rate Limiting**: All endpoints protected with dedicated rate limiters (auth: 10/min, NFT: 10/min, certificates: 20/min, stats: 30/min, quiz: 20/min).
+    - **Threat Detection**: IP tracking, multi-wallet/IP detection, VPN detection (GetIPIntel, IP-API.com).
     - **UTXO Management**: Mutex-based locking and transaction tracking to prevent double-spending.
     - **Address Validation**: Mainnet-only Kaspa address validation.
+    - **Security Documentation**: See `SECURITY_REMEDIATION.md` for audit findings and remediation plan.
 - **Performance**: Job queue system for async blockchain operations, in-memory TTL caching (VPN, stats, security flags, UTXO).
 - **Session Management**: Abstracted session store (in-memory/Redis) for horizontal scaling.
 - **Cryptography**: ECDSA signature verification for wallet auth, signed tokens for quiz integrity, SHA-256 for answer hashing.
