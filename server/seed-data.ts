@@ -659,7 +659,8 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
 <p>2. **Blue/Red Classification**: Blocks are classified as either "blue" (honest, well-connected) or "red" (potentially malicious or poorly connected). Blue blocks form the main consensus.</p>
 <p>3. **Selected Parent Chain**: A main chain runs through the DAG, connecting selected parents from each block back to genesis.</p>
 <p>4. **Mergeset Processing**: When a block is added, it processes all blocks in its mergeset (blocks not in its selected parent's past).</p>
-<p>The brilliance of GHOSTDAG is that it achieves the same security guarantees as Bitcoin's Nakamoto consensus, but allows for parallel block creation. This means higher throughput without sacrificing decentralization or security.</p>`,
+<p>The brilliance of GHOSTDAG is that it achieves the same security guarantees as Bitcoin's Nakamoto consensus, but allows for parallel block creation. This means higher throughput without sacrificing decentralization or security.</p>
+<p>**Source**: "PHANTOM and GHOSTDAG: A Scalable Generalization of Nakamoto Consensus" by Sompolinsky, Wyborski, and Zohar (2021).</p>`,
       },
       {
         id: "lesson-4-4",
@@ -677,7 +678,8 @@ When a block has more than K blocks in its anticone relative to another block's 
 - A higher K allows more parallelism (higher throughput) but increases confirmation times
 - A lower K provides faster confirmations but limits throughput
 - Kaspa calculates K based on the blocks-per-second (BPS) target to balance these tradeoffs</p>
-<p>The K parameter essentially defines the boundary between honest concurrent mining and potential attack behavior. Blocks that stay within the K-cluster are considered honest and are colored blue.</p>`,
+<p>The K parameter essentially defines the boundary between honest concurrent mining and potential attack behavior. Blocks that stay within the K-cluster are considered honest and are colored blue.</p>
+<p>**Source**: K-cluster analysis from the PHANTOM paper by Sompolinsky and Zohar (2018).</p>`,
       },
       {
         id: "lesson-4-5",
@@ -687,11 +689,11 @@ When a block has more than K blocks in its anticone relative to another block's 
         duration: "7 min",
         thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>BPS (Blocks Per Second) is a key configuration parameter that determines Kaspa's throughput target. It represents how many blocks the network aims to produce per second.</p>
-<p>**Current BPS Values**
+<p>**BPS Evolution**
 Kaspa has progressively increased its BPS through network upgrades:
 - Originally: 1 BPS (one block per second)
-- After upgrades: 10 BPS, then 32 BPS
-- Crescendo hardfork target: Up to 100 BPS</p>
+- Crescendo hardfork (May 5, 2025): Upgraded to 10 BPS (current mainnet)
+- Future hardforks planned: 32 BPS, then 100 BPS</p>
 <p>**Derived Parameters**
 Many other network parameters are mathematically derived from BPS:
 - **K Parameter**: Scales with BPS to maintain security
@@ -935,7 +937,8 @@ BlueWork(B) = BlueWork(SelectedParent(B)) if B is red
 - Consensus: all nodes agree on the chain with most blue work
 - Attack resistance: attackers must outpace honest blue work
 - Fork resolution: ties broken by blue work comparison</p>
-<p>Blue Work ensures that honestly-created proof-of-work dominates chain selection.</p>`,
+<p>Blue Work ensures that honestly-created proof-of-work dominates chain selection.</p>
+<p>**Source**: GHOSTDAG protocol specification by Sompolinsky, Wyborski, and Zohar (2021).</p>`,
       },
       {
         id: "lesson-7-1",
@@ -962,8 +965,8 @@ The chosen BPS must balance:
 2. Network bandwidth and latency
 3. Security margins (K must be large enough)
 4. User experience (confirmation times)</p>
-<p>**Crescendo: Dynamic BPS**
-The Crescendo hardfork introduces dynamic BPS adjustment, allowing the network to optimize throughput based on actual conditions.</p>`,
+<p>**Crescendo and Future Upgrades**
+The Crescendo hardfork (May 5, 2025) upgraded Kaspa from 1 BPS to 10 BPS on mainnet. Future hardforks will increase to 32 BPS, then 100 BPS, with K parameter adjustments to maintain security at each level.</p>`,
       },
       {
         id: "lesson-7-2",
@@ -1747,11 +1750,11 @@ Kaspa can increase blocks per second by:
 - Adjusting K parameter proportionally
 - Ensuring network can propagate in time
 - Maintaining security guarantees</p>
-<p>**Crescendo Hard Fork**
-- Upgraded Kaspa from 1 BPS to 10 BPS
-- Activated on mainnet May 5, 2025
-- Already 600x faster than Bitcoin's one block per 10 minutes
-- Future hard forks will enable even higher BPS</p>
+<p>**Crescendo Hard Fork (May 2025)**
+- Upgraded Kaspa from 1 BPS to 10 BPS (current mainnet)
+- Already 6,000x more frequent than Bitcoin's one block per 10 minutes
+- Future hardforks planned: 32 BPS, then 100 BPS
+- Each upgrade requires proportional K parameter adjustments</p>
 <p>**The Result**
 - Faster confirmations (seconds, not hours)
 - Higher transaction capacity
