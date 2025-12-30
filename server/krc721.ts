@@ -69,10 +69,11 @@ const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee (above 10 KAS minimum)
 const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
 // Get the indexer URL based on network
+// Use KSPR indexer (mainnet.krc721.stream) - the standard KRC-721 indexer
 function getIndexerUrl(): string {
   return useTestnet 
     ? "https://testnet-10.krc721.stream"
-    : "https://kaspa-krc721d.kaspa.com";
+    : "https://mainnet.krc721.stream";
 }
 
 /**
@@ -726,27 +727,27 @@ class KRC721Service {
       }
       console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
-      // Create deployment data following KRC-721 spec
+      // Create deployment data following KRC-721 spec (KSPR indexer format)
+      // Reference: https://mainnet.krc721.stream/docs
+      // Required fields: p, op, tick
+      // Optional fields: max, buri (base URI), metadata, royaltyTo, royaltyFee
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
         tick: this.config.ticker,
         max: this.config.maxSupply.toString(),
+        buri: imageUrl, // Base URI for the collection (IPFS)
         metadata: {
           name: this.config.collectionName,
           description: this.config.collectionDescription,
           image: imageUrl,
-          attributes: [
-            { traitType: "platform", value: "Kaspa University" },
-            { traitType: "type", value: "Educational Certificate" },
-          ],
         },
       };
 
-      // Add royalty info if configured
+      // Add royalty info if configured (use royaltyTo per spec, not royaltyOwner)
       if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
         deployData.royaltyFee = kaspaToSompi(this.config.royaltyFee.toString())?.toString();
-        deployData.royaltyOwner = this.config.royaltyOwner;
+        deployData.royaltyTo = this.config.royaltyOwner;
       }
 
       console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
