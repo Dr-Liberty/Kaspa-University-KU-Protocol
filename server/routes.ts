@@ -2491,6 +2491,139 @@ export async function registerRoutes(
     }
   });
 
+  // List demo-minted certificates (admin)
+  app.get("/api/admin/demo-certificates", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const allCerts = await storage.getAllCertificates();
+      const demoCerts = allCerts.filter(c => 
+        c.nftTxHash && (
+          c.nftTxHash.startsWith("demo_mint_") || 
+          c.nftTxHash.startsWith("demo_") ||
+          c.nftTxHash.length < 64
+        )
+      );
+      
+      res.json({
+        count: demoCerts.length,
+        certificates: demoCerts.map(c => ({
+          id: c.id,
+          recipientAddress: c.recipientAddress,
+          courseId: c.courseId,
+          courseName: c.courseName,
+          nftStatus: c.nftStatus,
+          nftTxHash: c.nftTxHash,
+          issuedAt: c.issuedAt,
+        }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Re-mint a demo-minted certificate with live blockchain (admin)
+  app.post("/api/admin/certificates/:id/remint", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const certificate = await storage.getCertificate(id);
+      if (!certificate) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+
+      // Check if this was a demo mint
+      const isDemoMint = certificate.nftTxHash && (
+        certificate.nftTxHash.startsWith("demo_mint_") || 
+        certificate.nftTxHash.startsWith("demo_") ||
+        certificate.nftTxHash.length < 64
+      );
+      
+      if (!isDemoMint && certificate.nftTxHash) {
+        return res.status(400).json({ 
+          error: "Certificate was not minted in demo mode",
+          nftTxHash: certificate.nftTxHash
+        });
+      }
+
+      // Get KRC721 service and check if it's in live mode
+      const krc721Service = await getKRC721Service();
+      if (!krc721Service.isLive()) {
+        return res.status(503).json({ 
+          error: "KRC721 service is not in live mode. Check that KASPA_TREASURY_PRIVATEKEY is configured."
+        });
+      }
+
+      // Reset certificate status to allow re-minting
+      await storage.updateCertificate(id, { 
+        nftStatus: "pending",
+        nftTxHash: undefined,
+      });
+
+      // Clean up any existing reservation
+      const existingReservation = await mintStorage.getByCertificateId(id);
+      if (existingReservation) {
+        await mintStorage.deleteReservationByCertificateId(id);
+      }
+
+      // Generate certificate image
+      const completionDate = new Date(certificate.issuedAt);
+      const svgImage = krc721Service.generateCertificateImageSvg(
+        certificate.recipientAddress,
+        certificate.courseName,
+        certificate.score || 100,
+        completionDate
+      );
+      
+      // Convert SVG to data URI for minting
+      const imageDataUri = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString('base64')}`;
+
+      console.log(`[Admin] Re-minting certificate ${id} for ${certificate.recipientAddress} in LIVE mode`);
+
+      // Attempt live mint
+      const mintResult = await krc721Service.mintCertificate(
+        certificate.recipientAddress,
+        certificate.courseName,
+        certificate.score || 100,
+        completionDate,
+        imageDataUri
+      );
+
+      if (mintResult.success) {
+        // Update certificate with live mint result
+        await storage.updateCertificate(id, {
+          nftStatus: "claimed",
+          nftTxHash: mintResult.revealTxHash,
+        });
+
+        console.log(`[Admin] Re-mint SUCCESS: ${mintResult.revealTxHash}`);
+        
+        res.json({
+          success: true,
+          message: "Certificate re-minted successfully on live blockchain",
+          previousHash: certificate.nftTxHash,
+          newTxHash: mintResult.revealTxHash,
+          commitTxHash: mintResult.commitTxHash,
+          tokenId: mintResult.tokenId,
+          explorerUrl: `https://explorer.kaspa.org/txs/${mintResult.revealTxHash}`
+        });
+      } else {
+        // Restore previous state on failure
+        await storage.updateCertificate(id, {
+          nftStatus: certificate.nftStatus,
+          nftTxHash: certificate.nftTxHash,
+        });
+        
+        res.status(500).json({
+          success: false,
+          error: mintResult.error || "Mint failed",
+          message: "Re-mint failed, certificate status restored"
+        });
+      }
+    } catch (error: any) {
+      console.error(`[Admin] Re-mint error:`, error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Get admin dashboard stats
   app.get("/api/admin/stats", adminAuth, async (_req: Request, res: Response) => {
     try {
