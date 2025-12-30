@@ -475,6 +475,30 @@ export default function CourseDetail() {
                       </Badge>
                     </div>
 
+                    {currentLesson.videoUrl && (
+                      <div className="mb-6 aspect-video w-full overflow-hidden rounded-md bg-muted">
+                        <iframe
+                          src={currentLesson.videoUrl}
+                          className="h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={currentLesson.title}
+                          data-testid="video-lesson"
+                        />
+                      </div>
+                    )}
+
+                    {currentLesson.thumbnail && !currentLesson.videoUrl && (
+                      <div className="mb-6 w-full overflow-hidden rounded-md">
+                        <img
+                          src={currentLesson.thumbnail}
+                          alt={currentLesson.title}
+                          className="w-full object-cover"
+                          data-testid="img-lesson-thumbnail"
+                        />
+                      </div>
+                    )}
+
                     <div
                       className="prose prose-sm dark:prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: currentLesson.content }}

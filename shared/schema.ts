@@ -34,6 +34,8 @@ export const lessonSchema = z.object({
   content: z.string(),
   order: z.number(),
   duration: z.string(),
+  thumbnail: z.string().optional(),
+  videoUrl: z.string().optional(),
 });
 
 export type Lesson = z.infer<typeof lessonSchema>;
