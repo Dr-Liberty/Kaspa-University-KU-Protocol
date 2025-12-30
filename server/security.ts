@@ -369,6 +369,55 @@ export const rewardRateLimiter = rateLimit({
   },
 });
 
+export const nftRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many NFT requests, please slow down" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = getClientIP(req);
+    const wallet = req.headers["x-wallet-address"] as string;
+    return wallet ? `nft:${ip}:${wallet}` : `nft:${ip}`;
+  },
+});
+
+export const certificateRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: "Too many certificate requests, please slow down" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = getClientIP(req);
+    return `cert:${ip}`;
+  },
+});
+
+export const statsRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: "Too many stats requests" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = getClientIP(req);
+    return `stats:${ip}`;
+  },
+});
+
+export const authRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many authentication attempts, please wait" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = getClientIP(req);
+    return `auth:${ip}`;
+  },
+});
+
 export async function securityMiddleware(req: Request, res: Response, next: NextFunction) {
   const ip = getClientIP(req);
   const activity = await trackIPActivity(req);

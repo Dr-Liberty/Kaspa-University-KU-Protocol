@@ -325,10 +325,19 @@ export function validateSession(
   }
   
   // Enforce IP binding if provided
+  // Security: Strict mode blocks session hijacking from different IPs
+  // Default is permissive to support mobile networks and NAT environments
+  // Set STRICT_IP_BINDING=true for high-security deployments
+  const STRICT_IP_BINDING = process.env.STRICT_IP_BINDING === "true"; // Default: disabled
+  
   if (clientIP && session.ip !== clientIP) {
     console.warn(`[Auth] IP mismatch for session: expected ${session.ip}, got ${clientIP}`);
-    // Log but don't block for now to avoid issues with mobile networks
-    // In strict mode, you would: return { valid: false, error: "Session IP mismatch" };
+    
+    if (STRICT_IP_BINDING) {
+      // Block session use from different IP - prevents session hijacking
+      return { valid: false, error: "Session expired. Please reconnect your wallet." };
+    }
+    // In permissive mode (default), log but allow for mobile/NAT compatibility
   }
   
   return { valid: true };

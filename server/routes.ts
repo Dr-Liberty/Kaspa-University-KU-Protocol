@@ -23,6 +23,10 @@ import {
   generalRateLimiter, 
   quizRateLimiter,
   rewardRateLimiter,
+  nftRateLimiter,
+  certificateRateLimiter,
+  statsRateLimiter,
+  authRateLimiter,
   validateQuizAnswers,
   isPaymentTxUsed,
   markPaymentTxUsed,
@@ -62,7 +66,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get a challenge for wallet authentication
-  app.post("/api/auth/challenge", async (req: Request, res: Response) => {
+  app.post("/api/auth/challenge", authRateLimiter, async (req: Request, res: Response) => {
     try {
       const { walletAddress } = req.body;
       
@@ -90,7 +94,7 @@ export async function registerRoutes(
   });
 
   // Verify signature and create session
-  app.post("/api/auth/verify", async (req: Request, res: Response) => {
+  app.post("/api/auth/verify", authRateLimiter, async (req: Request, res: Response) => {
     try {
       const { walletAddress, message, signature, publicKey, nonce } = req.body;
       
@@ -174,7 +178,7 @@ export async function registerRoutes(
     next();
   };
 
-  app.get("/api/stats", async (_req: Request, res: Response) => {
+  app.get("/api/stats", statsRateLimiter, async (_req: Request, res: Response) => {
     const cached = statsCache.get("platform_stats");
     if (cached) {
       return res.json(cached);
@@ -738,16 +742,25 @@ export async function registerRoutes(
     }
 
     const antiSybil = getAntiSybilService();
-    const validation = await antiSybil.validateQuizSubmission(walletAddress, lessonId);
     
-    if (!validation.allowed) {
+    if (!antiSybil.acquireSubmissionLock(walletAddress, lessonId)) {
       return res.status(429).json({ 
-        error: validation.reason,
-        flags: validation.flags,
+        error: "Quiz submission in progress. Please wait.",
+        code: "SUBMISSION_IN_PROGRESS",
       });
     }
+    
+    try {
+      const validation = await antiSybil.validateQuizSubmission(walletAddress, lessonId);
+      
+      if (!validation.allowed) {
+        return res.status(429).json({ 
+          error: validation.reason,
+          flags: validation.flags,
+        });
+      }
 
-    const clientIP = getClientIP(req);
+      const clientIP = getClientIP(req);
     const vpnCheck = await checkVpnAsync(clientIP);
     if (vpnCheck.isVpn) {
       const activity = (req as any).ipActivity;
@@ -897,10 +910,16 @@ export async function registerRoutes(
       }
     }
 
-    res.json({
-      ...result,
-      courseCompleted: passed ? (await storage.checkCourseCompletion(user.id, lesson.courseId)).completed : false,
-    });
+      res.json({
+        ...result,
+        courseCompleted: passed ? (await storage.checkCourseCompletion(user.id, lesson.courseId)).completed : false,
+      });
+    } catch (error: any) {
+      console.error(`[Quiz] Submission error for ${walletAddress.slice(0, 20)}:`, error.message);
+      res.status(500).json({ error: "Quiz submission failed" });
+    } finally {
+      antiSybil.releaseSubmissionLock(walletAddress, lessonId);
+    }
   });
 
   app.get("/api/user", async (req: Request, res: Response) => {
@@ -963,7 +982,7 @@ export async function registerRoutes(
     res.json(enrichedResults);
   });
 
-  app.get("/api/certificates", async (req: Request, res: Response) => {
+  app.get("/api/certificates", certificateRateLimiter, async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.json([]);
@@ -978,7 +997,7 @@ export async function registerRoutes(
     res.json(certificates);
   });
 
-  app.get("/api/certificates/:id", async (req: Request, res: Response) => {
+  app.get("/api/certificates/:id", certificateRateLimiter, async (req: Request, res: Response) => {
     const certificate = await storage.getCertificate(req.params.id);
     if (!certificate) {
       return res.status(404).json({ error: "Certificate not found" });
@@ -1368,7 +1387,7 @@ export async function registerRoutes(
   });
 
   // KRC-721 NFT Service Health Check
-  app.get("/api/nft/health", async (_req: Request, res: Response) => {
+  app.get("/api/nft/health", nftRateLimiter, async (_req: Request, res: Response) => {
     try {
       const krc721Service = await getKRC721Service();
       const pinataService = getPinataService();
@@ -1390,7 +1409,7 @@ export async function registerRoutes(
   });
 
   // KRC-721 NFT Collection Info
-  app.get("/api/nft/collection", async (_req: Request, res: Response) => {
+  app.get("/api/nft/collection", nftRateLimiter, async (_req: Request, res: Response) => {
     try {
       const krc721Service = await getKRC721Service();
       const info = await krc721Service.getCollectionInfo();
@@ -1401,7 +1420,7 @@ export async function registerRoutes(
   });
 
   // Prepare non-custodial NFT mint - returns P2SH address for user to pay directly
-  app.post("/api/nft/prepare/:id", async (req: Request, res: Response) => {
+  app.post("/api/nft/prepare/:id", nftRateLimiter, async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
@@ -1592,7 +1611,7 @@ export async function registerRoutes(
   });
 
   // Finalize non-custodial NFT mint - verifies user's commit tx and submits reveal
-  app.post("/api/nft/finalize/:id", async (req: Request, res: Response) => {
+  app.post("/api/nft/finalize/:id", nftRateLimiter, async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
@@ -1889,7 +1908,7 @@ export async function registerRoutes(
   });
 
   // Get reservation status for a certificate (for retry functionality)
-  app.get("/api/nft/reservation/:id", async (req: Request, res: Response) => {
+  app.get("/api/nft/reservation/:id", nftRateLimiter, async (req: Request, res: Response) => {
     const { id } = req.params;
     
     try {
@@ -1919,7 +1938,7 @@ export async function registerRoutes(
   });
 
   // Get minting fee info (non-custodial - user pays directly)
-  app.get("/api/nft/fee", async (_req: Request, res: Response) => {
+  app.get("/api/nft/fee", nftRateLimiter, async (_req: Request, res: Response) => {
     try {
       const krc721Service = await getKRC721Service();
       const feeInfo = krc721Service.getMintFeeInfo();
@@ -1938,7 +1957,7 @@ export async function registerRoutes(
   });
 
   // Generate certificate image preview
-  app.get("/api/nft/preview", async (req: Request, res: Response) => {
+  app.get("/api/nft/preview", nftRateLimiter, async (req: Request, res: Response) => {
     const { address, course, score } = req.query;
     
     if (!address || !course) {

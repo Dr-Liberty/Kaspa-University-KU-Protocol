@@ -60,6 +60,7 @@ class AntiSybilService {
   private config: AntiSybilConfig;
   private walletActivityCache: Map<string, WalletActivity> = new Map();
   private quizStartTimes: Map<string, number> = new Map();
+  private activeSubmissions: Map<string, number> = new Map();
 
   constructor(config: Partial<AntiSybilConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -166,6 +167,27 @@ class AntiSybilService {
   recordQuizStart(walletAddress: string, lessonId: string): void {
     const key = this.getQuizKey(walletAddress, lessonId);
     this.quizStartTimes.set(key, Date.now());
+  }
+
+  acquireSubmissionLock(walletAddress: string, lessonId: string): boolean {
+    const key = this.getQuizKey(walletAddress, lessonId);
+    const existingLock = this.activeSubmissions.get(key);
+    const now = Date.now();
+    
+    if (existingLock && (now - existingLock) < 30000) {
+      console.log(`[AntiSybil] Submission lock held for ${key}, blocking concurrent attempt`);
+      return false;
+    }
+    
+    this.activeSubmissions.set(key, now);
+    console.log(`[AntiSybil] Acquired submission lock for ${key}`);
+    return true;
+  }
+
+  releaseSubmissionLock(walletAddress: string, lessonId: string): void {
+    const key = this.getQuizKey(walletAddress, lessonId);
+    this.activeSubmissions.delete(key);
+    console.log(`[AntiSybil] Released submission lock for ${key}`);
   }
 
   async validateQuizSubmission(walletAddress: string, lessonId: string): Promise<{
