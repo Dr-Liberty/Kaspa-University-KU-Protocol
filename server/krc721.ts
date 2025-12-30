@@ -1337,12 +1337,14 @@ class KRC721Service {
       const { entries: treasuryEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.address!]);
 
       // Step 3: Create reveal transaction - pass entries directly without transformation
+      // CRITICAL: priorityFee MUST match the mint fee to burn the full inscription fee!
+      // The indexer verifies that the reveal tx burns >= 10 KAS for mint
       const { transactions: revealTxs } = await createTransactions({
         priorityEntries: [p2shUtxo], // P2SH UTXO first
         entries: treasuryEntries, // Treasury UTXOs for fee
         outputs: [], // All funds go to change
         changeAddress: this.address!, // Change goes to treasury (covers reveal fee)
-        priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
+        priorityFee: kaspaToSompi(KRC721_MINT_FEE_KAS)!, // BURN the full 10 KAS mint fee
         networkId: this.config.network,
       });
 

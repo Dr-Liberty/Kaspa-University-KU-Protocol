@@ -1,0 +1,22 @@
+
+[KRC721] Checking for UTXO at kaspa:pqpxrt9he38gx5l82h0...
+2025-12-30 12:49:25.51
+0874ad6b
+User
+[KRC721] Found 10.5 KAS at P2SH. Proceeding with reveal...
+2025-12-30 12:49:25.77
+0874ad6b
+User
+[KRC721] Reveal tx: b0212ca4b1188e836c83506bef8c051432ceb6c3ea209e92132202af98c41f0d
+2025-12-30 12:49:25.92
+0874ad6b
+User
+[KRC721] Transaction broadcast confirmed: b0212ca4b1188e83...
+2025-12-30 12:49:25.92
+0874ad6b
+User
+[KRC721] Non-custodial mint #2 completed successfully!
+2025-12-30 12:49:25.92
+0874ad6b
+User
+[Finalize] Result: {"success":true,"commitTxHash":"{\"id\":\"e5fe8f8656a04a19ef0226e1533f21922bb74812f30966b755a56d0b26740342\",\"version\":0,\"inputs\":[{\"transactionId\":\"675ef55f7b5e4bd33022bfdf8b88ece20a281cfa6348c1f39825ef9623f82f99\",\"index\":1,\"sequence\":\"0\",\"sigOpCount\":1,\"signatureScript\":\"\",\"utxo\":{\"address\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\",\"amount\":\"309446248\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\",\"blockDaaScore\":\"317065014\",\"isCoinbase\":false}},{\"transactionId\":\"4cac118e4c484ab6602f12ffbfec494c4c808607ad854bf18be3cfc53cded579\",\"index\":0,\"sequence\":\"0\",\"sigOpCount\":1,\"signatureScript\":\"\",\"utxo\":{\"address\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\",\"amount\":\"50000000000\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\",\"blockDaaScore\":\"317079494\",\"isCoinbase\":false}}],\"outputs\":[{\"value\":\"1050000000\",\"scriptPublicKey\":\"0000aa200261acb7cc4e8353e755de9a3ace7d65cfc2dcdbdd327c026f057b576fea733787\"},{\"value\":\"49259443083\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\"}],\"subnetworkId\":\"0000000000000000000000000000000000000000\",\"lockTime\":\"0\",\"gas\":\"0\",\"mass\":\"3165\",\"payload\":\"\"}","revealTxHash":"b0212ca4b1188e836c83506bef8c051432ceb6c3ea209e92132202af98c41f0d","tokenId":2}
