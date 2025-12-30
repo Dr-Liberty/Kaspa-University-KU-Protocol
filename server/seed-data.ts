@@ -490,16 +490,17 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "Linear Chain Terminology - Traditional Blockchain",
         order: 1,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/ztcWf0UT4ysiEhzt0WSE",
         content: `<p>Linear chain terminology uses simple concepts where blocks form a single sequence.  Each block has one parent and potentially one child, creating straightforward ancestor-descendant relationships.  Terms like "height," "previous block," and "next block" describe the linear progression.  When conflicts occur, blocks are either "accepted" into the main chain or "orphaned" and discarded.</p>`,
       },
       {
         id: "lesson-2-2",
         courseId: "dag-terminology",
-        title: "DAG Terminology ",
+        title: "DAG Terminology",
         order: 2,
         duration: "10 min",
-        content: `<p>DAG stands for Directed Acyclic Graph.
-Allowing blocks to have multiple parents creates new relationships within the DAG.</p>`,
+        thumbnail: "https://cdn.buttercms.com/P31XzHa9RySKXmCLTazx",
+        content: `<p>DAG stands for Directed Acyclic Graph. Allowing blocks to have multiple parents creates new relationships within the DAG.</p>`,
       },
       {
         id: "lesson-2-3",
@@ -507,6 +508,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
         title: "Past and Future Relationships - DAG",
         order: 3,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/oWhSigCmRPShKmCFE1IA",
         content: `<p>Past relationship defines all blocks reachable by following parent links backward from a given block.  A block is in the past of another if there exists any directed path connecting them.  Future relationship works inversely - if block A is in the past of block B, then B is in the future of A.</p>`,
       },
       {
@@ -515,8 +517,8 @@ Allowing blocks to have multiple parents creates new relationships within the DA
         title: "Anticone Relationship - DAG",
         order: 4,
         duration: "10 min",
-        content: `<p>Anticone describes blocks that are neither ancestors nor descendants of each other - they exist concurrently in the DAG.  Two blocks are in each other's Anticone if neither can reach the other through any directed path.  This relationship is crucial for GHOSTDAG's security parameter K, which limits Anticone sizes to maintain consensus safety.  Here, Block A and Block C are in each others Anticone, Block A is not reachable from Block C, and Block C is not reachable from Block A.
-</p>`,
+        thumbnail: "https://cdn.buttercms.com/RNhZNbRUmeGmQUUWU9aA",
+        content: `<p>Anticone describes blocks that are neither ancestors nor descendants of each other - they exist concurrently in the DAG.  Two blocks are in each other's Anticone if neither can reach the other through any directed path.  This relationship is crucial for GHOSTDAG's security parameter K, which limits Anticone sizes to maintain consensus safety.  Here, Block A and Block C are in each others Anticone, Block A is not reachable from Block C, and Block C is not reachable from Block A.</p>`,
       },
       {
         id: "lesson-2-5",
@@ -524,6 +526,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
         title: "Mergeset and Blue/Red Classification - GHOSTDAG",
         order: 5,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/gYCi4AK2QCG1HRd7UzmB",
         content: `<p>Mergeset refers to the collection of blocks that are merged when creating a new block.  The Mergeset contains the direct parents of a block, but can additionally contain blocks that are not direct parents.  GHOSTDAG classifies Mergeset blocks as "Blue" (honest) or "Red" (potentially conflicting) based on Anticone size constraints.  This classification determines which blocks contribute to network security through Blue Work accumulation.  Here is an example of block B classifying its Mergeset into Blue and Red while the Anticone size constraint = 0.</p>`,
       },
       {
@@ -532,6 +535,7 @@ Allowing blocks to have multiple parents creates new relationships within the DA
         title: "K Parameter - GHOSTDAG",
         order: 6,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/6yB2YGeOSPaBOD8zBJLY",
         content: `<p>The parameter K controls the maximum allowed Anticone size for blue blocks.  This parameter is calculated based on network delay, block production rate, and desired security guarantees.  In this example, instead of k = 0 like the example above, k = 1 so each blue block has 1 other blue block in its Anticone.</p>`,
       },
       {
@@ -553,9 +557,9 @@ Allowing blocks to have multiple parents creates new relationships within the DA
         title: "Bitcoin and Kaspa",
         order: 8,
         duration: "10 min",
+        thumbnail: "https://cdn.buttercms.com/4tsNNkRsej8ZwaJQDywf",
         content: `<p>Bitcoin - Uses simple linear terminology: "previous block," "next block," "chain height," and "longest chain."  Relationships are straightforward ancestor-descendant connections.  Competing blocks are "orphaned" with no intermediate states.</p>
-<p>Kaspa - Uses additional terminology including DAG Past/Future/Anticone relationships, GHOSTDAG Mergeset, and Mergeset Blue/Red Classification.  Kaspa maintains multiple concurrent blocks, handles their relationships and provides consistent ordering.</p>
-<p></p>`,
+<p>Kaspa - Uses additional terminology including DAG Past/Future/Anticone relationships, GHOSTDAG Mergeset, and Mergeset Blue/Red Classification.  Kaspa maintains multiple concurrent blocks, handles their relationships and provides consistent ordering.</p>`,
       },
       {
         id: "lesson-3-1",
