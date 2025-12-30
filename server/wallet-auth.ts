@@ -206,8 +206,16 @@ export async function verifySignature(
       // Decode base64 to hex for WASM (NO 0x prefix - WASM expects raw hex)
       try {
         const signatureBuffer = Buffer.from(signatureBase64, "base64");
-        signatureHex = signatureBuffer.toString("hex");
-        console.log(`[Auth] Signature is base64, decoded to ${signatureBuffer.length} bytes hex`);
+        // KasWare ECDSA signatures are 65 bytes (recovery byte + 64-byte signature)
+        // rusty-kaspa verifyMessage expects 64 bytes without recovery byte
+        if (signatureBuffer.length === 65) {
+          // Strip the first byte (recovery byte) to get raw 64-byte signature
+          signatureHex = signatureBuffer.slice(1).toString("hex");
+          console.log(`[Auth] Signature is base64 with recovery byte, stripped to 64 bytes`);
+        } else {
+          signatureHex = signatureBuffer.toString("hex");
+          console.log(`[Auth] Signature is base64, decoded to ${signatureBuffer.length} bytes hex`);
+        }
       } catch (e) {
         console.warn(`[Auth] Failed to decode base64, trying as hex`);
         signatureHex = signatureBase64.replace(/^0x/, '');
@@ -215,7 +223,13 @@ export async function verifySignature(
     } else if (isHex) {
       // Already hex, strip 0x prefix if present (WASM expects raw hex)
       signatureHex = signatureBase64.replace(/^0x/, '');
-      console.log(`[Auth] Signature is hex format, length: ${signatureHex.length / 2} bytes`);
+      // Handle 65-byte signatures (130 hex chars) by stripping recovery byte
+      if (signatureHex.length === 130) {
+        signatureHex = signatureHex.slice(2); // Remove first byte (2 hex chars)
+        console.log(`[Auth] Signature is hex with recovery byte, stripped to 64 bytes`);
+      } else {
+        console.log(`[Auth] Signature is hex format, length: ${signatureHex.length / 2} bytes`);
+      }
     } else {
       // Unknown format, try as-is
       console.warn(`[Auth] Unknown signature format, trying as-is`);
@@ -240,32 +254,56 @@ export async function verifySignature(
     
     let signatureValid = false;
     
+    // Use the stored challenge message to ensure consistency
+    const verificationMessage = challenge.message;
+    
     try {
       // Log full debug info for troubleshooting
       console.log(`[Auth] Attempting verification with:`);
-      console.log(`[Auth]   Message length: ${message.length} chars`);
+      console.log(`[Auth]   Message length: ${verificationMessage.length} chars`);
       console.log(`[Auth]   Signature hex length: ${signatureHex.length} chars (${signatureHex.length / 2} bytes)`);
       console.log(`[Auth]   Public key: ${normalizedPubKey.slice(0, 16)}...${normalizedPubKey.slice(-8)}`);
-      console.log(`[Auth]   Signature (first 64): ${signatureHex.slice(0, 64)}...`);
       
       // Use WASM verifyMessage - expects raw hex without 0x prefix
       signatureValid = kaspa.verifyMessage({
-        message: message,
+        message: verificationMessage,
         signature: signatureHex,
-        publicKey: normalizedPubKey,  // Without 0x prefix
+        publicKey: normalizedPubKey,
       });
       
       if (signatureValid) {
         console.log("[Auth] WASM verifyMessage succeeded");
       } else {
-        console.warn("[Auth] WASM verifyMessage returned false - signature mismatch");
-        console.warn(`[Auth]   Full message: ${message}`);
+        // Try with original full signature (with recovery byte) as fallback
+        const signatureBufferFull = Buffer.from(signatureBase64, "base64");
+        const fullSigHex = signatureBufferFull.toString("hex");
+        
+        console.log(`[Auth] First attempt failed, trying with full ${signatureBufferFull.length}-byte signature`);
+        
+        try {
+          signatureValid = kaspa.verifyMessage({
+            message: verificationMessage,
+            signature: fullSigHex,
+            publicKey: normalizedPubKey,
+          });
+          
+          if (signatureValid) {
+            console.log("[Auth] WASM verifyMessage succeeded with full signature");
+          }
+        } catch (e) {
+          // Ignore fallback error
+        }
+        
+        if (!signatureValid) {
+          console.warn("[Auth] WASM verifyMessage returned false - signature mismatch");
+          console.warn(`[Auth]   Message preview: ${verificationMessage.slice(0, 100)}...`);
+        }
       }
     } catch (verifyError: any) {
       console.error(`[Auth] WASM verifyMessage error: ${verifyError.message}`);
       console.error(`[Auth]   Stack: ${verifyError.stack?.slice(0, 200)}`);
       console.log(`[Auth]   Full signature hex: ${signatureHex}`);
-      console.log(`[Auth]   Full message: ${message}`);
+      console.log(`[Auth]   Message preview: ${verificationMessage.slice(0, 100)}...`);
       console.log(`[Auth]   Full pubkey: ${normalizedPubKey}`);
     }
     
