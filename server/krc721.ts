@@ -253,7 +253,7 @@ setInterval(async () => {
 function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
-    ticker: useTestnet ? "KTEST" : "KPROOF", // Use different ticker for testnet
+    ticker: useTestnet ? "KTEST" : "KUPROOF", // Use different ticker for testnet
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
     maxSupply: 10000, // 10,000 certificates max
@@ -1762,7 +1762,7 @@ class KRC721Service {
         
         <!-- Footer -->
         <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">
-          KRC-721 NFT Certificate | KPROOF Collection
+          KRC-721 NFT Certificate | KUPROOF Collection
         </text>
       </svg>
     `.trim();

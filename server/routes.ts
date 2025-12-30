@@ -2577,7 +2577,7 @@ export async function registerRoutes(
       // Upload collection image to IPFS (required by indexer)
       const uploadResult = await pinataService.uploadImage(
         collectionSvg,
-        `KPROOF-collection-${Date.now()}`
+        `KUPROOF-collection-${Date.now()}`
       );
       
       if (!uploadResult.success || !uploadResult.ipfsUrl) {
