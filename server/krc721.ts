@@ -936,12 +936,16 @@ class KRC721Service {
 
       // Create MINIMAL mint data per KRC-721 spec to avoid 520-byte limit
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-      // CRITICAL: Reference uses ONLY { p, op, tick } - NO extra fields!
-      // The "to" and metadata are handled by the indexer based on tx recipient
+      // CRITICAL: Include "to" field to specify recipient address!
+      const crypto = await import("crypto");
+      const nonce = crypto.randomBytes(8).toString("hex");
+      
       const mintData: any = {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
+        to: recipientAddress, // CRITICAL: Recipient address for the NFT
+        nonce, // Ensures unique P2SH address per attempt
       };
 
       console.log(`[KRC721] Minting certificate #${tokenId} for ${recipientAddress}`);
@@ -1068,8 +1072,8 @@ class KRC721Service {
 
       // Create MINIMAL mint data per KRC-721 spec
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/mint.ts
-      // CRITICAL: Add a random nonce to ensure unique P2SH address for each mint attempt
-      // This prevents "duplicate key" constraint violations on retry
+      // CRITICAL: Include "to" field to specify recipient address (otherwise goes to treasury!)
+      // Include nonce for unique P2SH address per mint attempt (allows retries)
       const crypto = await import("crypto");
       const nonce = crypto.randomBytes(8).toString("hex");
       
@@ -1077,7 +1081,8 @@ class KRC721Service {
         p: "krc-721",
         op: "mint",
         tick: this.config.ticker,
-        nonce, // Random nonce ensures unique P2SH address per attempt
+        to: recipientAddress, // CRITICAL: Recipient address for the NFT
+        nonce, // Ensures unique P2SH address per attempt
       };
 
       // Calculate data size to prevent 520-byte limit errors
