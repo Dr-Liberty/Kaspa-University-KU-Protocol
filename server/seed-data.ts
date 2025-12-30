@@ -498,7 +498,7 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
         title: "DAG Terminology ",
         order: 2,
         duration: "10 min",
-        content: `<p>DAG stands for Decentralized Acyclic Graph.
+        content: `<p>DAG stands for Directed Acyclic Graph.
 Allowing blocks to have multiple parents creates new relationships within the DAG.</p>`,
       },
       {
