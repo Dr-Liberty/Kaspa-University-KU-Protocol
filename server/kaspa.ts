@@ -29,12 +29,9 @@ import {
   type QuizPayload,
 } from "./ku-protocol.js";
 import {
-  createQAQuestionBroadcast,
-  createQAAnswerBroadcast,
+  createBroadcast,
   parseKasiaBroadcast,
-  isKasiaTransaction,
-  type QAQuestionBroadcast,
-  type QAAnswerBroadcast,
+  isKasiaBroadcast,
 } from "./kasia-protocol.js";
 import { getUTXOManager, type UTXO } from "./utxo-manager.js";
 
@@ -1693,81 +1690,59 @@ class KaspaService {
   }
 
   /**
-   * Post a Q&A question on-chain
-   * Sends a minimal transaction with the question embedded in payload
+   * Post a comment/question on-chain using Kasia Protocol
+   * Sends a plain text broadcast: 1:bcast:{content}
+   * 
+   * Metadata (lesson ID, author, etc.) is stored server-side.
+   * On-chain data is just the plain text content for ecosystem compatibility.
+   */
+  async postComment(content: string): Promise<TransactionResult> {
+    const timestamp = Date.now();
+    
+    // Create plain text broadcast using Kasia Protocol
+    // Format: 1:bcast:{content}
+    const payload = createBroadcast(content);
+
+    console.log(`[Kaspa] Posting comment via Kasia broadcast`);
+    console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
+
+    if (!this.isLive()) {
+      const demoTxHash = `demo_bcast_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
+      console.log(`[Kaspa] Demo mode - simulated broadcast`);
+      return { success: true, txHash: demoTxHash };
+    }
+
+    try {
+      const txHash = await this.sendPayloadTransaction(payload, this.treasuryAddress!);
+      return { success: true, txHash };
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to post comment:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * @deprecated Use postComment instead
+   * Kept for backwards compatibility
    */
   async postQAQuestion(
     lessonId: string,
     authorAddress: string,
     content: string
   ): Promise<TransactionResult> {
-    const timestamp = Date.now();
-    
-    // Create the on-chain payload using Kasia Protocol (bcast format)
-    // This enables ecosystem compatibility with Kasia indexers
-    const payload = createQAQuestionBroadcast({
-      lessonId,
-      authorAddress,
-      timestamp,
-      content,
-    });
-
-    console.log(`[Kaspa] Posting Q&A question for lesson ${lessonId} (Kasia Protocol)`);
-    console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
-
-    if (!this.isLive()) {
-      // Demo mode - simulate transaction
-      const demoTxHash = `demo_qa_q_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated Q&A question post`);
-      return { success: true, txHash: demoTxHash };
-    }
-
-    // In live mode, send a self-transaction with the Q&A payload
-    // This stores the question on-chain with minimal cost
-    try {
-      const txHash = await this.sendPayloadTransaction(payload, authorAddress);
-      return { success: true, txHash };
-    } catch (error: any) {
-      console.error("[Kaspa] Failed to post Q&A question:", error.message);
-      return { success: false, error: error.message };
-    }
+    return this.postComment(content);
   }
 
   /**
-   * Post a Q&A answer on-chain using Kasia Protocol
+   * @deprecated Use postComment instead
+   * Kept for backwards compatibility
    */
   async postQAAnswer(
     questionTxId: string,
     authorAddress: string,
     content: string
   ): Promise<TransactionResult> {
-    const timestamp = Date.now();
-    
-    // Create the on-chain payload using Kasia Protocol (bcast format)
-    // This enables ecosystem compatibility with Kasia indexers
-    const payload = createQAAnswerBroadcast({
-      questionTxId,
-      authorAddress,
-      timestamp,
-      content,
-    });
-
-    console.log(`[Kaspa] Posting Q&A answer for question ${questionTxId} (Kasia Protocol)`);
-    console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
-
-    if (!this.isLive()) {
-      const demoTxHash = `demo_qa_a_${timestamp.toString(16)}_${Math.random().toString(16).slice(2, 10)}`;
-      console.log(`[Kaspa] Demo mode - simulated Q&A answer post`);
-      return { success: true, txHash: demoTxHash };
-    }
-
-    try {
-      const txHash = await this.sendPayloadTransaction(payload, authorAddress);
-      return { success: true, txHash };
-    } catch (error: any) {
-      console.error("[Kaspa] Failed to post Q&A answer:", error.message);
-      return { success: false, error: error.message };
-    }
+    return this.postComment(content);
   }
 
   /**
@@ -2088,11 +2063,13 @@ class KaspaService {
   }
 
   /**
-   * Verify Q&A content from an on-chain transaction
+   * Verify broadcast content from an on-chain transaction
    * Uses RPC for true on-chain verification with payload data
-   * Supports both legacy KU Protocol and new Kasia Protocol formats
+   * 
+   * Returns the plain text content from a Kasia broadcast (1:bcast:{content})
+   * Also supports legacy KU Protocol Q&A formats for old transactions
    */
-  async verifyQAContent(txHash: string): Promise<QAQuestionBroadcast | QAAnswerBroadcast | null> {
+  async verifyBroadcastContent(txHash: string): Promise<string | null> {
     try {
       let payloadHex: string | null = null;
 
@@ -2107,7 +2084,7 @@ class KaspaService {
             payloadHex = rpcResult.transactions[0].payload;
           }
         } catch (rpcError: any) {
-          console.log(`[Kaspa] RPC Q&A verification failed: ${rpcError.message}`);
+          console.log(`[Kaspa] RPC broadcast verification failed: ${rpcError.message}`);
         }
       }
 
@@ -2123,48 +2100,40 @@ class KaspaService {
         return null;
       }
 
-      // Try parsing as Kasia Protocol first (new format)
-      if (isKasiaTransaction(payloadHex)) {
+      // Try parsing as Kasia broadcast (plain text format)
+      if (isKasiaBroadcast(payloadHex)) {
         const kasiaParsed = parseKasiaBroadcast(payloadHex);
-        if (kasiaParsed?.kuBroadcast) {
-          if (kasiaParsed.kuBroadcast.type === "qa_q" && kasiaParsed.kuBroadcast.question) {
-            return kasiaParsed.kuBroadcast.question;
-          } else if (kasiaParsed.kuBroadcast.type === "qa_a" && kasiaParsed.kuBroadcast.answer) {
-            return kasiaParsed.kuBroadcast.answer;
-          }
+        if (kasiaParsed) {
+          return kasiaParsed.content;
         }
       }
 
-      // Fallback to legacy KU Protocol for old transactions
+      // Fallback to legacy KU Protocol for old Q&A transactions
       if (isKUTransaction(payloadHex)) {
         const kuParsed = parseKUPayload(payloadHex);
         if (kuParsed) {
-          // Convert legacy format to new format for consistency
           if (kuParsed.type === "qa_q" && kuParsed.question) {
-            return {
-              lessonId: kuParsed.question.lessonId,
-              authorAddress: kuParsed.question.authorAddress,
-              timestamp: kuParsed.question.timestamp,
-              contentHash: kuParsed.question.contentHash,
-              content: kuParsed.question.content,
-            };
+            return kuParsed.question.content;
           } else if (kuParsed.type === "qa_a" && kuParsed.answer) {
-            return {
-              questionTxId: kuParsed.answer.questionTxId,
-              authorAddress: kuParsed.answer.authorAddress,
-              timestamp: kuParsed.answer.timestamp,
-              contentHash: kuParsed.answer.contentHash,
-              content: kuParsed.answer.content,
-            };
+            return kuParsed.answer.content;
           }
         }
       }
 
       return null;
     } catch (error: any) {
-      console.error("[Kaspa] Failed to verify Q&A content:", error.message);
+      console.error("[Kaspa] Failed to verify broadcast content:", error.message);
       return null;
     }
+  }
+
+  /**
+   * @deprecated Use verifyBroadcastContent instead
+   * Kept for backwards compatibility - returns content only
+   */
+  async verifyQAContent(txHash: string): Promise<{ content: string } | null> {
+    const content = await this.verifyBroadcastContent(txHash);
+    return content ? { content } : null;
   }
 }
 

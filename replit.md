@@ -30,8 +30,8 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
 - **KRC-721 NFT Certificates**: Implements non-custodial minting flow, adhering to KRC-721 standard, using IPFS for metadata.
 - **On-Chain Protocols**:
-    - **Kasia Protocol**: Used for Q&A discussions and comments. Format: `1:bcast:ku_qa:1:{type}:{data}`. This enables ecosystem compatibility with Kasia indexers (https://github.com/K-Kluster/Kasia) and cross-platform discovery. Implementation: `server/kasia-protocol.ts`.
-    - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`. Note: Q&A types (qa_q, qa_a) are deprecated in favor of Kasia Protocol.
+    - **Kasia Protocol**: Used for Q&A discussions and comments. Format: `1:bcast:{plain text content}`. This enables ecosystem compatibility with Kasia indexers (https://github.com/K-Kluster/Kasia) and cross-platform discovery. Metadata (lesson ID, author) is stored server-side. Implementation: `server/kasia-protocol.ts`.
+    - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.
 - **Security**:
     - **Wallet Authentication**: Challenge-response with cryptographic signature verification using Kaspa WASM. Uses PublicKey.toAddress() to verify public key ownership and verifyMessage() for ECDSA signature validation. KasWare returns base64-encoded ECDSA signatures which are decoded to raw hex (128 chars, no 0x prefix) for WASM verification.
     - **IP Session Binding**: Sessions track original login IP with optional strict enforcement via `STRICT_IP_BINDING=true` env var (default: permissive for mobile compatibility).
