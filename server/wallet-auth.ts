@@ -20,7 +20,7 @@
  * Uses Kaspa WASM module for address derivation.
  */
 
-import crypto from "crypto";
+import crypto, { createHash } from "crypto";
 
 // Lazy-loaded kaspa module for signature verification
 let kaspaModule: any = null;
@@ -53,6 +53,41 @@ async function loadKaspaModule(): Promise<any> {
   } catch (error: any) {
     console.error("[Auth] Failed to load Kaspa WASM:", error.message);
     return null;
+  }
+}
+
+/**
+ * Verify signature using secp256k1 with SHA-256 hash
+ * This is a fallback method that was working before WASM changes
+ */
+async function verifyWithSecp256k1(
+  message: string,
+  signatureHex: string,
+  publicKeyHex: string
+): Promise<boolean> {
+  try {
+    const secp256k1 = await import("secp256k1");
+    const secp = secp256k1.default || secp256k1;
+    
+    const messageHash = createHash("sha256").update(message).digest();
+    const signature = Buffer.from(signatureHex, "hex");
+    const publicKey = Buffer.from(publicKeyHex, "hex");
+    
+    // Try with 64-byte signature
+    if (signature.length === 64) {
+      return secp.ecdsaVerify(signature, messageHash, publicKey);
+    }
+    
+    // Try with 65-byte signature (strip recovery byte)
+    if (signature.length === 65) {
+      const sig = signature.slice(1); // Remove first byte (recovery)
+      return secp.ecdsaVerify(sig, messageHash, publicKey);
+    }
+    
+    return false;
+  } catch (error: any) {
+    console.error("[Auth] secp256k1 verification error:", error.message);
+    return false;
   }
 }
 
@@ -294,17 +329,48 @@ export async function verifySignature(
           // Ignore fallback error
         }
         
+        // If WASM verification fails, try secp256k1 with SHA-256 hash (old working method)
         if (!signatureValid) {
-          console.warn("[Auth] WASM verifyMessage returned false - signature mismatch");
+          console.log("[Auth] WASM failed, trying secp256k1 with SHA-256 hash...");
+          signatureValid = await verifyWithSecp256k1(verificationMessage, signatureHex, normalizedPubKey);
+          
+          if (signatureValid) {
+            console.log("[Auth] secp256k1 verification succeeded");
+          } else {
+            // Try with full signature too
+            const fullSigHex = Buffer.from(signatureBase64, "base64").toString("hex");
+            signatureValid = await verifyWithSecp256k1(verificationMessage, fullSigHex, normalizedPubKey);
+            
+            if (signatureValid) {
+              console.log("[Auth] secp256k1 verification succeeded with full signature");
+            }
+          }
+        }
+        
+        if (!signatureValid) {
+          console.warn("[Auth] All verification methods failed - signature mismatch");
           console.warn(`[Auth]   Message preview: ${verificationMessage.slice(0, 100)}...`);
         }
       }
     } catch (verifyError: any) {
       console.error(`[Auth] WASM verifyMessage error: ${verifyError.message}`);
-      console.error(`[Auth]   Stack: ${verifyError.stack?.slice(0, 200)}`);
-      console.log(`[Auth]   Full signature hex: ${signatureHex}`);
-      console.log(`[Auth]   Message preview: ${verificationMessage.slice(0, 100)}...`);
-      console.log(`[Auth]   Full pubkey: ${normalizedPubKey}`);
+      
+      // Fallback to secp256k1 if WASM throws
+      console.log("[Auth] WASM error, falling back to secp256k1...");
+      signatureValid = await verifyWithSecp256k1(verificationMessage, signatureHex, normalizedPubKey);
+      
+      if (!signatureValid) {
+        const fullSigHex = Buffer.from(signatureBase64, "base64").toString("hex");
+        signatureValid = await verifyWithSecp256k1(verificationMessage, fullSigHex, normalizedPubKey);
+      }
+      
+      if (signatureValid) {
+        console.log("[Auth] secp256k1 fallback succeeded");
+      } else {
+        console.log(`[Auth]   Full signature hex: ${signatureHex}`);
+        console.log(`[Auth]   Message preview: ${verificationMessage.slice(0, 100)}...`);
+        console.log(`[Auth]   Full pubkey: ${normalizedPubKey}`);
+      }
     }
     
     if (!signatureValid) {
