@@ -22,16 +22,20 @@ import bs58check from "bs58check";
 import { bech32 } from "bech32";
 import {
   createQuizPayload,
-  createQAQuestionPayload,
-  createQAAnswerPayload,
   parseKUPayload,
   isKUTransaction,
   hexToString,
   stringToHex,
   type QuizPayload,
-  type QAQuestionPayload,
-  type QAAnswerPayload,
 } from "./ku-protocol.js";
+import {
+  createQAQuestionBroadcast,
+  createQAAnswerBroadcast,
+  parseKasiaBroadcast,
+  isKasiaTransaction,
+  type QAQuestionBroadcast,
+  type QAAnswerBroadcast,
+} from "./kasia-protocol.js";
 import { getUTXOManager, type UTXO } from "./utxo-manager.js";
 
 // K-Kluster Fix #1: Load W3C-compatible WebSocket shim BEFORE importing kaspa
@@ -1699,15 +1703,16 @@ class KaspaService {
   ): Promise<TransactionResult> {
     const timestamp = Date.now();
     
-    // Create the on-chain payload
-    const payload = createQAQuestionPayload({
+    // Create the on-chain payload using Kasia Protocol (bcast format)
+    // This enables ecosystem compatibility with Kasia indexers
+    const payload = createQAQuestionBroadcast({
       lessonId,
       authorAddress,
       timestamp,
       content,
     });
 
-    console.log(`[Kaspa] Posting Q&A question for lesson ${lessonId}`);
+    console.log(`[Kaspa] Posting Q&A question for lesson ${lessonId} (Kasia Protocol)`);
     console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
 
     if (!this.isLive()) {
@@ -1729,7 +1734,7 @@ class KaspaService {
   }
 
   /**
-   * Post a Q&A answer on-chain
+   * Post a Q&A answer on-chain using Kasia Protocol
    */
   async postQAAnswer(
     questionTxId: string,
@@ -1738,14 +1743,16 @@ class KaspaService {
   ): Promise<TransactionResult> {
     const timestamp = Date.now();
     
-    const payload = createQAAnswerPayload({
+    // Create the on-chain payload using Kasia Protocol (bcast format)
+    // This enables ecosystem compatibility with Kasia indexers
+    const payload = createQAAnswerBroadcast({
       questionTxId,
       authorAddress,
       timestamp,
       content,
     });
 
-    console.log(`[Kaspa] Posting Q&A answer for question ${questionTxId}`);
+    console.log(`[Kaspa] Posting Q&A answer for question ${questionTxId} (Kasia Protocol)`);
     console.log(`[Kaspa] Payload size: ${payload.length / 2} bytes`);
 
     if (!this.isLive()) {
@@ -2083,8 +2090,9 @@ class KaspaService {
   /**
    * Verify Q&A content from an on-chain transaction
    * Uses RPC for true on-chain verification with payload data
+   * Supports both legacy KU Protocol and new Kasia Protocol formats
    */
-  async verifyQAContent(txHash: string): Promise<QAQuestionPayload | QAAnswerPayload | null> {
+  async verifyQAContent(txHash: string): Promise<QAQuestionBroadcast | QAAnswerBroadcast | null> {
     try {
       let payloadHex: string | null = null;
 
@@ -2115,15 +2123,41 @@ class KaspaService {
         return null;
       }
 
-      const parsed = parseKUPayload(payloadHex);
-      if (!parsed) {
-        return null;
+      // Try parsing as Kasia Protocol first (new format)
+      if (isKasiaTransaction(payloadHex)) {
+        const kasiaParsed = parseKasiaBroadcast(payloadHex);
+        if (kasiaParsed?.kuBroadcast) {
+          if (kasiaParsed.kuBroadcast.type === "qa_q" && kasiaParsed.kuBroadcast.question) {
+            return kasiaParsed.kuBroadcast.question;
+          } else if (kasiaParsed.kuBroadcast.type === "qa_a" && kasiaParsed.kuBroadcast.answer) {
+            return kasiaParsed.kuBroadcast.answer;
+          }
+        }
       }
 
-      if (parsed.type === "qa_q") {
-        return parsed.question || null;
-      } else if (parsed.type === "qa_a") {
-        return parsed.answer || null;
+      // Fallback to legacy KU Protocol for old transactions
+      if (isKUTransaction(payloadHex)) {
+        const kuParsed = parseKUPayload(payloadHex);
+        if (kuParsed) {
+          // Convert legacy format to new format for consistency
+          if (kuParsed.type === "qa_q" && kuParsed.question) {
+            return {
+              lessonId: kuParsed.question.lessonId,
+              authorAddress: kuParsed.question.authorAddress,
+              timestamp: kuParsed.question.timestamp,
+              contentHash: kuParsed.question.contentHash,
+              content: kuParsed.question.content,
+            };
+          } else if (kuParsed.type === "qa_a" && kuParsed.answer) {
+            return {
+              questionTxId: kuParsed.answer.questionTxId,
+              authorAddress: kuParsed.answer.authorAddress,
+              timestamp: kuParsed.answer.timestamp,
+              contentHash: kuParsed.answer.contentHash,
+              content: kuParsed.answer.content,
+            };
+          }
+        }
       }
 
       return null;

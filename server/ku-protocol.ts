@@ -1,15 +1,18 @@
 /**
  * Kaspa University On-Chain Protocol
  * 
- * Inspired by Kasia (K-Kluster) messaging protocol.
- * Stores verifiable educational achievements and Q&A on Kaspa blockchain.
- * 
  * Protocol format: ku:{version}:{type}:{data}
  * 
- * Types:
- * - quiz: Verifiable quiz completion proof
- * - qa_q: Q&A question
- * - qa_a: Q&A answer
+ * Active Types:
+ * - quiz: Verifiable quiz completion proof (KU-specific, used for reward verification)
+ * 
+ * DEPRECATED Types (use Kasia Protocol instead - see kasia-protocol.ts):
+ * - qa_q: Q&A question - NOW USE Kasia bcast format for ecosystem compatibility
+ * - qa_a: Q&A answer - NOW USE Kasia bcast format for ecosystem compatibility
+ * 
+ * The Q&A parsing functions are kept for backwards compatibility with legacy
+ * transactions, but all new Q&A posts should use the Kasia Protocol (1:bcast:...)
+ * which enables discovery by Kasia indexers and cross-platform compatibility.
  * 
  * All payloads are hex-encoded for transaction embedding.
  */
@@ -295,13 +298,16 @@ export function createQuizPayload(data: Omit<QuizPayload, "contentHash">, answer
 }
 
 /**
+ * @deprecated Use createQAQuestionBroadcast from kasia-protocol.ts instead.
+ * Kept for backwards compatibility with legacy transactions.
+ * 
  * Create Q&A question payload for on-chain storage
  */
 export function createQAQuestionPayload(data: Omit<QAQuestionPayload, "contentHash">): string {
-  const contentHash = createContentHash(data.content);
-  
-  // Truncate content for on-chain storage (max ~2KB to stay within transaction limits)
+  // Truncate content FIRST, then hash the truncated version
+  // This ensures the hash matches what's actually stored on-chain
   const truncatedContent = data.content.slice(0, 500);
+  const contentHash = createContentHash(truncatedContent);
   
   // Format: ku:1:qa_q:{lessonId}:{authorAddress}:{timestamp}:{contentHash}:{content}
   // Note: header already includes trailing ":" so we join remaining fields with ":"
@@ -319,13 +325,16 @@ export function createQAQuestionPayload(data: Omit<QAQuestionPayload, "contentHa
 }
 
 /**
+ * @deprecated Use createQAAnswerBroadcast from kasia-protocol.ts instead.
+ * Kept for backwards compatibility with legacy transactions.
+ * 
  * Create Q&A answer payload for on-chain storage
  */
 export function createQAAnswerPayload(data: Omit<QAAnswerPayload, "contentHash">): string {
-  const contentHash = createContentHash(data.content);
-  
-  // Truncate content for on-chain storage
+  // Truncate content FIRST, then hash the truncated version
+  // This ensures the hash matches what's actually stored on-chain
   const truncatedContent = data.content.slice(0, 500);
+  const contentHash = createContentHash(truncatedContent);
   
   // Format: ku:1:qa_a:{questionTxId}:{authorAddress}:{timestamp}:{contentHash}:{content}
   // Note: header already includes trailing ":" so we join remaining fields with ":"
