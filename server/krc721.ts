@@ -16,7 +16,7 @@ import { createHash } from "crypto";
 import { storage } from "./storage";
 import * as bip39 from "bip39";
 import HDKey from "hdkey";
-import { getUTXOManager, type UTXO } from "./utxo-manager.js";
+import { getUTXOManager, resetUTXOManager, type UTXO } from "./utxo-manager.js";
 
 // WebSocket shim must be loaded before kaspa module
 import { createRequire } from "module";
@@ -68,6 +68,27 @@ const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
 const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee (above 10 KAS minimum)
 const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
 
+// Testnet mode - controlled by environment variable or runtime toggle
+// Set KRC721_TESTNET=true to use testnet-10 for testing before mainnet deployment
+let useTestnet = process.env.KRC721_TESTNET === "true";
+
+export function isTestnetMode(): boolean {
+  return useTestnet;
+}
+
+export function setTestnetMode(enabled: boolean): void {
+  useTestnet = enabled;
+  console.log(`[KRC721] Testnet mode ${enabled ? "ENABLED" : "DISABLED"}`);
+}
+
+function getNetworkId(): "mainnet" | "testnet-10" {
+  return useTestnet ? "testnet-10" : "mainnet";
+}
+
+function getAddressPrefix(): string {
+  return useTestnet ? "kaspatest:" : "kaspa:";
+}
+
 // Import the database-backed mint storage service
 import { mintStorage, PendingMintReservation } from "./mint-storage";
 
@@ -94,15 +115,18 @@ setInterval(async () => {
 }, 60 * 60 * 1000);
 
 // Default configuration for Kaspa University Certificates
-const DEFAULT_CONFIG: KRC721Config = {
-  network: "mainnet",
-  ticker: "KPROOF",
-  collectionName: "Kaspa Proof of Learning",
-  collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
-  maxSupply: 1000000, // 1 million certificates max
-  royaltyFee: 0, // No royalties on educational certificates
-  royaltyOwner: "",
-};
+// Network is determined dynamically based on testnet mode
+function getDefaultConfig(): KRC721Config {
+  return {
+    network: getNetworkId(),
+    ticker: useTestnet ? "KTEST" : "KPROOF", // Use different ticker for testnet
+    collectionName: "Kaspa Proof of Learning",
+    collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
+    maxSupply: 1000000, // 1 million certificates max
+    royaltyFee: 0, // No royalties on educational certificates
+    royaltyOwner: "",
+  };
+}
 
 class KRC721Service {
   private config: KRC721Config;
@@ -118,7 +142,73 @@ class KRC721Service {
   private _pendingMints: Map<string, { script: any; mintData: any; tokenId: number; certificateId: string; recipientAddress: string }> = new Map();
 
   constructor(config: Partial<KRC721Config> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...getDefaultConfig(), ...config };
+  }
+
+  /**
+   * Switch network between mainnet and testnet-10
+   * Requires reinitialization to reconnect RPC
+   */
+  async switchNetwork(testnet: boolean): Promise<boolean> {
+    if (useTestnet === testnet) {
+      console.log(`[KRC721] Already on ${testnet ? "testnet-10" : "mainnet"}`);
+      return true;
+    }
+
+    console.log(`[KRC721] Switching network from ${this.config.network} to ${testnet ? "testnet-10" : "mainnet"}...`);
+    
+    setTestnetMode(testnet);
+    this.config = { ...getDefaultConfig() };
+    
+    // Disconnect existing RPC
+    if (this.rpcClient) {
+      try {
+        await this.rpcClient.disconnect();
+      } catch (e) {}
+      this.rpcClient = null;
+    }
+    if (this.wasmRpcClient) {
+      try {
+        await this.wasmRpcClient.disconnect();
+      } catch (e) {}
+      this.wasmRpcClient = null;
+    }
+
+    // Reset UTXO manager singleton to clear mainnet/testnet cached UTXOs
+    resetUTXOManager();
+
+    // Clear in-memory pending mints (network-specific)
+    this._pendingMints.clear();
+    console.log(`[KRC721] Cleared pending mints cache`);
+
+    // Reinitialize with new network
+    this.initialized = false;
+    this.collectionDeployed = false;
+    
+    console.log(`[KRC721] Reinitializing for ${this.config.network}...`);
+    const success = await this.initialize();
+    
+    if (success) {
+      console.log(`[KRC721] Successfully switched to ${this.config.network}`);
+      console.log(`[KRC721] Ticker: ${this.config.ticker}`);
+      console.log(`[KRC721] Address: ${this.address}`);
+    }
+    
+    return success;
+  }
+
+  /**
+   * Get current network configuration
+   */
+  getNetworkInfo(): { network: string; ticker: string; testnet: boolean; indexerUrl: string } {
+    return {
+      network: this.config.network,
+      ticker: this.config.ticker,
+      testnet: useTestnet,
+      indexerUrl: useTestnet 
+        ? "https://testnet-10.krc721.stream" 
+        : "https://kaspa-krc721d.kaspa.com"
+    };
   }
 
   /**
@@ -302,13 +392,23 @@ class KRC721Service {
    */
   private async connectRpc(): Promise<void> {
     try {
-      console.log("[KRC721] Connecting to RPC via kaspa-rpc-client...");
+      const networkId = this.config.network;
+      console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
       
       // Use kaspa-rpc-client (pure TypeScript) for UTXO queries
       const { ClientWrapper } = require("kaspa-rpc-client");
       
+      // Select appropriate seeder based on network
+      // Mainnet: seeder2.kaspad.net:16110
+      // Testnet-10: seeder1-testnet.kaspad.net:16210 (port 16210 for testnet-10)
+      const hosts = networkId === "testnet-10" 
+        ? ["seeder1-testnet.kaspad.net:16210"] 
+        : ["seeder2.kaspad.net:16110"];
+      
+      console.log(`[KRC721] Using RPC hosts: ${hosts.join(", ")}`);
+      
       const wrapper = new ClientWrapper({
-        hosts: ["seeder2.kaspad.net:16110"],
+        hosts,
         verbose: false,
       });
       
@@ -317,7 +417,7 @@ class KRC721Service {
       
       // Get block count to verify connection
       const info = await this.rpcClient.getBlockDagInfo();
-      console.log(`[KRC721] RPC connected! Block count: ${info?.blockCount || "unknown"}`);
+      console.log(`[KRC721] RPC connected to ${networkId}! Block count: ${info?.blockCount || "unknown"}`);
       
       // Also connect WASM RpcClient for PendingTransaction.submit()
       // WASM SDK's PendingTransaction.submit() requires WASM RpcClient, not kaspa-rpc-client
@@ -516,25 +616,45 @@ class KRC721Service {
   }
 
   /**
-   * Validate a Kaspa address format for mainnet
+   * Validate a Kaspa address format based on current network mode
    */
   private validateAddress(address: string): { valid: boolean; error?: string } {
     if (!address || typeof address !== "string") {
       return { valid: false, error: "Address is required" };
     }
     const normalized = address.toLowerCase().trim();
-    if (!normalized.startsWith("kaspa:")) {
-      if (normalized.startsWith("kaspatest:") || normalized.startsWith("kaspasim:")) {
-        return { valid: false, error: "Testnet/simnet addresses not allowed on mainnet" };
+    const expectedPrefix = getAddressPrefix();
+    
+    if (useTestnet) {
+      // Testnet mode - accept kaspatest: addresses
+      if (!normalized.startsWith("kaspatest:")) {
+        if (normalized.startsWith("kaspa:")) {
+          return { valid: false, error: "Mainnet addresses not allowed in testnet mode" };
+        }
+        return { valid: false, error: "Invalid Kaspa testnet address prefix" };
       }
-      return { valid: false, error: "Invalid Kaspa address prefix" };
-    }
-    const dataPart = normalized.slice(6);
-    if (dataPart.length < 32 || dataPart.length > 100) {
-      return { valid: false, error: "Invalid address length" };
-    }
-    if (!dataPart.startsWith("q") && !dataPart.startsWith("p")) {
-      return { valid: false, error: "Invalid address type" };
+      const dataPart = normalized.slice(10); // "kaspatest:" is 10 chars
+      if (dataPart.length < 32 || dataPart.length > 100) {
+        return { valid: false, error: "Invalid address length" };
+      }
+      if (!dataPart.startsWith("q") && !dataPart.startsWith("p")) {
+        return { valid: false, error: "Invalid address type" };
+      }
+    } else {
+      // Mainnet mode - accept kaspa: addresses
+      if (!normalized.startsWith("kaspa:")) {
+        if (normalized.startsWith("kaspatest:") || normalized.startsWith("kaspasim:")) {
+          return { valid: false, error: "Testnet/simnet addresses not allowed on mainnet" };
+        }
+        return { valid: false, error: "Invalid Kaspa address prefix" };
+      }
+      const dataPart = normalized.slice(6); // "kaspa:" is 6 chars
+      if (dataPart.length < 32 || dataPart.length > 100) {
+        return { valid: false, error: "Invalid address length" };
+      }
+      if (!dataPart.startsWith("q") && !dataPart.startsWith("p")) {
+        return { valid: false, error: "Invalid address type" };
+      }
     }
     return { valid: true };
   }

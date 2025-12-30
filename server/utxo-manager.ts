@@ -246,4 +246,11 @@ export function getUTXOManager(): UTXOManager {
   return utxoManagerInstance;
 }
 
+export function resetUTXOManager(): void {
+  if (utxoManagerInstance) {
+    console.log("[UTXOManager] Resetting singleton instance for network switch");
+    utxoManagerInstance = null;
+  }
+}
+
 export { UTXOManager, UTXO, ReservedUTXO, TransactionStatus };

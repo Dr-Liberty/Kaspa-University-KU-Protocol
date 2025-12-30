@@ -14,7 +14,7 @@ import {
   TX_STATUS,
   TX_FLAGS,
 } from "./ku-protocol.js";
-import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation } from "./krc721";
+import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation, isTestnetMode, setTestnetMode } from "./krc721";
 import { getPinataService, type QuizProof } from "./pinata";
 import { createContentHash } from "./ku-protocol.js";
 import { getAntiSybilService } from "./anti-sybil";
@@ -2743,6 +2743,56 @@ export async function registerRoutes(
       const collectionInfo = await krc721Service.getCollectionInfo();
       res.json(collectionInfo);
     } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Get current network mode (testnet/mainnet)
+  app.get("/api/admin/network-mode", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const krc721Service = await getKRC721Service();
+      const networkInfo = krc721Service.getNetworkInfo();
+      res.json({
+        ...networkInfo,
+        message: networkInfo.testnet 
+          ? "Running on TESTNET-10 - safe for testing NFT deployments"
+          : "Running on MAINNET - real KAS will be used"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Switch network between testnet and mainnet
+  app.post("/api/admin/switch-network", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { testnet } = req.body;
+      
+      if (typeof testnet !== "boolean") {
+        return res.status(400).json({ 
+          error: "Invalid request. Provide { testnet: true } for testnet or { testnet: false } for mainnet" 
+        });
+      }
+
+      const krc721Service = await getKRC721Service();
+      const success = await krc721Service.switchNetwork(testnet);
+      
+      if (success) {
+        const networkInfo = krc721Service.getNetworkInfo();
+        res.json({
+          success: true,
+          message: testnet 
+            ? "Switched to TESTNET-10 - You can now safely test NFT deployments without spending real KAS"
+            : "Switched to MAINNET - Real KAS will be used for all transactions",
+          ...networkInfo
+        });
+      } else {
+        res.status(500).json({ 
+          error: "Failed to switch network. Check server logs for details." 
+        });
+      }
+    } catch (error: any) {
+      console.error("[Admin] Switch network error:", error.message);
       res.status(500).json({ error: sanitizeError(error) });
     }
   });
