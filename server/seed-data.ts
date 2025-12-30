@@ -589,12 +589,12 @@ Allowing blocks to have multiple parents creates new relationships within the DA
       {
         id: "lesson-3-4",
         courseId: "dag-and-kaspa",
-        title: "Bitcoin and Kaspa: Both are DAGs",
+        title: "Kaspa's BlockDAG vs Bitcoin's Chain",
         order: 4,
         duration: "10 min",
-        content: `<p>Here is a surprising fact: Bitcoin is a DAG! Even though it is always referred to as a BlockChain, Bitcoin uses the DAG structure. Blocks as vertices, and their relationships as edges. Each block is connected in only one direction and following each connection, you will never make a cycle - you always end up back at Genesis.</p>
-<p>Kaspa is also a DAG, using the same fundamental structure. Blocks as vertices, and their relationships as edges. Each block is connected in only one direction and following each connection, you will never make a cycle, and always end up back at Genesis.</p>
-<p>So what is the difference if both Bitcoin and Kaspa use a DAG? The answer is simple but profound: Bitcoin allows blocks to point to only ONE previous block. Kaspa allows blocks to point to MULTIPLE previous blocks. That is the only structural difference - but it changes everything about performance and scalability.</p>`,
+        content: `<p>Bitcoin uses a traditional blockchain structure - a linear chain where each block points to exactly ONE previous block. This creates a simple sequence, but also a bottleneck: when two miners find blocks at the same time, only one can be accepted and the other becomes an orphan.</p>
+<p>Kaspa uses a BlockDAG (Block Directed Acyclic Graph) - a structure where blocks can point to MULTIPLE previous blocks. This is the fundamental innovation. Blocks as vertices, their references as directed edges, and following any path always leads back to Genesis without cycles.</p>
+<p>The key difference: Bitcoin's chain forces a single winner per round. Kaspa's DAG includes ALL valid blocks, even those created simultaneously. This removes the artificial bottleneck and enables much higher throughput while maintaining security.</p>`,
       },
       {
         id: "lesson-3-5",
@@ -1755,7 +1755,7 @@ Kaspa can increase blocks per second by:
       { id: "q-3-1-1", lessonId: "lesson-3-1", question: "What are the two main components of a graph?", options: ["Blocks and chains", "Vertices (nodes) and edges (connections)", "Inputs and outputs", "Headers and bodies"], correctIndex: 1, explanation: "Graphs consist of vertices (nodes/points) connected by edges (arcs/links/lines)." },
       { id: "q-3-2-1", lessonId: "lesson-3-2", question: "What makes a graph 'directed'?", options: ["It moves in one direction only", "Each edge points from one vertex to another with direction", "It has no cycles", "It is sorted alphabetically"], correctIndex: 1, explanation: "In a directed graph, each edge has a specific direction - from one vertex to another, not bidirectional." },
       { id: "q-3-3-1", lessonId: "lesson-3-3", question: "What makes a DAG 'acyclic'?", options: ["It has no edges", "Following directed edges never returns you to the start", "It moves in circles", "It has only one path"], correctIndex: 1, explanation: "Acyclic means no cycles - you can never return to where you started by following directed edges." },
-      { id: "q-3-4-1", lessonId: "lesson-3-4", question: "What is the key structural difference between Bitcoin and Kaspa?", options: ["Different hash algorithms", "Kaspa allows blocks to point to MULTIPLE previous blocks", "Different block sizes", "Different programming languages"], correctIndex: 1, explanation: "Both are DAGs, but Bitcoin allows blocks to point to only ONE parent, while Kaspa allows MULTIPLE parents." },
+      { id: "q-3-4-1", lessonId: "lesson-3-4", question: "What is the key structural difference between Bitcoin and Kaspa?", options: ["Different hash algorithms", "Kaspa allows blocks to point to MULTIPLE previous blocks", "Different block sizes", "Different programming languages"], correctIndex: 1, explanation: "Bitcoin's chain allows blocks to point to only ONE parent, while Kaspa's BlockDAG allows MULTIPLE parents - enabling parallel block inclusion." },
       { id: "q-3-5-1", lessonId: "lesson-3-5", question: "Where do all paths in Kaspa's BlockDAG eventually lead?", options: ["To the latest block", "To any random block", "Back to the Genesis block", "To a loop"], correctIndex: 2, explanation: "In Kaspa's acyclic DAG, following connections always leads back to Genesis - never in a cycle." },
 
       // Course 4: Foundational Concepts - 5 lessons
