@@ -128,9 +128,12 @@ class KRC721Service {
     try {
       // Get treasury private key from environment
       const privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
+      const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
       
-      if (!privateKeyHex) {
-        console.log("[KRC721] No private key configured - running in demo mode");
+      const keyInput = privateKeyHex || mnemonic;
+      
+      if (!keyInput) {
+        console.log("[KRC721] No private key or mnemonic configured - running in demo mode");
         this.initialized = true;
         return true;
       }
@@ -142,8 +145,8 @@ class KRC721Service {
         this.kaspaModule.initConsolePanicHook();
       }
 
-      // Derive keys from private key hex
-      await this.deriveKeys(privateKeyHex.trim());
+      // Derive keys from private key hex or mnemonic
+      await this.deriveKeys(keyInput.trim());
 
       console.log(`[KRC721] Service initialized`);
       console.log(`[KRC721] Address: ${this.address}`);
