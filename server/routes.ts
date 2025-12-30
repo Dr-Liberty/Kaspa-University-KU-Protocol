@@ -2559,6 +2559,14 @@ export async function registerRoutes(
       // Generate collection image and upload to IPFS
       const { getPinataService } = await import("./pinata");
       const pinataService = getPinataService();
+      
+      // CRITICAL: Pinata must be configured for IPFS upload - indexer requires ipfs:// URLs
+      if (!pinataService.isConfigured()) {
+        return res.status(503).json({ 
+          error: "Pinata IPFS not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY secrets before deploying." 
+        });
+      }
+      
       const collectionSvg = krc721Service.generateCertificateImageSvg(
         "kaspa:collection",
         "Kaspa University Certificate Collection",
@@ -2566,20 +2574,20 @@ export async function registerRoutes(
         new Date()
       );
       
-      let collectionImageUrl = "ipfs://placeholder";
+      // Upload collection image to IPFS (required by indexer)
+      const uploadResult = await pinataService.uploadImage(
+        collectionSvg,
+        `KPROOF-collection-${Date.now()}`
+      );
       
-      if (pinataService.isConfigured()) {
-        const uploadResult = await pinataService.uploadImage(
-          collectionSvg,
-          `KPROOF-collection-${Date.now()}`
-        );
-        if (uploadResult.success && uploadResult.ipfsUrl) {
-          collectionImageUrl = uploadResult.ipfsUrl;
-          console.log(`[Admin] Collection image uploaded: ${collectionImageUrl}`);
-        }
+      if (!uploadResult.success || !uploadResult.ipfsUrl) {
+        return res.status(500).json({ 
+          error: `Failed to upload collection image to IPFS: ${uploadResult.error || 'Unknown error'}` 
+        });
       }
-
-      console.log(`[Admin] Deploying collection with image: ${collectionImageUrl}`);
+      
+      const collectionImageUrl = uploadResult.ipfsUrl;
+      console.log(`[Admin] Collection image uploaded: ${collectionImageUrl}`);
       const result = await krc721Service.deployCollection(collectionImageUrl);
       
       if (result.success) {
