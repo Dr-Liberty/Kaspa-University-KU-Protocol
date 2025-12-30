@@ -79,11 +79,19 @@ function getIndexerUrl(): string {
 /**
  * Verify that a collection is indexed by the KRC-721 indexer
  * This confirms the deploy transaction was actually accepted
+ * 
+ * API endpoint: /api/v1/krc721/{network}/nfts/{tick}
+ * Reference: https://testnet-10.krc721.stream/docs
  */
 async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boolean; error?: string }> {
   try {
     const indexerUrl = getIndexerUrl();
-    const response = await fetch(`${indexerUrl}/api/collection/${ticker}`, {
+    const network = useTestnet ? "testnet-10" : "mainnet";
+    // Use correct API path per KSPR indexer docs
+    const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/nfts/${ticker}`;
+    console.log(`[KRC721] Verifying collection at: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(15000),
@@ -91,15 +99,16 @@ async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boole
     
     if (response.ok) {
       const data = await response.json();
-      // Check if the collection exists and has valid data
-      if (data && (data.ticker === ticker || data.name)) {
+      // Response format: { message: "success", result: { tick, buri, max, ... } }
+      if (data && data.message === "success" && data.result) {
         console.log(`[KRC721] Collection ${ticker} verified in indexer`);
         return { indexed: true };
       }
     }
     
-    if (response.status === 404) {
-      return { indexed: false, error: "Collection not found in indexer" };
+    if (response.status === 400 || response.status === 404) {
+      const errorData = await response.json().catch(() => ({}));
+      return { indexed: false, error: errorData.message || "Collection not found in indexer" };
     }
     
     return { indexed: false, error: `Indexer returned status ${response.status}` };
@@ -112,11 +121,19 @@ async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boole
 /**
  * Verify that a token is indexed by the KRC-721 indexer
  * This confirms the mint transaction was actually accepted
+ * 
+ * API endpoint: /api/v1/krc721/{network}/nfts/{tick}/{id}
+ * Reference: https://testnet-10.krc721.stream/docs
  */
 async function verifyTokenIndexed(ticker: string, tokenId: number): Promise<{ indexed: boolean; error?: string }> {
   try {
     const indexerUrl = getIndexerUrl();
-    const response = await fetch(`${indexerUrl}/api/token/${ticker}/${tokenId}`, {
+    const network = useTestnet ? "testnet-10" : "mainnet";
+    // Use correct API path per KSPR indexer docs
+    const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/nfts/${ticker}/${tokenId}`;
+    console.log(`[KRC721] Verifying token at: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(15000),
@@ -124,14 +141,16 @@ async function verifyTokenIndexed(ticker: string, tokenId: number): Promise<{ in
     
     if (response.ok) {
       const data = await response.json();
-      if (data && data.tokenId !== undefined) {
+      // Response format: { message: "success", result: { tick, tokenId, owner, buri } }
+      if (data && data.message === "success" && data.result) {
         console.log(`[KRC721] Token ${ticker}#${tokenId} verified in indexer`);
         return { indexed: true };
       }
     }
     
-    if (response.status === 404) {
-      return { indexed: false, error: "Token not found in indexer" };
+    if (response.status === 400 || response.status === 404) {
+      const errorData = await response.json().catch(() => ({}));
+      return { indexed: false, error: errorData.message || "Token not found in indexer" };
     }
     
     return { indexed: false, error: `Indexer returned status ${response.status}` };
@@ -727,25 +746,21 @@ class KRC721Service {
       }
       console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
-      // Create deployment data following KRC-721 spec (KSPR indexer format)
-      // Reference: https://mainnet.krc721.stream/docs
-      // Required fields: p, op, tick
-      // Optional fields: max, buri (base URI), metadata, royaltyTo, royaltyFee
+      // Create deployment data following EXACT KRC-721 spec from KSPR indexer docs
+      // Reference: https://testnet-10.krc721.stream/docs
+      // The opData in indexer shows: { buri, max, royaltyFee, daaMintStart, premint }
+      // Keep it minimal - only include required fields
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
         tick: this.config.ticker,
+        buri: imageUrl, // Base URI - MUST be ipfs:// prefix
         max: this.config.maxSupply.toString(),
-        buri: imageUrl, // Base URI for the collection (IPFS)
-        metadata: {
-          name: this.config.collectionName,
-          description: this.config.collectionDescription,
-          image: imageUrl,
-        },
       };
 
-      // Add royalty info if configured (use royaltyTo per spec, not royaltyOwner)
+      // Add royalty info if configured (use royaltyTo per spec)
       if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
+        // royaltyFee is in SOMPI (10^-8 KAS)
         deployData.royaltyFee = kaspaToSompi(this.config.royaltyFee.toString())?.toString();
         deployData.royaltyTo = this.config.royaltyOwner;
       }
