@@ -236,6 +236,83 @@ class PinataService {
   getIpfsUrl(hash: string): string {
     return `${this.gateway}/${hash}`;
   }
+
+  /**
+   * Upload a directory of files to IPFS
+   * Used for creating the token metadata folder structure
+   * 
+   * @param files - Map of filename to content (e.g., { "0": "{...json...}", "1": "{...json...}" })
+   * @param folderName - Name for the folder on Pinata
+   */
+  async uploadDirectory(files: Map<string, string>, folderName: string): Promise<UploadResult> {
+    if (!this.isConfigured()) {
+      console.log("[Pinata] Not configured - skipping directory upload");
+      return { success: false, error: "Pinata not configured" };
+    }
+
+    try {
+      const formData = new FormData();
+      
+      // Add each file with folder path prefix
+      const entries = Array.from(files.entries());
+      for (const entry of entries) {
+        const [fileName, content] = entry;
+        const blob = new Blob([content], { type: "application/json" });
+        // Pinata expects files in folder format: "folderName/fileName"
+        formData.append("file", blob, `${folderName}/${fileName}`);
+      }
+
+      const pinataMetadata = JSON.stringify({
+        name: folderName,
+        keyvalues: {
+          platform: "Kaspa University",
+          type: "nft-metadata-folder",
+        }
+      });
+      formData.append("pinataMetadata", pinataMetadata);
+
+      // Enable wrap with directory to preserve folder structure
+      const pinataOptions = JSON.stringify({
+        wrapWithDirectory: false, // Files already have folder prefix
+      });
+      formData.append("pinataOptions", pinataOptions);
+
+      const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+        method: "POST",
+        headers: {
+          "pinata_api_key": this.apiKey!,
+          "pinata_secret_api_key": this.secretKey!,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Pinata directory upload failed: ${errorText}`);
+      }
+
+      const result = await response.json();
+      const ipfsHash = result.IpfsHash;
+      const ipfsUrl = `ipfs://${ipfsHash}`;
+
+      console.log(`[Pinata] Directory uploaded with ${files.size} files: ${ipfsUrl}`);
+      return { success: true, ipfsHash, ipfsUrl };
+    } catch (error: any) {
+      console.error("[Pinata] Directory upload failed:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Upload a single token's metadata to IPFS (for building folder structure)
+   * Returns the IPFS hash for reference
+   */
+  async uploadTokenMetadata(
+    tokenId: number,
+    metadata: CertificateMetadata
+  ): Promise<UploadResult> {
+    return this.uploadMetadata(metadata, `kuproof-token-${tokenId}`);
+  }
 }
 
 // Singleton instance

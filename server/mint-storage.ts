@@ -330,6 +330,25 @@ class MintStorageService {
   }
 
   /**
+   * Get all finalized (successfully minted) reservations
+   * Used for rebuilding IPNS metadata folder on restart
+   */
+  async getFinalizedReservations(): Promise<PendingMintReservation[]> {
+    try {
+      const reservations = await db
+        .select()
+        .from(pendingMintReservations)
+        .where(eq(pendingMintReservations.status, "finalized"))
+        .orderBy(pendingMintReservations.tokenId);
+      
+      return reservations as PendingMintReservation[];
+    } catch (error: any) {
+      console.error("[MintStorage] Failed to get finalized reservations:", error.message);
+      return [];
+    }
+  }
+
+  /**
    * Clean up old finalized/failed reservations (keep for 7 days)
    */
   async cleanupOldReservations(): Promise<number> {
