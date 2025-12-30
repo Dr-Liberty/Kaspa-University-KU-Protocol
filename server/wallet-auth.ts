@@ -241,6 +241,13 @@ export async function verifySignature(
     let signatureValid = false;
     
     try {
+      // Log full debug info for troubleshooting
+      console.log(`[Auth] Attempting verification with:`);
+      console.log(`[Auth]   Message length: ${message.length} chars`);
+      console.log(`[Auth]   Signature hex length: ${signatureHex.length} chars (${signatureHex.length / 2} bytes)`);
+      console.log(`[Auth]   Public key: ${normalizedPubKey.slice(0, 16)}...${normalizedPubKey.slice(-8)}`);
+      console.log(`[Auth]   Signature (first 64): ${signatureHex.slice(0, 64)}...`);
+      
       // Use WASM verifyMessage - expects raw hex without 0x prefix
       signatureValid = kaspa.verifyMessage({
         message: message,
@@ -251,12 +258,15 @@ export async function verifySignature(
       if (signatureValid) {
         console.log("[Auth] WASM verifyMessage succeeded");
       } else {
-        console.warn("[Auth] WASM verifyMessage returned false");
+        console.warn("[Auth] WASM verifyMessage returned false - signature mismatch");
+        console.warn(`[Auth]   Full message: ${message}`);
       }
     } catch (verifyError: any) {
-      console.warn(`[Auth] WASM verifyMessage error: ${verifyError.message}`);
-      console.log(`[Auth] Signature (first 32 chars): ${signatureHex.slice(0, 32)}...`);
-      console.log(`[Auth] Message (first 50 chars): ${message.slice(0, 50)}...`);
+      console.error(`[Auth] WASM verifyMessage error: ${verifyError.message}`);
+      console.error(`[Auth]   Stack: ${verifyError.stack?.slice(0, 200)}`);
+      console.log(`[Auth]   Full signature hex: ${signatureHex}`);
+      console.log(`[Auth]   Full message: ${message}`);
+      console.log(`[Auth]   Full pubkey: ${normalizedPubKey}`);
     }
     
     if (!signatureValid) {
