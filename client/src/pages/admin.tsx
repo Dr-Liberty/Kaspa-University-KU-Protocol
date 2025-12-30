@@ -458,7 +458,7 @@ export default function AdminPage() {
                   ) : (
                     <Wallet className="w-4 h-4 mr-2" />
                   )}
-                  Deploy Collection (10 KAS)
+                  Deploy Collection (1,000 KAS)
                 </Button>
               )}
               {!collectionStatus.isDeployed && !collectionStatus.isLive && (
