@@ -606,6 +606,54 @@ class KRC721Service {
   }
 
   /**
+   * Save deploy P2SH address for recovery in case of failure
+   */
+  private async saveDeployP2SHAddress(p2shAddress: string): Promise<void> {
+    try {
+      const { db } = await import("./db");
+      const { appSettings } = await import("./db/schema");
+      
+      await db.insert(appSettings)
+        .values({
+          key: `krc721_deploy_p2sh_${this.config.ticker}`,
+          value: p2shAddress,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: appSettings.key,
+          set: { value: p2shAddress, updatedAt: new Date() },
+        });
+      
+      console.log(`[KRC721] Deploy P2SH address saved for recovery: ${p2shAddress}`);
+    } catch (error: any) {
+      console.error(`[KRC721] Could not save deploy P2SH address: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check treasury balance before attempting operations
+   */
+  private async checkTreasuryBalance(): Promise<{ balanceKas: number; balanceSompi: bigint }> {
+    if (!this.wasmRpcClient || !this.address) {
+      return { balanceKas: 0, balanceSompi: BigInt(0) };
+    }
+    
+    try {
+      const { entries } = await this.wasmRpcClient.getUtxosByAddresses([this.address]);
+      let totalSompi = BigInt(0);
+      for (const e of entries) {
+        const amt = e.utxoEntry?.amount ?? e.amount ?? BigInt(0);
+        totalSompi += BigInt(amt);
+      }
+      const balanceKas = Number(totalSompi) / 1e8;
+      return { balanceKas, balanceSompi: totalSompi };
+    } catch (error: any) {
+      console.error(`[KRC721] Balance check failed: ${error.message}`);
+      return { balanceKas: 0, balanceSompi: BigInt(0) };
+    }
+  }
+
+  /**
    * Runtime health check - verifies RPC is actually responsive before transactions
    */
   private async checkRpcHealth(): Promise<{ healthy: boolean; error?: string }> {
@@ -649,6 +697,9 @@ class KRC721Service {
    * 
    * This creates the NFT collection on-chain with metadata.
    * Should only be called once to initialize the collection.
+   * 
+   * SAFETY: If deploy fails after commit, funds can be recovered via admin P2SH recovery.
+   * The deploy P2SH address is logged and stored in app_settings for recovery.
    */
   async deployCollection(imageUrl: string): Promise<DeployResult> {
     if (!this.isLive()) {
@@ -664,6 +715,16 @@ class KRC721Service {
         createTransactions,
         kaspaToSompi,
       } = this.kaspaModule;
+
+      // PRE-FLIGHT CHECK: Verify sufficient balance before attempting deploy
+      const requiredKas = 1005; // 1000 KAS deploy + ~5 KAS for fees
+      const balanceCheck = await this.checkTreasuryBalance();
+      if (balanceCheck.balanceKas < requiredKas) {
+        const error = `Insufficient treasury balance. Need ${requiredKas} KAS, have ${balanceCheck.balanceKas.toFixed(2)} KAS. Fund the treasury first.`;
+        console.error(`[KRC721] ${error}`);
+        return { success: false, error };
+      }
+      console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
       // Create deployment data following KRC-721 spec
       const deployData: any = {
@@ -707,7 +768,12 @@ class KRC721Service {
         this.config.network
       )!;
 
-      console.log(`[KRC721] P2SH Address: ${P2SHAddress.toString()}`);
+      const p2shAddressStr = P2SHAddress.toString();
+      console.log(`[KRC721] Deploy P2SH Address: ${p2shAddressStr}`);
+      
+      // SAFETY: Store P2SH address for recovery in case of failure
+      await this.saveDeployP2SHAddress(p2shAddressStr);
+      console.log(`[KRC721] Deploy P2SH stored for recovery: ${p2shAddressStr}`);
 
       // Execute commit-reveal pattern with 1000 KAS deploy fee (required by indexer)
       const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_DEPLOY_FEE_KAS);
