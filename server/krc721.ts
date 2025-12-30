@@ -1528,12 +1528,14 @@ class KRC721Service {
 
       // Pass entries DIRECTLY to createTransactions without transformation
       // This matches the reference implementation from coinchimp/kaspa-krc721-apps
+      // CRITICAL: priorityFee MUST match commitAmountKas to burn the full inscription fee!
+      // The indexer verifies that the reveal tx burns >= 1000 KAS for deploy, 10 KAS for mint
       const { transactions: revealTxs } = await createTransactions({
         priorityEntries: [revealUTXOs.entries[0]],
         entries: newEntries,
         outputs: [],
         changeAddress: this.address!,
-        priorityFee: kaspaToSompi("1")!, // Higher fee for reveal to ensure processing
+        priorityFee: kaspaToSompi(commitAmountKas)!, // BURN the full inscription fee
         networkId: this.config.network,
       });
 
