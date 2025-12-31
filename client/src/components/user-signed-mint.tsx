@@ -40,14 +40,20 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
   const { data: existingReservation, isLoading: loadingExisting } = useQuery({
     queryKey: ["/api/nft/active-reservation", certificate.id],
     queryFn: async () => {
-      const res = await fetch(`/api/nft/active-reservation/${certificate.id}`);
+      if (!wallet?.address) return null;
+      const res = await fetch(`/api/nft/active-reservation/${certificate.id}`, {
+        headers: {
+          "x-wallet-address": wallet.address,
+        },
+      });
+      if (!res.ok) return null;
       const data = await res.json();
       if (data.hasReservation && !data.isExpired) {
         return data as ReservationData & { hasReservation: true; isExpired: false };
       }
       return null;
     },
-    enabled: certificate.nftStatus === "minting",
+    enabled: certificate.nftStatus === "minting" && !!wallet?.address,
     staleTime: 5000,
   });
 
@@ -221,6 +227,16 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
       confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: txHash });
     } catch (err: any) {
       console.error("[UserSignedMint] Resume signing failed:", err);
+      
+      try {
+        await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+        setReservation(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/nft/active-reservation", certificate.id], exact: true });
+        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      } catch (cancelErr) {
+        console.error("[UserSignedMint] Cancel on failure also failed:", cancelErr);
+      }
+      
       setError(err.message || "Failed to sign mint transaction");
       setStep("error");
     }
