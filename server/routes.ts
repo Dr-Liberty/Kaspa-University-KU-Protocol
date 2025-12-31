@@ -1923,6 +1923,81 @@ export async function registerRoutes(
     }
   });
 
+  // Get active reservation for a certificate
+  app.get("/api/nft/active-reservation/:certificateId", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { certificateId } = req.params;
+    
+    try {
+      const reservation = await storage.getActiveReservation(certificateId);
+      
+      if (!reservation) {
+        return res.json({ hasReservation: false });
+      }
+
+      if (reservation.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: "Not your reservation" });
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(reservation.expiresAt).getTime();
+      const isExpired = now.getTime() > expiresAt;
+
+      if (isExpired) {
+        return res.json({ hasReservation: true, isExpired: true });
+      }
+
+      const certificate = await storage.getCertificate(certificateId);
+      const courseName = certificate?.courseName || "Unknown Course";
+
+      return res.json({
+        hasReservation: true,
+        isExpired: false,
+        reservationId: reservation.id,
+        tokenId: reservation.tokenId,
+        inscriptionJson: reservation.inscriptionJson,
+        expiresAt: expiresAt,
+        courseId: reservation.courseId,
+        courseName: courseName,
+        status: reservation.status,
+      });
+    } catch (error: any) {
+      console.error("[ActiveReservation] Error:", error.message);
+      return res.status(500).json({ error: "Failed to get reservation" });
+    }
+  });
+
+  // Operational metrics endpoint for monitoring supply state
+  app.get("/api/nft/metrics", async (_req: Request, res: Response) => {
+    try {
+      const counters = await storage.getAllCourseCounters();
+      const metrics = await Promise.all(
+        counters.map(async (counter) => {
+          const recyclePoolDepth = await storage.getRecyclePoolDepth(counter.courseId);
+          const mintedCount = await storage.getMintedTokenCount(counter.courseId);
+          return {
+            courseId: counter.courseId,
+            courseIndex: counter.courseIndex,
+            counterOffset: counter.nextTokenOffset,
+            recyclePoolDepth,
+            mintedCount,
+            maxTokens: 1000,
+            isSoldOut: counter.nextTokenOffset >= 1000 && recyclePoolDepth === 0,
+            availableSupply: Math.max(0, 1000 - counter.nextTokenOffset) + recyclePoolDepth,
+          };
+        })
+      );
+      return res.json({ metrics, timestamp: new Date().toISOString() });
+    } catch (error: any) {
+      console.error("[NFTMetrics] Error:", error.message);
+      return res.status(500).json({ error: "Failed to get NFT metrics" });
+    }
+  });
+
   // Legacy claim endpoint (deprecated - use /mint instead)
   app.post("/api/certificates/:id/claim", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;

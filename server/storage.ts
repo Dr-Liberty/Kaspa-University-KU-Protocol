@@ -90,6 +90,10 @@ export interface IStorage {
   recycleTokenId(courseId: string, tokenId: number): Promise<void>; // Return tokenId to available pool
   cancelMintReservation(reservationId: string): Promise<{ success: boolean; reservation?: MintReservation }>; // Atomically cancel and recycle tokenId
   confirmMintReservation(reservationId: string, mintTxHash: string): Promise<{ success: boolean; reservation?: MintReservation; error?: string }>; // Atomically confirm mint and update certificate
+  
+  // Operational metrics
+  getRecyclePoolDepth(courseId: string): Promise<number>;
+  getAllCourseCounters(): Promise<CourseTokenCounter[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -627,6 +631,15 @@ export class MemStorage implements IStorage {
     }
     
     return { success: true, reservation: updatedReservation };
+  }
+
+  async getRecyclePoolDepth(courseId: string): Promise<number> {
+    const pool = this.availableTokenPool.get(courseId) || [];
+    return pool.length;
+  }
+
+  async getAllCourseCounters(): Promise<CourseTokenCounter[]> {
+    return Array.from(this.courseTokenCounters.values());
   }
 }
 

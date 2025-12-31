@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/lib/wallet-context";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Sparkles, CheckCircle2, AlertCircle, Clock, Wallet } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, AlertCircle, Clock, Wallet, XCircle } from "lucide-react";
 import type { Certificate } from "@shared/schema";
 
 interface UserSignedMintProps {
@@ -36,6 +36,33 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
   const [error, setError] = useState<string | null>(null);
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [expiryCountdown, setExpiryCountdown] = useState<number>(0);
+
+  const { data: existingReservation, isLoading: loadingExisting } = useQuery({
+    queryKey: ["/api/nft/active-reservation", certificate.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/nft/active-reservation/${certificate.id}`);
+      const data = await res.json();
+      if (data.hasReservation && !data.isExpired) {
+        return data as ReservationData & { hasReservation: true; isExpired: false };
+      }
+      return null;
+    },
+    enabled: certificate.nftStatus === "minting",
+    staleTime: 5000,
+  });
+
+  useEffect(() => {
+    if (existingReservation && step === "idle" && !loadingExisting) {
+      setReservation({
+        reservationId: existingReservation.reservationId,
+        tokenId: existingReservation.tokenId,
+        inscriptionJson: existingReservation.inscriptionJson,
+        expiresAt: existingReservation.expiresAt,
+        courseId: existingReservation.courseId,
+        courseName: existingReservation.courseName,
+      });
+    }
+  }, [existingReservation, step, loadingExisting]);
 
   useEffect(() => {
     if (!reservation?.expiresAt) return;
@@ -135,8 +162,68 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
+      const response = await apiRequest("POST", `/api/nft/cancel/${reservationId}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to cancel reservation");
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      setStep("idle");
+      setReservation(null);
+      setError(null);
+      
+      toast({
+        title: "Reservation Cancelled",
+        description: "You can try minting again when ready.",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/nft/active-reservation", certificate.id] });
+    },
+    onError: (err: any) => {
+      console.error("[UserSignedMint] Cancel failed:", err);
+      toast({
+        title: "Cancel Failed",
+        description: err.message || "Failed to cancel reservation",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStartMint = () => {
     reserveMutation.mutate();
+  };
+
+  const handleCancel = () => {
+    if (reservation?.reservationId) {
+      cancelMutation.mutate(reservation.reservationId);
+    }
+  };
+
+  const handleResumeSigning = async () => {
+    if (!reservation) return;
+    
+    setStep("signing");
+    
+    try {
+      await apiRequest("POST", `/api/nft/signing/${reservation.reservationId}`);
+      
+      const txHash = await signKRC721Mint(reservation.inscriptionJson);
+      setMintTxHash(txHash);
+      
+      setStep("confirming");
+      confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: txHash });
+    } catch (err: any) {
+      console.error("[UserSignedMint] Resume signing failed:", err);
+      setError(err.message || "Failed to sign mint transaction");
+      setStep("error");
+    }
   };
 
   const handleRetry = () => {
@@ -200,7 +287,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {step === "idle" && (
+        {step === "idle" && !loadingExisting && (
           <div className="space-y-4">
             <div className="rounded-lg bg-muted/50 p-4 space-y-2">
               <div className="flex items-center justify-between">
@@ -215,31 +302,74 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
                 <span className="text-sm text-muted-foreground">Mint Fee</span>
                 <span className="text-sm font-medium text-primary">~10 KAS</span>
               </div>
+              {reservation && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Reserved Token</span>
+                  <Badge variant="outline">#{reservation.tokenId}</Badge>
+                </div>
+              )}
             </div>
             
             <p className="text-xs text-muted-foreground">
-              You will sign the mint transaction directly with your wallet. 
-              The NFT will be minted to your address and you will appear as the minter on-chain.
+              {reservation 
+                ? "You have an active reservation. Click below to continue signing the mint transaction."
+                : "You will sign the mint transaction directly with your wallet. The NFT will be minted to your address and you will appear as the minter on-chain."}
             </p>
 
-            <Button 
-              onClick={handleStartMint}
-              disabled={reserveMutation.isPending}
-              className="w-full"
-              data-testid="button-start-user-signed-mint"
-            >
-              {reserveMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Preparing...
-                </>
-              ) : (
-                <>
+            {reservation ? (
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleResumeSigning}
+                  className="w-full"
+                  data-testid="button-resume-user-signed-mint"
+                >
                   <Wallet className="mr-2 h-4 w-4" />
-                  Mint Certificate NFT
-                </>
-              )}
-            </Button>
+                  Continue Signing
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={cancelMutation.isPending}
+                  className="w-full"
+                  data-testid="button-cancel-reservation"
+                >
+                  {cancelMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Cancel Reservation"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                onClick={handleStartMint}
+                disabled={reserveMutation.isPending}
+                className="w-full"
+                data-testid="button-start-user-signed-mint"
+              >
+                {reserveMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Mint Certificate NFT
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        )}
+        
+        {step === "idle" && loadingExisting && (
+          <div className="flex flex-col items-center gap-4 py-6">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Checking for existing reservation...</p>
           </div>
         )}
 
@@ -266,6 +396,26 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
               <Clock className="h-4 w-4" />
               <span>Reservation expires in {formatTime(expiryCountdown)}</span>
             </div>
+
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={cancelMutation.isPending}
+              className="w-full"
+              data-testid="button-cancel-mint"
+            >
+              {cancelMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                <>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Cancel Minting
+                </>
+              )}
+            </Button>
           </div>
         )}
 

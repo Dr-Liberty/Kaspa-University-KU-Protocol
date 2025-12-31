@@ -809,4 +809,25 @@ export class DbStorage implements IStorage {
       return { success: true, reservation: updatedReservation };
     });
   }
+
+  async getRecyclePoolDepth(courseId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(schema.availableTokenPool)
+      .where(eq(schema.availableTokenPool.courseId, courseId));
+    return Number(result[0]?.count || 0);
+  }
+
+  async getAllCourseCounters(): Promise<CourseTokenCounter[]> {
+    const result = await db.select()
+      .from(schema.courseTokenCounters)
+      .orderBy(schema.courseTokenCounters.courseIndex);
+    
+    return result.map(row => ({
+      courseId: row.courseId,
+      courseIndex: row.courseIndex,
+      nextTokenOffset: row.nextTokenOffset,
+      totalMinted: row.totalMinted,
+      updatedAt: row.updatedAt,
+    }));
+  }
 }
