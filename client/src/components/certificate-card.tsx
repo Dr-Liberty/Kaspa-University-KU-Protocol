@@ -3,12 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Loader2, Sparkles, Wallet } from "lucide-react";
+import { Download, ExternalLink, Loader2, Sparkles, Wallet, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/lib/wallet-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserSignedMint } from "./user-signed-mint";
+import { useWhitelistStatus } from "@/hooks/use-whitelist";
 
 function generateCertificateSvgString(
   recipientAddress: string,
@@ -276,11 +277,15 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const { isDemoMode } = useWallet();
   const queryClient = useQueryClient();
   const [showMintDialog, setShowMintDialog] = useState(false);
+  const { data: whitelistStatus } = useWhitelistStatus();
 
   const nftStatus = certificate.nftStatus || (certificate.nftTxHash ? "claimed" : "pending");
   const isPending = nftStatus === "pending";
   const isMinting = nftStatus === "minting";
   const isClaimed = nftStatus === "claimed";
+  
+  const isWhitelisted = whitelistStatus?.isWhitelisted;
+  const mintPrice = isWhitelisted ? "~10.5 KAS" : "~20,000 KAS";
 
   useEffect(() => {
     if (isMinting) {
@@ -357,7 +362,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   <DialogTrigger asChild>
                     <Button
                       className="w-full gap-2"
-                      disabled={isDemoMode}
+                      disabled={isDemoMode || (!isWhitelisted && !isDemoMode)}
                       data-testid={`button-mint-${certificate.id}`}
                     >
                       {isMinting ? (
@@ -365,10 +370,15 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Resume Minting
                         </>
+                      ) : isWhitelisted ? (
+                        <>
+                          <Wallet className="h-4 w-4" />
+                          Mint NFT ({mintPrice})
+                        </>
                       ) : (
                         <>
                           <Wallet className="h-4 w-4" />
-                          Mint NFT (~10 KAS)
+                          Awaiting Whitelist...
                         </>
                       )}
                     </Button>
@@ -392,9 +402,14 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   <p className="text-xs text-center text-amber-500">
                     Continue your in-progress mint
                   </p>
+                ) : isWhitelisted ? (
+                  <div className="flex items-center justify-center gap-1 text-xs text-primary">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Whitelisted for discounted minting</span>
+                  </div>
                 ) : (
                   <p className="text-xs text-center text-muted-foreground">
-                    Sign the mint transaction with your wallet
+                    Whitelist pending - this happens automatically after course completion
                   </p>
                 )}
               </div>
