@@ -368,6 +368,69 @@ class NFTMetadataManager {
 
     return this.doRepublish();
   }
+
+  /**
+   * Generate static metadata folder for testnet deployment
+   * Since IPNS doesn't work with KRC-721, we pre-generate placeholder metadata
+   * The actual quiz verification happens via KU Protocol on-chain
+   * 
+   * @param courseName - The course name for all certificates
+   * @param imageIpfsUrl - IPFS URL for the certificate image
+   * @param maxTokens - Number of placeholder tokens to generate (default 100)
+   * @returns The IPFS CID of the metadata folder for use as buri
+   */
+  async generateStaticTestnetMetadata(
+    courseName: string,
+    imageIpfsUrl: string,
+    maxTokens: number = 100
+  ): Promise<{ success: boolean; folderCid?: string; ipfsUrl?: string; error?: string }> {
+    try {
+      const pinataService = getPinataService();
+      if (!pinataService.isConfigured()) {
+        return { success: false, error: "Pinata not configured" };
+      }
+
+      console.log(`[MetadataManager] Generating ${maxTokens} static testnet metadata files for "${courseName}"...`);
+      
+      const folderFiles = new Map<string, string>();
+      
+      for (let tokenId = 0; tokenId < maxTokens; tokenId++) {
+        const metadata: TokenMetadata = {
+          name: `Kaspa University Certificate #${tokenId}: ${courseName}`,
+          description: `This certificate represents completion of "${courseName}" on Kaspa University. Quiz completion verified via KU Protocol on Kaspa L1. Visit kaspa.university to verify the on-chain proof.`,
+          image: imageIpfsUrl,
+          tokenId,
+          attributes: [
+            { trait_type: "Course", value: courseName },
+            { trait_type: "Token ID", value: tokenId },
+            { trait_type: "Verification", value: "KU Protocol (kaspa.university)" },
+            { trait_type: "Platform", value: "Kaspa University" },
+            { trait_type: "Network", value: "Kaspa Testnet-10" },
+          ],
+        };
+        folderFiles.set(tokenId.toString(), JSON.stringify(metadata, null, 2));
+      }
+
+      // Upload folder to IPFS (not IPNS - direct static CID)
+      const uploadResult = await pinataService.uploadDirectory(folderFiles, `ku-testnet-${courseName.replace(/\s+/g, "-").toLowerCase()}`);
+      
+      if (!uploadResult.success || !uploadResult.ipfsHash) {
+        return { success: false, error: uploadResult.error || "Directory upload failed" };
+      }
+
+      console.log(`[MetadataManager] Static testnet metadata uploaded: ${uploadResult.ipfsUrl}`);
+      console.log(`[MetadataManager] Use this as buri when deploying: ${uploadResult.ipfsUrl}/`);
+
+      return {
+        success: true,
+        folderCid: uploadResult.ipfsHash,
+        ipfsUrl: `${uploadResult.ipfsUrl}/`,
+      };
+    } catch (error: any) {
+      console.error(`[MetadataManager] Static testnet metadata generation failed:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Singleton instance
