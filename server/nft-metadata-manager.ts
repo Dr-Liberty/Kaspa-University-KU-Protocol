@@ -1,12 +1,11 @@
 /**
  * NFT Metadata Manager for Kaspa University
  * 
- * Coordinates IPFS uploads and IPNS updates for dynamic NFT metadata.
- * Enables per-user certificate data with mutable IPNS pointers.
+ * Coordinates IPFS uploads for NFT metadata.
+ * Uses Pinata for direct IPFS uploads - each certificate gets its own immutable IPFS CID.
  */
 
 import { getPinataService } from "./pinata";
-import { getIPNSService } from "./ipns";
 import { storage } from "./storage";
 
 interface TokenMetadata {
@@ -24,15 +23,12 @@ interface AddTokenResult {
   success: boolean;
   tokenId?: number;
   folderCid?: string;
-  ipnsUrl?: string;
+  metadataUrl?: string;
   error?: string;
 }
 
 interface InitResult {
   success: boolean;
-  ipnsUrl?: string;
-  isNewKey?: boolean;
-  keyBase64?: string;
   error?: string;
 }
 
@@ -47,38 +43,21 @@ class NFTMetadataManager {
 
   /**
    * Initialize the metadata manager
-   * Sets up IPNS and loads existing token metadata from storage
+   * Loads existing token metadata from storage
    */
   async initialize(): Promise<InitResult> {
     if (this.initialized) {
-      const ipnsService = getIPNSService();
-      return { 
-        success: true, 
-        ipnsUrl: ipnsService.getIPNSUrl() || undefined 
-      };
+      return { success: true };
     }
 
     try {
-      // Initialize IPNS service
-      const ipnsService = getIPNSService();
-      const ipnsResult = await ipnsService.initialize();
-      
-      if (!ipnsResult.success) {
-        return { success: false, error: ipnsResult.error };
-      }
-
       // Load existing certificates to rebuild metadata map
       await this.loadExistingMetadata();
 
       this.initialized = true;
       console.log(`[MetadataManager] Initialized with ${this.tokenMetadata.size} existing tokens`);
 
-      return {
-        success: true,
-        ipnsUrl: ipnsService.getIPNSUrl() || undefined,
-        isNewKey: ipnsResult.isNew,
-        keyBase64: ipnsResult.keyBase64,
-      };
+      return { success: true };
     } catch (error: any) {
       console.error(`[MetadataManager] Initialization failed:`, error.message);
       return { success: false, error: error.message };
@@ -88,7 +67,6 @@ class NFTMetadataManager {
   /**
    * Load existing certificate metadata from mintStorage (source of truth for tokenIds)
    * Uses finalized mint reservations which have the actual on-chain tokenId
-   * After loading, republishes to IPNS to ensure it points to the correct folder
    */
   private async loadExistingMetadata(): Promise<void> {
     try {
@@ -120,7 +98,7 @@ class NFTMetadataManager {
           name: `Kaspa University Certificate: ${cert.courseName}`,
           description: `This certificate verifies completion of "${cert.courseName}" on Kaspa University with a score of ${cert.score || 0}%. Quiz completion was recorded on-chain via KU Protocol. Verify at: kaspa.university/verify/${cert.verificationCode}`,
           image: imageUrl,
-          tokenId: mint.tokenId, // Use the actual tokenId from mintStorage
+          tokenId: mint.tokenId,
           attributes: [
             { trait_type: "Course", value: cert.courseName },
             { trait_type: "Score", value: cert.score || 0 },
@@ -135,74 +113,8 @@ class NFTMetadataManager {
       }
       
       console.log(`[MetadataManager] Loaded ${this.tokenMetadata.size} tokens from mintStorage`);
-      
-      // Republish to IPNS immediately if we have tokens
-      // This ensures IPNS points to the correct folder after restart
-      if (this.tokenMetadata.size > 0) {
-        console.log(`[MetadataManager] Republishing ${this.tokenMetadata.size} tokens to IPNS...`);
-        const republishResult = await this.doRepublish();
-        
-        if (!republishResult.success) {
-          // Log error but don't block - IPNS will be stale until next successful mint
-          console.error(`[MetadataManager] IPNS republish failed on startup: ${republishResult.error}`);
-          console.warn(`[MetadataManager] IPNS may point to stale CID until next successful mint`);
-          // Keep metadata in memory - it will be republished on next addTokenMetadata call
-        } else {
-          console.log(`[MetadataManager] IPNS republish successful on startup`);
-        }
-      }
     } catch (error: any) {
       console.error(`[MetadataManager] Failed to load existing metadata:`, error.message);
-    }
-  }
-
-  /**
-   * Internal republish helper (doesn't require initialization)
-   */
-  private async doRepublish(): Promise<AddTokenResult> {
-    if (this.tokenMetadata.size === 0) {
-      return { success: true }; // Nothing to publish
-    }
-
-    try {
-      // Rebuild and upload folder
-      const folderFiles = new Map<string, string>();
-      const entries = Array.from(this.tokenMetadata.entries());
-      for (const entry of entries) {
-        const [id, meta] = entry;
-        folderFiles.set(id.toString(), JSON.stringify(meta, null, 2));
-      }
-
-      const pinataService = getPinataService();
-      if (!pinataService.isConfigured()) {
-        console.warn(`[MetadataManager] Pinata not configured, skipping republish`);
-        return { success: false, error: "Pinata not configured" };
-      }
-
-      const uploadResult = await pinataService.uploadDirectory(folderFiles, "kuproof-metadata");
-      if (!uploadResult.success || !uploadResult.ipfsHash) {
-        return { success: false, error: uploadResult.error || "Directory upload failed" };
-      }
-
-      // Update IPNS
-      const ipnsService = getIPNSService();
-      const publishResult = await ipnsService.publish(uploadResult.ipfsHash);
-      
-      if (!publishResult.success) {
-        return { success: false, error: publishResult.error || "IPNS publish failed" };
-      }
-
-      this.currentFolderCid = uploadResult.ipfsHash;
-      console.log(`[MetadataManager] Republished ${this.tokenMetadata.size} tokens to IPNS: ${publishResult.ipnsUrl}`);
-
-      return {
-        success: true,
-        folderCid: uploadResult.ipfsHash,
-        ipnsUrl: publishResult.ipnsUrl,
-      };
-    } catch (error: any) {
-      console.error(`[MetadataManager] Republish failed:`, error.message);
-      return { success: false, error: error.message };
     }
   }
 
@@ -214,22 +126,12 @@ class NFTMetadataManager {
   }
 
   /**
-   * Get the IPNS URL for use as collection buri
-   */
-  getIPNSUrl(): string | null {
-    const ipnsService = getIPNSService();
-    return ipnsService.getIPNSUrl();
-  }
-
-  /**
-   * Add a new token's metadata and update IPNS
+   * Add a new token's metadata and upload to IPFS
    * 
    * This is the main function called during NFT minting:
-   * 1. Upload the certificate image to IPFS
-   * 2. Create metadata JSON with image URL
-   * 3. Rebuild folder with all token metadata
-   * 4. Upload folder to IPFS
-   * 5. Update IPNS pointer
+   * 1. Create metadata JSON with image URL
+   * 2. Upload metadata folder to IPFS
+   * 3. Return the IPFS CID for use in minting
    */
   async addTokenMetadata(
     tokenId: number,
@@ -254,7 +156,6 @@ class NFTMetadataManager {
         success: true, 
         tokenId,
         folderCid: this.currentFolderCid || undefined,
-        ipnsUrl: this.getIPNSUrl() || undefined,
       };
     }
 
@@ -303,27 +204,14 @@ class NFTMetadataManager {
         return { success: false, error: uploadResult.error || "Directory upload failed" };
       }
 
-      console.log(`[MetadataManager] Folder uploaded: ${uploadResult.ipfsUrl}`);
-
-      // Update IPNS to point to new folder
-      const ipnsService = getIPNSService();
-      const publishResult = await ipnsService.publish(uploadResult.ipfsHash);
-      
-      if (!publishResult.success) {
-        // Rollback on IPNS publish failure
-        this.tokenMetadata.delete(tokenId);
-        console.warn(`[MetadataManager] IPNS publish failed, rolled back token #${tokenId}`);
-        return { success: false, error: publishResult.error || "IPNS publish failed" };
-      }
-
       this.currentFolderCid = uploadResult.ipfsHash;
-      console.log(`[MetadataManager] IPNS updated: ${publishResult.ipnsUrl}`);
+      console.log(`[MetadataManager] Metadata folder uploaded: ${uploadResult.ipfsUrl}`);
 
       return {
         success: true,
         tokenId,
         folderCid: uploadResult.ipfsHash,
-        ipnsUrl: publishResult.ipnsUrl,
+        metadataUrl: uploadResult.ipfsUrl,
       };
     } catch (error: any) {
       // Rollback on any exception
@@ -355,23 +243,8 @@ class NFTMetadataManager {
   }
 
   /**
-   * Force republish current metadata to IPNS
-   * Useful after server restart to ensure IPNS is up to date
-   */
-  async republish(): Promise<AddTokenResult> {
-    if (!this.initialized) {
-      const initResult = await this.initialize();
-      if (!initResult.success) {
-        return { success: false, error: `Initialization failed: ${initResult.error}` };
-      }
-    }
-
-    return this.doRepublish();
-  }
-
-  /**
-   * Generate static metadata folder for testnet deployment
-   * Since IPNS doesn't work with KRC-721, we pre-generate placeholder metadata
+   * Generate static metadata folder for collection deployment
+   * Pre-generates placeholder metadata for all possible tokens
    * The actual quiz verification happens via KU Protocol on-chain
    * 
    * @param courseName - The course name for all certificates
@@ -379,7 +252,7 @@ class NFTMetadataManager {
    * @param maxTokens - Number of placeholder tokens to generate (default 100)
    * @returns The IPFS CID of the metadata folder for use as buri
    */
-  async generateStaticTestnetMetadata(
+  async generateStaticMetadata(
     courseName: string,
     imageIpfsUrl: string,
     maxTokens: number = 100
@@ -390,9 +263,10 @@ class NFTMetadataManager {
         return { success: false, error: "Pinata not configured" };
       }
 
-      console.log(`[MetadataManager] Generating ${maxTokens} static testnet metadata files for "${courseName}"...`);
+      console.log(`[MetadataManager] Generating ${maxTokens} static metadata files for "${courseName}"...`);
       
       const folderFiles = new Map<string, string>();
+      const network = process.env.KRC721_TESTNET === "true" ? "Kaspa Testnet-10" : "Kaspa Mainnet";
       
       for (let tokenId = 0; tokenId < maxTokens; tokenId++) {
         const metadata: TokenMetadata = {
@@ -405,20 +279,20 @@ class NFTMetadataManager {
             { trait_type: "Token ID", value: tokenId },
             { trait_type: "Verification", value: "KU Protocol (kaspa.university)" },
             { trait_type: "Platform", value: "Kaspa University" },
-            { trait_type: "Network", value: "Kaspa Testnet-10" },
+            { trait_type: "Network", value: network },
           ],
         };
         folderFiles.set(tokenId.toString(), JSON.stringify(metadata, null, 2));
       }
 
-      // Upload folder to IPFS (not IPNS - direct static CID)
-      const uploadResult = await pinataService.uploadDirectory(folderFiles, `ku-testnet-${courseName.replace(/\s+/g, "-").toLowerCase()}`);
+      // Upload folder to IPFS (direct static CID)
+      const uploadResult = await pinataService.uploadDirectory(folderFiles, `ku-metadata-${courseName.replace(/\s+/g, "-").toLowerCase()}`);
       
       if (!uploadResult.success || !uploadResult.ipfsHash) {
         return { success: false, error: uploadResult.error || "Directory upload failed" };
       }
 
-      console.log(`[MetadataManager] Static testnet metadata uploaded: ${uploadResult.ipfsUrl}`);
+      console.log(`[MetadataManager] Static metadata uploaded: ${uploadResult.ipfsUrl}`);
       console.log(`[MetadataManager] Use this as buri when deploying: ${uploadResult.ipfsUrl}/`);
 
       return {
@@ -427,7 +301,7 @@ class NFTMetadataManager {
         ipfsUrl: `${uploadResult.ipfsUrl}/`,
       };
     } catch (error: any) {
-      console.error(`[MetadataManager] Static testnet metadata generation failed:`, error.message);
+      console.error(`[MetadataManager] Static metadata generation failed:`, error.message);
       return { success: false, error: error.message };
     }
   }

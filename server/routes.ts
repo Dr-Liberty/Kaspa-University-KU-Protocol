@@ -1667,7 +1667,7 @@ export async function registerRoutes(
             // Use the direct image URL for display, not the metadata URL
             imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
             console.log(`[Prepare] IPFS upload successful - image: ${imageUrl}, metadata: ${uploadResult.ipfsUrl}`);
-            // Note: IPNS metadata update moved to finalize step to use confirmed tokenId
+            // Note: Metadata folder update moved to finalize step to use confirmed tokenId
           } else {
             console.error(`[Prepare] IPFS upload failed: ${uploadResult.error}`);
             return res.status(500).json({
@@ -1779,14 +1779,13 @@ export async function registerRoutes(
         const updatedCert = await storage.getCertificate(id);
         const imageUrl = updatedCert?.imageUrl || certificate.imageUrl;
         
-        // Update IPNS metadata folder with the confirmed tokenId
-        // This ensures the correct metadata is available at ipns://key/{tokenId}
+        // Update metadata folder with the confirmed tokenId
         if (finalizeResult.tokenId !== undefined && imageUrl?.startsWith("ipfs://")) {
           try {
             const { getMetadataManager } = await import("./nft-metadata-manager");
             const metadataManager = getMetadataManager();
             
-            const ipnsResult = await metadataManager.addTokenMetadata(
+            const metadataResult = await metadataManager.addTokenMetadata(
               finalizeResult.tokenId,
               updatedCert?.courseName || certificate.courseName,
               updatedCert?.score || certificate.score || 100,
@@ -1795,13 +1794,13 @@ export async function registerRoutes(
               imageUrl
             );
             
-            if (ipnsResult.success) {
-              console.log(`[Finalize] IPNS metadata updated for token #${finalizeResult.tokenId}: ${ipnsResult.ipnsUrl}`);
+            if (metadataResult.success) {
+              console.log(`[Finalize] Metadata updated for token #${finalizeResult.tokenId}: ${metadataResult.metadataUrl}`);
             } else {
-              console.warn(`[Finalize] IPNS update failed (non-fatal): ${ipnsResult.error}`);
+              console.warn(`[Finalize] Metadata update failed (non-fatal): ${metadataResult.error}`);
             }
-          } catch (ipnsError: any) {
-            console.warn(`[Finalize] IPNS update error (non-fatal): ${ipnsError.message}`);
+          } catch (metadataError: any) {
+            console.warn(`[Finalize] Metadata update error (non-fatal): ${metadataError.message}`);
           }
         }
         
@@ -2257,7 +2256,7 @@ export async function registerRoutes(
             // Use the direct image URL for display, not the metadata URL
             imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
             console.log(`[Claim] Certificate uploaded to IPFS - image: ${imageUrl}`);
-            // Note: IPNS metadata update happens after successful mint
+            // Note: Metadata folder update happens after successful mint
           } else {
             console.log(`[Claim] IPFS upload failed, using data URI fallback`);
             imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
@@ -2287,13 +2286,13 @@ export async function registerRoutes(
 
         console.log(`[Claim] NFT minted successfully: ${mintResult.revealTxHash}`);
         
-        // Update IPNS metadata folder with the confirmed tokenId
+        // Update metadata folder with the confirmed tokenId
         if (mintResult.tokenId !== undefined && imageUrl?.startsWith("ipfs://")) {
           try {
             const { getMetadataManager } = await import("./nft-metadata-manager");
             const metadataManager = getMetadataManager();
             
-            const ipnsResult = await metadataManager.addTokenMetadata(
+            const metadataResult = await metadataManager.addTokenMetadata(
               mintResult.tokenId,
               certificate.courseName,
               certificate.score || 100,
@@ -2302,11 +2301,11 @@ export async function registerRoutes(
               imageUrl
             );
             
-            if (ipnsResult.success) {
-              console.log(`[Claim] IPNS metadata updated for token #${mintResult.tokenId}`);
+            if (metadataResult.success) {
+              console.log(`[Claim] Metadata updated for token #${mintResult.tokenId}`);
             }
-          } catch (ipnsError: any) {
-            console.warn(`[Claim] IPNS update failed (non-fatal): ${ipnsError.message}`);
+          } catch (metadataError: any) {
+            console.warn(`[Claim] Metadata update failed (non-fatal): ${metadataError.message}`);
           }
         }
 
@@ -3120,169 +3119,6 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("[Admin] Verify deployment error:", error.message);
-      res.status(500).json({ error: sanitizeError(error) });
-    }
-  });
-
-  // Admin: Initialize IPNS for dynamic NFT metadata
-  // This creates an IPNS key that can be used as the collection's buri
-  app.post("/api/admin/ipns/init", adminAuth, async (_req: Request, res: Response) => {
-    try {
-      const { getMetadataManager } = await import("./nft-metadata-manager");
-      const metadataManager = getMetadataManager();
-      
-      const result = await metadataManager.initialize();
-      
-      if (!result.success) {
-        return res.status(500).json({ error: result.error });
-      }
-      
-      // If this is a new key, remind admin to save it
-      if (result.isNewKey && result.keyBase64) {
-        console.log(`[Admin] NEW IPNS KEY CREATED - SAVE THIS AS W3NAME_KEY SECRET!`);
-        console.log(`[Admin] Key: ${result.keyBase64}`);
-      }
-      
-      res.json({
-        success: true,
-        ipnsUrl: result.ipnsUrl,
-        isNewKey: result.isNewKey,
-        keyBase64: result.keyBase64, // Only present for new keys
-        message: result.isNewKey
-          ? "New IPNS key created! IMPORTANT: Save the keyBase64 value as the W3NAME_KEY secret to persist across restarts."
-          : "IPNS service initialized with existing key."
-      });
-    } catch (error: any) {
-      console.error("[Admin] IPNS init error:", error.message);
-      res.status(500).json({ error: sanitizeError(error) });
-    }
-  });
-
-  // Admin: Get IPNS status
-  app.get("/api/admin/ipns/status", adminAuth, async (_req: Request, res: Response) => {
-    try {
-      const { getMetadataManager } = await import("./nft-metadata-manager");
-      const { getIPNSService } = await import("./ipns");
-      
-      const metadataManager = getMetadataManager();
-      const ipnsService = getIPNSService();
-      
-      const isReady = metadataManager.isReady();
-      const ipnsUrl = ipnsService.getIPNSUrl();
-      const publicName = ipnsService.getPublicName();
-      
-      // Try to resolve current value
-      let currentValue = null;
-      if (isReady) {
-        const resolved = await ipnsService.resolve();
-        if (resolved.success) {
-          currentValue = resolved.value;
-        }
-      }
-      
-      res.json({
-        ready: isReady,
-        ipnsUrl,
-        publicName,
-        currentValue,
-        hasW3NameKey: !!process.env.W3NAME_KEY,
-        tokenCount: metadataManager.getAllMetadata().size,
-        folderCid: metadataManager.getCurrentFolderCid(),
-      });
-    } catch (error: any) {
-      console.error("[Admin] IPNS status error:", error.message);
-      res.status(500).json({ error: sanitizeError(error) });
-    }
-  });
-
-  // Admin: Force republish current metadata to IPNS
-  app.post("/api/admin/ipns/republish", adminAuth, async (_req: Request, res: Response) => {
-    try {
-      const { getMetadataManager } = await import("./nft-metadata-manager");
-      const metadataManager = getMetadataManager();
-      
-      const result = await metadataManager.republish();
-      
-      if (!result.success) {
-        return res.status(500).json({ error: result.error });
-      }
-      
-      res.json({
-        success: true,
-        folderCid: result.folderCid,
-        ipnsUrl: result.ipnsUrl,
-        message: "Metadata republished to IPNS successfully"
-      });
-    } catch (error: any) {
-      console.error("[Admin] IPNS republish error:", error.message);
-      res.status(500).json({ error: sanitizeError(error) });
-    }
-  });
-
-  // Admin: Deploy collection with IPNS base URI (recommended for dynamic certificates)
-  app.post("/api/admin/deploy-collection-ipns", adminAuth, async (_req: Request, res: Response) => {
-    try {
-      const krc721Service = await getKRC721Service();
-      const collectionInfo = await krc721Service.getCollectionInfo();
-      
-      if (collectionInfo.isDeployed) {
-        return res.json({ 
-          success: true, 
-          message: "Collection already deployed",
-          collection: collectionInfo 
-        });
-      }
-
-      if (!krc721Service.isLive()) {
-        return res.status(503).json({ 
-          error: "KRC-721 service not live. Check RPC connection and treasury keys." 
-        });
-      }
-
-      // Initialize IPNS metadata manager
-      const { getMetadataManager } = await import("./nft-metadata-manager");
-      const metadataManager = getMetadataManager();
-      
-      const initResult = await metadataManager.initialize();
-      if (!initResult.success) {
-        return res.status(500).json({ error: `IPNS initialization failed: ${initResult.error}` });
-      }
-
-      const ipnsUrl = metadataManager.getIPNSUrl();
-      if (!ipnsUrl) {
-        return res.status(500).json({ error: "Failed to get IPNS URL" });
-      }
-
-      console.log(`[Admin] Deploying collection with IPNS buri: ${ipnsUrl}`);
-
-      // Deploy with IPNS URL as buri
-      const result = await krc721Service.deployCollection(ipnsUrl);
-      
-      if (result.success) {
-        // Save IPNS key reminder
-        if (initResult.isNewKey && initResult.keyBase64) {
-          console.log(`[Admin] CRITICAL: Save W3NAME_KEY secret: ${initResult.keyBase64}`);
-        }
-        
-        console.log(`[Admin] Collection deployed with IPNS! Commit: ${result.commitTxHash}, Reveal: ${result.revealTxHash}`);
-        res.json({
-          success: true,
-          message: "Collection deployed successfully with dynamic IPNS metadata",
-          ipnsUrl,
-          commitTxHash: result.commitTxHash,
-          revealTxHash: result.revealTxHash,
-          collection: await krc721Service.getCollectionInfo(),
-          keyBase64: initResult.isNewKey ? initResult.keyBase64 : undefined,
-          keyWarning: initResult.isNewKey 
-            ? "IMPORTANT: Save the keyBase64 value as W3NAME_KEY secret immediately!"
-            : undefined
-        });
-      } else {
-        console.error(`[Admin] Collection deployment failed: ${result.error}`);
-        res.status(500).json({ error: result.error || "Deployment failed" });
-      }
-    } catch (error: any) {
-      console.error("[Admin] Deploy collection IPNS error:", error.message);
       res.status(500).json({ error: sanitizeError(error) });
     }
   });

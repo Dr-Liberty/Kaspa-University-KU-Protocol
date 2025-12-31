@@ -331,7 +331,7 @@ class MintStorageService {
 
   /**
    * Get all finalized (successfully minted) reservations
-   * Used for rebuilding IPNS metadata folder on restart
+   * Used for rebuilding metadata folder on restart
    */
   async getFinalizedReservations(): Promise<PendingMintReservation[]> {
     try {

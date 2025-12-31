@@ -28,7 +28,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
-- **KRC-721 NFT Certificates**: Implements user-signed minting flow where users sign the mint inscription themselves and appear as the on-chain minter (not treasury wallet). Adheres to KRC-721 standard. Uses IPNS (mutable IPFS pointers via W3Name) for dynamic per-user certificate metadata. Collection buri points to `ipns://KEY/` which resolves to IPFS folder containing token metadata files. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
+- **KRC-721 NFT Certificates**: Implements user-signed minting flow where users sign the mint inscription themselves and appear as the on-chain minter (not treasury wallet). Adheres to KRC-721 standard. Uses Pinata for IPFS uploads - each certificate gets direct IPFS CIDs for metadata. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
     - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete courses are automatically whitelisted via the "discount" operation at 10.5 KAS mint fee.
     - **Discount Service Architecture** (`server/discount-service.ts`):
         1. **Automatic Whitelisting**: After first course completion, the discount service sends a commit-reveal transaction to whitelist the user's wallet.
@@ -37,8 +37,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
         4. **Frontend Integration**: Certificate cards show whitelist status and enable mint button only for whitelisted users.
         5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KASPAUNIV",to:walletAddress,discountFee:"1050000000"}`).
     - **User-Signed Minting Architecture**: Users sign the mint inscription directly with their wallet. The reservation system holds tokenIds temporarily while users sign. Key files: `server/mint-service.ts` (reservation logic), `client/src/components/user-signed-mint.tsx` (frontend flow).
-    - **IPNS Architecture**: Each mint uploads token metadata to IPFS, rebuilds the metadata folder with all tokens, uploads to IPFS, then updates the IPNS pointer. On restart, metadata is recovered from mintStorage (source of truth for tokenIds) and republished to IPNS.
-    - **Key Files**: `server/ipns.ts` (W3Name IPNS service), `server/nft-metadata-manager.ts` (coordinates IPFS/IPNS updates), `server/pinata.ts` (directory upload support).
+    - **Key Files**: `server/nft-metadata-manager.ts` (coordinates IPFS uploads), `server/pinata.ts` (IPFS uploads via Pinata API).
     - **Reservation Lifecycle**:
         1. **Reserve** (`POST /api/nft/reserve/:certificateId`): Claims a tokenId from counter or recycled pool, creates reservation with 10-minute TTL, returns inscription JSON for user to sign.
         2. **Signing** (`POST /api/nft/signing/:reservationId`): Updates reservation status to "signing" when user begins wallet interaction.
