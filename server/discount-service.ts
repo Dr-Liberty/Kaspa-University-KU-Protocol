@@ -437,3 +437,7 @@ class DiscountService {
 }
 
 export const discountService = new DiscountService();
+
+export function getDiscountService(): DiscountService {
+  return discountService;
+}

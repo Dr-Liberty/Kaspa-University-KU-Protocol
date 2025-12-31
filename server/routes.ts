@@ -52,6 +52,7 @@ import {
   invalidateSession,
   getSessionByToken 
 } from "./wallet-auth";
+import { getDiscountService } from "./discount-service";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -906,6 +907,31 @@ export async function registerRoutes(
           });
           
           console.log(`[Certificate] Created for ${user.walletAddress} - NFT pending claim`);
+          
+          // Trigger discount operation to whitelist user for discounted NFT minting
+          // This runs asynchronously to not block the quiz response
+          (async () => {
+            try {
+              const isWhitelisted = await storage.isUserWhitelisted(user.id);
+              if (!isWhitelisted) {
+                console.log(`[Whitelist] Initiating discount operation for ${user.walletAddress}`);
+                const discountService = getDiscountService();
+                const discountResult = await discountService.applyDiscount(user.walletAddress);
+                
+                if (discountResult.success) {
+                  const txHash = discountResult.revealTxHash || discountResult.commitTxHash || "demo";
+                  await storage.setUserWhitelisted(user.id, txHash);
+                  console.log(`[Whitelist] User ${user.walletAddress} whitelisted for discounted minting (tx: ${txHash})`);
+                } else {
+                  console.error(`[Whitelist] Failed to whitelist ${user.walletAddress}: ${discountResult.error}`);
+                }
+              } else {
+                console.log(`[Whitelist] User ${user.walletAddress} already whitelisted`);
+              }
+            } catch (error: any) {
+              console.error(`[Whitelist] Error applying discount for ${user.walletAddress}:`, error.message);
+            }
+          })();
         }
       }
     }
@@ -933,7 +959,104 @@ export async function registerRoutes(
       user = await storage.createUser({ walletAddress });
     }
 
-    res.json(user);
+    // Include whitelist status in user response
+    const isWhitelisted = await storage.isUserWhitelisted(user.id);
+    res.json({
+      ...user,
+      isWhitelisted,
+    });
+  });
+
+  // Get whitelist status for NFT minting discount
+  app.get("/api/whitelist/status", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    try {
+      const user = await storage.getUserByWalletAddress(walletAddress);
+      if (!user) {
+        return res.json({ 
+          isWhitelisted: false, 
+          reason: "No account found - complete a course to get whitelisted" 
+        });
+      }
+
+      const isWhitelisted = await storage.isUserWhitelisted(user.id);
+      const discountService = getDiscountService();
+      
+      res.json({
+        isWhitelisted,
+        whitelistedAt: user.whitelistedAt,
+        whitelistTxHash: user.whitelistTxHash,
+        collection: discountService.getTicker(),
+        discountFee: discountService.getDiscountFeeSompi().toString(),
+        discountFeeKas: "10.5",
+      });
+    } catch (error: any) {
+      console.error("[Whitelist] Status check failed:", error.message);
+      res.status(500).json({ error: "Failed to check whitelist status" });
+    }
+  });
+
+  // Manually trigger whitelist check/apply (for retry scenarios)
+  app.post("/api/whitelist/apply", nftRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    try {
+      const user = await storage.getUserByWalletAddress(walletAddress);
+      if (!user) {
+        return res.status(400).json({ error: "No account found" });
+      }
+
+      // Check if user has at least one completed course
+      const certificates = await storage.getCertificatesByUser(user.id);
+      if (certificates.length === 0) {
+        return res.status(400).json({ 
+          error: "Must complete at least one course to be whitelisted" 
+        });
+      }
+
+      // Check if already whitelisted
+      const isWhitelisted = await storage.isUserWhitelisted(user.id);
+      if (isWhitelisted) {
+        return res.json({
+          success: true,
+          message: "Already whitelisted",
+          whitelistedAt: user.whitelistedAt,
+          whitelistTxHash: user.whitelistTxHash,
+        });
+      }
+
+      // Apply discount operation
+      console.log(`[Whitelist] Manual apply request for ${walletAddress}`);
+      const discountService = getDiscountService();
+      const result = await discountService.applyDiscount(walletAddress);
+
+      if (result.success) {
+        const txHash = result.revealTxHash || result.commitTxHash || "manual";
+        await storage.setUserWhitelisted(user.id, txHash);
+        
+        res.json({
+          success: true,
+          message: "Whitelisted for discounted minting",
+          commitTxHash: result.commitTxHash,
+          revealTxHash: result.revealTxHash,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || "Whitelist operation failed",
+        });
+      }
+    } catch (error: any) {
+      console.error("[Whitelist] Apply failed:", error.message);
+      res.status(500).json({ error: "Failed to apply whitelist" });
+    }
   });
 
   app.get("/api/progress", async (req: Request, res: Response) => {
@@ -1933,7 +2056,7 @@ export async function registerRoutes(
     const { certificateId } = req.params;
     
     try {
-      const reservation = await storage.getActiveReservation(certificateId);
+      const reservation = await storage.getMintReservationByCertificate(certificateId);
       
       if (!reservation) {
         return res.json({ hasReservation: false });
