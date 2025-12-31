@@ -33,73 +33,127 @@
   <!-- Background -->
   <rect width="800" height="600" fill="url(#bg)"/>
   
-  <!-- Subtle DAG pattern - top left -->
-  <g opacity="0.2">
-    <circle cx="40" cy="50" r="3" fill="#10b981" />
-    <circle cx="80" cy="35" r="2.5" fill="#10b981" />
-    <circle cx="65" cy="75" r="2" fill="#10b981" />
-    <circle cx="110" cy="55" r="2.5" fill="#10b981" />
-    <line x1="40" y1="50" x2="80" y2="35" stroke="#10b981" stroke-width="0.5"/>
-    <line x1="40" y1="50" x2="65" y2="75" stroke="#10b981" stroke-width="0.5"/>
-    <line x1="80" y1="35" x2="110" y2="55" stroke="#10b981" stroke-width="0.5"/>
+  <!-- Expanded DAG pattern - top left cluster -->
+  <g opacity="0.4">
+    <circle cx="40" cy="50" r="4" fill="#10b981" />
+    <circle cx="85" cy="30" r="3" fill="#10b981" />
+    <circle cx="60" cy="80" r="3" fill="#10b981" />
+    <circle cx="120" cy="50" r="3.5" fill="#10b981" />
+    <circle cx="100" cy="90" r="2.5" fill="#10b981" />
+    <circle cx="35" cy="110" r="3" fill="#10b981" />
+    <circle cx="150" cy="75" r="2.5" fill="#10b981" />
+    <line x1="40" y1="50" x2="85" y2="30" stroke="#10b981" stroke-width="1"/>
+    <line x1="40" y1="50" x2="60" y2="80" stroke="#10b981" stroke-width="1"/>
+    <line x1="85" y1="30" x2="120" y2="50" stroke="#10b981" stroke-width="1"/>
+    <line x1="60" y1="80" x2="100" y2="90" stroke="#10b981" stroke-width="1"/>
+    <line x1="60" y1="80" x2="35" y2="110" stroke="#10b981" stroke-width="1"/>
+    <line x1="120" y1="50" x2="150" y2="75" stroke="#10b981" stroke-width="1"/>
+    <line x1="120" y1="50" x2="100" y2="90" stroke="#10b981" stroke-width="1"/>
   </g>
   
-  <!-- Subtle DAG pattern - bottom right -->
-  <g opacity="0.2">
-    <circle cx="720" cy="530" r="3" fill="#10b981" />
-    <circle cx="750" cy="550" r="2.5" fill="#10b981" />
-    <circle cx="690" cy="555" r="2" fill="#10b981" />
-    <circle cx="760" cy="520" r="2" fill="#10b981" />
-    <line x1="720" y1="530" x2="750" y2="550" stroke="#10b981" stroke-width="0.5"/>
-    <line x1="720" y1="530" x2="690" y2="555" stroke="#10b981" stroke-width="0.5"/>
-    <line x1="720" y1="530" x2="760" y2="520" stroke="#10b981" stroke-width="0.5"/>
+  <!-- Expanded DAG pattern - top right cluster -->
+  <g opacity="0.4">
+    <circle cx="680" cy="45" r="3.5" fill="#10b981" />
+    <circle cx="720" cy="30" r="3" fill="#10b981" />
+    <circle cx="760" cy="55" r="4" fill="#10b981" />
+    <circle cx="700" cy="80" r="3" fill="#10b981" />
+    <circle cx="750" cy="95" r="2.5" fill="#10b981" />
+    <circle cx="650" cy="70" r="2.5" fill="#10b981" />
+    <line x1="680" y1="45" x2="720" y2="30" stroke="#10b981" stroke-width="1"/>
+    <line x1="720" y1="30" x2="760" y2="55" stroke="#10b981" stroke-width="1"/>
+    <line x1="680" y1="45" x2="700" y2="80" stroke="#10b981" stroke-width="1"/>
+    <line x1="760" y1="55" x2="750" y2="95" stroke="#10b981" stroke-width="1"/>
+    <line x1="700" y1="80" x2="750" y2="95" stroke="#10b981" stroke-width="1"/>
+    <line x1="680" y1="45" x2="650" y2="70" stroke="#10b981" stroke-width="1"/>
   </g>
+  
+  <!-- Expanded DAG pattern - bottom left cluster -->
+  <g opacity="0.4">
+    <circle cx="50" cy="480" r="3.5" fill="#10b981" />
+    <circle cx="90" cy="460" r="3" fill="#10b981" />
+    <circle cx="45" cy="520" r="3" fill="#10b981" />
+    <circle cx="120" cy="490" r="2.5" fill="#10b981" />
+    <circle cx="80" cy="540" r="3" fill="#10b981" />
+    <circle cx="140" cy="530" r="2.5" fill="#10b981" />
+    <line x1="50" y1="480" x2="90" y2="460" stroke="#10b981" stroke-width="1"/>
+    <line x1="50" y1="480" x2="45" y2="520" stroke="#10b981" stroke-width="1"/>
+    <line x1="90" y1="460" x2="120" y2="490" stroke="#10b981" stroke-width="1"/>
+    <line x1="45" y1="520" x2="80" y2="540" stroke="#10b981" stroke-width="1"/>
+    <line x1="120" y1="490" x2="140" y2="530" stroke="#10b981" stroke-width="1"/>
+    <line x1="80" y1="540" x2="140" y2="530" stroke="#10b981" stroke-width="1"/>
+  </g>
+  
+  <!-- Expanded DAG pattern - bottom right cluster -->
+  <g opacity="0.4">
+    <circle cx="700" cy="490" r="3.5" fill="#10b981" />
+    <circle cx="740" cy="470" r="3" fill="#10b981" />
+    <circle cx="760" cy="510" r="3" fill="#10b981" />
+    <circle cx="680" cy="530" r="3" fill="#10b981" />
+    <circle cx="720" cy="550" r="2.5" fill="#10b981" />
+    <circle cx="660" cy="500" r="2.5" fill="#10b981" />
+    <line x1="700" y1="490" x2="740" y2="470" stroke="#10b981" stroke-width="1"/>
+    <line x1="740" y1="470" x2="760" y2="510" stroke="#10b981" stroke-width="1"/>
+    <line x1="700" y1="490" x2="680" y2="530" stroke="#10b981" stroke-width="1"/>
+    <line x1="760" y1="510" x2="720" y2="550" stroke="#10b981" stroke-width="1"/>
+    <line x1="680" y1="530" x2="720" y2="550" stroke="#10b981" stroke-width="1"/>
+    <line x1="700" y1="490" x2="660" y2="500" stroke="#10b981" stroke-width="1"/>
+  </g>
+  
+  <!-- Center scattered DAG nodes -->
+  <g opacity="0.25">
+    <circle cx="180" cy="180" r="2" fill="#10b981" />
+    <circle cx="620" cy="150" r="2" fill="#10b981" />
+    <circle cx="200" cy="420" r="2" fill="#10b981" />
+    <circle cx="600" cy="400" r="2" fill="#10b981" />
+    <circle cx="300" cy="130" r="1.5" fill="#10b981" />
+    <circle cx="500" cy="450" r="1.5" fill="#10b981" />
+  </g>
+  
+  <!-- Footer disclaimer - ABOVE the border -->
+  <text x="400" y="545" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#9ca3af">NFT ownership does not guarantee course completion. Verify achievements on-chain.</text>
   
   <!-- Elegant border -->
-  <rect x="30" y="30" width="740" height="540" fill="none" stroke="url(#green)" stroke-width="1" rx="8" opacity="0.6"/>
-  <rect x="40" y="40" width="720" height="520" fill="none" stroke="#1a1a1a" stroke-width="1" rx="6"/>
+  <rect x="30" y="30" width="740" height="525" fill="none" stroke="url(#green)" stroke-width="1" rx="8" opacity="0.6"/>
+  <rect x="40" y="40" width="720" height="505" fill="none" stroke="#1a1a1a" stroke-width="1" rx="6"/>
   
   <!-- KU Logo - top center -->
-  <g transform="translate(400, 100)">
+  <g transform="translate(400, 95)">
     <polygon points="0,-35 30,-17.5 30,17.5 0,35 -30,17.5 -30,-17.5" fill="#0a0a0a" stroke="url(#goldGreen)" stroke-width="1.5" filter="url(#softGlow)"/>
     <text x="0" y="8" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="22" fill="url(#green)" font-weight="bold">KU</text>
   </g>
   
   <!-- Header text -->
-  <text x="400" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981" letter-spacing="6" font-weight="500">KASPA UNIVERSITY</text>
+  <text x="400" y="155" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981" letter-spacing="6" font-weight="500">KASPA UNIVERSITY</text>
   
   <!-- Main title -->
-  <text x="400" y="210" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="#ffffff" font-weight="bold" filter="url(#glow)">Certificate of Completion</text>
+  <text x="400" y="200" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="#ffffff" font-weight="bold" filter="url(#glow)">Certificate of Completion</text>
   
   <!-- Decorative line -->
-  <line x1="200" y1="235" x2="600" y2="235" stroke="url(#green)" stroke-width="0.5" opacity="0.5"/>
+  <line x1="200" y1="225" x2="600" y2="225" stroke="url(#green)" stroke-width="0.5" opacity="0.5"/>
   
   <!-- Subtitle -->
-  <text x="400" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">This certifies successful completion of</text>
+  <text x="400" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">This certifies successful completion of</text>
   
   <!-- Course name - THE MAIN FOCUS -->
-  <text x="400" y="340" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#ffffff" font-weight="bold">Bitcoin vs Kaspa:</text>
-  <text x="400" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#10b981" font-weight="bold" filter="url(#softGlow)">The Next Evolution</text>
+  <text x="400" y="325" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#ffffff" font-weight="bold">Bitcoin vs Kaspa:</text>
+  <text x="400" y="365" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#10b981" font-weight="bold" filter="url(#softGlow)">The Next Evolution</text>
   
   <!-- Collection info -->
-  <text x="400" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">Kaspa University Course Collection</text>
+  <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">Kaspa University Course Collection</text>
   
   <!-- Verification seal - bottom left corner -->
-  <g transform="translate(100, 510)">
+  <g transform="translate(100, 490)">
     <circle cx="0" cy="0" r="28" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
     <circle cx="0" cy="0" r="22" fill="none" stroke="#10b981" stroke-width="0.5" opacity="0.5"/>
     <path d="M-8 0l6 6l14-16" stroke="#10b981" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  <text x="145" y="502" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
-  <text x="145" y="516" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">Quiz data embedded on-chain via KU Protocol</text>
-  <text x="145" y="528" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">Verify at KaspaUniversity.com</text>
+  <text x="145" y="482" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
+  <text x="145" y="496" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Quiz data embedded on-chain via KU Protocol</text>
+  <text x="145" y="508" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Verify at KaspaUniversity.com</text>
   
   <!-- KRC-721 badge - bottom right -->
-  <g transform="translate(700, 510)">
+  <g transform="translate(700, 490)">
     <rect x="-45" y="-15" width="90" height="30" rx="4" fill="#0a0a0a" stroke="#10b981" stroke-width="0.5"/>
     <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KRC-721</text>
   </g>
-  
-  <!-- Footer disclaimer -->
-  <text x="400" y="575" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#374151">NFT ownership does not guarantee course completion. Verify achievements on-chain.</text>
 </svg>
