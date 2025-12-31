@@ -146,7 +146,7 @@
   </g>
   <text x="145" y="492" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
   <text x="145" y="506" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Quiz data embedded on-chain via KU Protocol</text>
-  <text x="145" y="518" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Verify at KaspaUniversity.com</text>
+  <text x="145" y="518" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Verify at kaspa.university</text>
   
   <!-- KRC-721 badge - bottom right -->
   <g transform="translate(700, 500)">
