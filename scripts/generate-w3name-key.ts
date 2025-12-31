@@ -9,23 +9,21 @@ async function generateKey() {
   console.log(name.toString());
   console.log("");
   
-  // The key has a 'bytes' getter that returns the private key bytes
-  // For w3name, the key is stored differently - need to check actual structure
+  // Get key bytes - w3name uses .raw or .bytes depending on version
   const key = name.key as any;
+  const keyBytes = key.raw || key.bytes || key._key;
   
-  // Try different ways to get the raw key bytes
-  let keyBytes: Uint8Array;
-  if (key.bytes) {
-    keyBytes = key.bytes;
-  } else if (key._key) {
-    keyBytes = key._key;
-  } else if (key.marshal) {
-    keyBytes = key.marshal();
-  } else {
-    // Print out the key structure to understand it
-    console.log("Key structure:", Object.keys(key));
-    console.log("Key prototype:", Object.getOwnPropertyNames(Object.getPrototypeOf(key)));
-    throw new Error("Could not extract key bytes");
+  if (!keyBytes) {
+    console.log("Key structure:", JSON.stringify(Object.keys(key)));
+    console.log("Key proto:", Object.getOwnPropertyNames(Object.getPrototypeOf(key)));
+    
+    // Try to get the private key by marshalling
+    if (typeof key.marshal === "function") {
+      const marshalled = key.marshal();
+      console.log("\nW3NAME_KEY (base64 - add this as a secret):");
+      console.log(Buffer.from(marshalled).toString("base64"));
+    }
+    return;
   }
   
   const base64Key = Buffer.from(keyBytes).toString("base64");
