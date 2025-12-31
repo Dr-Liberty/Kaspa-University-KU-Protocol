@@ -830,4 +830,23 @@ export class DbStorage implements IStorage {
       updatedAt: row.updatedAt,
     }));
   }
+
+  async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {
+    const result = await db.update(schema.users)
+      .set({ 
+        whitelistedAt: new Date(),
+        whitelistTxHash: txHash,
+      })
+      .where(eq(schema.users.id, userId))
+      .returning();
+    return result[0] as User | undefined;
+  }
+
+  async isUserWhitelisted(userId: string): Promise<boolean> {
+    const result = await db.select({ whitelistedAt: schema.users.whitelistedAt })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+    return result[0]?.whitelistedAt !== null && result[0]?.whitelistedAt !== undefined;
+  }
 }

@@ -91,6 +91,8 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   totalKasEarned: real("total_kas_earned").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  whitelistedAt: timestamp("whitelisted_at"), // When wallet was whitelisted for discounted minting
+  whitelistTxHash: text("whitelist_tx_hash"), // Discount operation transaction hash
 });
 
 // Quiz results - individual lesson quiz completions

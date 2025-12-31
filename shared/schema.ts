@@ -7,6 +7,8 @@ export const userSchema = z.object({
   displayName: z.string().optional(),
   totalKasEarned: z.number().default(0),
   createdAt: z.date(),
+  whitelistedAt: z.date().optional(), // When wallet was whitelisted for discounted minting
+  whitelistTxHash: z.string().optional(), // Discount operation transaction hash
 });
 
 export const insertUserSchema = userSchema.omit({ id: true, createdAt: true }).partial({ totalKasEarned: true, displayName: true });

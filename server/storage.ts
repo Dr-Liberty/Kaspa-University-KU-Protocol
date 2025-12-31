@@ -94,6 +94,10 @@ export interface IStorage {
   // Operational metrics
   getRecyclePoolDepth(courseId: string): Promise<number>;
   getAllCourseCounters(): Promise<CourseTokenCounter[]>;
+  
+  // Whitelist methods for discounted minting
+  setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined>;
+  isUserWhitelisted(userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -640,6 +644,24 @@ export class MemStorage implements IStorage {
 
   async getAllCourseCounters(): Promise<CourseTokenCounter[]> {
     return Array.from(this.courseTokenCounters.values());
+  }
+
+  async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    const updated: User = {
+      ...user,
+      whitelistedAt: new Date(),
+      whitelistTxHash: txHash,
+    };
+    this.users.set(userId, updated);
+    return updated;
+  }
+
+  async isUserWhitelisted(userId: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    return user?.whitelistedAt !== undefined;
   }
 }
 
