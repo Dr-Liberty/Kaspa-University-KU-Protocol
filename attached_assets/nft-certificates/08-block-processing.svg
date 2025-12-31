@@ -132,8 +132,8 @@
   <text x="400" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">This certifies successful completion of</text>
   
   <!-- Course name - THE MAIN FOCUS -->
-  <text x="400" y="325" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#ffffff" font-weight="bold">Bitcoin vs Kaspa</text>
-  <text x="400" y="365" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#10b981" font-weight="bold" filter="url(#softGlow)">:The Next Evolution</text>
+  <text x="400" y="325" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#ffffff" font-weight="bold">Block Processing</text>
+  <text x="400" y="365" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#10b981" font-weight="bold" filter="url(#softGlow)"></text>
   
   <!-- Collection info -->
   <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">Kaspa University Course Collection</text>
