@@ -83,15 +83,12 @@ class NFTMetadataManager {
           continue;
         }
 
-        // Extract imageUrl from mint data if certificate doesn't have it
-        let imageUrl = cert.imageUrl || "";
-        if (!imageUrl && mint.mintData) {
-          try {
-            const mintData = typeof mint.mintData === "string" ? JSON.parse(mint.mintData) : mint.mintData;
-            imageUrl = mintData.imageUrl || "";
-          } catch {
-            // Ignore parse errors
-          }
+        // Use only the certificate's imageUrl - this is the actual course certificate
+        // Do not fall back to mintData to ensure NFT always shows the correct certificate
+        const imageUrl = cert.imageUrl || "";
+        if (!imageUrl) {
+          console.warn(`[MetadataManager] Certificate ${mint.certificateId} missing imageUrl for token #${mint.tokenId}, skipping`);
+          continue;
         }
 
         const metadata: TokenMetadata = {
