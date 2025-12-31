@@ -109,12 +109,9 @@
     <circle cx="500" cy="450" r="1.5" fill="#10b981" />
   </g>
   
-  <!-- Footer disclaimer - BELOW the border -->
-  <text x="400" y="585" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#9ca3af">NFT ownership does not guarantee course completion. Verify achievements on-chain.</text>
-  
-  <!-- Elegant border -->
-  <rect x="30" y="30" width="740" height="510" fill="none" stroke="url(#green)" stroke-width="1" rx="8" opacity="0.6"/>
-  <rect x="40" y="40" width="720" height="490" fill="none" stroke="#1a1a1a" stroke-width="1" rx="6"/>
+  <!-- Elegant border - closer to bottom -->
+  <rect x="30" y="30" width="740" height="550" fill="none" stroke="url(#green)" stroke-width="1" rx="8" opacity="0.6"/>
+  <rect x="40" y="40" width="720" height="530" fill="none" stroke="#1a1a1a" stroke-width="1" rx="6"/>
   
   <!-- KU Logo - top center -->
   <g transform="translate(400, 95)">
@@ -142,18 +139,21 @@
   <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">Kaspa University Course Collection</text>
   
   <!-- Verification seal - bottom left corner -->
-  <g transform="translate(100, 475)">
+  <g transform="translate(100, 500)">
     <circle cx="0" cy="0" r="28" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
     <circle cx="0" cy="0" r="22" fill="none" stroke="#10b981" stroke-width="0.5" opacity="0.5"/>
     <path d="M-8 0l6 6l14-16" stroke="#10b981" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  <text x="145" y="467" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
-  <text x="145" y="481" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Quiz data embedded on-chain via KU Protocol</text>
-  <text x="145" y="493" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Verify at KaspaUniversity.com</text>
+  <text x="145" y="492" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
+  <text x="145" y="506" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Quiz data embedded on-chain via KU Protocol</text>
+  <text x="145" y="518" font-family="Arial, sans-serif" font-size="8" fill="#9ca3af">Verify at KaspaUniversity.com</text>
   
   <!-- KRC-721 badge - bottom right -->
-  <g transform="translate(700, 475)">
+  <g transform="translate(700, 500)">
     <rect x="-45" y="-15" width="90" height="30" rx="4" fill="#0a0a0a" stroke="#10b981" stroke-width="0.5"/>
     <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#10b981" font-weight="bold">KRC-721</text>
   </g>
+  
+  <!-- Footer disclaimer - inside border, below verification -->
+  <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#9ca3af">NFT ownership does not guarantee course completion. Verify achievements on-chain.</text>
 </svg>
