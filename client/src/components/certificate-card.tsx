@@ -377,8 +377,8 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                         </>
                       ) : (
                         <>
-                          <Wallet className="h-4 w-4" />
-                          Awaiting Whitelist...
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Whitelist Pending ({mintPrice})
                         </>
                       )}
                     </Button>

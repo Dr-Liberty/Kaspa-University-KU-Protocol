@@ -15,7 +15,7 @@ export function useWhitelistStatus() {
   const { wallet } = useWallet();
 
   return useQuery<WhitelistStatus>({
-    queryKey: ["/api/whitelist/status"],
+    queryKey: ["/api/whitelist/status", wallet?.address ?? null],
     queryFn: async () => {
       if (!wallet?.address) {
         return { isWhitelisted: false, reason: "No wallet connected" };
