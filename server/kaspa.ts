@@ -64,11 +64,23 @@ interface TransactionResult {
   error?: string;
 }
 
-// MAINNET configuration
-const DEFAULT_CONFIG: KaspaConfig = {
-  network: "mainnet",
-  apiUrl: "https://api.kaspa.org",
-};
+// Network configuration based on KRC721_TESTNET environment variable
+function getDefaultConfig(): KaspaConfig {
+  const isTestnet = process.env.KRC721_TESTNET === "true";
+  console.log(`[Kaspa] KRC721_TESTNET env: '${process.env.KRC721_TESTNET}' -> isTestnet: ${isTestnet}`);
+  if (isTestnet) {
+    console.log("[Kaspa] Initializing with TESTNET-10 configuration");
+    return {
+      network: "testnet-10",
+      apiUrl: "https://api-tn10.kaspa.org",
+    };
+  }
+  console.log("[Kaspa] Initializing with MAINNET configuration");
+  return {
+    network: "mainnet",
+    apiUrl: "https://api.kaspa.org",
+  };
+}
 
 class KaspaService {
   private config: KaspaConfig;
@@ -84,7 +96,7 @@ class KaspaService {
   private kaspaModule: any = null;
 
   constructor(config: Partial<KaspaConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...getDefaultConfig(), ...config };
   }
 
   /**
@@ -275,16 +287,17 @@ class KaspaService {
           publicKey = new PublicKey(pubKeyHex);
         }
         
-        // Get address from public key
+        // Get address from public key - use correct network prefix
+        const networkId = this.config.network === "testnet-10" ? "testnet-10" : "mainnet";
         let address;
         if (typeof publicKey.toAddress === 'function') {
-          address = publicKey.toAddress("mainnet");
+          address = publicKey.toAddress(networkId);
         } else if (typeof publicKey.toAddressECDSA === 'function') {
-          address = publicKey.toAddressECDSA("mainnet");
+          address = publicKey.toAddressECDSA(networkId);
         } else {
           // Try creating address from public key string
           const pubKeyStr = publicKey.toString ? publicKey.toString() : publicKey;
-          address = Address.fromPublicKey(pubKeyStr, "mainnet");
+          address = Address.fromPublicKey(pubKeyStr, networkId);
         }
         
         this.treasuryAddress = address.toString();
@@ -354,9 +367,17 @@ class KaspaService {
   /**
    * Try to connect via kaspa-rpc-client (pure TypeScript library)
    * This is more reliable than WASM in Node.js/tsx environment
+   * Note: kaspa-rpc-client doesn't support testnet - skip for testnet and use WASM Resolver
    */
   private async tryRpcClientConnection(): Promise<void> {
-    // Multiple seeder nodes for failover
+    // kaspa-rpc-client doesn't support testnet - skip and let WASM Resolver handle it
+    const isTestnet = this.config.network === "testnet-10";
+    if (isTestnet) {
+      console.log("[Kaspa] Testnet mode - skipping kaspa-rpc-client (will use WASM Resolver)");
+      return;
+    }
+    
+    // Mainnet seeders
     const seeders = [
       "seeder2.kaspad.net:16110",
       "seeder1.kaspad.net:16110",
@@ -452,7 +473,11 @@ class KaspaService {
 
       // Fallback to direct URL if Resolver fails
       if (!resolverSuccess) {
-        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        // Use network-appropriate wRPC URL
+        const isTestnet = this.config.network === "testnet-10";
+        const wRpcUrl = isTestnet 
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
+          : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Falling back to direct wRPC: ${wRpcUrl}`);
         
         this.wasmRpcClient = new RpcClient({
@@ -558,7 +583,11 @@ class KaspaService {
 
       // Fallback to direct URL if Resolver fails
       if (!resolverSuccess) {
-        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        // Use network-appropriate wRPC URL
+        const isTestnet = this.config.network === "testnet-10";
+        const wRpcUrl = isTestnet 
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
+          : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Initializing WASM RpcClient via direct URL: ${wRpcUrl}`);
 
         this.wasmRpcClient = new RpcClient({
@@ -868,14 +897,21 @@ class KaspaService {
     networkName?: string;
     isLive: boolean;
   }> {
+    // Determine RPC endpoint based on network
+    const isTestnet = this.config.network === "testnet-10";
+    const rpcEndpoint = isTestnet 
+      ? "wss://wrpc.tn10.kaspa.ws:443 (testnet-10)"
+      : "seeder2.kaspad.net:16110";
+    
     const diagnostics: any = {
       rpcConnected: this.rpcConnected,
       apiConnected: this.apiConnected,
       treasuryAddress: this.treasuryAddress,
       treasuryBalance: 0,
-      rpcEndpoint: "seeder2.kaspad.net:16110",
+      rpcEndpoint,
       apiEndpoint: this.config.apiUrl,
       isLive: this.isLive(),
+      networkName: this.config.network,  // Always include configured network
     };
 
     // Get treasury balance with timeout
@@ -1622,7 +1658,11 @@ class KaspaService {
 
       // Fallback to direct URL if Resolver fails
       if (!testClient) {
-        const wRpcUrl = "wss://wrpc.kaspa.net:443";
+        // Use network-appropriate wRPC URL
+        const isTestnet = this.config.network === "testnet-10";
+        const wRpcUrl = isTestnet 
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
+          : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Testing direct wRPC connection: ${wRpcUrl}`);
         
         testClient = new RpcClient({
