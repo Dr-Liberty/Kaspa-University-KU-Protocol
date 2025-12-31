@@ -76,10 +76,13 @@ function generateCertificateSvgString(
   <rect x="340" y="405" width="120" height="40" rx="20" fill="#0a0a0a" stroke="url(#green)" stroke-width="1"/>
   <text x="400" y="432" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#10b981" font-weight="bold">${score}% Score</text>
   <text x="400" y="485" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">Awarded on ${dateStr}</text>
-  <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
-  <circle cx="165" cy="521" r="8" fill="#10b981"/>
-  <text x="400" y="526" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981">Quiz data has been embedded on Kaspa layer one for future verification</text>
-  <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">KRC-721 NFT Certificate | KPROOF Collection</text>
+  <rect x="100" y="500" width="600" height="50" rx="8" fill="#0d1f17" stroke="#10b981" stroke-width="1" opacity="0.8"/>
+  <circle cx="130" cy="525" r="10" fill="#10b981"/>
+  <path d="M126 525l3 3l5-6" stroke="#0a0a0a" stroke-width="2" fill="none"/>
+  <text x="150" y="520" font-family="Arial, sans-serif" font-size="11" fill="#10b981" font-weight="bold">VERIFIED ON-CHAIN</text>
+  <text x="150" y="535" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">Quiz completion proof embedded via KU Protocol on Kaspa L1</text>
+  <text x="560" y="527" font-family="monospace" font-size="9" fill="#6b7280">Verify: kaspa.university</text>
+  <text x="400" y="570" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">KRC-721 NFT Certificate | Kaspa University Collection</text>
 </svg>`;
 }
 
@@ -198,15 +201,22 @@ function CertificateSVG({
       </text>
       
       {/* Verification Badge */}
-      <rect x="140" y="505" width="520" height="32" rx="16" fill="#0d1f17" stroke="#10b981" strokeWidth="1" opacity="0.8"/>
-      <circle cx="165" cy="521" r="8" fill="#10b981"/>
-      <text x="400" y="526" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fill="#10b981">
-        Quiz data has been embedded on Kaspa layer one for future verification
+      <rect x="100" y="500" width="600" height="50" rx="8" fill="#0d1f17" stroke="#10b981" strokeWidth="1" opacity="0.8"/>
+      <circle cx="130" cy="525" r="10" fill="#10b981"/>
+      <path d="M126 525l3 3l5-6" stroke="#0a0a0a" strokeWidth="2" fill="none"/>
+      <text x="150" y="520" fontFamily="Arial, sans-serif" fontSize="11" fill="#10b981" fontWeight="bold">
+        VERIFIED ON-CHAIN
+      </text>
+      <text x="150" y="535" fontFamily="Arial, sans-serif" fontSize="10" fill="#9ca3af">
+        Quiz completion proof embedded via KU Protocol on Kaspa L1
+      </text>
+      <text x="560" y="527" fontFamily="monospace" fontSize="9" fill="#6b7280">
+        Verify: kaspa.university
       </text>
       
       {/* Footer */}
-      <text x="400" y="555" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#4b5563">
-        KRC-721 NFT Certificate | KPROOF Collection
+      <text x="400" y="570" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#4b5563">
+        KRC-721 NFT Certificate | Kaspa University Collection
       </text>
     </svg>
   );
