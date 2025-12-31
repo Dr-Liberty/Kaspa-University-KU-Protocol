@@ -706,12 +706,14 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                   data-testid={`button-view-${certificate.id}`}
                 >
                   <a
-                    href={`https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
+                    href={certificate.recipientAddress.startsWith("kaspatest:") 
+                      ? `https://testnet-10.krc721.stream` 
+                      : `https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="text-xs">View on Chain</span>
+                    <span className="text-xs">{certificate.recipientAddress.startsWith("kaspatest:") ? "View NFT" : "View on Chain"}</span>
                   </a>
                 </Button>
               )}
