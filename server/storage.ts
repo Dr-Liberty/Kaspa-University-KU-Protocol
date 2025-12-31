@@ -11,6 +11,9 @@ import type {
   QAPost,
   InsertQAPost,
   Stats,
+  CourseTokenCounter,
+  MintReservation,
+  InsertMintReservation,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { courses as seedCourses, lessons as seedLessons, quizQuestions as seedQuizQuestions } from "./seed-data";
@@ -70,6 +73,23 @@ export interface IStorage {
   getCourseCompletionCounts(): Promise<Map<string, number>>;
   getAllQuizResults(): Promise<QuizResult[]>;
   resetUserData(userId: string): Promise<void>;
+
+  // NFT Mint Reservation methods
+  getCourseTokenCounter(courseId: string): Promise<CourseTokenCounter | undefined>;
+  initializeCourseTokenCounter(courseId: string, courseIndex: number): Promise<CourseTokenCounter>;
+  reserveTokenId(courseId: string): Promise<number | null>; // Returns tokenId or null if sold out
+  
+  createMintReservation(reservation: InsertMintReservation): Promise<MintReservation>;
+  getMintReservation(id: string): Promise<MintReservation | undefined>;
+  getMintReservationByTokenId(tokenId: number): Promise<MintReservation | undefined>;
+  getMintReservationByCertificate(certificateId: string): Promise<MintReservation | undefined>;
+  getActiveMintReservation(walletAddress: string, courseId: string): Promise<MintReservation | undefined>;
+  updateMintReservation(id: string, updates: Partial<MintReservation>): Promise<MintReservation | undefined>;
+  expireOldReservations(): Promise<number>; // Returns count of expired reservations
+  getMintedTokenCount(courseId: string): Promise<number>;
+  recycleTokenId(courseId: string, tokenId: number): Promise<void>; // Return tokenId to available pool
+  cancelMintReservation(reservationId: string): Promise<{ success: boolean; reservation?: MintReservation }>; // Atomically cancel and recycle tokenId
+  confirmMintReservation(reservationId: string, mintTxHash: string): Promise<{ success: boolean; reservation?: MintReservation; error?: string }>; // Atomically confirm mint and update certificate
 }
 
 export class MemStorage implements IStorage {
@@ -82,6 +102,8 @@ export class MemStorage implements IStorage {
   private certificates: Map<string, Certificate> = new Map();
   private userProgress: Map<string, UserProgress> = new Map();
   private qaPosts: Map<string, QAPost> = new Map();
+  private courseTokenCounters: Map<string, CourseTokenCounter> = new Map();
+  private mintReservations: Map<string, MintReservation> = new Map();
 
   constructor() {
     this.seedData();
@@ -417,6 +439,194 @@ export class MemStorage implements IStorage {
       }
     }
     console.log(`[Storage] Reset all data for user ${userId}`);
+  }
+
+  // NFT Mint Reservation methods with tokenId recycling
+  private availableTokenPool: Map<string, number[]> = new Map(); // courseId -> recycled tokenIds
+  private readonly MAX_TOKENS_PER_COURSE = 1000;
+
+  async getCourseTokenCounter(courseId: string): Promise<CourseTokenCounter | undefined> {
+    return this.courseTokenCounters.get(courseId);
+  }
+
+  async initializeCourseTokenCounter(courseId: string, courseIndex: number): Promise<CourseTokenCounter> {
+    const existing = this.courseTokenCounters.get(courseId);
+    if (existing) return existing;
+    
+    const counter: CourseTokenCounter = {
+      courseId,
+      courseIndex,
+      nextTokenOffset: 0,
+      totalMinted: 0,
+    };
+    this.courseTokenCounters.set(courseId, counter);
+    return counter;
+  }
+
+  async reserveTokenId(courseId: string): Promise<number | null> {
+    const counter = this.courseTokenCounters.get(courseId);
+    if (!counter) return null;
+    
+    // First check if there are recycled tokenIds available
+    const recycledPool = this.availableTokenPool.get(courseId) || [];
+    if (recycledPool.length > 0) {
+      const recycledTokenId = recycledPool.shift()!;
+      this.availableTokenPool.set(courseId, recycledPool);
+      return recycledTokenId;
+    }
+    
+    // Check if counter has reached max for this course (0-999 offsets = 1000 tokens)
+    // If at max and no recycled tokens available, we're sold out
+    if (counter.nextTokenOffset >= this.MAX_TOKENS_PER_COURSE) {
+      return null; // Counter exhausted and no recycled tokens
+    }
+    
+    // Calculate next tokenId: courseIndex * 1000 + offset + 1
+    // Course 0: 1-1000, Course 1: 1001-2000, etc.
+    const tokenId = (counter.courseIndex * this.MAX_TOKENS_PER_COURSE) + counter.nextTokenOffset + 1;
+    
+    // Increment counter
+    counter.nextTokenOffset++;
+    this.courseTokenCounters.set(courseId, counter);
+    
+    return tokenId;
+  }
+
+  async createMintReservation(reservation: InsertMintReservation): Promise<MintReservation> {
+    const id = randomUUID();
+    const mintReservation: MintReservation = {
+      ...reservation,
+      id,
+      createdAt: new Date(),
+    };
+    this.mintReservations.set(id, mintReservation);
+    return mintReservation;
+  }
+
+  async getMintReservation(id: string): Promise<MintReservation | undefined> {
+    return this.mintReservations.get(id);
+  }
+
+  async getMintReservationByTokenId(tokenId: number): Promise<MintReservation | undefined> {
+    return Array.from(this.mintReservations.values())
+      .find(r => r.tokenId === tokenId);
+  }
+
+  async getMintReservationByCertificate(certificateId: string): Promise<MintReservation | undefined> {
+    return Array.from(this.mintReservations.values())
+      .find(r => r.certificateId === certificateId);
+  }
+
+  async getActiveMintReservation(walletAddress: string, courseId: string): Promise<MintReservation | undefined> {
+    return Array.from(this.mintReservations.values())
+      .find(r => r.walletAddress === walletAddress && 
+                 r.courseId === courseId &&
+                 (r.status === "reserved" || r.status === "signing") &&
+                 r.expiresAt > new Date());
+  }
+
+  async updateMintReservation(id: string, updates: Partial<MintReservation>): Promise<MintReservation | undefined> {
+    const reservation = this.mintReservations.get(id);
+    if (!reservation) return undefined;
+    const updated = { ...reservation, ...updates };
+    this.mintReservations.set(id, updated);
+    return updated;
+  }
+
+  async expireOldReservations(): Promise<number> {
+    const now = new Date();
+    let expiredCount = 0;
+    
+    for (const [id, reservation] of Array.from(this.mintReservations.entries())) {
+      if ((reservation.status === "reserved" || reservation.status === "signing") &&
+          reservation.expiresAt <= now) {
+        // Recycle the tokenId back to the available pool
+        const pool = this.availableTokenPool.get(reservation.courseId) || [];
+        pool.push(reservation.tokenId);
+        this.availableTokenPool.set(reservation.courseId, pool);
+        
+        reservation.status = "expired";
+        this.mintReservations.set(id, reservation);
+        expiredCount++;
+      }
+    }
+    
+    return expiredCount;
+  }
+
+  async getMintedTokenCount(courseId: string): Promise<number> {
+    return Array.from(this.mintReservations.values())
+      .filter(r => r.courseId === courseId && r.status === "minted").length;
+  }
+
+  async recycleTokenId(courseId: string, tokenId: number): Promise<void> {
+    const pool = this.availableTokenPool.get(courseId) || [];
+    // Only add if not already in pool
+    if (!pool.includes(tokenId)) {
+      pool.push(tokenId);
+      this.availableTokenPool.set(courseId, pool);
+    }
+  }
+
+  async cancelMintReservation(reservationId: string): Promise<{ success: boolean; reservation?: MintReservation }> {
+    const reservation = this.mintReservations.get(reservationId);
+    if (!reservation) return { success: false };
+    
+    // Don't cancel already minted reservations
+    if (reservation.status === "minted") return { success: false };
+    
+    // Update status and recycle tokenId atomically (in-memory is inherently atomic)
+    const updated: MintReservation = { ...reservation, status: "cancelled" };
+    this.mintReservations.set(reservationId, updated);
+    
+    // Recycle the tokenId
+    const pool = this.availableTokenPool.get(reservation.courseId) || [];
+    if (!pool.includes(reservation.tokenId)) {
+      pool.push(reservation.tokenId);
+      this.availableTokenPool.set(reservation.courseId, pool);
+    }
+    
+    return { success: true, reservation: updated };
+  }
+
+  async confirmMintReservation(reservationId: string, mintTxHash: string): Promise<{ success: boolean; reservation?: MintReservation; error?: string }> {
+    const reservation = this.mintReservations.get(reservationId);
+    if (!reservation) return { success: false, error: "Reservation not found" };
+    
+    if (reservation.status === "minted") {
+      return { success: true, reservation };
+    }
+    
+    if (reservation.status === "expired" || reservation.status === "cancelled") {
+      return { success: false, error: `Reservation is ${reservation.status}` };
+    }
+    
+    if (reservation.expiresAt <= new Date() && reservation.status !== "signing") {
+      const expired: MintReservation = { ...reservation, status: "expired" };
+      this.mintReservations.set(reservationId, expired);
+      return { success: false, error: "Reservation has expired" };
+    }
+    
+    // Atomically update reservation and certificate (in-memory is inherently atomic)
+    const updatedReservation: MintReservation = {
+      ...reservation,
+      status: "minted",
+      mintTxHash,
+      mintedAt: new Date(),
+    };
+    this.mintReservations.set(reservationId, updatedReservation);
+    
+    // Update certificate
+    const certificate = this.certificates.get(reservation.certificateId);
+    if (certificate) {
+      this.certificates.set(reservation.certificateId, {
+        ...certificate,
+        nftTxHash: mintTxHash,
+        nftStatus: "claimed",
+      });
+    }
+    
+    return { success: true, reservation: updatedReservation };
   }
 }
 

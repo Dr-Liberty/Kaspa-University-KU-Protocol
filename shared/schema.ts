@@ -232,25 +232,36 @@ export const walletIpBindingSchema = z.object({
 
 export type WalletIpBinding = z.infer<typeof walletIpBindingSchema>;
 
-// Pending mint reservations for non-custodial NFT minting
-export const pendingMintReservationSchema = z.object({
-  id: z.string(),
-  certificateId: z.string(),
-  recipientAddress: z.string(),
-  tokenId: z.number(),
-  p2shAddress: z.string(),
-  scriptData: z.string(), // JSON-serialized script data
-  mintData: z.string(), // JSON-serialized mint data
-  commitTxHash: z.string().optional(), // User's commit transaction hash
-  status: z.enum(["pending", "paid", "finalized", "expired", "failed"]).default("pending"),
-  createdAt: z.date(),
-  expiresAt: z.date(),
-  finalizedAt: z.date().optional(),
+// Course token counter for deterministic NFT tokenId assignment
+// Each course has 1000 tokenIds: Course 1 = 1-1000, Course 2 = 1001-2000, etc.
+export const courseTokenCounterSchema = z.object({
+  courseId: z.string(),
+  courseIndex: z.number(), // 0-15 for 16 courses
+  nextTokenOffset: z.number().default(0), // 0-999, offset within course range
+  totalMinted: z.number().default(0),
 });
 
-export type PendingMintReservation = z.infer<typeof pendingMintReservationSchema>;
-export const insertPendingMintReservationSchema = pendingMintReservationSchema.omit({ id: true, createdAt: true });
-export type InsertPendingMintReservation = z.infer<typeof insertPendingMintReservationSchema>;
+export type CourseTokenCounter = z.infer<typeof courseTokenCounterSchema>;
+
+// Mint reservation for user-signed KRC-721 minting
+// User reserves a tokenId, then signs the mint transaction themselves
+export const mintReservationSchema = z.object({
+  id: z.string(),
+  certificateId: z.string(),
+  courseId: z.string(),
+  walletAddress: z.string(),
+  tokenId: z.number(), // Absolute tokenId (1-16000)
+  inscriptionJson: z.string(), // The inscription JSON for user to sign
+  status: z.enum(["reserved", "signing", "minted", "expired", "cancelled"]).default("reserved"),
+  mintTxHash: z.string().optional(), // User's mint transaction hash
+  createdAt: z.date(),
+  expiresAt: z.date(), // Reservation expires after 10 minutes
+  mintedAt: z.date().optional(),
+});
+
+export type MintReservation = z.infer<typeof mintReservationSchema>;
+export const insertMintReservationSchema = mintReservationSchema.omit({ id: true, createdAt: true });
+export type InsertMintReservation = z.infer<typeof insertMintReservationSchema>;
 
 // Re-export Drizzle table definitions for database migrations
 export * from "../server/db/schema";

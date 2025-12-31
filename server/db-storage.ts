@@ -11,6 +11,9 @@ import type {
   QAPost,
   InsertQAPost,
   Stats,
+  CourseTokenCounter,
+  MintReservation,
+  InsertMintReservation,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
@@ -450,5 +453,360 @@ export class DbStorage implements IStorage {
     await db.delete(schema.certificates).where(eq(schema.certificates.userId, userId));
     await db.delete(schema.userProgress).where(eq(schema.userProgress.userId, userId));
     console.log(`[DbStorage] Reset all data for user ${userId}`);
+  }
+
+  // NFT Mint Reservation methods - using Postgres for persistence
+  private readonly MAX_TOKENS_PER_COURSE = 1000;
+
+  async getCourseTokenCounter(courseId: string): Promise<CourseTokenCounter | undefined> {
+    const result = await db.select()
+      .from(schema.courseTokenCounters)
+      .where(eq(schema.courseTokenCounters.courseId, courseId))
+      .limit(1);
+    return result[0] as CourseTokenCounter | undefined;
+  }
+
+  async initializeCourseTokenCounter(courseId: string, courseIndex: number): Promise<CourseTokenCounter> {
+    const existing = await this.getCourseTokenCounter(courseId);
+    if (existing) return existing;
+    
+    const counter = {
+      courseId,
+      courseIndex,
+      nextTokenOffset: 0,
+      totalMinted: 0,
+    };
+    
+    const result = await db.insert(schema.courseTokenCounters)
+      .values(counter)
+      .onConflictDoNothing()
+      .returning();
+    
+    if (result[0]) {
+      return result[0] as CourseTokenCounter;
+    }
+    
+    const afterInsert = await this.getCourseTokenCounter(courseId);
+    return afterInsert || counter;
+  }
+
+  async reserveTokenId(courseId: string): Promise<number | null> {
+    // Use a transaction with row-level locking for atomic tokenId assignment
+    return await db.transaction(async (tx) => {
+      // First try to get a recycled tokenId with FOR UPDATE SKIP LOCKED
+      const recycled = await tx.execute(sql`
+        DELETE FROM available_token_pool 
+        WHERE id = (
+          SELECT id FROM available_token_pool 
+          WHERE course_id = ${courseId}
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING token_id
+      `);
+      
+      if (recycled.rows && recycled.rows.length > 0) {
+        return recycled.rows[0].token_id as number;
+      }
+      
+      // No recycled tokenIds, get new one from counter with row-level lock
+      const counterResult = await tx.execute(sql`
+        SELECT * FROM course_token_counters 
+        WHERE course_id = ${courseId}
+        FOR UPDATE
+      `);
+      
+      if (!counterResult.rows || counterResult.rows.length === 0) {
+        return null;
+      }
+      
+      const counter = counterResult.rows[0] as any;
+      
+      // Check if counter has reached max for this course (0-999 offsets = 1000 tokens)
+      // If at max and no recycled tokens available, we're sold out
+      if (counter.next_token_offset >= this.MAX_TOKENS_PER_COURSE) {
+        return null; // Counter exhausted and no recycled tokens
+      }
+      
+      const tokenId = (counter.course_index * this.MAX_TOKENS_PER_COURSE) + counter.next_token_offset + 1;
+      
+      // Atomically increment the counter
+      await tx.execute(sql`
+        UPDATE course_token_counters 
+        SET next_token_offset = next_token_offset + 1, updated_at = NOW()
+        WHERE course_id = ${courseId}
+      `);
+      
+      return tokenId;
+    });
+  }
+
+  async createMintReservation(reservation: InsertMintReservation): Promise<MintReservation> {
+    const result = await db.insert(schema.userSignedMintReservations)
+      .values({
+        certificateId: reservation.certificateId,
+        courseId: reservation.courseId,
+        walletAddress: reservation.walletAddress,
+        tokenId: reservation.tokenId,
+        inscriptionJson: reservation.inscriptionJson,
+        status: reservation.status || "reserved",
+        expiresAt: reservation.expiresAt,
+      })
+      .returning();
+    
+    return result[0] as MintReservation;
+  }
+
+  async getMintReservation(id: string): Promise<MintReservation | undefined> {
+    const result = await db.select()
+      .from(schema.userSignedMintReservations)
+      .where(eq(schema.userSignedMintReservations.id, id))
+      .limit(1);
+    return result[0] as MintReservation | undefined;
+  }
+
+  async getMintReservationByTokenId(tokenId: number): Promise<MintReservation | undefined> {
+    const result = await db.select()
+      .from(schema.userSignedMintReservations)
+      .where(eq(schema.userSignedMintReservations.tokenId, tokenId))
+      .limit(1);
+    return result[0] as MintReservation | undefined;
+  }
+
+  async getMintReservationByCertificate(certificateId: string): Promise<MintReservation | undefined> {
+    const result = await db.select()
+      .from(schema.userSignedMintReservations)
+      .where(eq(schema.userSignedMintReservations.certificateId, certificateId))
+      .limit(1);
+    return result[0] as MintReservation | undefined;
+  }
+
+  async getActiveMintReservation(walletAddress: string, courseId: string): Promise<MintReservation | undefined> {
+    const result = await db.select()
+      .from(schema.userSignedMintReservations)
+      .where(and(
+        eq(schema.userSignedMintReservations.walletAddress, walletAddress),
+        eq(schema.userSignedMintReservations.courseId, courseId),
+        inArray(schema.userSignedMintReservations.status, ["reserved", "signing"]),
+        sql`${schema.userSignedMintReservations.expiresAt} > NOW()`
+      ))
+      .limit(1);
+    return result[0] as MintReservation | undefined;
+  }
+
+  async updateMintReservation(id: string, updates: Partial<MintReservation>): Promise<MintReservation | undefined> {
+    const updateData: Record<string, any> = {};
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.mintTxHash !== undefined) updateData.mintTxHash = updates.mintTxHash;
+    if (updates.mintedAt !== undefined) updateData.mintedAt = updates.mintedAt;
+    
+    if (Object.keys(updateData).length === 0) {
+      return this.getMintReservation(id);
+    }
+    
+    const result = await db.update(schema.userSignedMintReservations)
+      .set(updateData)
+      .where(eq(schema.userSignedMintReservations.id, id))
+      .returning();
+    
+    return result[0] as MintReservation | undefined;
+  }
+
+  async expireOldReservations(): Promise<number> {
+    // Use a transaction to atomically expire reservations and recycle their tokenIds
+    return await db.transaction(async (tx) => {
+      // Lock expired reservations for update to prevent races
+      const expiredResult = await tx.execute(sql`
+        SELECT * FROM user_signed_mint_reservations
+        WHERE status IN ('reserved', 'signing')
+        AND expires_at <= NOW()
+        FOR UPDATE
+      `);
+      
+      if (!expiredResult.rows || expiredResult.rows.length === 0) {
+        return 0;
+      }
+      
+      const expiredReservations = expiredResult.rows as any[];
+      
+      // Recycle tokenIds atomically within the transaction
+      for (const reservation of expiredReservations) {
+        await tx.execute(sql`
+          INSERT INTO available_token_pool (course_id, token_id)
+          VALUES (${reservation.course_id}, ${reservation.token_id})
+          ON CONFLICT DO NOTHING
+        `);
+      }
+      
+      // Update all expired reservations
+      const expiredIds = expiredReservations.map(r => r.id);
+      await tx.execute(sql`
+        UPDATE user_signed_mint_reservations
+        SET status = 'expired'
+        WHERE id = ANY(${expiredIds})
+      `);
+      
+      return expiredReservations.length;
+    });
+  }
+
+  async getMintedTokenCount(courseId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(schema.userSignedMintReservations)
+      .where(and(
+        eq(schema.userSignedMintReservations.courseId, courseId),
+        eq(schema.userSignedMintReservations.status, "minted")
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  async recycleTokenId(courseId: string, tokenId: number): Promise<void> {
+    // Atomic insert with ON CONFLICT to prevent duplicate recycling
+    await db.insert(schema.availableTokenPool)
+      .values({
+        courseId,
+        tokenId,
+      })
+      .onConflictDoNothing();
+  }
+
+  async cancelMintReservation(reservationId: string): Promise<{ success: boolean; reservation?: MintReservation }> {
+    // Use a transaction to atomically cancel reservation and recycle tokenId
+    return await db.transaction(async (tx) => {
+      // Lock the reservation for update
+      const reservationResult = await tx.execute(sql`
+        SELECT * FROM user_signed_mint_reservations
+        WHERE id = ${reservationId}
+        FOR UPDATE
+      `);
+      
+      if (!reservationResult.rows || reservationResult.rows.length === 0) {
+        return { success: false };
+      }
+      
+      const reservation = reservationResult.rows[0] as any;
+      
+      // Don't cancel already minted reservations
+      if (reservation.status === "minted") {
+        return { success: false };
+      }
+      
+      // Update status to cancelled
+      await tx.execute(sql`
+        UPDATE user_signed_mint_reservations
+        SET status = 'cancelled'
+        WHERE id = ${reservationId}
+      `);
+      
+      // Recycle the tokenId atomically
+      await tx.execute(sql`
+        INSERT INTO available_token_pool (course_id, token_id)
+        VALUES (${reservation.course_id}, ${reservation.token_id})
+        ON CONFLICT DO NOTHING
+      `);
+      
+      // Map snake_case to camelCase for the return value
+      const updatedReservation: MintReservation = {
+        id: reservation.id,
+        certificateId: reservation.certificate_id,
+        courseId: reservation.course_id,
+        walletAddress: reservation.wallet_address,
+        tokenId: reservation.token_id,
+        inscriptionJson: reservation.inscription_json,
+        status: "cancelled",
+        mintTxHash: reservation.mint_tx_hash,
+        createdAt: reservation.created_at,
+        expiresAt: reservation.expires_at,
+        mintedAt: reservation.minted_at,
+      };
+      
+      return { success: true, reservation: updatedReservation };
+    });
+  }
+
+  async confirmMintReservation(reservationId: string, mintTxHash: string): Promise<{ success: boolean; reservation?: MintReservation; error?: string }> {
+    // Use a transaction to atomically confirm reservation and update certificate
+    return await db.transaction(async (tx) => {
+      // Lock the reservation for update
+      const reservationResult = await tx.execute(sql`
+        SELECT * FROM user_signed_mint_reservations
+        WHERE id = ${reservationId}
+        FOR UPDATE
+      `);
+      
+      if (!reservationResult.rows || reservationResult.rows.length === 0) {
+        return { success: false, error: "Reservation not found" };
+      }
+      
+      const reservation = reservationResult.rows[0] as any;
+      
+      // Already minted - idempotent success
+      if (reservation.status === "minted") {
+        const existingReservation: MintReservation = {
+          id: reservation.id,
+          certificateId: reservation.certificate_id,
+          courseId: reservation.course_id,
+          walletAddress: reservation.wallet_address,
+          tokenId: reservation.token_id,
+          inscriptionJson: reservation.inscription_json,
+          status: reservation.status,
+          mintTxHash: reservation.mint_tx_hash,
+          createdAt: reservation.created_at,
+          expiresAt: reservation.expires_at,
+          mintedAt: reservation.minted_at,
+        };
+        return { success: true, reservation: existingReservation };
+      }
+      
+      if (reservation.status === "expired" || reservation.status === "cancelled") {
+        return { success: false, error: `Reservation is ${reservation.status}` };
+      }
+      
+      // Check expiration (unless already in signing status)
+      if (reservation.expires_at <= new Date() && reservation.status !== "signing") {
+        await tx.execute(sql`
+          UPDATE user_signed_mint_reservations
+          SET status = 'expired'
+          WHERE id = ${reservationId}
+        `);
+        return { success: false, error: "Reservation has expired" };
+      }
+      
+      // Update reservation to minted status and get the actual timestamp from DB
+      const updateResult = await tx.execute(sql`
+        UPDATE user_signed_mint_reservations
+        SET status = 'minted', mint_tx_hash = ${mintTxHash}, minted_at = NOW()
+        WHERE id = ${reservationId}
+        RETURNING minted_at
+      `);
+      
+      const mintedAt = updateResult.rows && updateResult.rows.length > 0 
+        ? (updateResult.rows[0] as any).minted_at 
+        : new Date();
+      
+      // Update certificate atomically in the same transaction
+      await tx.execute(sql`
+        UPDATE certificates
+        SET nft_tx_hash = ${mintTxHash}, nft_status = 'claimed'
+        WHERE id = ${reservation.certificate_id}
+      `);
+      
+      // Return the updated reservation with actual DB timestamp
+      const updatedReservation: MintReservation = {
+        id: reservation.id,
+        certificateId: reservation.certificate_id,
+        courseId: reservation.course_id,
+        walletAddress: reservation.wallet_address,
+        tokenId: reservation.token_id,
+        inscriptionJson: reservation.inscription_json,
+        status: "minted",
+        mintTxHash,
+        createdAt: reservation.created_at,
+        expiresAt: reservation.expires_at,
+        mintedAt,
+      };
+      
+      return { success: true, reservation: updatedReservation };
+    });
   }
 }

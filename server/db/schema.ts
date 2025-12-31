@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, real, integer, jsonb, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, real, integer, jsonb, uuid, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const securityLogs = pgTable("security_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -182,3 +182,37 @@ export const appSettings = pgTable("app_settings", {
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Course token counters - tracks minted tokenIds per course for user-signed minting
+export const courseTokenCounters = pgTable("course_token_counters", {
+  courseId: text("course_id").primaryKey(),
+  courseIndex: integer("course_index").notNull(), // 0-15 for 16 courses
+  nextTokenOffset: integer("next_token_offset").default(0).notNull(), // 0-999 offset within course range
+  totalMinted: integer("total_minted").default(0).notNull(), // Count of successfully minted tokens
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// User-signed mint reservations - reserves tokenId for user-signed minting
+export const userSignedMintReservations = pgTable("user_signed_mint_reservations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  certificateId: text("certificate_id").notNull(),
+  courseId: text("course_id").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  tokenId: integer("token_id").notNull(),
+  inscriptionJson: text("inscription_json").notNull(),
+  status: text("status").default("reserved").notNull(), // reserved, signing, minted, expired, cancelled
+  mintTxHash: text("mint_tx_hash"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  mintedAt: timestamp("minted_at"),
+});
+
+// Available token pool - stores recycled tokenIds for reuse
+export const availableTokenPool = pgTable("available_token_pool", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: text("course_id").notNull(),
+  tokenId: integer("token_id").notNull(),
+  recycledAt: timestamp("recycled_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("available_token_pool_course_token_idx").on(table.courseId, table.tokenId),
+]);

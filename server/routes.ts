@@ -1750,6 +1750,179 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // USER-SIGNED NFT MINTING (NEW ARCHITECTURE)
+  // User signs the mint transaction themselves and appears as on-chain minter
+  // ============================================
+
+  // Reserve a tokenId for user-signed minting
+  app.post("/api/nft/reserve/:certificateId", nftRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { certificateId } = req.params;
+    
+    const certificate = await storage.getCertificate(certificateId);
+    if (!certificate) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    if (certificate.recipientAddress !== walletAddress) {
+      return res.status(403).json({ error: "You don't own this certificate" });
+    }
+
+    if (certificate.nftStatus === "claimed") {
+      return res.status(400).json({ error: "NFT already minted", nftTxHash: certificate.nftTxHash });
+    }
+
+    try {
+      const { mintService } = await import("./mint-service");
+      const result = await mintService.reserveMint(certificateId, certificate.courseId, walletAddress);
+
+      if ("error" in result) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      console.log(`[Reserve] TokenId ${result.reservation.tokenId} reserved for ${walletAddress.slice(0, 20)}...`);
+      
+      return res.json({
+        success: true,
+        reservationId: result.reservation.id,
+        tokenId: result.reservation.tokenId,
+        inscriptionJson: result.inscriptionJson,
+        expiresAt: result.reservation.expiresAt.getTime(),
+        courseId: certificate.courseId,
+        courseName: certificate.courseName,
+      });
+    } catch (error: any) {
+      console.error("[Reserve] Error:", error.message);
+      return res.status(500).json({ error: "Failed to reserve token", message: sanitizeError(error) });
+    }
+  });
+
+  // Update reservation status when user starts signing
+  app.post("/api/nft/signing/:reservationId", nftRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { reservationId } = req.params;
+
+    try {
+      const reservation = await storage.getMintReservation(reservationId);
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservation not found" });
+      }
+
+      if (reservation.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: "Not your reservation" });
+      }
+
+      const { mintService } = await import("./mint-service");
+      const updated = await mintService.updateReservationSigning(reservationId);
+
+      if (!updated) {
+        return res.status(500).json({ error: "Failed to update reservation" });
+      }
+
+      return res.json({ success: true, status: updated.status });
+    } catch (error: any) {
+      console.error("[Signing] Error:", error.message);
+      return res.status(500).json({ error: "Failed to update reservation", message: sanitizeError(error) });
+    }
+  });
+
+  // Confirm user-signed mint transaction
+  app.post("/api/nft/confirm/:reservationId", nftRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { reservationId } = req.params;
+    const { mintTxHash } = req.body;
+
+    if (!mintTxHash) {
+      return res.status(400).json({ error: "Mint transaction hash is required" });
+    }
+
+    try {
+      const reservation = await storage.getMintReservation(reservationId);
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservation not found" });
+      }
+
+      if (reservation.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: "Not your reservation" });
+      }
+
+      const { mintService } = await import("./mint-service");
+      const result = await mintService.confirmMint(reservationId, mintTxHash);
+
+      if ("error" in result) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      console.log(`[Confirm] NFT minted - tokenId: ${result.reservation.tokenId}, tx: ${mintTxHash.slice(0, 16)}...`);
+
+      return res.json({
+        success: true,
+        tokenId: result.reservation.tokenId,
+        mintTxHash: result.reservation.mintTxHash,
+        status: result.reservation.status,
+      });
+    } catch (error: any) {
+      console.error("[Confirm] Error:", error.message);
+      return res.status(500).json({ error: "Failed to confirm mint", message: sanitizeError(error) });
+    }
+  });
+
+  // Cancel a mint reservation
+  app.post("/api/nft/cancel/:reservationId", nftRateLimiter, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const { reservationId } = req.params;
+
+    try {
+      const reservation = await storage.getMintReservation(reservationId);
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservation not found" });
+      }
+
+      if (reservation.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: "Not your reservation" });
+      }
+
+      const { mintService } = await import("./mint-service");
+      const cancelled = await mintService.cancelReservation(reservationId);
+
+      return res.json({ success: cancelled });
+    } catch (error: any) {
+      console.error("[Cancel] Error:", error.message);
+      return res.status(500).json({ error: "Failed to cancel reservation", message: sanitizeError(error) });
+    }
+  });
+
+  // Get mint stats for a course
+  app.get("/api/nft/stats/:courseId", async (req: Request, res: Response) => {
+    const { courseId } = req.params;
+
+    try {
+      const { mintService } = await import("./mint-service");
+      const stats = await mintService.getMintStats(courseId);
+      return res.json(stats);
+    } catch (error: any) {
+      console.error("[MintStats] Error:", error.message);
+      return res.status(500).json({ error: "Failed to get mint stats" });
+    }
+  });
+
   // Legacy claim endpoint (deprecated - use /mint instead)
   app.post("/api/certificates/:id/claim", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;

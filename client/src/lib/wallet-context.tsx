@@ -15,6 +15,7 @@ declare global {
       sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number }) => Promise<string>;
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
+      signKRC20Transaction: (inscribeJsonString: string, type: number) => Promise<string>;
       on: (event: string, callback: (...args: any[]) => void) => void;
       removeListener: (event: string, callback: (...args: any[]) => void) => void;
     };
@@ -35,6 +36,7 @@ interface WalletContextType {
   connectionError: string | null;
   sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
   getBalance: () => Promise<number>;
+  signKRC721Mint: (inscriptionJson: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -317,6 +319,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return balance.total / 100000000;
   }, [isDemoMode]);
 
+  const signKRC721Mint = useCallback(async (inscriptionJson: string): Promise<string> => {
+    if (isDemoMode) {
+      throw new Error("NFT minting not available in demo mode. Please connect a real wallet.");
+    }
+    
+    if (!window.kasware) {
+      throw new Error("KasWare wallet not installed");
+    }
+    
+    if (typeof window.kasware.signKRC20Transaction !== "function") {
+      throw new Error("Your KasWare wallet does not support KRC-721 minting. Please update to the latest version.");
+    }
+    
+    console.log("[Wallet] Signing KRC-721 mint transaction...");
+    const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
+    console.log(`[Wallet] KRC-721 mint signed, txHash: ${txHash}`);
+    return txHash;
+  }, [isDemoMode]);
+
   const truncatedAddress = wallet?.address
     ? `${wallet.address.slice(0, 12)}...${wallet.address.slice(-6)}`
     : "";
@@ -337,6 +358,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connectionError,
         sendKaspa,
         getBalance,
+        signKRC721Mint,
       }}
     >
       {children}
