@@ -94,7 +94,7 @@
   <path d="M92 470l6 6l12-14" stroke="#0a0a0a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   
   <text x="130" y="462" font-family="Arial, sans-serif" font-size="14" fill="#10b981" font-weight="bold">KU PROTOCOL VERIFIED</text>
-  <text x="130" y="482" font-family="Arial, sans-serif" font-size="11" fill="#d1d5db">All quiz results are verified on-chain using the KU Protocol on Kaspa L1.</text>
+  <text x="130" y="482" font-family="Arial, sans-serif" font-size="11" fill="#d1d5db">All quiz results are verified on-chain using the KU Protocol on Kaspa L1 by embedding quiz data in the transactions payload.</text>
   
   <line x1="80" y1="500" x2="720" y2="500" stroke="#10b981" stroke-width="0.5" opacity="0.3"/>
   
