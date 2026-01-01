@@ -2,7 +2,16 @@ import { storage } from "./storage";
 import { courses as seedCourses } from "./seed-data";
 import type { MintReservation, Certificate } from "@shared/schema";
 
-const NFT_COLLECTION_TICKER = "KASPAUNIV";
+// Dynamic ticker based on network mode - must match krc721.ts defaults
+function getCollectionTicker(): string {
+  const isTestnet = process.env.KRC721_TESTNET === "true";
+  if (isTestnet) {
+    return process.env.KRC721_TESTNET_TICKER || "KTEST";
+  }
+  // Default to KUPROOF to match krc721.ts getDefaultConfig()
+  return process.env.KRC721_TICKER || "KUPROOF";
+}
+
 const RESERVATION_TTL_MINUTES = 10;
 const MAX_TOKENS_PER_COURSE = 1000;
 
@@ -45,7 +54,7 @@ export class MintService {
     return {
       p: "krc-721",
       op: "mint",
-      tick: NFT_COLLECTION_TICKER,
+      tick: getCollectionTicker(),
       to: walletAddress,
     };
   }
