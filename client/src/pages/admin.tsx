@@ -547,23 +547,39 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-              {!collectionStatus.isDeployed && collectionStatus.isLive && (
-                <Button
-                  onClick={() => deployCollectionMutation.mutate()}
-                  disabled={deployCollectionMutation.isPending}
-                  data-testid="button-deploy-collection"
-                >
-                  {deployCollectionMutation.isPending ? (
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Wallet className="w-4 h-4 mr-2" />
+              {!collectionStatus.isDeployed && collectionStatus.address && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    onClick={() => deployCollectionMutation.mutate()}
+                    disabled={deployCollectionMutation.isPending || !collectionStatus.isLive}
+                    data-testid="button-deploy-collection"
+                  >
+                    {deployCollectionMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Wallet className="w-4 h-4 mr-2" />
+                    )}
+                    Deploy Collection (1,000 KAS)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/collection-status"] })}
+                    data-testid="button-refresh-status"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Refresh
+                  </Button>
+                  {!collectionStatus.isLive && (
+                    <span className="text-sm text-yellow-500">
+                      RPC connecting... click Refresh in a few seconds
+                    </span>
                   )}
-                  Deploy Collection (1,000 KAS)
-                </Button>
+                </div>
               )}
-              {!collectionStatus.isDeployed && !collectionStatus.isLive && (
+              {!collectionStatus.isDeployed && !collectionStatus.address && (
                 <p className="text-sm text-muted-foreground">
-                  KRC-721 service is not live. Check RPC connection and treasury keys.
+                  Treasury wallet not configured. Add KASPA_TREASURY_MNEMONIC or KASPA_TREASURY_PRIVATEKEY secret.
                 </p>
               )}
             </CardContent>

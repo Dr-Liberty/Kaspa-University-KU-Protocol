@@ -530,7 +530,6 @@ class KRC721Service {
    */
   private async connectRpc(): Promise<void> {
     const networkId = this.config.network;
-    console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
     
     // Helper to add timeout to any promise
     const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
@@ -542,39 +541,40 @@ class KRC721Service {
       ]);
     };
     
-    try {
-      // Use kaspa-rpc-client (pure TypeScript) for UTXO queries
-      const { ClientWrapper } = require("kaspa-rpc-client");
-      
-      // Select appropriate seeder based on network
-      // Mainnet: seeder2.kaspad.net:16110
-      // Testnet-10: seeder1-testnet.kaspad.net:16210 (port 16210 for testnet-10)
-      const hosts = networkId === "testnet-10" 
-        ? ["seeder1-testnet.kaspad.net:16210"] 
-        : ["seeder2.kaspad.net:16110"];
-      
-      console.log(`[KRC721] Using RPC hosts: ${hosts.join(", ")}`);
-      
-      const wrapper = new ClientWrapper({
-        hosts,
-        verbose: false,
-      });
-      
-      // Add 15 second timeout to RPC initialization
-      await withTimeout(wrapper.initialize(), 15000, "RPC initialization");
-      this.rpcClient = await wrapper.getClient();
-      
-      // Get block count to verify connection (5 second timeout)
-      const info: any = await withTimeout(this.rpcClient.getBlockDagInfo(), 5000, "getBlockDagInfo");
-      console.log(`[KRC721] RPC connected to ${networkId}! Block count: ${info?.blockCount || "unknown"}`);
-    } catch (error: any) {
-      console.log(`[KRC721] kaspa-rpc-client connection failed: ${error.message}`);
-      // Continue - will try WASM RPC below
+    // For testnet, skip kaspa-rpc-client (unreliable) and go directly to WASM RPC
+    if (networkId !== "testnet-10") {
+      console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
+      try {
+        // Use kaspa-rpc-client (pure TypeScript) for UTXO queries on mainnet
+        const { ClientWrapper } = require("kaspa-rpc-client");
+        const hosts = ["seeder2.kaspad.net:16110"];
+        
+        console.log(`[KRC721] Using RPC hosts: ${hosts.join(", ")}`);
+        
+        const wrapper = new ClientWrapper({
+          hosts,
+          verbose: false,
+        });
+        
+        // Add 15 second timeout to RPC initialization
+        await withTimeout(wrapper.initialize(), 15000, "RPC initialization");
+        this.rpcClient = await wrapper.getClient();
+        
+        // Get block count to verify connection (5 second timeout)
+        const info: any = await withTimeout(this.rpcClient.getBlockDagInfo(), 5000, "getBlockDagInfo");
+        console.log(`[KRC721] RPC connected to ${networkId}! Block count: ${info?.blockCount || "unknown"}`);
+      } catch (error: any) {
+        console.log(`[KRC721] kaspa-rpc-client connection failed: ${error.message}`);
+        // Continue - will try WASM RPC below
+      }
+    } else {
+      console.log(`[KRC721] Testnet mode - skipping kaspa-rpc-client (will use WASM Resolver)`);
     }
     
-    // Also connect WASM RpcClient for PendingTransaction.submit()
-    // WASM SDK's PendingTransaction.submit() requires WASM RpcClient, not kaspa-rpc-client
+    // Connect WASM RpcClient (required for transaction submission)
+    // WASM SDK's PendingTransaction.submit() requires WASM RpcClient
     try {
+      console.log(`[KRC721] Connecting WASM RpcClient for ${networkId}...`);
       const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
       const resolver = new Resolver();
       this.wasmRpcClient = new WasmRpcClient({
@@ -585,9 +585,9 @@ class KRC721Service {
       await withTimeout(this.wasmRpcClient.connect(), 15000, "WASM RPC connect");
       console.log(`[KRC721] WASM RpcClient connected for transaction submission`);
       
-      // If kaspa-rpc-client failed but WASM worked, we can still function
+      // If kaspa-rpc-client failed/skipped but WASM worked, we can still function
       if (!this.rpcClient) {
-        console.log(`[KRC721] Using WASM RPC as primary (kaspa-rpc-client unavailable)`);
+        console.log(`[KRC721] Using WASM RPC as primary`);
       }
     } catch (wasmError: any) {
       console.log(`[KRC721] WASM RpcClient connection failed: ${wasmError.message}`);
@@ -604,7 +604,8 @@ class KRC721Service {
    * Check if service is live (has real signing capability)
    */
   isLive(): boolean {
-    return this.privateKey !== null && this.rpcClient !== null;
+    // Live if we have private key and at least one RPC client connected
+    return this.privateKey !== null && (this.rpcClient !== null || this.wasmRpcClient !== null);
   }
 
   /**
