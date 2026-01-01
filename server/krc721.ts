@@ -379,25 +379,29 @@ class KRC721Service {
       console.log(`[KRC721] Network: ${this.config.network}`);
       console.log(`[KRC721] Collection: ${this.config.ticker}`);
 
-      // Connect to RPC
-      await this.connectRpc();
-
-      // Load deployment status from database
-      await this.loadDeploymentStatus();
-
-      // Log live mode status with reasons if not live
-      if (this.isLive()) {
-        console.log(`[KRC721] Live mode enabled - RPC connected, keys ready`);
-      } else {
-        const reasons: string[] = [];
-        if (!this.rpcClient) reasons.push("RPC not connected");
-        if (!this.privateKey) reasons.push("No private key");
-        console.error(`[KRC721] Cannot enable live mode: ${reasons.join(", ")}`);
-        console.log("[KRC721] Running in demo mode - NFT minting will be simulated");
-      }
-
+      // Mark as initialized immediately - RPC will connect in background
       this.initialized = true;
-      return this.isLive();
+
+      // Connect to RPC in background (non-blocking)
+      this.connectRpc().then(() => {
+        // Load deployment status after RPC connects
+        this.loadDeploymentStatus().then(() => {
+          // Log live mode status with reasons if not live
+          if (this.isLive()) {
+            console.log(`[KRC721] Live mode enabled - RPC connected, keys ready`);
+          } else {
+            const reasons: string[] = [];
+            if (!this.rpcClient && !this.wasmRpcClient) reasons.push("RPC not connected");
+            if (!this.privateKey) reasons.push("No private key");
+            console.error(`[KRC721] Cannot enable live mode: ${reasons.join(", ")}`);
+            console.log("[KRC721] Running in demo mode - NFT minting will be simulated");
+          }
+        });
+      }).catch((error: any) => {
+        console.log(`[KRC721] Background RPC connection failed: ${error.message}`);
+      });
+
+      return true;
     } catch (error: any) {
       console.error("[KRC721] Failed to initialize:", error.message);
       this.initialized = true; // Allow demo mode
@@ -525,10 +529,20 @@ class KRC721Service {
    * Connect to Kaspa RPC using kaspa-rpc-client (pure TypeScript, more reliable in Node.js)
    */
   private async connectRpc(): Promise<void> {
+    const networkId = this.config.network;
+    console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
+    
+    // Helper to add timeout to any promise
+    const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+        )
+      ]);
+    };
+    
     try {
-      const networkId = this.config.network;
-      console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
-      
       // Use kaspa-rpc-client (pure TypeScript) for UTXO queries
       const { ClientWrapper } = require("kaspa-rpc-client");
       
@@ -546,31 +560,43 @@ class KRC721Service {
         verbose: false,
       });
       
-      await wrapper.initialize();
+      // Add 15 second timeout to RPC initialization
+      await withTimeout(wrapper.initialize(), 15000, "RPC initialization");
       this.rpcClient = await wrapper.getClient();
       
-      // Get block count to verify connection
-      const info = await this.rpcClient.getBlockDagInfo();
+      // Get block count to verify connection (5 second timeout)
+      const info: any = await withTimeout(this.rpcClient.getBlockDagInfo(), 5000, "getBlockDagInfo");
       console.log(`[KRC721] RPC connected to ${networkId}! Block count: ${info?.blockCount || "unknown"}`);
-      
-      // Also connect WASM RpcClient for PendingTransaction.submit()
-      // WASM SDK's PendingTransaction.submit() requires WASM RpcClient, not kaspa-rpc-client
-      try {
-        const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
-        const resolver = new Resolver();
-        this.wasmRpcClient = new WasmRpcClient({
-          resolver,
-          networkId: this.config.network,
-        });
-        await this.wasmRpcClient.connect();
-        console.log(`[KRC721] WASM RpcClient connected for transaction submission`);
-      } catch (wasmError: any) {
-        console.log(`[KRC721] WASM RpcClient connection failed: ${wasmError.message}`);
-        // Will fall back to kaspa-rpc-client (may not work for submit)
-      }
     } catch (error: any) {
-      console.log(`[KRC721] RPC connection failed: ${error.message}`);
-      // Continue without RPC - will use demo mode
+      console.log(`[KRC721] kaspa-rpc-client connection failed: ${error.message}`);
+      // Continue - will try WASM RPC below
+    }
+    
+    // Also connect WASM RpcClient for PendingTransaction.submit()
+    // WASM SDK's PendingTransaction.submit() requires WASM RpcClient, not kaspa-rpc-client
+    try {
+      const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
+      const resolver = new Resolver();
+      this.wasmRpcClient = new WasmRpcClient({
+        resolver,
+        networkId: this.config.network,
+      });
+      // Add 15 second timeout to WASM RPC connection
+      await withTimeout(this.wasmRpcClient.connect(), 15000, "WASM RPC connect");
+      console.log(`[KRC721] WASM RpcClient connected for transaction submission`);
+      
+      // If kaspa-rpc-client failed but WASM worked, we can still function
+      if (!this.rpcClient) {
+        console.log(`[KRC721] Using WASM RPC as primary (kaspa-rpc-client unavailable)`);
+      }
+    } catch (wasmError: any) {
+      console.log(`[KRC721] WASM RpcClient connection failed: ${wasmError.message}`);
+      // Will fall back to kaspa-rpc-client if available
+    }
+    
+    // Log final connection status
+    if (!this.rpcClient && !this.wasmRpcClient) {
+      console.log(`[KRC721] No RPC connections established - running in limited mode`);
     }
   }
 

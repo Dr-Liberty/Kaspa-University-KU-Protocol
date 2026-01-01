@@ -3074,7 +3074,16 @@ export async function registerRoutes(
       }
 
       const krc721Service = await getKRC721Service();
-      const success = await krc721Service.switchNetwork(testnet);
+      
+      // Add timeout to prevent infinite spinning (30 second limit)
+      const timeoutPromise = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error("Network switch timed out after 30 seconds")), 30000)
+      );
+      
+      const success = await Promise.race([
+        krc721Service.switchNetwork(testnet),
+        timeoutPromise
+      ]);
       
       if (success) {
         const networkInfo = krc721Service.getNetworkInfo();
@@ -3086,13 +3095,36 @@ export async function registerRoutes(
           ...networkInfo
         });
       } else {
-        res.status(500).json({ 
-          error: "Failed to switch network. Check server logs for details." 
+        // Even if RPC failed, the network mode was switched - return partial success
+        const networkInfo = krc721Service.getNetworkInfo();
+        res.json({
+          success: true,
+          message: testnet 
+            ? "Switched to TESTNET-10 (RPC connection pending - will retry automatically)"
+            : "Switched to MAINNET (RPC connection pending - will retry automatically)",
+          ...networkInfo,
+          warning: "RPC connection not yet established. Blockchain operations may be limited until connection succeeds."
         });
       }
     } catch (error: any) {
       console.error("[Admin] Switch network error:", error.message);
-      res.status(500).json({ error: sanitizeError(error) });
+      // If it timed out, still report the network mode change
+      if (error.message?.includes("timed out")) {
+        try {
+          const krc721Service = await getKRC721Service();
+          const networkInfo = krc721Service.getNetworkInfo();
+          res.json({
+            success: true,
+            message: `Network mode changed to ${networkInfo.network} (RPC connection still in progress)`,
+            ...networkInfo,
+            warning: "RPC connection is taking longer than expected. It will continue in the background."
+          });
+        } catch {
+          res.status(500).json({ error: "Network switch timed out. Please try again." });
+        }
+      } else {
+        res.status(500).json({ error: sanitizeError(error) });
+      }
     }
   });
 
