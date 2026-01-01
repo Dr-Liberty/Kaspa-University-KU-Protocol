@@ -253,10 +253,12 @@ setInterval(async () => {
 function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
-    ticker: useTestnet ? "KTEST" : "KUPROOF", // Use different ticker for testnet
+    ticker: useTestnet 
+      ? (process.env.KRC721_TESTNET_TICKER || "KTEST") 
+      : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
-    maxSupply: useTestnet ? 100 : 10000, // 100 for testnet, 10,000 for mainnet
+    maxSupply: 16000, // 1,000 NFTs per course × 16 courses
     royaltyFee: 0, // No royalties on educational certificates
     royaltyOwner: "",
   };
