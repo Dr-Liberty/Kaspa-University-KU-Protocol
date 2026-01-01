@@ -470,15 +470,22 @@ Here's a security advantage most people overlook: Kaspa's speed makes MEV (Maxim
 ✓ Kaspa is fast enough for real-world payments
 ✓ Smart contracts and L2 are actively developing</p>
 <p>YOUR NEXT STEPS:</p>
-<p>1. SECURE YOUR KASPA
-   - Get a proper wallet (Kasware, Kaspium, or hardware wallet)
-   - Control your own keys
-   - Never leave funds on exchanges</p>
-<p>2. USE THE NETWORK
+<p>1. SECURE YOUR KASPA - Hardware Wallets (Recommended)</p>
+<p>For maximum security, keep most or all of your Kaspa on a hardware wallet:</p>
+<p>- <a href="https://tangem.com/en/pricing/?cur=KAS" target="_blank">Tangem</a> - Card-style hardware wallet with Kaspa support</p>
+<p>- <a href="https://www.ledger.com/" target="_blank">Ledger</a> - Industry-leading hardware wallet</p>
+<p>Only keep a small amount on web/browser wallets for daily transactions.</p>
+<p>2. WEB & MOBILE WALLETS - For Daily Use</p>
+<p>- <a href="https://kasware.xyz/" target="_blank">KasWare</a> - Browser extension wallet</p>
+<p>- <a href="https://kaspium.io/" target="_blank">Kaspium</a> - Mobile wallet</p>
+<p>- <a href="https://kastle.io/" target="_blank">Kastle</a> - Web wallet</p>
+<p>- <a href="https://kurncy.com/" target="_blank">Kurncy</a> - Multi-asset wallet</p>
+<p>- Kaspacom Wallet - Coming soon!</p>
+<p>3. USE THE NETWORK
    - Send some Kaspa to experience 1-second blocks
    - Explore Kasplex tokens
    - Join the community</p>
-<p>3. KEEP LEARNING
+<p>4. KEEP LEARNING
    - Check out other courses on BMT University
    - Follow Kaspa development
    - Share what you've learned</p>
@@ -1780,7 +1787,7 @@ Kaspa can increase blocks per second by:
       { id: "q-1-12-1", lessonId: "lesson-1-12", question: "How many public nodes does Kaspa have worldwide?", options: ["21 validators", "100 nodes", "Over 1,000 nodes", "5 data centers"], correctIndex: 2, explanation: "Kaspa has over 1,000 public nodes globally, making it genuinely decentralized unlike chains with few validators." },
       { id: "q-1-13-1", lessonId: "lesson-1-13", question: "What is the smallest unit of Kaspa called?", options: ["Satoshi", "Wei", "Sompi", "Gwei"], correctIndex: 2, explanation: "Like Bitcoin's satoshi, Kaspa's smallest unit is called a 'sompi' - named after Dr. Sompolinsky." },
       { id: "q-1-14-1", lessonId: "lesson-1-14", question: "What is Kaspa's relationship to Bitcoin's vision?", options: ["Competing replacement", "Fulfilling Satoshi's original peer-to-peer cash vision", "Completely different goals", "A Bitcoin sidechain"], correctIndex: 1, explanation: "Kaspa isn't trying to replace Bitcoin - it's fulfilling the original vision of peer-to-peer electronic cash that's fast enough to use." },
-      { id: "q-1-15-1", lessonId: "lesson-1-15", question: "What wallets are recommended for securing your Kaspa?", options: ["Exchange wallets only", "Kasware, Kaspium, or hardware wallets", "Paper wallets only", "Browser extensions only"], correctIndex: 1, explanation: "The lesson recommends proper wallets like Kasware, Kaspium, or hardware wallets - never leaving funds on exchanges." },
+      { id: "q-1-15-1", lessonId: "lesson-1-15", question: "Should I learn more about Kaspa?", options: ["No, this is enough", "Yes!", "Maybe later", "I already know everything"], correctIndex: 1, explanation: "Absolutely! There's always more to learn about Kaspa's innovative technology. Keep exploring!" },
 
       // Course 2: DAG Terminology - 8 lessons
       { id: "q-2-1-1", lessonId: "lesson-2-1", question: "In a traditional blockchain, what happens when conflicts occur?", options: ["Both conflicting blocks are permanently kept in the chain", "Conflicting blocks are combined into a single merged block", "One block is accepted into the main chain, all others are orphaned", "A voting mechanism determines which block to include"], correctIndex: 2, explanation: "In linear chains, when conflicts occur, only one block is accepted into the main chain while all other competing blocks are orphaned and discarded." },
