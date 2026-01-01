@@ -623,36 +623,37 @@ class KRC721Service {
   }
 
   /**
-   * Load deployment status from database and verify against indexer
+   * Load deployment status from indexer (source of truth), sync to database
    */
   private async loadDeploymentStatus(): Promise<void> {
     try {
-      const { db } = await import("./db");
-      const { appSettings } = await import("./db/schema");
-      const { eq } = await import("drizzle-orm");
+      // Always check the indexer first - it's the source of truth
+      console.log(`[KRC721] Checking indexer for ${this.config.ticker} deployment status...`);
+      const indexerCheck = await verifyCollectionIndexed(this.config.ticker);
       
-      const result = await db.select().from(appSettings).where(eq(appSettings.key, `krc721_deployed_${this.config.ticker}`));
-      const dbSaysDeployed = result.length > 0 && result[0].value === "true";
-      
-      if (dbSaysDeployed) {
-        // Verify against indexer to ensure database is accurate
-        console.log(`[KRC721] Database says ${this.config.ticker} is deployed, verifying with indexer...`);
-        const indexerCheck = await verifyCollectionIndexed(this.config.ticker);
-        
-        if (indexerCheck.indexed) {
-          this.collectionDeployed = true;
-          console.log(`[KRC721] Collection ${this.config.ticker} verified as deployed in indexer`);
-        } else {
-          // Database is wrong - indexer is the source of truth
-          console.log(`[KRC721] Indexer says ${this.config.ticker} is NOT deployed - resetting database status`);
-          this.collectionDeployed = false;
-          await this.saveDeploymentStatus(false);
-        }
+      if (indexerCheck.indexed) {
+        this.collectionDeployed = true;
+        console.log(`[KRC721] Collection ${this.config.ticker} is DEPLOYED (confirmed by indexer)`);
+        // Sync to database
+        await this.saveDeploymentStatus(true);
       } else {
-        console.log(`[KRC721] Collection ${this.config.ticker} is not deployed`);
+        this.collectionDeployed = false;
+        console.log(`[KRC721] Collection ${this.config.ticker} is NOT deployed (indexer: ${indexerCheck.error || 'not found'})`);
       }
     } catch (error: any) {
       console.log(`[KRC721] Could not load deployment status: ${error.message}`);
+      // Fall back to database check if indexer is unreachable
+      try {
+        const { db } = await import("./db");
+        const { appSettings } = await import("./db/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        const result = await db.select().from(appSettings).where(eq(appSettings.key, `krc721_deployed_${this.config.ticker}`));
+        this.collectionDeployed = result.length > 0 && result[0].value === "true";
+        console.log(`[KRC721] Using database fallback - deployed: ${this.collectionDeployed}`);
+      } catch (dbError: any) {
+        console.log(`[KRC721] Database fallback also failed: ${dbError.message}`);
+      }
     }
   }
 
