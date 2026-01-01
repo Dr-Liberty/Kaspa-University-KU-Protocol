@@ -254,7 +254,7 @@ function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
     ticker: useTestnet 
-      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST2") 
+      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST3") 
       : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
@@ -802,25 +802,26 @@ class KRC721Service {
       }
       console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
-      // Create deployment data following EXACT KRC-721 spec from KSPR indexer docs
-      // Reference: https://testnet-10.krc721.stream/docs
-      // The opData in indexer shows: { buri, max, royaltyFee, daaMintStart, premint }
-      // Keep it minimal - only include required fields
-      // Ensure buri has trailing slash for proper token metadata path resolution
-      const normalizedBuri = imageUrl.endsWith('/') ? imageUrl : `${imageUrl}/`;
+      // Create deployment data following coinchimp/kaspa-krc721-apps reference implementation
+      // Use metadata format (not buri) for KasWare wallet compatibility
+      // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/deploy.ts
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
         tick: this.config.ticker,
-        buri: normalizedBuri, // Base URI with trailing slash - MUST be ipfs:// prefix
         max: this.config.maxSupply.toString(),
+        metadata: {
+          name: this.config.collectionName,
+          description: this.config.collectionDescription,
+          image: imageUrl, // IPFS image URL for collection
+        },
       };
 
-      // Add royalty info if configured (use royaltyTo per spec)
+      // Add royalty info if configured
       if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
         // royaltyFee is in SOMPI (10^-8 KAS)
         deployData.royaltyFee = kaspaToSompi(this.config.royaltyFee.toString())?.toString();
-        deployData.royaltyTo = this.config.royaltyOwner;
+        deployData.royaltyOwner = this.config.royaltyOwner;
       }
 
       console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
