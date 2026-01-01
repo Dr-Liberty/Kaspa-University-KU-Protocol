@@ -14,8 +14,16 @@
 
 import { storage } from "./storage";
 
-const NFT_COLLECTION_TICKER = process.env.KRC721_TICKER || "KASPAUNIV";
 const DISCOUNT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS - minimum required for minting
+
+// Dynamic ticker based on current network mode
+function getCollectionTicker(): string {
+  const isTestnet = process.env.KRC721_TESTNET === "true";
+  if (isTestnet) {
+    return process.env.KRC721_TESTNET_TICKER || "KTEST";
+  }
+  return process.env.KRC721_TICKER || "KASPAUNIV";
+}
 
 interface DiscountResult {
   success: boolean;
@@ -59,7 +67,7 @@ class DiscountService {
       await this.connectRpc();
 
       this.initialized = true;
-      console.log(`[DiscountService] Initialized for collection ${NFT_COLLECTION_TICKER}`);
+      console.log(`[DiscountService] Initialized for collection ${getCollectionTicker()}`);
       console.log(`[DiscountService] Treasury: ${this.treasuryAddress}`);
       
       return this.isLive();
@@ -184,7 +192,7 @@ class DiscountService {
     return {
       p: "krc-721",
       op: "discount",
-      tick: NFT_COLLECTION_TICKER,
+      tick: getCollectionTicker(),
       to: walletAddress,
       discountFee: DISCOUNT_FEE_SOMPI.toString(),
     };
@@ -201,7 +209,7 @@ class DiscountService {
         ? "https://testnet-10.krc721.stream" 
         : "https://mainnet.krc721.stream";
       
-      const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/royalties/${walletAddress}/${NFT_COLLECTION_TICKER}`;
+      const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/royalties/${walletAddress}/${getCollectionTicker()}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -430,7 +438,7 @@ class DiscountService {
    * Get the current ticker being used
    */
   getTicker(): string {
-    return NFT_COLLECTION_TICKER;
+    return getCollectionTicker();
   }
 
   /**
