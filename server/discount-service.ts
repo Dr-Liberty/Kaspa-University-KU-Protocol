@@ -288,9 +288,14 @@ class DiscountService {
       .addData(Buffer.from(inscriptionJson))
       .addOp(Opcodes.OpEndIf);
 
+    const isTestnet = process.env.KRC721_TESTNET === "true";
+    const networkId = isTestnet 
+      ? this.kaspaModule.NetworkId.testnet10 
+      : this.kaspaModule.NetworkId.mainnet;
+    
     const p2shAddress = addressFromScriptPublicKey(
       script.createPayToScriptHashScript(),
-      this.kaspaModule.NetworkId.mainnet
+      networkId
     )?.toString();
 
     if (!p2shAddress) {
