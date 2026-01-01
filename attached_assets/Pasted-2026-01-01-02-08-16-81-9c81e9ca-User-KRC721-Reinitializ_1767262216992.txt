@@ -1,0 +1,163 @@
+2026-01-01 02:08:16.81
+9c81e9ca
+User
+[KRC721] Reinitializing for testnet-10...
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Testnet mode - skipping kaspa-rpc-client (will use WASM Resolver)
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Loading kaspa WASM module v1.0.1...
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Connecting WASM RpcClient for testnet-10...
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Collection: KUTEST1
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Keys derived successfully
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Network: testnet-10
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Using raw private key
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Service initialized
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Kaspa WASM v1.0.1 loaded successfully
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Using production WASM from dist/wasm/
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Console panic hook initialized for WASM debugging
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Derived public key: 02f2eb7a1a44c5c1...
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Address: kaspatest:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0ylualx4r5g8
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Address: kaspatest:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0ylualx4r5g8
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Ticker: KUTEST1
+2026-01-01 02:08:16.84
+9c81e9ca
+User
+[KRC721] Successfully switched to testnet-10
+2026-01-01 02:08:16.85
+9c81e9ca
+User
+10:08:16 AM [express] POST /api/admin/switch-network 200 in 44ms :: {"success":true,"message":"Switched to TESTNET-10 - You can now safely test NFT deployments without spending real KAS","network":"testnet-10","ticker":"KUTEST1","testnet":true,"indexerUrl":"https://testnet-10.krc721.stream"}
+2026-01-01 02:08:16.93
+9c81e9ca
+User
+10:08:16 AM [express] GET /api/admin/network-mode 200 in 1ms :: {"network":"testnet-10","ticker":"KUTEST1","testnet":true,"indexerUrl":"https://testnet-10.krc721.stream","message":"Running on TESTNET-10 - safe for testing NFT deployments"}
+2026-01-01 02:08:16.96
+9c81e9ca
+User
+[MintStorage] Highest token ID in reservations: 4
+2026-01-01 02:08:17.00
+9c81e9ca
+User
+[KRC721] Next token ID: 10 (reservations max: 4, cert count: 9)
+2026-01-01 02:08:17.00
+9c81e9ca
+User
+10:08:17 AM [express] GET /api/admin/collection-status 200 in 72ms :: {"ticker":"KUTEST1","name":"Kaspa Proof of Learning","description":"Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1","maxSupply":16000,"nextTokenId":10,"isDeployed":false,"network":"testnet-10","address":"kaspatest:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0ylualx4r5g8","isLive":true}
+2026-01-01 02:08:17.48
+9c81e9ca
+User
+[KRC721] Using WASM RPC as primary
+2026-01-01 02:08:17.48
+9c81e9ca
+User
+[KRC721] WASM RpcClient connected for transaction submission
+2026-01-01 02:08:18.48
+9c81e9ca
+User
+[KRC721] Collection KUTEST1 is not deployed
+2026-01-01 02:08:18.48
+9c81e9ca
+User
+[KRC721] Live mode enabled - RPC connected, keys ready
+2026-01-01 02:08:19.02
+9c81e9ca
+User
+[MintStorage] Highest token ID in reservations: 4
+2026-01-01 02:08:19.05
+9c81e9ca
+User
+[KRC721] Next token ID: 10 (reservations max: 4, cert count: 9)
+2026-01-01 02:08:19.06
+9c81e9ca
+User
+10:08:19 AM [express] GET /api/admin/collection-status 304 in 64ms :: {"ticker":"KUTEST1","name":"Kaspa Proof of Learning","description":"Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1","maxSupply":16000,"nextTokenId":10,"isDeployed":false,"network":"testnet-10","address":"kaspatest:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0ylualx4r5g8","isLive":true}
+2026-01-01 02:08:19.38
+9c81e9ca
+User
+[KRC721] Using WASM RPC as primary
+2026-01-01 02:08:19.38
+9c81e9ca
+User
+[KRC721] WASM RpcClient connected for transaction submission
+2026-01-01 02:08:19.48
+9c81e9ca
+User
+[KRC721] Live mode enabled - RPC connected, keys ready
+2026-01-01 02:08:19.48
+9c81e9ca
+User
+[KRC721] Collection KUTEST1 is not deployed
+2026-01-01 02:08:23.61
+9c81e9ca
+User
+[MintStorage] Highest token ID in reservations: 4
+2026-01-01 02:08:23.65
+9c81e9ca
+User
+[KRC721] Next token ID: 10 (reservations max: 4, cert count: 9)
+2026-01-01 02:08:23.65
+9c81e9ca
+User
+10:08:23 AM [express] GET /api/admin/collection-status 304 in 63ms :: {"ticker":"KUTEST1","name":"Kaspa Proof of Learning","description":"Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1","maxSupply":16000,"nextTokenId":10,"isDeployed":false,"network":"testnet-10","address":"kaspatest:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0ylualx4r5g8","isLive":true}
+2026-01-01 02:08:24.87
+9c81e9ca
+User
+[MintStorage] Highest token ID in reservations: 4
+2026-01-01 02:08:24.90
+9c81e9ca
+User
+[KRC721] Next token ID: 10 (reservations max: 4, cert count: 9)
+2026-01-01 02:08:24.90
+9c81e9ca
+User
+[Pinata] Service initialized with API keys
+2026-01-01 02:08:25.78
+9c81e9ca
+User
+[Pinata] Image uploaded: ipfs://QmWsz7rieMTuqQbxvZw4WfzcDCKHB9ctJ47Z4GmzCn63Du
+2026-01-01 02:08:25.78
+9c81e9ca
+U
