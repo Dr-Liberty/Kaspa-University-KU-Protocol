@@ -48,3 +48,4 @@ integrations = ["javascript_mem_db:1.0.0"]
 
 [userenv.development]
 KRC721_TESTNET = "true"
+KRC721_TESTNET_TICKER = "KUTEST1"
