@@ -388,7 +388,8 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
                       certificate={certificate}
                       onClose={() => setShowMintDialog(false)}
                       onSuccess={() => {
-                        setShowMintDialog(false);
+                        // Don't close the parent dialog - let the success dialog in UserSignedMint stay open
+                        // The user will close it manually with the "Done" button
                         queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
                       }}
                     />
