@@ -17,11 +17,11 @@ import { storage } from "./storage";
 // Discount fee for whitelisted users (course completers)
 // Fee structure:
 // - Non-whitelisted: pay royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
-// - Whitelisted: pay discountFee (0.5 KAS) + PoW fee (10 KAS) = 10.5 KAS total
+// - Whitelisted: pay discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
 //
 // The discountFee is the royalty amount whitelisted users pay INSTEAD of royaltyFee
 // It's NOT the total cost - the 10 KAS PoW fee is separate and goes to miners
-const DISCOUNT_FEE_SOMPI = BigInt(50000000); // 0.5 KAS - minimal royalty for whitelisted users
+const DISCOUNT_FEE_SOMPI = BigInt(0); // 0 KAS - whitelisted users pay only PoW fee, no royalty
 
 // Dynamic ticker based on current network mode
 // MUST match the ticker used in krc721.ts deploy inscription
