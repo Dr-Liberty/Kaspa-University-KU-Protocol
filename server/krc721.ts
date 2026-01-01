@@ -254,7 +254,7 @@ function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
     ticker: useTestnet 
-      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST1") 
+      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST2") 
       : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
@@ -806,11 +806,13 @@ class KRC721Service {
       // Reference: https://testnet-10.krc721.stream/docs
       // The opData in indexer shows: { buri, max, royaltyFee, daaMintStart, premint }
       // Keep it minimal - only include required fields
+      // Ensure buri has trailing slash for proper token metadata path resolution
+      const normalizedBuri = imageUrl.endsWith('/') ? imageUrl : `${imageUrl}/`;
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
         tick: this.config.ticker,
-        buri: imageUrl, // Base URI - MUST be ipfs:// prefix
+        buri: normalizedBuri, // Base URI with trailing slash - MUST be ipfs:// prefix
         max: this.config.maxSupply.toString(),
       };
 
