@@ -73,10 +73,12 @@ export class MintService {
     score: number,
     completedAt: Date
   ): MintInscriptionData {
+    const ticker = getCollectionTicker();
+    console.log(`[MintService] Building inscription with ticker: ${ticker} (KRC721_TESTNET=${process.env.KRC721_TESTNET})`);
     return {
       p: "krc-721",
       op: "mint",
-      tick: getCollectionTicker(),
+      tick: ticker,
       to: walletAddress,
       tokenId: tokenId,
       metadata: {

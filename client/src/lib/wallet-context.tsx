@@ -332,7 +332,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("Your KasWare wallet does not support KRC-721 minting. Please update to the latest version.");
     }
     
-    console.log("[Wallet] Signing KRC-721 mint transaction...");
+    console.log("[Wallet] Signing KRC-721 mint transaction with inscription:", inscriptionJson);
+    try {
+      const parsed = JSON.parse(inscriptionJson);
+      console.log("[Wallet] Inscription ticker:", parsed.tick);
+    } catch {
+      console.log("[Wallet] Could not parse inscription JSON");
+    }
     const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
     console.log(`[Wallet] KRC-721 mint signed, txHash: ${txHash}`);
     return txHash;
