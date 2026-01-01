@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useWallet } from "@/lib/wallet-context";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Sparkles, CheckCircle2, AlertCircle, Clock, Wallet, XCircle } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, AlertCircle, Clock, Wallet, XCircle, ExternalLink, Award, FileCheck } from "lucide-react";
 import type { Certificate } from "@shared/schema";
 
 interface UserSignedMintProps {
@@ -26,6 +27,17 @@ interface ReservationData {
   courseName: string;
 }
 
+function getExplorerTxUrl(txHash: string): string {
+  const isTestnet = import.meta.env.VITE_KASPA_NETWORK === "testnet-10";
+  return isTestnet
+    ? `https://explorer-tn10.kaspa.org/txs/${txHash}`
+    : `https://explorer.kaspa.org/txs/${txHash}`;
+}
+
+function getKUExplorerUrl(courseId: string): string {
+  return `/explorer?course=${courseId}`;
+}
+
 export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMintProps) {
   const { wallet, isDemoMode, signKRC721Mint } = useWallet();
   const { toast } = useToast();
@@ -36,6 +48,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
   const [error, setError] = useState<string | null>(null);
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [expiryCountdown, setExpiryCountdown] = useState<number>(0);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const { data: existingReservation, isLoading: loadingExisting } = useQuery({
     queryKey: ["/api/nft/active-reservation", certificate.id],
@@ -148,11 +161,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
     },
     onSuccess: (data) => {
       setStep("success");
-      
-      toast({
-        title: "NFT Minted Successfully",
-        description: `Token #${data.tokenId} has been minted to your wallet!`,
-      });
+      setShowSuccessDialog(true);
 
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
@@ -456,22 +465,9 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
                 Token #{reservation.tokenId} is now in your wallet
               </p>
             </div>
-            {mintTxHash && (
-              <a
-                href={`https://explorer.kaspa.org/txs/${mintTxHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
-                data-testid="link-mint-tx"
-              >
-                View transaction on explorer
-              </a>
-            )}
-            {onClose && (
-              <Button variant="outline" onClick={onClose} className="mt-2">
-                Close
-              </Button>
-            )}
+            <Button onClick={() => setShowSuccessDialog(true)} data-testid="button-view-nft-details">
+              View NFT Details
+            </Button>
           </div>
         )}
 
@@ -488,6 +484,101 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
           </div>
         )}
       </CardContent>
+
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Award className="h-8 w-8 text-primary" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-center">
+              NFT Minted Successfully
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Your certificate is now on the Kaspa blockchain
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {certificate.imageUrl && (
+              <div className="flex justify-center">
+                <div className="relative overflow-hidden rounded-lg border bg-muted/30 p-2">
+                  <img 
+                    src={certificate.imageUrl.startsWith("ipfs://") 
+                      ? `https://gateway.pinata.cloud/ipfs/${certificate.imageUrl.replace("ipfs://", "")}`
+                      : certificate.imageUrl
+                    }
+                    alt={`${certificate.courseName} Certificate`}
+                    className="max-h-48 w-auto rounded object-contain"
+                    data-testid="img-nft-certificate"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3 rounded-lg bg-muted/50 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Course</span>
+                <span className="text-sm font-medium text-right">{certificate.courseName}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Score</span>
+                <Badge variant="secondary">{certificate.score || 100}%</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Token ID</span>
+                <Badge variant="outline">#{reservation?.tokenId}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Completed</span>
+                <span className="text-sm font-medium">
+                  {new Date(certificate.issuedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Recipient</span>
+                <span className="text-xs font-mono truncate max-w-[180px]" title={certificate.recipientAddress}>
+                  {certificate.recipientAddress.slice(0, 16)}...{certificate.recipientAddress.slice(-8)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {mintTxHash && (
+                <a
+                  href={getExplorerTxUrl(mintTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-colors hover-elevate"
+                  data-testid="link-mint-tx"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Mint Transaction
+                </a>
+              )}
+              <a
+                href={getKUExplorerUrl(certificate.courseId)}
+                className="flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-colors hover-elevate"
+                data-testid="link-quiz-proof"
+              >
+                <FileCheck className="h-4 w-4" />
+                Verify Quiz Proof on KU Explorer
+              </a>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setShowSuccessDialog(false);
+                if (onClose) onClose();
+              }} 
+              className="w-full"
+              data-testid="button-close-success-dialog"
+            >
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
