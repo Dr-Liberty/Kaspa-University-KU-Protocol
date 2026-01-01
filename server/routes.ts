@@ -1848,7 +1848,15 @@ export async function registerRoutes(
 
     try {
       const { mintService } = await import("./mint-service");
-      const result = await mintService.reserveMint(certificateId, certificate.courseId, walletAddress);
+      // Pass certificate info for token metadata in the mint inscription
+      const result = await mintService.reserveMint(
+        certificateId, 
+        certificate.courseId, 
+        walletAddress,
+        certificate.courseName,
+        certificate.score || 100,
+        certificate.issuedAt ? new Date(certificate.issuedAt) : new Date()
+      );
 
       if ("error" in result) {
         return res.status(400).json({ error: result.error });

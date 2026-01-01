@@ -250,7 +250,13 @@ setInterval(async () => {
 
 // Default configuration for Kaspa University Certificates
 // Network is determined dynamically based on testnet mode
+// 
+// WHITELIST-BASED PRICING MODEL:
+// - royaltyFee: 20,000 KAS (deterrent price for non-whitelisted users)
+// - Users whitelisted via "discount" operation pay 10.5 KAS (mintFee)
 function getDefaultConfig(): KRC721Config {
+  // Treasury address will be set during initialization when private key is loaded
+  // For now use empty string - will be overwritten in deployCollection
   return {
     network: getNetworkId(),
     ticker: useTestnet 
@@ -259,8 +265,8 @@ function getDefaultConfig(): KRC721Config {
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
     maxSupply: 16000, // 1,000 NFTs per course × 16 courses
-    royaltyFee: 0, // No royalties on educational certificates
-    royaltyOwner: "",
+    royaltyFee: 20000, // 20,000 KAS deterrent price (actual deploy uses DETERRENT_PRICE_SOMPI)
+    royaltyOwner: "", // Set to treasury address in deployCollection
   };
 }
 

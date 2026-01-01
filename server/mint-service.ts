@@ -2,11 +2,16 @@ import { storage } from "./storage";
 import { courses as seedCourses } from "./seed-data";
 import type { MintReservation, Certificate } from "@shared/schema";
 
-// Dynamic ticker based on network mode - must match krc721.ts defaults
+// Dynamic ticker based on network mode - MUST match krc721.ts defaults
+// All ticker defaults must be kept in sync across:
+// - krc721.ts (getDefaultConfig)
+// - mint-service.ts (this function)
+// - discount-service.ts (getCollectionTicker)
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
-    return process.env.KRC721_TESTNET_TICKER || "KUTEST1";
+    // Must match krc721.ts - currently KUTEST4
+    return process.env.KRC721_TESTNET_TICKER || "KUTEST4";
   }
   // Default to KUPROOF to match krc721.ts getDefaultConfig()
   return process.env.KRC721_TICKER || "KUPROOF";
@@ -20,6 +25,13 @@ export interface MintInscriptionData {
   op: string;
   tick: string;
   to: string;
+  tokenId?: number;
+  metadata?: {
+    name: string;
+    description: string;
+    image?: string;
+    attributes?: Array<{ trait_type: string; value: string | number }>;
+  };
 }
 
 export class MintService {
@@ -50,19 +62,43 @@ export class MintService {
     return { start, end };
   }
 
-  buildInscriptionJson(walletAddress: string): MintInscriptionData {
+  /**
+   * Build mint inscription JSON with token metadata
+   * Includes tokenId and per-token metadata for wallet display
+   */
+  buildInscriptionJson(
+    walletAddress: string,
+    tokenId: number,
+    courseName: string,
+    score: number,
+    completedAt: Date
+  ): MintInscriptionData {
     return {
       p: "krc-721",
       op: "mint",
       tick: getCollectionTicker(),
       to: walletAddress,
+      tokenId: tokenId,
+      metadata: {
+        name: `${courseName} - Certificate #${tokenId}`,
+        description: `Proof of Learning certificate from Kaspa University. Awarded for completing ${courseName} with a score of ${score}%.`,
+        attributes: [
+          { trait_type: "Course", value: courseName },
+          { trait_type: "Score", value: score },
+          { trait_type: "Completed", value: completedAt.toISOString().split("T")[0] },
+          { trait_type: "Platform", value: "Kaspa University" },
+        ],
+      },
     };
   }
 
   async reserveMint(
     certificateId: string,
     courseId: string,
-    walletAddress: string
+    walletAddress: string,
+    courseName?: string,
+    score?: number,
+    completedAt?: Date
   ): Promise<{ reservation: MintReservation; inscriptionJson: string } | { error: string }> {
     await this.initialize();
 
@@ -86,7 +122,14 @@ export class MintService {
       return { error: "Course NFT collection is sold out" };
     }
 
-    const inscriptionData = this.buildInscriptionJson(walletAddress);
+    // Build inscription with token metadata
+    const inscriptionData = this.buildInscriptionJson(
+      walletAddress,
+      tokenId,
+      courseName || "Kaspa University Course",
+      score || 100,
+      completedAt || new Date()
+    );
     const inscriptionJson = JSON.stringify(inscriptionData);
 
     const expiresAt = new Date();

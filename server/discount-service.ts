@@ -17,12 +17,14 @@ import { storage } from "./storage";
 const DISCOUNT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS - minimum required for minting
 
 // Dynamic ticker based on current network mode
+// MUST match the ticker used in krc721.ts deploy inscription
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
-    return process.env.KRC721_TESTNET_TICKER || "KUTEST1";
+    // Must match the current testnet ticker in krc721.ts
+    return process.env.KRC721_TESTNET_TICKER || "KUTEST4";
   }
-  return process.env.KRC721_TICKER || "KASPAUNIV";
+  return process.env.KRC721_TICKER || "KUPROOF";
 }
 
 interface DiscountResult {
