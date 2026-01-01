@@ -136,15 +136,21 @@ class DiscountService {
     this.privateKey = new PrivateKey(privateKeyHex);
     this.publicKey = new PublicKey(pubKeyHex);
     
-    const network = process.env.KRC721_TESTNET === "true" ? "testnet-10" : "mainnet";
+    // Use NetworkId enum - string names don't work with WASM toAddress()
+    const isTestnet = process.env.KRC721_TESTNET === "true";
+    const networkId = isTestnet 
+      ? this.kaspaModule.NetworkId.testnet10 
+      : this.kaspaModule.NetworkId.mainnet;
+    
     let address;
     if (typeof this.publicKey.toAddress === "function") {
-      address = this.publicKey.toAddress(network);
+      address = this.publicKey.toAddress(networkId);
     } else if (typeof this.publicKey.toAddressECDSA === "function") {
-      address = this.publicKey.toAddressECDSA(network);
+      address = this.publicKey.toAddressECDSA(networkId);
     }
     
     this.treasuryAddress = address?.toString() || null;
+    console.log(`[DiscountService] Derived treasury for ${isTestnet ? 'testnet' : 'mainnet'}: ${this.treasuryAddress}`);
   }
 
   private async connectRpc(): Promise<void> {
