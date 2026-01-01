@@ -52,54 +52,19 @@ class DiscountService {
   async initialize(): Promise<boolean> {
     if (this.initialized) return true;
 
-    const isTestnet = process.env.KRC721_TESTNET === "true";
-
     try {
-      // Get treasury credentials - use network-specific env vars if available
-      // CRITICAL: Testnet mode should use separate wallet to prevent mainnet fund loss
-      let mnemonic: string | undefined;
-      let privateKeyHex: string | undefined;
-      
-      if (isTestnet) {
-        // Testnet: prefer testnet-specific credentials
-        privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY_TESTNET || 
-                        process.env.KASPA_TREASURY_PRIVATE_KEY_TESTNET;
-        mnemonic = process.env.KASPA_TREASURY_MNEMONIC_TESTNET;
-        
-        // Fall back to shared with warning
-        if (!privateKeyHex && !mnemonic) {
-          privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
-          mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
-          if (privateKeyHex || mnemonic) {
-            console.warn("[DiscountService] WARNING: Using shared treasury credentials for testnet. Set KASPA_TREASURY_MNEMONIC_TESTNET for safety.");
-          }
-        }
-      } else {
-        // Mainnet: use mainnet credentials only
-        privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
-        mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
-      }
+      // Note: Same key generates different address prefixes per network (kaspa: vs kaspatest:)
+      const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
+      const privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
       
       if (!mnemonic && !privateKeyHex) {
-        const networkLabel = isTestnet ? "testnet" : "mainnet";
-        console.log(`[DiscountService] No ${networkLabel} treasury credentials - running in demo mode`);
+        console.log("[DiscountService] No treasury credentials - running in demo mode");
         this.initialized = true;
         return false;
       }
 
       await this.loadKaspaModule();
       await this.deriveKeys(mnemonic || privateKeyHex!);
-      
-      // CRITICAL SAFETY CHECK: Verify address prefix matches expected network
-      const expectedPrefix = isTestnet ? "kaspatest:" : "kaspa:";
-      if (this.treasuryAddress && !this.treasuryAddress.startsWith(expectedPrefix)) {
-        const actualPrefix = this.treasuryAddress.split(":")[0] + ":";
-        throw new Error(
-          `NETWORK MISMATCH: Expected ${expectedPrefix} address for ${isTestnet ? "testnet" : "mainnet"} but got ${actualPrefix}. ` +
-          `This could cause loss of funds! Check your treasury credentials configuration.`
-        );
-      }
-      
       await this.connectRpc();
 
       this.initialized = true;
