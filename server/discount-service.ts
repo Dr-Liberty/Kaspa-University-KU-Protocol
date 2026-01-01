@@ -20,7 +20,7 @@ const DISCOUNT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS - minimum required fo
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
-    return process.env.KRC721_TESTNET_TICKER || "KTEST";
+    return process.env.KRC721_TESTNET_TICKER || "KUTEST1";
   }
   return process.env.KRC721_TICKER || "KASPAUNIV";
 }
