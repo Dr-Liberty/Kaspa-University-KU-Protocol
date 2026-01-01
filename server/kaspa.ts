@@ -772,7 +772,7 @@ class KaspaService {
    * Get balance for an address in KAS
    */
   async getBalance(address: string): Promise<number> {
-    // Try RPC first
+    // Try RPC first (kaspa-rpc-client for mainnet)
     if (this.rpcConnected && this.rpcClient) {
       try {
         const result = await this.rpcClient.getBalancesByAddresses({ addresses: [address] });
@@ -784,14 +784,28 @@ class KaspaService {
       }
     }
 
-    // Fallback to API
-    if (this.apiConnected) {
+    // Try WASM RPC (used for testnet or when kaspa-rpc-client fails)
+    if (this.wasmRpcConnected && this.wasmRpcClient) {
       try {
-        const result = await this.apiCall(`/addresses/${address}/balance`);
-        return Number(result.balance || 0) / 100_000_000;
+        const result = await this.wasmRpcClient.getBalancesByAddresses({ addresses: [address] });
+        if (result?.entries?.[0]) {
+          // Handle BigInt values from WASM RPC
+          const rawBalance = result.entries[0].balance;
+          const balance = Number(BigInt(rawBalance || 0)) / 100_000_000;
+          console.log(`[Kaspa] WASM RPC balance for ${address}: ${balance} KAS`);
+          return balance;
+        }
       } catch (error) {
-        console.error("[Kaspa] API balance fetch failed:", error);
+        console.error("[Kaspa] WASM RPC balance fetch failed:", error);
       }
+    }
+
+    // Fallback to REST API
+    try {
+      const result = await this.apiCall(`/addresses/${address}/balance`);
+      return Number(result.balance || 0) / 100_000_000;
+    } catch (error) {
+      console.error("[Kaspa] API balance fetch failed:", error);
     }
 
     return 0;
@@ -1574,30 +1588,66 @@ class KaspaService {
    * Get treasury balance
    */
   async getTreasuryBalance(): Promise<{ balance: number; utxoCount: number }> {
-    if (!this.rpcConnected || !this.rpcClient || !this.treasuryAddress) {
+    if (!this.treasuryAddress) {
       return { balance: 0, utxoCount: 0 };
     }
 
-    try {
-      const utxoResult = await this.rpcClient.getUtxosByAddresses({
-        addresses: [this.treasuryAddress]
-      });
+    // Try kaspa-rpc-client first (mainnet)
+    if (this.rpcConnected && this.rpcClient) {
+      try {
+        const utxoResult = await this.rpcClient.getUtxosByAddresses({
+          addresses: [this.treasuryAddress]
+        });
 
-      const entries = utxoResult?.entries || [];
-      if (entries.length === 0) {
-        return { balance: 0, utxoCount: 0 };
+        const entries = utxoResult?.entries || [];
+        if (entries.length === 0) {
+          return { balance: 0, utxoCount: 0 };
+        }
+
+        const totalSompi = entries.reduce((sum: bigint, e: any) => {
+          return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
+        }, BigInt(0));
+
+        const balanceKas = Number(totalSompi) / 100_000_000;
+        console.log(`[Kaspa] Treasury balance: ${balanceKas} KAS (${entries.length} UTXOs)`);
+
+        return { balance: balanceKas, utxoCount: entries.length };
+      } catch (error: any) {
+        console.error("[Kaspa] kaspa-rpc-client balance failed:", error.message);
       }
+    }
 
-      const totalSompi = entries.reduce((sum: bigint, e: any) => {
-        return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
-      }, BigInt(0));
+    // Try WASM RPC (used for testnet or when kaspa-rpc-client fails)
+    if (this.wasmRpcConnected && this.wasmRpcClient) {
+      try {
+        const utxoResult = await this.wasmRpcClient.getUtxosByAddresses({
+          addresses: [this.treasuryAddress]
+        });
 
-      const balanceKas = Number(totalSompi) / 100_000_000;
-      console.log(`[Kaspa] Treasury balance: ${balanceKas} KAS (${entries.length} UTXOs)`);
+        const entries = utxoResult?.entries || [];
+        if (entries.length === 0) {
+          return { balance: 0, utxoCount: 0 };
+        }
 
-      return { balance: balanceKas, utxoCount: entries.length };
+        const totalSompi = entries.reduce((sum: bigint, e: any) => {
+          return sum + BigInt(e.utxoEntry?.amount || e.amount || 0);
+        }, BigInt(0));
+
+        const balanceKas = Number(totalSompi) / 100_000_000;
+        console.log(`[Kaspa] WASM RPC treasury balance: ${balanceKas} KAS (${entries.length} UTXOs)`);
+
+        return { balance: balanceKas, utxoCount: entries.length };
+      } catch (error: any) {
+        console.error("[Kaspa] WASM RPC balance failed:", error.message);
+      }
+    }
+
+    // Fallback: use getBalance method which also tries REST API
+    try {
+      const balance = await this.getBalance(this.treasuryAddress);
+      return { balance, utxoCount: 0 };  // Can't get UTXO count from REST API
     } catch (error: any) {
-      console.error("[Kaspa] Failed to get balance:", error.message);
+      console.error("[Kaspa] Failed to get treasury balance:", error.message);
       return { balance: 0, utxoCount: 0 };
     }
   }
