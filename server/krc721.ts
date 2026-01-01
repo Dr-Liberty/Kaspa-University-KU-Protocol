@@ -596,18 +596,42 @@ class KRC721Service {
     try {
       console.log(`[KRC721] Connecting WASM RpcClient for ${networkId}...`);
       const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
-      const resolver = new Resolver();
-      this.wasmRpcClient = new WasmRpcClient({
-        resolver,
-        networkId: this.config.network,
-      });
-      // Add 15 second timeout to WASM RPC connection
-      await withTimeout(this.wasmRpcClient.connect(), 15000, "WASM RPC connect");
-      console.log(`[KRC721] WASM RpcClient connected for transaction submission`);
       
-      // If kaspa-rpc-client failed/skipped but WASM worked, we can still function
-      if (!this.rpcClient) {
-        console.log(`[KRC721] Using WASM RPC as primary`);
+      // Try Resolver first, then fall back to direct URL for testnet
+      let connected = false;
+      
+      try {
+        console.log(`[KRC721] Trying WASM RPC connection via PNN Resolver...`);
+        const resolver = new Resolver();
+        this.wasmRpcClient = new WasmRpcClient({
+          resolver,
+          networkId: this.config.network,
+        });
+        await withTimeout(this.wasmRpcClient.connect(), 15000, "Resolver connect");
+        connected = true;
+        console.log(`[KRC721] WASM RpcClient connected via Resolver`);
+      } catch (resolverError: any) {
+        console.log(`[KRC721] Resolver connection failed: ${resolverError.message}, trying direct URL...`);
+      }
+      
+      // Fallback to direct wRPC URL for testnet-10
+      if (!connected && networkId === "testnet-10") {
+        const directUrl = "wss://wrpc.tn10.kaspa.ws:443";
+        console.log(`[KRC721] Falling back to direct wRPC: ${directUrl}`);
+        this.wasmRpcClient = new WasmRpcClient({
+          url: directUrl,
+          networkId: "testnet-10",
+        });
+        await withTimeout(this.wasmRpcClient.connect(), 15000, "Direct wRPC connect");
+        connected = true;
+        console.log(`[KRC721] WASM RpcClient connected via direct URL`);
+      }
+      
+      if (connected) {
+        // If kaspa-rpc-client failed/skipped but WASM worked, we can still function
+        if (!this.rpcClient) {
+          console.log(`[KRC721] Using WASM RPC as primary`);
+        }
       }
     } catch (wasmError: any) {
       console.log(`[KRC721] WASM RpcClient connection failed: ${wasmError.message}`);
