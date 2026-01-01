@@ -70,9 +70,10 @@ const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 
 
 // Get the indexer URL based on network
 // Use KSPR indexer (mainnet.krc721.stream) - the standard KRC-721 indexer
+// Note: dev.kaspa.com marketplace uses testnet-11, so we target that for visibility
 function getIndexerUrl(): string {
   return useTestnet 
-    ? "https://testnet-10.krc721.stream"
+    ? "https://testnet-11.krc721.stream"
     : "https://mainnet.krc721.stream";
 }
 
@@ -81,12 +82,12 @@ function getIndexerUrl(): string {
  * This confirms the deploy transaction was actually accepted
  * 
  * API endpoint: /api/v1/krc721/{network}/nfts/{tick}
- * Reference: https://testnet-10.krc721.stream/docs
+ * Reference: https://testnet-11.krc721.stream/docs
  */
 async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boolean; error?: string }> {
   try {
     const indexerUrl = getIndexerUrl();
-    const network = useTestnet ? "testnet-10" : "mainnet";
+    const network = useTestnet ? "testnet-11" : "mainnet";
     // Use correct API path per KSPR indexer docs
     const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/nfts/${ticker}`;
     console.log(`[KRC721] Verifying collection at: ${apiUrl}`);
@@ -123,12 +124,12 @@ async function verifyCollectionIndexed(ticker: string): Promise<{ indexed: boole
  * This confirms the mint transaction was actually accepted
  * 
  * API endpoint: /api/v1/krc721/{network}/nfts/{tick}/{id}
- * Reference: https://testnet-10.krc721.stream/docs
+ * Reference: https://testnet-11.krc721.stream/docs
  */
 async function verifyTokenIndexed(ticker: string, tokenId: number): Promise<{ indexed: boolean; error?: string }> {
   try {
     const indexerUrl = getIndexerUrl();
-    const network = useTestnet ? "testnet-10" : "mainnet";
+    const network = useTestnet ? "testnet-11" : "mainnet";
     // Use correct API path per KSPR indexer docs
     const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/nfts/${ticker}/${tokenId}`;
     console.log(`[KRC721] Verifying token at: ${apiUrl}`);
@@ -203,7 +204,7 @@ async function waitForTokenIndexed(ticker: string, tokenId: number, timeoutMs: n
 }
 
 // Testnet mode - controlled by environment variable or runtime toggle
-// Set KRC721_TESTNET=true to use testnet-10 for testing before mainnet deployment
+// Set KRC721_TESTNET=true to use testnet-11 for testing before mainnet deployment
 let useTestnet = process.env.KRC721_TESTNET === "true";
 
 export function isTestnetMode(): boolean {
@@ -215,8 +216,8 @@ export function setTestnetMode(enabled: boolean): void {
   console.log(`[KRC721] Testnet mode ${enabled ? "ENABLED" : "DISABLED"}`);
 }
 
-function getNetworkId(): "mainnet" | "testnet-10" {
-  return useTestnet ? "testnet-10" : "mainnet";
+function getNetworkId(): "mainnet" | "testnet-11" {
+  return useTestnet ? "testnet-11" : "mainnet";
 }
 
 function getAddressPrefix(): string {
@@ -282,16 +283,16 @@ class KRC721Service {
   }
 
   /**
-   * Switch network between mainnet and testnet-10
+   * Switch network between mainnet and testnet-11
    * Requires reinitialization to reconnect RPC
    */
   async switchNetwork(testnet: boolean): Promise<boolean> {
     if (useTestnet === testnet) {
-      console.log(`[KRC721] Already on ${testnet ? "testnet-10" : "mainnet"}`);
+      console.log(`[KRC721] Already on ${testnet ? "testnet-11" : "mainnet"}`);
       return true;
     }
 
-    console.log(`[KRC721] Switching network from ${this.config.network} to ${testnet ? "testnet-10" : "mainnet"}...`);
+    console.log(`[KRC721] Switching network from ${this.config.network} to ${testnet ? "testnet-11" : "mainnet"}...`);
     
     setTestnetMode(testnet);
     this.config = { ...getDefaultConfig() };
@@ -342,7 +343,7 @@ class KRC721Service {
       ticker: this.config.ticker,
       testnet: useTestnet,
       indexerUrl: useTestnet 
-        ? "https://testnet-10.krc721.stream" 
+        ? "https://testnet-11.krc721.stream" 
         : "https://kaspa-krc721d.kaspa.com"
     };
   }
@@ -556,7 +557,7 @@ class KRC721Service {
     };
     
     // For testnet, skip kaspa-rpc-client (unreliable) and go directly to WASM RPC
-    if (networkId !== "testnet-10") {
+    if (networkId !== "testnet-11") {
       console.log(`[KRC721] Connecting to RPC via kaspa-rpc-client (${networkId})...`);
       try {
         // Use kaspa-rpc-client (pure TypeScript) for UTXO queries on mainnet
@@ -804,7 +805,7 @@ class KRC721Service {
       console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
       // Create deployment data following EXACT KRC-721 spec from KSPR indexer docs
-      // Reference: https://testnet-10.krc721.stream/docs
+      // Reference: https://testnet-11.krc721.stream/docs
       // The opData in indexer shows: { buri, max, royaltyFee, daaMintStart, premint }
       // Keep it minimal - only include required fields
       const deployData: any = {
