@@ -218,3 +218,11 @@ export const availableTokenPool = pgTable("available_token_pool", {
 }, (table) => [
   uniqueIndex("available_token_pool_course_token_idx").on(table.courseId, table.tokenId),
 ]);
+
+// Course assets - stores pre-uploaded IPFS CIDs for certificate images
+export const courseAssets = pgTable("course_assets", {
+  courseId: text("course_id").primaryKey(),
+  imageIpfsUrl: text("image_ipfs_url").notNull(), // ipfs://Qm... URL
+  imageIpfsHash: text("image_ipfs_hash").notNull(), // Just the CID
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});

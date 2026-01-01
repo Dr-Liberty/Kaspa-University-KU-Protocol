@@ -98,6 +98,10 @@ export interface IStorage {
   // Whitelist methods for discounted minting
   setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined>;
   isUserWhitelisted(userId: string): Promise<boolean>;
+  
+  // Course asset methods (pre-uploaded IPFS images)
+  getCourseAsset(courseId: string): Promise<{ courseId: string; imageIpfsUrl: string; imageIpfsHash: string } | undefined>;
+  saveCourseAsset(courseId: string, imageIpfsUrl: string, imageIpfsHash: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -662,6 +666,17 @@ export class MemStorage implements IStorage {
   async isUserWhitelisted(userId: string): Promise<boolean> {
     const user = this.users.get(userId);
     return user?.whitelistedAt !== undefined;
+  }
+
+  // Course assets (in-memory implementation)
+  private courseAssets: Map<string, { courseId: string; imageIpfsUrl: string; imageIpfsHash: string }> = new Map();
+
+  async getCourseAsset(courseId: string): Promise<{ courseId: string; imageIpfsUrl: string; imageIpfsHash: string } | undefined> {
+    return this.courseAssets.get(courseId);
+  }
+
+  async saveCourseAsset(courseId: string, imageIpfsUrl: string, imageIpfsHash: string): Promise<void> {
+    this.courseAssets.set(courseId, { courseId, imageIpfsUrl, imageIpfsHash });
   }
 }
 

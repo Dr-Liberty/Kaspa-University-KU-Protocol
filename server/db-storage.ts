@@ -849,4 +849,21 @@ export class DbStorage implements IStorage {
       .limit(1);
     return result[0]?.whitelistedAt !== null && result[0]?.whitelistedAt !== undefined;
   }
+
+  async getCourseAsset(courseId: string): Promise<{ courseId: string; imageIpfsUrl: string; imageIpfsHash: string } | undefined> {
+    const result = await db.select()
+      .from(schema.courseAssets)
+      .where(eq(schema.courseAssets.courseId, courseId))
+      .limit(1);
+    return result[0] || undefined;
+  }
+
+  async saveCourseAsset(courseId: string, imageIpfsUrl: string, imageIpfsHash: string): Promise<void> {
+    await db.insert(schema.courseAssets)
+      .values({ courseId, imageIpfsUrl, imageIpfsHash })
+      .onConflictDoUpdate({
+        target: schema.courseAssets.courseId,
+        set: { imageIpfsUrl, imageIpfsHash, uploadedAt: new Date() },
+      });
+  }
 }

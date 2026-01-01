@@ -1612,76 +1612,23 @@ export async function registerRoutes(
       console.log(`[Prepare] Starting prepare for certificate ${id} and wallet ${walletAddress.slice(0, 25)}...`);
       const krc721Service = await getKRC721Service();
 
-      // Generate certificate image and upload to IPFS
-      // Must have IPFS URL for NFT minting - re-upload if only have data URI
+      // Use pre-uploaded course asset image instead of generating on-the-fly
       let imageUrl: string = certificate.imageUrl || "";
-      const needsIpfsUpload = !imageUrl || !imageUrl.startsWith("ipfs://");
+      const needsImageUrl = !imageUrl || !imageUrl.startsWith("ipfs://");
       
-      if (needsIpfsUpload) {
-        const svgImage = krc721Service.generateCertificateImageSvg(
-          certificate.recipientAddress,
-          certificate.courseName,
-          certificate.score || 100,
-          certificate.issuedAt
-        );
-        
-        // Build quiz proof for NFT metadata (makes NFT self-verifying)
-        let quizProof: QuizProof | undefined;
-        try {
-          const quizResults = await storage.getQuizResultsForCourse(certificate.userId, certificate.courseId);
-          if (quizResults.length > 0) {
-            // Get the most recent quiz result with a confirmed tx
-            const confirmedResult = quizResults.find(r => r.txHash && r.txStatus === "confirmed");
-            const latestResult = confirmedResult || quizResults[0];
-            
-            quizProof = {
-              course_id: certificate.courseId,
-              lesson_id: latestResult.lessonId,
-              score: certificate.score || 100,
-              max_score: 100,
-              timestamp: latestResult.completedAt.getTime(),
-              content_hash: createContentHash(`${certificate.courseId}:${certificate.recipientAddress}:${certificate.score}`),
-              proof_tx: latestResult.txHash,
-              payload_hex: latestResult.payloadHex,
-            };
-            console.log(`[Prepare] Built quiz proof for NFT: course=${quizProof.course_id}, tx=${quizProof.proof_tx?.slice(0, 16)}...`);
-          }
-        } catch (err: any) {
-          console.warn(`[Prepare] Could not build quiz proof: ${err.message}`);
-        }
-        
-        const pinataService = getPinataService();
-        if (pinataService.isConfigured()) {
-          console.log(`[Prepare] Uploading certificate to IPFS...`);
-          const uploadResult = await pinataService.uploadCertificate(
-            svgImage,
-            id,
-            certificate.courseName,
-            certificate.score || 100,
-            certificate.recipientAddress,
-            certificate.issuedAt,
-            quizProof
-          );
-          
-          if (uploadResult.success && uploadResult.ipfsUrl) {
-            // Use the direct image URL for display, not the metadata URL
-            imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
-            console.log(`[Prepare] IPFS upload successful - image: ${imageUrl}, metadata: ${uploadResult.ipfsUrl}`);
-            // Note: Metadata folder update moved to finalize step to use confirmed tokenId
-          } else {
-            console.error(`[Prepare] IPFS upload failed: ${uploadResult.error}`);
-            return res.status(500).json({
-              error: "IPFS upload failed",
-              message: uploadResult.error || "Failed to upload certificate to IPFS"
-            });
-          }
-        } else {
-          console.error("[Prepare] Pinata not configured");
-          return res.status(500).json({
-            error: "IPFS not configured",
-            message: "Pinata credentials required for NFT minting"
+      if (needsImageUrl) {
+        // Look up the pre-uploaded course asset
+        const courseAsset = await storage.getCourseAsset(certificate.courseId);
+        if (!courseAsset) {
+          console.error(`[Prepare] No pre-uploaded image for course ${certificate.courseId}`);
+          return res.status(503).json({
+            error: "Course image not uploaded",
+            message: "Admin must upload course images to IPFS first via /api/admin/upload-course-images"
           });
         }
+        
+        imageUrl = courseAsset.imageIpfsUrl;
+        console.log(`[Prepare] Using pre-uploaded course image: ${imageUrl}`);
         
         // Save the IPFS URL for later
         await storage.updateCertificate(id, { imageUrl });
@@ -2205,66 +2152,22 @@ export async function registerRoutes(
       // We mark it before minting to prevent concurrent requests using the same TX
       await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10.5);
 
-      // Generate certificate image and upload to IPFS if configured
+      // Use pre-uploaded course asset image
       let imageUrl = certificate.imageUrl;
-      if (!imageUrl) {
-        const svgImage = krc721Service.generateCertificateImageSvg(
-          certificate.recipientAddress,
-          certificate.courseName,
-          certificate.score || 100,
-          certificate.issuedAt
-        );
-        
-        // Build quiz proof for NFT metadata
-        let quizProof: QuizProof | undefined;
-        try {
-          const quizResults = await storage.getQuizResultsForCourse(certificate.userId, certificate.courseId);
-          if (quizResults.length > 0) {
-            const confirmedResult = quizResults.find(r => r.txHash && r.txStatus === "confirmed");
-            const latestResult = confirmedResult || quizResults[0];
-            
-            quizProof = {
-              course_id: certificate.courseId,
-              lesson_id: latestResult.lessonId,
-              score: certificate.score || 100,
-              max_score: 100,
-              timestamp: latestResult.completedAt.getTime(),
-              content_hash: createContentHash(`${certificate.courseId}:${certificate.recipientAddress}:${certificate.score}`),
-              proof_tx: latestResult.txHash,
-              payload_hex: latestResult.payloadHex,
-            };
-          }
-        } catch (err: any) {
-          console.warn(`[Claim] Could not build quiz proof: ${err.message}`);
+      if (!imageUrl || !imageUrl.startsWith("ipfs://")) {
+        // Look up the pre-uploaded course asset
+        const courseAsset = await storage.getCourseAsset(certificate.courseId);
+        if (!courseAsset) {
+          console.error(`[Claim] No pre-uploaded image for course ${certificate.courseId}`);
+          await storage.updateCertificate(id, { nftStatus: "pending" });
+          return res.status(503).json({
+            error: "Course image not uploaded",
+            message: "Admin must upload course images to IPFS first via /api/admin/upload-course-images"
+          });
         }
         
-        // Try to upload to Pinata IPFS
-        const pinataService = getPinataService();
-        if (pinataService.isConfigured()) {
-          console.log(`[Claim] Uploading certificate to IPFS...`);
-          const uploadResult = await pinataService.uploadCertificate(
-            svgImage,
-            id,
-            certificate.courseName,
-            certificate.score || 100,
-            certificate.recipientAddress,
-            certificate.issuedAt,
-            quizProof
-          );
-          
-          if (uploadResult.success && uploadResult.ipfsUrl) {
-            // Use the direct image URL for display, not the metadata URL
-            imageUrl = uploadResult.imageIpfsUrl || uploadResult.ipfsUrl;
-            console.log(`[Claim] Certificate uploaded to IPFS - image: ${imageUrl}`);
-            // Note: Metadata folder update happens after successful mint
-          } else {
-            console.log(`[Claim] IPFS upload failed, using data URI fallback`);
-            imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
-          }
-        } else {
-          // Fallback to data URI
-          imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgImage).toString("base64")}`;
-        }
+        imageUrl = courseAsset.imageIpfsUrl;
+        console.log(`[Claim] Using pre-uploaded course image: ${imageUrl}`);
       }
 
       // Mint the NFT
@@ -3041,6 +2944,127 @@ export async function registerRoutes(
       const krc721Service = await getKRC721Service();
       const collectionInfo = await krc721Service.getCollectionInfo();
       res.json(collectionInfo);
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Upload all course certificate images to IPFS (one-time setup)
+  app.post("/api/admin/upload-course-images", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const { getPinataService } = await import("./pinata");
+      const { courses } = await import("./seed-data");
+      
+      const pinataService = getPinataService();
+      if (!pinataService.isConfigured()) {
+        return res.status(503).json({ 
+          error: "Pinata not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY secrets." 
+        });
+      }
+
+      // Map course IDs to SVG file names
+      const courseImageMap: Record<string, string> = {
+        "bitcoin-vs-kaspa": "01-bitcoin-vs-kaspa.svg",
+        "dag-terminology": "02-dag-terminology.svg",
+        "dag-and-kaspa": "03-dag-and-kaspa.svg",
+        "foundational-concepts": "04-foundational-concepts.svg",
+        "core-data-structures": "05-core-data-structures.svg",
+        "ghostdag-mechanics": "06-ghostdag-mechanics.svg",
+        "consensus-parameters": "07-consensus-parameters.svg",
+        "block-processing": "08-block-processing.svg",
+        "difficulty-adjustment": "09-difficulty-adjustment.svg",
+        "transaction-processing": "10-transaction-processing.svg",
+        "pruning-system": "11-pruning-system.svg",
+        "anticone-finalization": "12-anticone-finalization.svg",
+        "virtual-state": "13-virtual-state.svg",
+        "timestamps-median-time": "14-timestamps-median-time.svg",
+        "finality-security": "15-finality-security.svg",
+        "network-scaling": "16-network-scaling.svg",
+      };
+
+      const results: Array<{ courseId: string; success: boolean; ipfsUrl?: string; error?: string }> = [];
+      const assetsPath = path.join(process.cwd(), "attached_assets", "nft-certificates");
+
+      for (const course of courses) {
+        const svgFileName = courseImageMap[course.id];
+        if (!svgFileName) {
+          results.push({ courseId: course.id, success: false, error: "No SVG file mapped" });
+          continue;
+        }
+
+        try {
+          // Check if already uploaded
+          const existing = await storage.getCourseAsset(course.id);
+          if (existing) {
+            results.push({ 
+              courseId: course.id, 
+              success: true, 
+              ipfsUrl: existing.imageIpfsUrl,
+              error: "Already uploaded" 
+            });
+            continue;
+          }
+
+          // Read SVG file
+          const svgPath = path.join(assetsPath, svgFileName);
+          const svgContent = await fs.readFile(svgPath, "utf-8");
+
+          // Upload to Pinata
+          const uploadResult = await pinataService.uploadImage(svgContent, `kuproof-${course.id}`);
+          
+          if (uploadResult.success && uploadResult.ipfsUrl && uploadResult.ipfsHash) {
+            // Save to database
+            await storage.saveCourseAsset(course.id, uploadResult.ipfsUrl, uploadResult.ipfsHash);
+            results.push({ courseId: course.id, success: true, ipfsUrl: uploadResult.ipfsUrl });
+            console.log(`[Admin] Uploaded ${course.id} -> ${uploadResult.ipfsUrl}`);
+          } else {
+            results.push({ courseId: course.id, success: false, error: uploadResult.error });
+          }
+        } catch (error: any) {
+          results.push({ courseId: course.id, success: false, error: error.message });
+        }
+      }
+
+      const successful = results.filter(r => r.success && !r.error?.includes("Already")).length;
+      const alreadyUploaded = results.filter(r => r.error?.includes("Already")).length;
+      const failed = results.filter(r => !r.success).length;
+
+      res.json({
+        success: failed === 0,
+        message: `Uploaded ${successful} new images, ${alreadyUploaded} already existed, ${failed} failed`,
+        results,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Upload course images error:", error.message);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Admin: Get course asset status (check which images are uploaded)
+  app.get("/api/admin/course-assets", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { courses } = await import("./seed-data");
+      const assets = await Promise.all(
+        courses.map(async (course) => {
+          const asset = await storage.getCourseAsset(course.id);
+          return {
+            courseId: course.id,
+            title: course.title,
+            uploaded: !!asset,
+            imageIpfsUrl: asset?.imageIpfsUrl || null,
+          };
+        })
+      );
+      
+      const uploadedCount = assets.filter(a => a.uploaded).length;
+      res.json({
+        total: assets.length,
+        uploaded: uploadedCount,
+        missing: assets.length - uploadedCount,
+        assets,
+      });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeError(error) });
     }
