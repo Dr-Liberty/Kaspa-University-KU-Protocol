@@ -354,14 +354,36 @@ class KRC721Service {
     if (this.initialized) return true;
 
     try {
-      // Get treasury private key from environment
-      const privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
-      const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
+      // Get treasury credentials - use network-specific env vars if available
+      // CRITICAL: Testnet mode should use separate wallet to prevent mainnet fund loss
+      let privateKeyHex: string | undefined;
+      let mnemonic: string | undefined;
+      
+      if (useTestnet) {
+        // Testnet: prefer testnet-specific credentials, fall back to shared
+        privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY_TESTNET || 
+                        process.env.KASPA_TREASURY_PRIVATE_KEY_TESTNET;
+        mnemonic = process.env.KASPA_TREASURY_MNEMONIC_TESTNET;
+        
+        // If no testnet-specific credentials, fall back to shared (with warning)
+        if (!privateKeyHex && !mnemonic) {
+          privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
+          mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
+          if (privateKeyHex || mnemonic) {
+            console.warn("[KRC721] WARNING: Using shared treasury credentials for testnet. Set KASPA_TREASURY_MNEMONIC_TESTNET for safety.");
+          }
+        }
+      } else {
+        // Mainnet: use mainnet credentials only
+        privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
+        mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
+      }
       
       const keyInput = privateKeyHex || mnemonic;
       
       if (!keyInput) {
-        console.log("[KRC721] No private key or mnemonic configured - running in demo mode");
+        const networkLabel = useTestnet ? "testnet" : "mainnet";
+        console.log(`[KRC721] No ${networkLabel} treasury credentials configured - running in demo mode`);
         this.initialized = true;
         return true;
       }
@@ -524,6 +546,17 @@ class KRC721Service {
     }
     
     this.address = address.toString();
+    
+    // CRITICAL SAFETY CHECK: Verify address prefix matches expected network
+    const expectedPrefix = useTestnet ? "kaspatest:" : "kaspa:";
+    if (this.address && !this.address.startsWith(expectedPrefix)) {
+      const actualPrefix = this.address.split(":")[0] + ":";
+      throw new Error(
+        `NETWORK MISMATCH: Expected ${expectedPrefix} address for ${useTestnet ? "testnet" : "mainnet"} but got ${actualPrefix}. ` +
+        `This could cause loss of funds! Check your treasury credentials configuration.`
+      );
+    }
+    
     console.log("[KRC721] Keys derived successfully");
   }
 
