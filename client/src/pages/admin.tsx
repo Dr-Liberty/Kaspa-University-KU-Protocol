@@ -146,6 +146,48 @@ export default function AdminPage() {
     staleTime: 30000,
   });
 
+  const { data: networkMode, refetch: refetchNetwork } = useQuery<{
+    testnet: boolean;
+    network: string;
+    ticker: string;
+    message: string;
+  }>({
+    queryKey: ["/api/admin/network-mode"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/network-mode", { headers });
+      if (!res.ok) throw new Error("Failed to fetch network mode");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 30000,
+  });
+
+  const switchNetworkMutation = useMutation({
+    mutationFn: async (testnet: boolean) => {
+      const res = await fetch("/api/admin/switch-network", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ testnet }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Switch failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Network Switched", 
+        description: data.message
+      });
+      refetchNetwork();
+      refetchCollection();
+    },
+    onError: (error: any) => {
+      toast({ title: "Switch failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const { data: demoCerts, refetch: refetchDemoCerts } = useQuery<{
     count: number;
     certificates: Array<{
@@ -427,6 +469,56 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {networkMode && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Network Mode
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span>Current: {networkMode.testnet ? (
+                  <Badge className="bg-blue-500/20 text-blue-400">Testnet-10</Badge>
+                ) : (
+                  <Badge className="bg-green-500/20 text-green-400">Mainnet</Badge>
+                )}</span>
+                <span>Network: {networkMode.network}</span>
+                <span>Ticker: {networkMode.ticker}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={networkMode.testnet ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => switchNetworkMutation.mutate(false)}
+                  disabled={switchNetworkMutation.isPending || !networkMode.testnet}
+                  data-testid="button-switch-mainnet"
+                >
+                  Mainnet
+                </Button>
+                <Button
+                  variant={networkMode.testnet ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => switchNetworkMutation.mutate(true)}
+                  disabled={switchNetworkMutation.isPending || networkMode.testnet}
+                  data-testid="button-switch-testnet"
+                >
+                  Testnet-10
+                </Button>
+                {switchNetworkMutation.isPending && (
+                  <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {networkMode.testnet 
+                  ? "Safe for testing - no real KAS will be spent" 
+                  : "Production mode - real KAS transactions"}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {collectionStatus && (
