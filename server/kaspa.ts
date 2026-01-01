@@ -69,10 +69,10 @@ function getDefaultConfig(): KaspaConfig {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   console.log(`[Kaspa] KRC721_TESTNET env: '${process.env.KRC721_TESTNET}' -> isTestnet: ${isTestnet}`);
   if (isTestnet) {
-    console.log("[Kaspa] Initializing with TESTNET-11 configuration");
+    console.log("[Kaspa] Initializing with TESTNET-10 configuration");
     return {
-      network: "testnet-11",
-      apiUrl: "https://api-tn11.kaspa.org",
+      network: "testnet-10",
+      apiUrl: "https://api-tn10.kaspa.org",
     };
   }
   console.log("[Kaspa] Initializing with MAINNET configuration");
@@ -288,7 +288,7 @@ class KaspaService {
         }
         
         // Get address from public key - use correct network prefix
-        const networkId = this.config.network === "testnet-11" ? "testnet-11" : "mainnet";
+        const networkId = this.config.network === "testnet-10" ? "testnet-10" : "mainnet";
         let address;
         if (typeof publicKey.toAddress === 'function') {
           address = publicKey.toAddress(networkId);
@@ -371,7 +371,7 @@ class KaspaService {
    */
   private async tryRpcClientConnection(): Promise<void> {
     // kaspa-rpc-client doesn't support testnet - skip and let WASM Resolver handle it
-    const isTestnet = this.config.network === "testnet-11";
+    const isTestnet = this.config.network === "testnet-10";
     if (isTestnet) {
       console.log("[Kaspa] Testnet mode - skipping kaspa-rpc-client (will use WASM Resolver)");
       return;
@@ -474,9 +474,9 @@ class KaspaService {
       // Fallback to direct URL if Resolver fails
       if (!resolverSuccess) {
         // Use network-appropriate wRPC URL
-        const isTestnet = this.config.network === "testnet-11";
+        const isTestnet = this.config.network === "testnet-10";
         const wRpcUrl = isTestnet 
-          ? "wss://wrpc.tn11.kaspa.ws:443"  // Testnet-11 wRPC endpoint
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
           : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Falling back to direct wRPC: ${wRpcUrl}`);
         
@@ -584,9 +584,9 @@ class KaspaService {
       // Fallback to direct URL if Resolver fails
       if (!resolverSuccess) {
         // Use network-appropriate wRPC URL
-        const isTestnet = this.config.network === "testnet-11";
+        const isTestnet = this.config.network === "testnet-10";
         const wRpcUrl = isTestnet 
-          ? "wss://wrpc.tn11.kaspa.ws:443"  // Testnet-11 wRPC endpoint
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
           : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Initializing WASM RpcClient via direct URL: ${wRpcUrl}`);
 
@@ -912,9 +912,9 @@ class KaspaService {
     isLive: boolean;
   }> {
     // Determine RPC endpoint based on network
-    const isTestnet = this.config.network === "testnet-11";
+    const isTestnet = this.config.network === "testnet-10";
     const rpcEndpoint = isTestnet 
-      ? "wss://wrpc.tn11.kaspa.ws:443 (testnet-11)"
+      ? "wss://wrpc.tn10.kaspa.ws:443 (testnet-10)"
       : "seeder2.kaspad.net:16110";
     
     const diagnostics: any = {
@@ -1709,9 +1709,9 @@ class KaspaService {
       // Fallback to direct URL if Resolver fails
       if (!testClient) {
         // Use network-appropriate wRPC URL
-        const isTestnet = this.config.network === "testnet-11";
+        const isTestnet = this.config.network === "testnet-10";
         const wRpcUrl = isTestnet 
-          ? "wss://wrpc.tn11.kaspa.ws:443"  // Testnet-11 wRPC endpoint
+          ? "wss://wrpc.tn10.kaspa.ws:443"  // Testnet-10 wRPC endpoint
           : "wss://wrpc.kaspa.net:443";      // Mainnet wRPC endpoint
         console.log(`[Kaspa] Testing direct wRPC connection: ${wRpcUrl}`);
         
