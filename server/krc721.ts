@@ -254,7 +254,7 @@ function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
     ticker: useTestnet 
-      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST3") 
+      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST4") 
       : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
@@ -805,6 +805,7 @@ class KRC721Service {
       // Create deployment data following coinchimp/kaspa-krc721-apps reference implementation
       // Use metadata format (not buri) for KasWare wallet compatibility
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/deploy.ts
+      // CRITICAL: Include mintFee for wallet display compatibility
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
@@ -815,12 +816,16 @@ class KRC721Service {
           description: this.config.collectionDescription,
           image: imageUrl, // IPFS image URL for collection
         },
+        // Mint fee in sompi - required for wallet compatibility
+        mintFee: KRC721_MINT_FEE_SOMPI.toString(),
+        // Royalty info - explicitly include even if 0
+        royaltyFee: this.config.royaltyFee > 0 
+          ? kaspaToSompi(this.config.royaltyFee.toString())?.toString() 
+          : "0",
       };
 
-      // Add royalty info if configured
+      // Add royalty owner if fee is set
       if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
-        // royaltyFee is in SOMPI (10^-8 KAS)
-        deployData.royaltyFee = kaspaToSompi(this.config.royaltyFee.toString())?.toString();
         deployData.royaltyOwner = this.config.royaltyOwner;
       }
 
