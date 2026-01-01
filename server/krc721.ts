@@ -805,7 +805,14 @@ class KRC721Service {
       // Create deployment data following coinchimp/kaspa-krc721-apps reference implementation
       // Use metadata format (not buri) for KasWare wallet compatibility
       // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/deploy.ts
-      // CRITICAL: Include mintFee for wallet display compatibility
+      // 
+      // WHITELIST-BASED PRICING MODEL:
+      // - royaltyFee: 20,000 KAS (default/deterrent price for non-whitelisted users)
+      // - mintFee: 10.5 KAS (discounted price for whitelisted users who completed courses)
+      // - Users are whitelisted via "discount" operation after course completion
+      // - This deters external minting while allowing course completers to mint cheaply
+      const DETERRENT_PRICE_SOMPI = "2000000000000"; // 20,000 KAS in sompi
+      
       const deployData: any = {
         p: "krc-721",
         op: "deploy",
@@ -816,18 +823,13 @@ class KRC721Service {
           description: this.config.collectionDescription,
           image: imageUrl, // IPFS image URL for collection
         },
-        // Mint fee in sompi - required for wallet compatibility
+        // Mint fee for whitelisted users (10.5 KAS) - the discounted price
         mintFee: KRC721_MINT_FEE_SOMPI.toString(),
-        // Royalty info - explicitly include even if 0
-        royaltyFee: this.config.royaltyFee > 0 
-          ? kaspaToSompi(this.config.royaltyFee.toString())?.toString() 
-          : "0",
+        // Royalty fee as deterrent price (20,000 KAS) - deters external minting
+        royaltyFee: DETERRENT_PRICE_SOMPI,
+        // Royalty owner receives fees from non-whitelisted mints (treasury address)
+        royaltyOwner: this.address,
       };
-
-      // Add royalty owner if fee is set
-      if (this.config.royaltyFee > 0 && this.config.royaltyOwner) {
-        deployData.royaltyOwner = this.config.royaltyOwner;
-      }
 
       console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
 
