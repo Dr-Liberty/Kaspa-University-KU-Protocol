@@ -34,6 +34,7 @@ export function useWhitelistStatus() {
       return response.json();
     },
     enabled: !!wallet?.address,
-    staleTime: 30000,
+    staleTime: 5000,
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 }
