@@ -60,13 +60,25 @@ interface CertificateMetadata {
   }>;
 }
 
-// KRC-721 fees per official spec (https://mainnet.krc721.stream)
-// Deploy: Minimum 1,000 KAS reveal transaction fee required
-// Mint: Minimum 10 KAS reveal transaction fee required
+// KRC-721 fees per official spec (https://kaspa-krc721d.kaspa.com/docs)
+// 
+// PoW Fees (transaction fees paid to miners):
+// - Deploy: minimum 1,000 KAS reveal transaction fee required
+// - Premint: minimum 10 KAS per token (added to deploy fee)
+// - Mint: minimum 10 KAS reveal transaction fee required
+// - Discount/Transfer: standard tx fee only
+//
+// Royalty Fees (paid to collection owner):
+// - Controlled by royaltyFee in deploy inscription (0.1 to 10,000,000 KAS)
+// - Whitelisted users pay discountFee instead (via "discount" operation)
+//
+// Fee structure for Kaspa University:
+// - Non-whitelisted: royaltyFee (20,000 KAS) + PoW (10 KAS) = 20,010 KAS total
+// - Whitelisted (course completers): discountFee (0.5 KAS) + PoW (10 KAS) = 10.5 KAS total
 const KRC721_DEPLOY_FEE_KAS = "1000"; // 1000 KAS deploy fee (REQUIRED by indexer)
 const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
-const KRC721_MINT_FEE_KAS = "10.5"; // 10.5 KAS mint fee (above 10 KAS minimum)
-const KRC721_MINT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi (1 KAS = 100,000,000 sompi)
+const KRC721_MINT_POW_FEE_KAS = "10.5"; // 10.5 KAS PoW fee (above 10 KAS minimum)
+const KRC721_MINT_POW_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi
 
 // Get the indexer URL based on network
 // Use KSPR indexer (mainnet.krc721.stream) - the standard KRC-721 indexer
@@ -832,16 +844,17 @@ class KRC721Service {
       }
       console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
 
-      // Create deployment data following coinchimp/kaspa-krc721-apps reference implementation
-      // Use metadata format (not buri) for KasWare wallet compatibility
-      // Reference: https://github.com/coinchimp/kaspa-krc721-apps/blob/main/deploy.ts
+      // Create deployment data following KRC-721 specification
+      // Reference: https://kaspa-krc721d.kaspa.com/docs#krc-721-specifications
       // 
       // WHITELIST-BASED PRICING MODEL:
-      // - royaltyFee: 20,000 KAS (default/deterrent price for non-whitelisted users)
-      // - mintFee: 10.5 KAS (discounted price for whitelisted users who completed courses)
+      // - royaltyFee: 20,000 KAS (2,000,000,000,000 sompi) - amount non-whitelisted users must pay to royaltyTo
       // - Users are whitelisted via "discount" operation after course completion
-      // - This deters external minting while allowing course completers to mint cheaply
-      const DETERRENT_PRICE_SOMPI = "2000000000000"; // 20,000 KAS in sompi
+      // - Whitelisted users pay discountFee (e.g., 0.5 KAS) instead of royaltyFee
+      // - PoW fee (10 KAS minimum) is separate transaction fee that goes to miners
+      //
+      // Note: There is NO "mintFee" field in KRC-721 deploy spec - only royaltyFee
+      const DETERRENT_ROYALTY_SOMPI = "2000000000000"; // 20,000 KAS in sompi (deterrent for public minting)
       
       const deployData: any = {
         p: "krc-721",
@@ -853,12 +866,12 @@ class KRC721Service {
           description: this.config.collectionDescription,
           image: imageUrl, // IPFS image URL for collection
         },
-        // Mint fee for whitelisted users (10.5 KAS) - the discounted price
-        mintFee: KRC721_MINT_FEE_SOMPI.toString(),
-        // Royalty fee as deterrent price (20,000 KAS) - deters external minting
-        royaltyFee: DETERRENT_PRICE_SOMPI,
-        // Royalty owner receives fees from non-whitelisted mints (treasury address)
-        royaltyOwner: this.address,
+        // Royalty fee: amount in sompi that non-whitelisted minters must pay to royaltyTo
+        // Per spec: must be 0.1 KAS to 10,000,000 KAS (10,000,000 to 1,000,000,000,000,000 sompi)
+        royaltyFee: DETERRENT_ROYALTY_SOMPI,
+        // Royalty beneficiary: receives royaltyFee from non-whitelisted mints
+        // Note: Field name is "royaltyTo" per KRC-721 spec, NOT "royaltyOwner"
+        royaltyTo: this.address,
       };
 
       console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
@@ -1064,7 +1077,7 @@ class KRC721Service {
       )!;
 
       // Execute commit-reveal pattern using spec-compliant fee
-      const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_MINT_FEE_KAS);
+      const result = await this.executeCommitReveal(script, P2SHAddress, KRC721_MINT_POW_FEE_KAS);
 
       if (result.success) {
         // CRITICAL: Verify the token was actually indexed before marking as minted
@@ -1256,7 +1269,7 @@ class KRC721Service {
       return {
         success: true,
         p2shAddress: p2shAddressStr,
-        amountSompi: KRC721_MINT_FEE_SOMPI.toString(),
+        amountSompi: KRC721_MINT_POW_FEE_SOMPI.toString(),
         tokenId,
         expiresAt,
       };
@@ -1425,10 +1438,10 @@ class KRC721Service {
       const p2shUtxo = p2shEntries[0];
       const receivedAmount = BigInt(p2shUtxo.amount ?? p2shUtxo.utxoEntry?.amount ?? 0);
       
-      if (receivedAmount < KRC721_MINT_FEE_SOMPI) {
+      if (receivedAmount < KRC721_MINT_POW_FEE_SOMPI) {
         return {
           success: false,
-          error: `Insufficient funds at P2SH. Received: ${Number(receivedAmount) / 1e8} KAS, Required: ${KRC721_MINT_FEE_KAS} KAS minimum`,
+          error: `Insufficient funds at P2SH. Received: ${Number(receivedAmount) / 1e8} KAS, Required: ${KRC721_MINT_POW_FEE_KAS} KAS minimum`,
         };
       }
 
@@ -1445,7 +1458,7 @@ class KRC721Service {
         entries: treasuryEntries, // Treasury UTXOs for fee
         outputs: [], // All funds go to change
         changeAddress: this.address!, // Change goes to treasury (covers reveal fee)
-        priorityFee: kaspaToSompi(KRC721_MINT_FEE_KAS)!, // BURN the full 10 KAS mint fee
+        priorityFee: kaspaToSompi(KRC721_MINT_POW_FEE_KAS)!, // BURN the full 10 KAS mint fee
         networkId: this.config.network,
       });
 
@@ -1502,8 +1515,8 @@ class KRC721Service {
    */
   getMintFeeInfo(): { kasAmount: string; sompiAmount: string; description: string } {
     return {
-      kasAmount: KRC721_MINT_FEE_KAS,
-      sompiAmount: KRC721_MINT_FEE_SOMPI.toString(),
+      kasAmount: KRC721_MINT_POW_FEE_KAS,
+      sompiAmount: KRC721_MINT_POW_FEE_SOMPI.toString(),
       description: "KRC-721 NFT mint fee (based on coinchimp reference implementation)",
     };
   }

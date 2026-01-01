@@ -14,7 +14,14 @@
 
 import { storage } from "./storage";
 
-const DISCOUNT_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS - minimum required for minting
+// Discount fee for whitelisted users (course completers)
+// Fee structure:
+// - Non-whitelisted: pay royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
+// - Whitelisted: pay discountFee (0.5 KAS) + PoW fee (10 KAS) = 10.5 KAS total
+//
+// The discountFee is the royalty amount whitelisted users pay INSTEAD of royaltyFee
+// It's NOT the total cost - the 10 KAS PoW fee is separate and goes to miners
+const DISCOUNT_FEE_SOMPI = BigInt(50000000); // 0.5 KAS - minimal royalty for whitelisted users
 
 // Dynamic ticker based on current network mode
 // MUST match the ticker used in krc721.ts deploy inscription
@@ -175,16 +182,52 @@ class DiscountService {
       await wrapper.initialize();
       this.rpcClient = await wrapper.getClient();
       
+      // Helper to add timeout to promises
+      const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) => 
+            setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+          )
+        ]);
+      };
+
       const { RpcClient: WasmRpcClient, Resolver } = this.kaspaModule;
-      const resolver = new Resolver();
       const network = isTestnet ? "testnet-10" : "mainnet";
-      this.wasmRpcClient = new WasmRpcClient({
-        resolver,
-        networkId: network,
-      });
-      await this.wasmRpcClient.connect();
       
-      console.log("[DiscountService] RPC connected");
+      // Try Resolver first, then fallback to direct URL for testnet
+      let connected = false;
+      
+      try {
+        console.log("[DiscountService] Trying WASM RPC via Resolver...");
+        const resolver = new Resolver();
+        this.wasmRpcClient = new WasmRpcClient({
+          resolver,
+          networkId: network,
+        });
+        await withTimeout(this.wasmRpcClient.connect(), 15000, "Resolver connect");
+        connected = true;
+        console.log("[DiscountService] WASM RPC connected via Resolver");
+      } catch (resolverError: any) {
+        console.log(`[DiscountService] Resolver failed: ${resolverError.message}, trying direct URL...`);
+      }
+      
+      // Fallback to direct wRPC URL for testnet-10
+      if (!connected && isTestnet) {
+        const directUrl = "wss://wrpc.tn10.kaspa.ws:443";
+        console.log(`[DiscountService] Falling back to direct wRPC: ${directUrl}`);
+        this.wasmRpcClient = new WasmRpcClient({
+          url: directUrl,
+          networkId: "testnet-10",
+        });
+        await withTimeout(this.wasmRpcClient.connect(), 15000, "Direct wRPC connect");
+        connected = true;
+        console.log("[DiscountService] WASM RPC connected via direct URL");
+      }
+      
+      if (connected) {
+        console.log("[DiscountService] RPC connected");
+      }
     } catch (error: any) {
       console.log(`[DiscountService] RPC connection failed: ${error.message}`);
     }
@@ -311,12 +354,15 @@ class DiscountService {
       kaspaToSompi,
     } = this.kaspaModule;
 
+    // Build inscription script following KRC-721 spec
+    // Format: pubkey + OP_CHECKSIG + OP_FALSE + OP_IF + "kspr" + contentType(0) + JSON + OP_ENDIF
     const script = new ScriptBuilder()
       .addData(this.publicKey.toXOnlyPublicKey().toString())
       .addOp(Opcodes.OpCheckSig)
       .addOp(Opcodes.OpFalse)
       .addOp(Opcodes.OpIf)
       .addData(Buffer.from("kspr"))
+      .addI64(BigInt(0)) // Content type: 0 = JSON
       .addData(Buffer.from(inscriptionJson))
       .addOp(Opcodes.OpEndIf);
 

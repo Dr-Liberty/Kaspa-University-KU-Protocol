@@ -29,13 +29,15 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
 - **KRC-721 NFT Certificates**: Implements user-signed minting flow where users sign the mint inscription themselves and appear as the on-chain minter (not treasury wallet). Adheres to KRC-721 standard. Uses Pinata for IPFS uploads - each certificate gets direct IPFS CIDs for metadata. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
-    - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete courses are automatically whitelisted via the "discount" operation at 10.5 KAS mint fee.
+    - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete courses are automatically whitelisted via the "discount" operation. Fee structure:
+        - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
+        - Whitelisted (course completers): discountFee (0.5 KAS) + PoW fee (10 KAS) = 10.5 KAS total
     - **Discount Service Architecture** (`server/discount-service.ts`):
         1. **Automatic Whitelisting**: After first course completion, the discount service sends a commit-reveal transaction to whitelist the user's wallet.
         2. **Database Tracking**: `users.whitelistedAt` and `users.whitelistTxHash` fields track whitelist status to avoid redundant on-chain operations.
         3. **API Endpoints**: `GET /api/whitelist/status` checks status, `POST /api/whitelist/apply` manually triggers whitelist for retry scenarios.
         4. **Frontend Integration**: Certificate cards show whitelist status and enable mint button only for whitelisted users.
-        5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KASPAUNIV",to:walletAddress,discountFee:"1050000000"}`).
+        5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KUTEST4",to:walletAddress,discountFee:"50000000"}`). Note: 50000000 sompi = 0.5 KAS.
     - **User-Signed Minting Architecture**: Users sign the mint inscription directly with their wallet. The reservation system holds tokenIds temporarily while users sign. Key files: `server/mint-service.ts` (reservation logic), `client/src/components/user-signed-mint.tsx` (frontend flow).
     - **Key Files**: `server/nft-metadata-manager.ts` (coordinates IPFS uploads), `server/pinata.ts` (IPFS uploads via Pinata API).
     - **Reservation Lifecycle**:
