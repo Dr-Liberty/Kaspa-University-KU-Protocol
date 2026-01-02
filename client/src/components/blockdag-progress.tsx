@@ -56,100 +56,97 @@ function KaspaCoinAvatar({ className = "" }: { className?: string }) {
   );
 }
 
-function CourseBlock({ 
-  course, 
-  isCompleted, 
-  index,
-  totalCourses 
-}: { 
-  course: Course; 
-  isCompleted: boolean;
-  index: number;
-  totalCourses: number;
-}) {
-  const xOffset = (index % 3 - 1) * 25;
-  const animationDelay = index * 0.1;
-
+function DecorativeCube({ delay, isActive = false }: { delay: number; isActive?: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: animationDelay, duration: 0.5 }}
-      className="relative"
-      style={{ marginLeft: `${xOffset}px` }}
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: isActive ? 0.9 : 0.4, scale: 1 }}
+      transition={{ delay, duration: 0.4 }}
+      className={`
+        w-12 h-12 rounded-md flex items-center justify-center
+        ${isActive 
+          ? 'bg-gradient-to-br from-primary/60 to-primary/30 border-2 border-primary/50 shadow-lg shadow-primary/20' 
+          : 'bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20'
+        }
+      `}
     >
-      <div className="flex items-center gap-3">
-        <div 
-          className={`
-            relative w-14 h-14 rounded-md overflow-hidden border-2 transition-all
-            ${isCompleted 
-              ? 'border-primary shadow-lg shadow-primary/20' 
-              : 'border-border/50 opacity-60 grayscale'
-            }
-          `}
-        >
-          {course.thumbnail ? (
-            <img 
-              src={course.thumbnail} 
-              alt={course.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary">
-                {course.title.charAt(0)}
-              </span>
-            </div>
-          )}
-          
-          {isCompleted && (
-            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-primary drop-shadow-lg" />
-            </div>
-          )}
-          
-          {!isCompleted && (
-            <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
-              <Lock className="w-4 h-4 text-muted-foreground" />
-            </div>
-          )}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
-            {course.title}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {course.lessonCount} lessons
-          </p>
-        </div>
-        
-        {isCompleted && (
-          <Badge variant="outline" className="shrink-0 gap-1 text-xs bg-primary/10 text-primary border-primary/30">
-            <CheckCircle2 className="w-3 h-3" />
-            Done
-          </Badge>
-        )}
-      </div>
-      
-      {index < totalCourses - 1 && (
-        <div className="ml-7 h-6 w-0.5 bg-gradient-to-b from-border to-transparent my-1" />
-      )}
+      <div className={`w-3 h-3 rounded-sm ${isActive ? 'bg-primary/80' : 'bg-primary/40'}`} />
     </motion.div>
   );
 }
 
-function AmbientBlock({ delay, left, size = "sm" }: { delay: number; left: string; size?: "sm" | "md" }) {
-  const sizeClass = size === "md" ? "w-3 h-3" : "w-2 h-2";
-  
+function CourseBlock({ 
+  course, 
+  isCompleted, 
+  delay 
+}: { 
+  course: Course; 
+  isCompleted: boolean;
+  delay: number;
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 0.3, scale: 1 }}
-      transition={{ delay, duration: 0.5 }}
-      className={`absolute ${sizeClass} rounded-sm bg-primary/40`}
-      style={{ left }}
-    />
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.4 }}
+      className="relative group"
+    >
+      <div 
+        className={`
+          relative w-12 h-12 rounded-md overflow-hidden border-2 transition-all
+          ${isCompleted 
+            ? 'border-primary shadow-lg shadow-primary/30' 
+            : 'border-border/50 opacity-70 grayscale'
+          }
+        `}
+      >
+        {course.thumbnail ? (
+          <img 
+            src={course.thumbnail} 
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-primary-foreground">
+              {course.title.charAt(0)}
+            </span>
+          </div>
+        )}
+        
+        {isCompleted && (
+          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-white drop-shadow-lg" />
+          </div>
+        )}
+        
+        {!isCompleted && (
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      
+      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-8 z-10 bg-popover border rounded-md px-2 py-1 shadow-lg whitespace-nowrap">
+        <p className="text-xs font-medium">{course.title}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+function ConnectionLine({ from, to, isActive }: { from: string; to: string; isActive: boolean }) {
+  return (
+    <svg 
+      className="absolute inset-0 pointer-events-none" 
+      style={{ zIndex: 0 }}
+    >
+      <defs>
+        <linearGradient id={`lineGrad-${from}-${to}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={isActive ? "hsl(var(--primary))" : "hsl(var(--border))"} />
+          <stop offset="100%" stopColor={isActive ? "hsl(var(--primary) / 0.5)" : "hsl(var(--border) / 0.5)"} />
+        </linearGradient>
+      </defs>
+    </svg>
   );
 }
 
@@ -160,8 +157,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   const { data: diplomaStatus } = useDiplomaStatus();
   const [showMintDialog, setShowMintDialog] = useState(false);
 
-  // Derive progress from certificates (local computation for UI responsiveness)
-  // Diploma status API provides the authoritative server-side check
   const { completedCourseIds, progressPercent, completedCount } = useMemo(() => {
     if (courses.length === 0) {
       return { completedCourseIds: new Set<string>(), progressPercent: 0, completedCount: 0 };
@@ -172,15 +167,9 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     return { completedCourseIds: completed, progressPercent: percent, completedCount: count };
   }, [courses, certificates]);
 
-  const currentCourseIndex = completedCount;
-  
-  // Use diploma status for eligibility (server-side authority)
-  // Fall back to local computation if API not loaded yet
   const isComplete = diplomaStatus?.isEligible ?? (courses.length > 0 && completedCount >= courses.length);
   const isWhitelisted = whitelistStatus?.isWhitelisted;
   const mintPrice = isWhitelisted ? "~10 KAS" : "~20,000 KAS";
-  
-  // Diploma minting is not yet implemented - feature flag for future
   const DIPLOMA_MINT_ENABLED = false;
 
   const handleMintDiploma = () => {
@@ -202,13 +191,67 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       return;
     }
 
-    // Future: Implement actual diploma mint flow
     toast({
       title: "Minting Not Available",
       description: "Diploma NFT minting is not yet implemented.",
     });
     setShowMintDialog(false);
   };
+
+  const dagRows = useMemo(() => {
+    const rows: Array<{
+      items: Array<{ type: 'course' | 'decorative'; course?: Course; isCompleted?: boolean }>;
+    }> = [];
+    
+    let courseIndex = 0;
+    let rowIndex = 0;
+    
+    while (courseIndex < courses.length) {
+      const row: typeof rows[0] = { items: [] };
+      
+      if (rowIndex === 0) {
+        const course = courses[courseIndex];
+        row.items.push({ 
+          type: 'course', 
+          course, 
+          isCompleted: completedCourseIds.has(course.id) 
+        });
+        courseIndex++;
+      } else if (rowIndex === 1) {
+        if (courseIndex < courses.length) {
+          const course = courses[courseIndex];
+          row.items.push({ 
+            type: 'course', 
+            course, 
+            isCompleted: completedCourseIds.has(course.id) 
+          });
+          courseIndex++;
+        }
+        row.items.push({ type: 'decorative' });
+      } else {
+        const numDecorative = Math.min(rowIndex - 1, 3);
+        
+        if (courseIndex < courses.length) {
+          const course = courses[courseIndex];
+          row.items.push({ 
+            type: 'course', 
+            course, 
+            isCompleted: completedCourseIds.has(course.id) 
+          });
+          courseIndex++;
+        }
+        
+        for (let i = 0; i < numDecorative; i++) {
+          row.items.push({ type: 'decorative' });
+        }
+      }
+      
+      rows.push(row);
+      rowIndex++;
+    }
+    
+    return rows;
+  }, [courses, completedCourseIds]);
 
   if (!walletConnected) {
     return (
@@ -230,7 +273,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         <div className="relative bg-gradient-to-b from-background via-card to-background p-6">
-          <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <Badge variant="outline" className="gap-1 text-xs">
               <Sparkles className="w-3 h-3" />
               BlockDAG Journey
@@ -243,7 +286,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             </Badge>
           </div>
 
-          <div className="mt-8 mb-4">
+          <div className="mb-6">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-muted-foreground">Progress to Diploma</span>
               <span className="font-medium">{completedCount} / {courses.length} courses</span>
@@ -251,44 +294,90 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             <Progress value={progressPercent} className="h-2" />
           </div>
 
-          <div className="relative">
-            <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col items-center justify-center pointer-events-none">
+          <div className="relative py-4">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute left-4 top-0 z-20"
+            >
+              <KaspaCoinAvatar className="w-10 h-10" />
               <motion.div
-                animate={{ 
-                  y: isComplete 
-                    ? courses.length * 86 
-                    : currentCourseIndex * 86
-                }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="relative"
-              >
-                <KaspaCoinAvatar className="w-10 h-10" />
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute -inset-2 rounded-full border-2 border-primary/30"
-                />
-              </motion.div>
-            </div>
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -inset-1 rounded-full border-2 border-primary/30"
+              />
+            </motion.div>
 
-            <div className="ml-12 space-y-0">
-              {courses.map((course, index) => (
-                <CourseBlock
-                  key={course.id}
-                  course={course}
-                  isCompleted={completedCourseIds.has(course.id)}
-                  index={index}
-                  totalCourses={courses.length}
-                />
-              ))}
-            </div>
-
-            <div className="absolute right-0 top-0 h-full w-6 pointer-events-none overflow-hidden opacity-50">
-              <AmbientBlock delay={0.2} left="0" size="sm" />
-              <AmbientBlock delay={0.4} left="10px" size="md" />
-              <AmbientBlock delay={0.6} left="5px" size="sm" />
-              <AmbientBlock delay={0.8} left="15px" size="sm" />
-              <AmbientBlock delay={1.0} left="8px" size="md" />
+            <div className="ml-16 space-y-4">
+              {dagRows.map((row, rowIdx) => {
+                const totalWidth = row.items.length;
+                const justifyClass = totalWidth === 1 ? 'justify-start' : 'justify-start';
+                
+                return (
+                  <div key={rowIdx} className="relative">
+                    {rowIdx > 0 && (
+                      <svg 
+                        className="absolute -top-4 left-0 w-full h-4 overflow-visible"
+                        style={{ zIndex: 0 }}
+                      >
+                        {row.items.map((item, itemIdx) => {
+                          const prevRow = dagRows[rowIdx - 1];
+                          const prevItemCount = prevRow.items.length;
+                          
+                          const xEnd = 24 + itemIdx * 64;
+                          
+                          for (let prevIdx = 0; prevIdx < prevItemCount; prevIdx++) {
+                            const xStart = 24 + prevIdx * 64;
+                            const prevItem = prevRow.items[prevIdx];
+                            const isActive = prevItem.type === 'course' && prevItem.isCompleted;
+                            
+                            return (
+                              <line
+                                key={`${rowIdx}-${itemIdx}-${prevIdx}`}
+                                x1={xStart}
+                                y1={0}
+                                x2={xEnd}
+                                y2={16}
+                                stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                                strokeWidth={isActive ? 2 : 1}
+                                opacity={isActive ? 0.8 : 0.4}
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                      </svg>
+                    )}
+                    
+                    <div className={`flex gap-4 ${justifyClass}`}>
+                      {row.items.map((item, itemIdx) => {
+                        const delay = rowIdx * 0.15 + itemIdx * 0.08;
+                        
+                        if (item.type === 'course' && item.course) {
+                          return (
+                            <CourseBlock
+                              key={item.course.id}
+                              course={item.course}
+                              isCompleted={item.isCompleted ?? false}
+                              delay={delay}
+                            />
+                          );
+                        } else {
+                          const prevRowHasCompletedCourse = rowIdx > 0 && 
+                            dagRows[rowIdx - 1].items.some(i => i.type === 'course' && i.isCompleted);
+                          return (
+                            <DecorativeCube 
+                              key={`dec-${rowIdx}-${itemIdx}`} 
+                              delay={delay}
+                              isActive={prevRowHasCompletedCourse}
+                            />
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -304,7 +393,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
               }
             `}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className={`
                 w-16 h-16 rounded-lg flex items-center justify-center shrink-0
                 ${isComplete ? 'bg-primary text-primary-foreground' : 'bg-muted'}
