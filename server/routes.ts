@@ -2131,7 +2131,7 @@ export async function registerRoutes(
       const krc721Service = await getKRC721Service();
       const kaspaService = await getKaspaService();
       const collectionInfo = await krc721Service.getCollectionInfo();
-      const MINTING_FEE = 10.5;
+      const MINTING_FEE = 10;
 
       if (!collectionInfo.address) {
         await storage.updateCertificate(id, { nftStatus: "pending" });
@@ -2150,7 +2150,7 @@ export async function registerRoutes(
         await storage.updateCertificate(id, { nftStatus: "pending" });
         return res.status(400).json({ 
           error: "Payment verification failed",
-          message: "Could not verify payment to treasury. Please ensure you sent at least 10.5 KAS."
+          message: "Could not verify payment to treasury. Please ensure you sent at least 10 KAS."
         });
       }
 
@@ -2158,7 +2158,7 @@ export async function registerRoutes(
 
       // SECURITY: Mark payment TX as used IMMEDIATELY to prevent double-claiming race conditions
       // We mark it before minting to prevent concurrent requests using the same TX
-      await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10.5);
+      await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10);
 
       // Use pre-uploaded course asset image
       let imageUrl = certificate.imageUrl;

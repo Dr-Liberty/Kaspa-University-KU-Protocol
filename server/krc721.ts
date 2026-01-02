@@ -74,11 +74,11 @@ interface CertificateMetadata {
 //
 // Fee structure for Kaspa University:
 // - Non-whitelisted: royaltyFee (20,000 KAS) + PoW (10 KAS) = 20,010 KAS total
-// - Whitelisted (course completers): discountFee (0.5 KAS) + PoW (10 KAS) = 10.5 KAS total
+// - Whitelisted (course completers): discountFee (0 KAS) + PoW (10 KAS) = 10 KAS total
 const KRC721_DEPLOY_FEE_KAS = "1000"; // 1000 KAS deploy fee (REQUIRED by indexer)
 const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
-const KRC721_MINT_POW_FEE_KAS = "10.5"; // 10.5 KAS PoW fee (above 10 KAS minimum)
-const KRC721_MINT_POW_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi
+const KRC721_MINT_POW_FEE_KAS = "10"; // 10 KAS PoW fee (minimum required by indexer)
+const KRC721_MINT_POW_FEE_SOMPI = BigInt(1000000000); // 10 KAS in sompi
 
 // Get the indexer URL based on network
 // Prefer KaspacomDAGs (kaspa-krc721d.kaspa.com) for mainnet - authoritative source
@@ -266,7 +266,7 @@ setInterval(async () => {
 // 
 // WHITELIST-BASED PRICING MODEL:
 // - royaltyFee: 20,000 KAS (deterrent price for non-whitelisted users)
-// - Users whitelisted via "discount" operation pay 10.5 KAS (mintFee)
+// - Users whitelisted via "discount" operation pay 10 KAS (PoW fee only, discountFee=0)
 function getDefaultConfig(): KRC721Config {
   // Treasury address will be set during initialization when private key is loaded
   // For now use empty string - will be overwritten in deployCollection
@@ -851,7 +851,7 @@ class KRC721Service {
       // WHITELIST-BASED PRICING MODEL:
       // - royaltyFee: 20,000 KAS (2,000,000,000,000 sompi) - amount non-whitelisted users must pay to royaltyTo
       // - Users are whitelisted via "discount" operation after course completion
-      // - Whitelisted users pay discountFee (e.g., 0.5 KAS) instead of royaltyFee
+      // - Whitelisted users pay discountFee (0 KAS) instead of royaltyFee
       // - PoW fee (10 KAS minimum) is separate transaction fee that goes to miners
       //
       // Note: There is NO "mintFee" field in KRC-721 deploy spec - only royaltyFee
