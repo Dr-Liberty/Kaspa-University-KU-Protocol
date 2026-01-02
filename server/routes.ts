@@ -3910,17 +3910,44 @@ export async function registerRoutes(
   // KASIA ENCRYPTED MESSAGING ENDPOINTS
   // ============================================
 
+  // Helper to get authenticated wallet from bearer token
+  const getAuthenticatedWallet = (req: Request): string | null => {
+    const token = req.headers["x-auth-token"] as string;
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    
+    if (!token || !walletAddress) return null;
+    
+    const result = validateSession(token, walletAddress);
+    if (!result.valid) return null;
+    
+    return walletAddress;
+  };
+
   // Start a new private conversation (initiate handshake)
   app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
-      const { initiatorAddress, recipientAddress, initiatorAlias, handshakeTxHash } = req.body;
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { recipientAddress, initiatorAlias, handshakeTxHash } = req.body;
       
-      if (!initiatorAddress || !recipientAddress) {
-        return res.status(400).json({ error: "Both addresses required" });
+      if (!recipientAddress) {
+        return res.status(400).json({ error: "Recipient address required" });
+      }
+
+      // Validate recipient address format
+      if (!recipientAddress.startsWith("kaspa:") || recipientAddress.length < 60) {
+        return res.status(400).json({ error: "Invalid Kaspa address format" });
+      }
+
+      if (recipientAddress === authenticatedWallet) {
+        return res.status(400).json({ error: "Cannot start conversation with yourself" });
       }
       
       // Generate deterministic conversation ID
-      const conversationId = generateConversationId(initiatorAddress, recipientAddress);
+      const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
       
       // Check if conversation already exists
       const existing = await storage.getConversation(conversationId);
@@ -3930,13 +3957,13 @@ export async function registerRoutes(
       
       // Check if this is admin support conversation
       const adminAddress = process.env.ADMIN_WALLET_ADDRESS || "";
-      const isAdminConversation = initiatorAddress === adminAddress || recipientAddress === adminAddress;
+      const isAdminConversation = authenticatedWallet === adminAddress || recipientAddress === adminAddress;
       
       const conversation = await storage.createConversation({
         id: conversationId,
-        initiatorAddress,
+        initiatorAddress: authenticatedWallet,
         recipientAddress,
-        status: "pending_handshake",
+        status: "pending",
         handshakeTxHash,
         initiatorAlias,
         isAdminConversation,
@@ -3945,49 +3972,62 @@ export async function registerRoutes(
       res.json({ success: true, conversation, existing: false });
     } catch (error: any) {
       console.error("[Kasia] Failed to create conversation:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to create conversation" });
     }
   });
 
-  // Get conversations for a wallet address
+  // Get conversations for authenticated user
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
-      const walletAddress = req.query.address as string;
-      
-      if (!walletAddress) {
-        return res.status(400).json({ error: "Wallet address required" });
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
       }
       
-      const conversations = await storage.getConversationsForWallet(walletAddress);
+      const conversations = await storage.getConversationsForWallet(authenticatedWallet);
       
       res.json({ conversations });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversations:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to fetch conversations" });
     }
   });
 
-  // Get a specific conversation
+  // Get a specific conversation (only if participant)
   app.get("/api/conversations/:conversationId", generalRateLimiter, async (req: Request, res: Response) => {
     try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { conversationId } = req.params;
-      
       const conversation = await storage.getConversation(conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
+
+      // Verify user is a participant
+      if (conversation.initiatorAddress !== authenticatedWallet && conversation.recipientAddress !== authenticatedWallet) {
+        return res.status(403).json({ error: "Not authorized to view this conversation" });
+      }
       
       res.json({ conversation });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversation:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to fetch conversation" });
     }
   });
 
   // Accept handshake (respond to conversation request)
   app.post("/api/conversations/:conversationId/accept", generalRateLimiter, async (req: Request, res: Response) => {
     try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { conversationId } = req.params;
       const { responseTxHash, recipientAlias } = req.body;
       
@@ -3996,9 +4036,14 @@ export async function registerRoutes(
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
+
+      // Only the recipient can accept the handshake
+      if (conversation.recipientAddress !== authenticatedWallet) {
+        return res.status(403).json({ error: "Only the recipient can accept the handshake" });
+      }
       
-      if (conversation.status !== "pending_handshake" && conversation.status !== "handshake_received") {
-        return res.status(400).json({ error: "Conversation already active" });
+      if (conversation.status !== "pending") {
+        return res.status(400).json({ error: "Conversation is not pending" });
       }
       
       await storage.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
@@ -4006,18 +4051,28 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error: any) {
       console.error("[Kasia] Failed to accept handshake:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to accept handshake" });
     }
   });
 
   // Send a private message in a conversation
   app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { conversationId } = req.params;
-      const { senderAddress, encryptedContent, txHash } = req.body;
+      const { encryptedContent, txHash } = req.body;
       
-      if (!senderAddress || !encryptedContent) {
-        return res.status(400).json({ error: "Sender address and encrypted content required" });
+      if (!encryptedContent) {
+        return res.status(400).json({ error: "Encrypted content required" });
+      }
+
+      // Validate message length
+      if (encryptedContent.length > 10000) {
+        return res.status(400).json({ error: "Message too long" });
       }
       
       const conversation = await storage.getConversation(conversationId);
@@ -4027,13 +4082,18 @@ export async function registerRoutes(
       }
       
       // Verify sender is part of conversation
-      if (senderAddress !== conversation.initiatorAddress && senderAddress !== conversation.recipientAddress) {
+      if (authenticatedWallet !== conversation.initiatorAddress && authenticatedWallet !== conversation.recipientAddress) {
         return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+      }
+
+      // Only allow messages in active conversations
+      if (conversation.status !== "active") {
+        return res.status(400).json({ error: "Conversation is not active. Handshake must be accepted first." });
       }
       
       const message = await storage.createPrivateMessage({
         conversationId,
-        senderAddress,
+        senderAddress: authenticatedWallet,
         encryptedContent,
         txHash,
         txStatus: txHash ? "confirmed" : "pending",
@@ -4042,15 +4102,20 @@ export async function registerRoutes(
       res.json({ success: true, message });
     } catch (error: any) {
       console.error("[Kasia] Failed to send message:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to send message" });
     }
   });
 
-  // Get messages in a conversation
+  // Get messages in a conversation (only if participant)
   app.get("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { conversationId } = req.params;
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = parseInt(req.query.offset as string) || 0;
       
       const conversation = await storage.getConversation(conversationId);
@@ -4058,13 +4123,18 @@ export async function registerRoutes(
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
+
+      // Verify user is a participant
+      if (conversation.initiatorAddress !== authenticatedWallet && conversation.recipientAddress !== authenticatedWallet) {
+        return res.status(403).json({ error: "Not authorized to view messages in this conversation" });
+      }
       
       const messages = await storage.getPrivateMessages(conversationId, limit, offset);
       
       res.json({ messages, conversation });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch messages:", error);
-      res.status(500).json({ error: sanitizeError(error) });
+      res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
 

@@ -1007,4 +1007,11 @@ export class DbStorage implements IStorage {
       .offset(offset);
     return result;
   }
+
+  async getPendingConversations(): Promise<any[]> {
+    const result = await db.select()
+      .from(schema.conversations)
+      .where(eq(schema.conversations.status, "pending"));
+    return result;
+  }
 }

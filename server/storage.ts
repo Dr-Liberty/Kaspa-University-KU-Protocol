@@ -140,6 +140,7 @@ export interface IStorage {
     txStatus?: string;
   }): Promise<any>;
   getPrivateMessages(conversationId: string, limit?: number, offset?: number): Promise<any[]>;
+  getPendingConversations(): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -835,6 +836,11 @@ export class MemStorage implements IStorage {
       .filter(m => m.conversationId === conversationId)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .slice(offset, offset + limit);
+  }
+
+  async getPendingConversations(): Promise<any[]> {
+    return Array.from(this.conversations.values())
+      .filter(c => c.status === "pending");
   }
 }
 

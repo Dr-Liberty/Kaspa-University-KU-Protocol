@@ -18,6 +18,8 @@ interface KasiaIndexerResponse {
 export class HandshakePoller {
   private isRunning = false;
   private intervalId: NodeJS.Timeout | null = null;
+  private lastPollTime: Map<string, number> = new Map();
+  private readonly MIN_POLL_INTERVAL_PER_CONVERSATION = 60000;
 
   start(): void {
     if (this.isRunning) {
@@ -50,7 +52,7 @@ export class HandshakePoller {
 
   private async pollPendingHandshakes(): Promise<void> {
     try {
-      const pendingConversations = await this.getPendingConversations();
+      const pendingConversations = await storage.getPendingConversations();
       
       if (pendingConversations.length === 0) {
         return;
@@ -60,6 +62,14 @@ export class HandshakePoller {
 
       for (const conversation of pendingConversations) {
         try {
+          const lastPoll = this.lastPollTime.get(conversation.id) || 0;
+          const now = Date.now();
+          
+          if (now - lastPoll < this.MIN_POLL_INTERVAL_PER_CONVERSATION) {
+            continue;
+          }
+          
+          this.lastPollTime.set(conversation.id, now);
           await this.checkHandshakeAcceptance(conversation);
         } catch (err: any) {
           console.error(`[HandshakePoller] Error checking conversation ${conversation.id}:`, err.message);
@@ -68,11 +78,6 @@ export class HandshakePoller {
     } catch (err: any) {
       console.error("[HandshakePoller] Error getting pending conversations:", err.message);
     }
-  }
-
-  private async getPendingConversations(): Promise<any[]> {
-    const allConversations = await storage.getConversationsForWallet("__all__");
-    return [];
   }
 
   private async checkHandshakeAcceptance(conversation: any): Promise<void> {
@@ -107,12 +112,17 @@ export class HandshakePoller {
       if (acceptMessage) {
         console.log(`[HandshakePoller] Found acceptance for conversation ${conversation.id}`);
         
-        await storage.updateConversationStatus(
-          conversation.id,
-          "active",
-          acceptMessage.txHash,
-          acceptMessage.alias
-        );
+        try {
+          await storage.updateConversationStatus(
+            conversation.id,
+            "active",
+            acceptMessage.txHash,
+            acceptMessage.alias
+          );
+          this.lastPollTime.delete(conversation.id);
+        } catch (updateErr: any) {
+          console.error(`[HandshakePoller] Failed to update conversation status:`, updateErr.message);
+        }
       }
     } catch (err: any) {
       if (err.name === "TimeoutError") {
