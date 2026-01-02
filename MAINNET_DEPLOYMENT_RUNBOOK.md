@@ -26,6 +26,15 @@ This document provides the complete checklist for deploying the KUDIPLOMA collec
 | PoW Fee | ~10 KAS (user pays via KasWare) |
 | Collection Image CID | Upload diploma design to IPFS first |
 
+## IPFS Assets
+
+| Asset | CID | URL |
+|-------|-----|-----|
+| Diploma Image | `QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4` | [View](https://gateway.pinata.cloud/ipfs/QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4) |
+| Metadata Folder (10k) | `QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF` | [Token 1](https://gateway.pinata.cloud/ipfs/QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF/kudiploma-metadata/1) |
+
+**buri value**: `ipfs://QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF/kudiploma-metadata`
+
 ## Testnet Deployment Values
 
 For testing on the KaspacomDAGs devnet/testnet:
@@ -34,7 +43,7 @@ For testing on the KaspacomDAGs devnet/testnet:
 |-------|-------|
 | Collection Name | `KUTEST7` (or increment) |
 | Total Supply | `10000` |
-| Metadata URL (IPFS) | `ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4` |
+| Metadata URL (buri) | `ipfs://QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF/kudiploma-metadata` |
 | Mint Price | `20000` (royalty deterrent) |
 | Mint Funds Recipient | (leave blank - default deployer) |
 | Premint NFT Allocation | `0` |
