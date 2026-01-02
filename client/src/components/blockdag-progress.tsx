@@ -43,10 +43,10 @@ interface DAGConnection {
   isAnticone: boolean;
 }
 
-const CUBE_SIZE = 56;
-const GAP = 12;
-const ROW_HEIGHT = CUBE_SIZE + 36;
-const MAX_COLS = 10;
+const CUBE_SIZE = 168;
+const GAP = 16;
+const ROW_HEIGHT = CUBE_SIZE + 48;
+const MAX_COLS = 12;
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed) * 10000;
@@ -68,15 +68,9 @@ function BlueCube({ node, delay }: { node: DAGNode; delay: number }) {
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
-      className={`
-        w-[56px] h-[56px] rounded-lg flex items-center justify-center
-        ${node.isMainChain 
-          ? 'bg-sky-400 border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
-          : 'bg-sky-400/80 border-2 border-sky-500/50'
-        }
-      `}
+      className="w-[168px] h-[168px] rounded-xl flex items-center justify-center bg-sky-400/80 border-2 border-sky-500/50"
     >
-      <div className="w-4 h-4 rounded-md bg-sky-600/50" />
+      <div className="w-10 h-10 rounded-lg bg-sky-600/50" />
     </motion.div>
   );
 }
@@ -87,9 +81,28 @@ function RedCube({ node, delay }: { node: DAGNode; delay: number }) {
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
-      className="w-[56px] h-[56px] rounded-lg flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
+      className="w-[168px] h-[168px] rounded-xl flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
     >
-      <div className="w-4 h-4 rounded-md bg-rose-600/50" />
+      <div className="w-10 h-10 rounded-lg bg-rose-600/50" />
+    </motion.div>
+  );
+}
+
+function DiplomaCube({ delay, isComplete }: { delay: number; isComplete: boolean }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.4 }}
+      className={`
+        w-[168px] h-[168px] rounded-xl flex items-center justify-center
+        ${isComplete 
+          ? 'bg-gradient-to-br from-sky-400 to-blue-600 border-[4px] border-blue-500 shadow-xl shadow-blue-500/40' 
+          : 'bg-slate-700/80 border-2 border-slate-600'
+        }
+      `}
+    >
+      <GraduationCap className={`w-16 h-16 ${isComplete ? 'text-white' : 'text-slate-500'}`} />
     </motion.div>
   );
 }
@@ -114,9 +127,9 @@ function CourseBlock({
     >
       <div 
         className={`
-          relative w-[56px] h-[56px] rounded-lg overflow-hidden transition-all
+          relative w-[168px] h-[168px] rounded-xl overflow-hidden transition-all
           ${isMainChain 
-            ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
+            ? 'border-[4px] border-blue-600 shadow-xl shadow-blue-500/40' 
             : 'border-2 border-sky-500/60'
           }
         `}
@@ -129,7 +142,7 @@ function CourseBlock({
           />
         ) : (
           <div className="w-full h-full bg-sky-400 flex items-center justify-center">
-            <span className="text-sm font-bold text-white">
+            <span className="text-2xl font-bold text-white">
               {course.title.charAt(0)}
             </span>
           </div>
@@ -137,13 +150,13 @@ function CourseBlock({
         
         {isCompleted && (
           <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6 text-white drop-shadow-lg" />
+            <CheckCircle2 className="w-16 h-16 text-white drop-shadow-lg" />
           </div>
         )}
       </div>
       
-      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-12 z-20 bg-popover border rounded-md px-3 py-1.5 shadow-lg whitespace-nowrap max-w-52">
-        <p className="text-xs font-medium truncate">{course.title}</p>
+      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-14 z-20 bg-popover border rounded-md px-4 py-2 shadow-lg whitespace-nowrap max-w-64">
+        <p className="text-sm font-medium truncate">{course.title}</p>
       </div>
     </motion.div>
   );
@@ -197,7 +210,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     setShowMintDialog(false);
   };
 
-  const { nodes, connections, rows, totalWidth, totalHeight } = useMemo(() => {
+  const { nodes, connections, rows, totalWidth, totalHeight, diplomaNode } = useMemo(() => {
     const allNodes: DAGNode[] = [];
     const allConnections: DAGConnection[] = [];
     const rowsData: DAGNode[][] = [];
@@ -214,7 +227,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     };
     
     let rowIdx = 0;
-    let mainChainCol = 0;
     
     while (courseIndex < totalCourses && rowIdx < rowWidths.length) {
       const rowWidth = rowWidths[rowIdx];
@@ -248,15 +260,15 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       
       const shuffledItems = shuffleWithSeed(rowItems, rowIdx * 31 + 7);
       
-      mainChainCol = Math.floor(seededRandom(rowIdx * 99 + 5) * rowWidth);
-      
-      const rowStartX = ((MAX_COLS - rowWidth) / 2) * (CUBE_SIZE + GAP);
+      const maxRowWidth = MAX_COLS * (CUBE_SIZE + GAP);
+      const rowStartX = (maxRowWidth - rowWidth * (CUBE_SIZE + GAP) + GAP) / 2;
       
       const rowNodes: DAGNode[] = shuffledItems.map((item, colIdx) => {
         const x = rowStartX + colIdx * (CUBE_SIZE + GAP) + CUBE_SIZE / 2;
         const y = rowIdx * ROW_HEIGHT + CUBE_SIZE / 2;
         
-        const isMainChain = colIdx === mainChainCol && item.type !== 'red';
+        // Main chain only on course blocks
+        const isMainChain = item.type === 'course';
         
         return {
           id: item.type === 'course' ? item.course!.id : `${item.type}-${rowIdx}-${colIdx}`,
@@ -275,6 +287,9 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       rowsData.push(rowNodes);
       rowIdx++;
     }
+    
+    // Find course nodes for main chain connections
+    const courseNodes = allNodes.filter(n => n.type === 'course');
     
     for (let r = 1; r < rowsData.length; r++) {
       const currentRow = rowsData[r];
@@ -303,7 +318,12 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         parentIndices.forEach(parentIdx => {
           const parent = prevRow[parentIdx];
           
-          const isMainChainConnection = node.isMainChain && parent.isMainChain;
+          // Skip red connections to course blocks
+          if (node.type === 'course' && parent.type === 'red') return;
+          if (parent.type === 'course' && node.type === 'red') return;
+          
+          // Main chain only between courses
+          const isMainChainConnection = node.type === 'course' && parent.type === 'course';
           const isAnticoneConnection = node.type === 'red' || parent.type === 'red';
           
           allConnections.push({
@@ -325,6 +345,10 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             const skipParentIdx = Math.floor(seededRandom(r * 300 + nodeIdx + s * 50) * prevPrevRow.length);
             const skipParent = prevPrevRow[skipParentIdx];
             
+            // Skip red connections to course blocks
+            if (node.type === 'course' && skipParent.type === 'red') continue;
+            if (skipParent.type === 'course' && node.type === 'red') continue;
+            
             const isAnticoneConnection = node.type === 'red' || skipParent.type === 'red';
             
             allConnections.push({
@@ -342,15 +366,50 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       });
     }
     
+    // Add diploma node at the bottom center
     const maxRowWidth = MAX_COLS * (CUBE_SIZE + GAP);
-    const height = rowsData.length * ROW_HEIGHT + 60;
+    const diplomaY = rowsData.length * ROW_HEIGHT + CUBE_SIZE / 2 + 32;
+    const diplomaX = maxRowWidth / 2;
+    
+    const diploma: DAGNode = {
+      id: 'diploma',
+      type: 'course',
+      isMainChain: true,
+      row: rowsData.length,
+      col: 0,
+      x: diplomaX,
+      y: diplomaY
+    };
+    
+    // Connect all bottom row nodes to diploma
+    const bottomRow = rowsData[rowsData.length - 1];
+    if (bottomRow) {
+      bottomRow.forEach(node => {
+        // Skip red nodes connecting to diploma
+        if (node.type === 'red') return;
+        
+        allConnections.push({
+          fromId: node.id,
+          toId: 'diploma',
+          fromX: node.x,
+          fromY: node.y + CUBE_SIZE / 2,
+          toX: diplomaX,
+          toY: diplomaY - CUBE_SIZE / 2,
+          isMainChain: node.type === 'course',
+          isAnticone: false
+        });
+      });
+    }
+    
+    const height = (rowsData.length + 1) * ROW_HEIGHT + 80;
     
     return {
       nodes: allNodes,
       connections: allConnections,
       rows: rowsData,
       totalWidth: maxRowWidth,
-      totalHeight: height
+      totalHeight: height,
+      diplomaNode: diploma
     };
   }, [courses, completedCourseIds]);
 
@@ -371,9 +430,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="relative bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="overflow-hidden">
+      <div className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <Badge variant="outline" className="gap-1 text-xs bg-slate-800 border-slate-600 text-slate-200">
               <Sparkles className="w-3 h-3" />
@@ -445,7 +503,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                   key={rowIdx}
                   className="absolute flex"
                   style={{
-                    left: ((MAX_COLS - row.length) / 2) * (CUBE_SIZE + GAP),
+                    left: (totalWidth - row.length * (CUBE_SIZE + GAP) + GAP) / 2,
                     top: rowIdx * ROW_HEIGHT,
                     gap: GAP
                   }}
@@ -481,6 +539,20 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                   })}
                 </div>
               ))}
+              
+              {/* Diploma cube at the bottom center */}
+              <div
+                className="absolute flex justify-center"
+                style={{
+                  left: totalWidth / 2 - CUBE_SIZE / 2,
+                  top: rows.length * ROW_HEIGHT + 32
+                }}
+              >
+                <DiplomaCube 
+                  delay={rows.length * 0.05}
+                  isComplete={isComplete}
+                />
+              </div>
             </div>
           </div>
 
@@ -528,7 +600,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             </div>
           </motion.div>
         </div>
-      </CardContent>
 
       <Dialog open={showMintDialog} onOpenChange={setShowMintDialog}>
         <DialogContent className="sm:max-w-md">
@@ -597,6 +668,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }
