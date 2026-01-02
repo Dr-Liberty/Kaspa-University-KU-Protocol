@@ -18,14 +18,14 @@ interface BlockDAGProgressProps {
   walletConnected: boolean;
 }
 
-type NodeType = 'course' | 'decorative' | 'anticone';
+type NodeType = 'course' | 'blue' | 'red';
 
 interface DAGNode {
   id: string;
   type: NodeType;
   course?: Course;
   isCompleted?: boolean;
-  isMainChain?: boolean;
+  isMainChain: boolean;
   row: number;
   col: number;
   x: number;
@@ -43,9 +43,9 @@ interface DAGConnection {
   isAnticone: boolean;
 }
 
-const CUBE_SIZE = 72;
-const GAP = 16;
-const ROW_HEIGHT = CUBE_SIZE + 50;
+const CUBE_SIZE = 56;
+const GAP = 12;
+const ROW_HEIGHT = CUBE_SIZE + 36;
 const MAX_COLS = 10;
 
 function seededRandom(seed: number): number {
@@ -62,61 +62,34 @@ function shuffleWithSeed<T>(array: T[], seed: number): T[] {
   return result;
 }
 
-function KaspaCoinAvatar({ className = "" }: { className?: string }) {
-  return (
-    <svg 
-      viewBox="0 0 64 64" 
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id="coinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#10b981" />
-          <stop offset="50%" stopColor="#059669" />
-          <stop offset="100%" stopColor="#047857" />
-        </linearGradient>
-        <filter id="coinGlow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      <circle cx="32" cy="32" r="28" fill="url(#coinGradient)" filter="url(#coinGlow)" />
-      <circle cx="32" cy="32" r="24" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.3" />
-      <text 
-        x="32" 
-        y="40" 
-        textAnchor="middle" 
-        fontSize="22" 
-        fontWeight="bold" 
-        fill="#ffffff"
-        fontFamily="Arial Black, sans-serif"
-      >
-        K
-      </text>
-    </svg>
-  );
-}
-
-function DecorativeCube({ node, delay }: { node: DAGNode; delay: number }) {
-  const isAnticone = node.type === 'anticone';
-  
+function BlueCube({ node, delay }: { node: DAGNode; delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.4 }}
+      transition={{ delay, duration: 0.3 }}
       className={`
-        w-[72px] h-[72px] rounded-lg flex items-center justify-center
-        ${isAnticone 
-          ? 'bg-gradient-to-br from-red-500/50 to-red-600/30 border-2 border-red-500/60 shadow-lg shadow-red-500/20' 
-          : 'bg-gradient-to-br from-primary/50 to-primary/30 border-2 border-primary/50 shadow-lg shadow-primary/20'
+        w-[56px] h-[56px] rounded-full flex items-center justify-center
+        ${node.isMainChain 
+          ? 'bg-sky-400 border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
+          : 'bg-sky-400/80 border-2 border-sky-500/50'
         }
       `}
     >
-      <div className={`w-5 h-5 rounded-md ${isAnticone ? 'bg-red-500/70' : 'bg-primary/70'}`} />
+      <div className="w-3 h-3 rounded-full bg-sky-600/50" />
+    </motion.div>
+  );
+}
+
+function RedCube({ node, delay }: { node: DAGNode; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.3 }}
+      className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
+    >
+      <div className="w-3 h-3 rounded-full bg-rose-600/50" />
     </motion.div>
   );
 }
@@ -130,21 +103,21 @@ function CourseBlock({
 }) {
   const course = node.course!;
   const isCompleted = node.isCompleted ?? false;
-  const isMainChain = node.isMainChain ?? false;
+  const isMainChain = node.isMainChain;
   
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.4 }}
+      transition={{ delay, duration: 0.3 }}
       className="relative group"
     >
       <div 
         className={`
-          relative w-[72px] h-[72px] rounded-lg overflow-hidden transition-all
+          relative w-[56px] h-[56px] rounded-full overflow-hidden transition-all
           ${isMainChain 
-            ? 'border-[3px] border-primary shadow-xl shadow-primary/40' 
-            : 'border-2 border-primary/60 shadow-lg shadow-primary/20'
+            ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
+            : 'border-2 border-sky-500/60'
           }
         `}
       >
@@ -155,16 +128,16 @@ function CourseBlock({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/50 to-primary/30 flex items-center justify-center">
-            <span className="text-lg font-bold text-primary-foreground">
+          <div className="w-full h-full bg-sky-400 flex items-center justify-center">
+            <span className="text-sm font-bold text-white">
               {course.title.charAt(0)}
             </span>
           </div>
         )}
         
         {isCompleted && (
-          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
+          <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-white drop-shadow-lg" />
           </div>
         )}
       </div>
@@ -231,36 +204,27 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     
     let courseIndex = 0;
     const totalCourses = courses.length;
-    let rowIdx = 0;
+    
+    const rowWidths = [1, 2, 4, 5, 7, 8, 9, 10, 10, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
     
     const getCoursesForRow = (row: number): number => {
       if (row < 4) return 1;
       if (row < 6) return 2;
-      return Math.min(2 + Math.floor((row - 4) / 2), 5);
+      return Math.min(2 + Math.floor((row - 4) / 2), 4);
     };
     
-    const getRowWidth = (row: number): number => {
-      if (row === 0) return 1;
-      if (row === 1) return 2;
-      if (row === 2) return 3;
-      if (row === 3) return 4;
-      if (row === 4) return 5;
-      if (row === 5) return 6;
-      if (row === 6) return 7;
-      if (row === 7) return 8;
-      if (row === 8) return 9;
-      return MAX_COLS;
-    };
+    let rowIdx = 0;
+    let mainChainCol = 0;
     
-    while (courseIndex < totalCourses) {
-      const rowWidth = getRowWidth(rowIdx);
+    while (courseIndex < totalCourses && rowIdx < rowWidths.length) {
+      const rowWidth = rowWidths[rowIdx];
       const coursesInRow = Math.min(getCoursesForRow(rowIdx), totalCourses - courseIndex);
-      const decorativeCount = rowWidth - coursesInRow;
+      const fillerCount = rowWidth - coursesInRow;
       
-      const anticoneCount = rowIdx >= 3 && decorativeCount >= 2 
-        ? Math.floor(seededRandom(rowIdx * 77) * Math.min(2, Math.floor(decorativeCount / 3))) 
+      const redCount = rowIdx >= 2 && fillerCount >= 2 
+        ? Math.floor(seededRandom(rowIdx * 77 + 13) * Math.min(3, Math.ceil(fillerCount * 0.4)))
         : 0;
-      const normalDecorativeCount = decorativeCount - anticoneCount;
+      const blueCount = fillerCount - redCount;
       
       const rowItems: Array<{ type: NodeType; course?: Course; isCompleted?: boolean }> = [];
       
@@ -274,15 +238,17 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         courseIndex++;
       }
       
-      for (let i = 0; i < normalDecorativeCount; i++) {
-        rowItems.push({ type: 'decorative' });
+      for (let i = 0; i < blueCount; i++) {
+        rowItems.push({ type: 'blue' });
       }
       
-      for (let i = 0; i < anticoneCount; i++) {
-        rowItems.push({ type: 'anticone' });
+      for (let i = 0; i < redCount; i++) {
+        rowItems.push({ type: 'red' });
       }
       
       const shuffledItems = shuffleWithSeed(rowItems, rowIdx * 31 + 7);
+      
+      mainChainCol = Math.floor(seededRandom(rowIdx * 99 + 5) * rowWidth);
       
       const rowStartX = ((MAX_COLS - rowWidth) / 2) * (CUBE_SIZE + GAP);
       
@@ -290,8 +256,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         const x = rowStartX + colIdx * (CUBE_SIZE + GAP) + CUBE_SIZE / 2;
         const y = rowIdx * ROW_HEIGHT + CUBE_SIZE / 2;
         
-        const isMainChain = item.type === 'course' && 
-          (seededRandom(rowIdx * 100 + colIdx) > 0.5 || rowIdx === 0);
+        const isMainChain = colIdx === mainChainCol && item.type !== 'red';
         
         return {
           id: item.type === 'course' ? item.course!.id : `${item.type}-${rowIdx}-${colIdx}`,
@@ -317,14 +282,29 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       const prevPrevRow = r > 1 ? rowsData[r - 2] : null;
       
       currentRow.forEach((node, nodeIdx) => {
-        const numParents = Math.floor(seededRandom(r * 50 + nodeIdx) * 2) + 1;
+        const numParents = Math.min(
+          Math.floor(seededRandom(r * 50 + nodeIdx) * 3) + 2,
+          prevRow.length
+        );
         
-        for (let p = 0; p < numParents && p < prevRow.length; p++) {
-          const parentIdx = Math.floor(seededRandom(r * 25 + nodeIdx * 5 + p) * prevRow.length);
+        const parentIndices = new Set<number>();
+        
+        for (let p = 0; p < numParents * 2 && parentIndices.size < numParents; p++) {
+          const offset = Math.floor(seededRandom(r * 25 + nodeIdx * 5 + p) * 3) - 1;
+          let targetIdx = Math.max(0, Math.min(prevRow.length - 1, nodeIdx + offset));
+          
+          if (parentIndices.has(targetIdx)) {
+            targetIdx = Math.floor(seededRandom(r * 100 + nodeIdx * 10 + p) * prevRow.length);
+          }
+          
+          parentIndices.add(targetIdx);
+        }
+        
+        parentIndices.forEach(parentIdx => {
           const parent = prevRow[parentIdx];
           
-          const isMainChainConnection = (node.isMainChain ?? false) && (parent.isMainChain ?? false);
-          const isAnticoneConnection = node.type === 'anticone' || parent.type === 'anticone';
+          const isMainChainConnection = node.isMainChain && parent.isMainChain;
+          const isAnticoneConnection = node.type === 'red' || parent.type === 'red';
           
           allConnections.push({
             fromId: parent.id,
@@ -336,30 +316,34 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             isMainChain: isMainChainConnection,
             isAnticone: isAnticoneConnection
           });
-        }
+        });
         
-        if (prevPrevRow && seededRandom(r * 200 + nodeIdx) > 0.65) {
-          const skipParentIdx = Math.floor(seededRandom(r * 300 + nodeIdx) * prevPrevRow.length);
-          const skipParent = prevPrevRow[skipParentIdx];
+        if (prevPrevRow && seededRandom(r * 200 + nodeIdx) > 0.5) {
+          const skipCount = Math.floor(seededRandom(r * 150 + nodeIdx) * 2) + 1;
           
-          const isAnticoneConnection = node.type === 'anticone' || skipParent.type === 'anticone';
-          
-          allConnections.push({
-            fromId: skipParent.id,
-            toId: node.id,
-            fromX: skipParent.x,
-            fromY: skipParent.y + CUBE_SIZE / 2,
-            toX: node.x,
-            toY: node.y - CUBE_SIZE / 2,
-            isMainChain: false,
-            isAnticone: isAnticoneConnection
-          });
+          for (let s = 0; s < skipCount && s < prevPrevRow.length; s++) {
+            const skipParentIdx = Math.floor(seededRandom(r * 300 + nodeIdx + s * 50) * prevPrevRow.length);
+            const skipParent = prevPrevRow[skipParentIdx];
+            
+            const isAnticoneConnection = node.type === 'red' || skipParent.type === 'red';
+            
+            allConnections.push({
+              fromId: skipParent.id,
+              toId: node.id,
+              fromX: skipParent.x,
+              fromY: skipParent.y + CUBE_SIZE / 2,
+              toX: node.x,
+              toY: node.y - CUBE_SIZE / 2,
+              isMainChain: false,
+              isAnticone: isAnticoneConnection
+            });
+          }
         }
       });
     }
     
     const maxRowWidth = MAX_COLS * (CUBE_SIZE + GAP);
-    const height = rowsData.length * ROW_HEIGHT + 40;
+    const height = rowsData.length * ROW_HEIGHT + 60;
     
     return {
       nodes: allNodes,
@@ -389,15 +373,15 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        <div className="relative bg-gradient-to-b from-background via-card to-background p-6">
+        <div className="relative bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <Badge variant="outline" className="gap-1 text-xs">
+            <Badge variant="outline" className="gap-1 text-xs bg-slate-800 border-slate-600 text-slate-200">
               <Sparkles className="w-3 h-3" />
               BlockDAG Journey
             </Badge>
             <Badge 
               variant={isComplete ? "default" : "secondary"} 
-              className={`gap-1 ${isComplete ? 'bg-primary' : ''}`}
+              className={`gap-1 ${isComplete ? 'bg-sky-500' : 'bg-slate-700 text-slate-200'}`}
             >
               {progressPercent}% Complete
             </Badge>
@@ -405,8 +389,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
 
           <div className="mb-6">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Progress to Diploma</span>
-              <span className="font-medium">{completedCount} / {courses.length} courses</span>
+              <span className="text-slate-400">Progress to Diploma</span>
+              <span className="font-medium text-slate-200">{completedCount} / {courses.length} courses</span>
             </div>
             <Progress value={progressPercent} className="h-2" />
           </div>
@@ -426,37 +410,21 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                 height={totalHeight}
                 style={{ overflow: 'visible' }}
               >
-                <defs>
-                  <marker
-                    id="arrowhead"
-                    markerWidth="6"
-                    markerHeight="6"
-                    refX="3"
-                    refY="3"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--primary))" />
-                  </marker>
-                </defs>
-                
                 {connections.map((conn, idx) => {
                   const midY = (conn.fromY + conn.toY) / 2;
                   
-                  let strokeColor = "hsl(var(--border))";
+                  let strokeColor = "rgba(148, 163, 184, 0.4)";
                   let strokeWidth = 1;
-                  let strokeDasharray = "4,4";
-                  let opacity = 0.4;
+                  let strokeDasharray = "4,3";
                   
                   if (conn.isAnticone) {
-                    strokeColor = "hsl(0, 70%, 50%)";
+                    strokeColor = "rgba(244, 63, 94, 0.5)";
                     strokeWidth = 1.5;
-                    strokeDasharray = "6,3";
-                    opacity = 0.5;
+                    strokeDasharray = "5,3";
                   } else if (conn.isMainChain) {
-                    strokeColor = "hsl(var(--primary))";
-                    strokeWidth = 2.5;
+                    strokeColor = "rgba(37, 99, 235, 0.9)";
+                    strokeWidth = 3;
                     strokeDasharray = "none";
-                    opacity = 0.8;
                   }
                   
                   return (
@@ -467,7 +435,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                       stroke={strokeColor}
                       strokeWidth={strokeWidth}
                       strokeDasharray={strokeDasharray}
-                      opacity={opacity}
                     />
                   );
                 })}
@@ -484,7 +451,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                   }}
                 >
                   {row.map((node, nodeIdx) => {
-                    const delay = rowIdx * 0.08 + nodeIdx * 0.03;
+                    const delay = rowIdx * 0.05 + nodeIdx * 0.02;
                     
                     if (node.type === 'course' && node.course) {
                       return (
@@ -494,9 +461,17 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                           delay={delay}
                         />
                       );
+                    } else if (node.type === 'red') {
+                      return (
+                        <RedCube 
+                          key={node.id}
+                          node={node}
+                          delay={delay}
+                        />
+                      );
                     } else {
                       return (
-                        <DecorativeCube 
+                        <BlueCube 
                           key={node.id}
                           node={node}
                           delay={delay}
@@ -516,23 +491,23 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             className={`
               mt-6 p-4 rounded-lg border-2 transition-all
               ${isComplete 
-                ? 'border-primary bg-primary/10' 
-                : 'border-dashed border-border bg-muted/30'
+                ? 'border-sky-500 bg-sky-500/10' 
+                : 'border-dashed border-slate-600 bg-slate-800/50'
               }
             `}
           >
             <div className="flex flex-wrap items-center gap-4">
               <div className={`
                 w-16 h-16 rounded-lg flex items-center justify-center shrink-0
-                ${isComplete ? 'bg-primary text-primary-foreground' : 'bg-muted'}
+                ${isComplete ? 'bg-sky-500 text-white' : 'bg-slate-700'}
               `}>
                 <GraduationCap className="w-8 h-8" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold">
+                <h4 className="font-semibold text-slate-100">
                   {isComplete ? "Diploma Unlocked!" : "Kaspa University Diploma"}
                 </h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-400">
                   {isComplete 
                     ? "Congratulations! You can now mint your KRC-721 diploma NFT." 
                     : `Complete ${courses.length - completedCount} more course${courses.length - completedCount === 1 ? '' : 's'} to unlock your diploma.`
@@ -542,7 +517,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
               {isComplete && (
                 <Button 
                   onClick={() => setShowMintDialog(true)}
-                  className="shrink-0 gap-2"
+                  className="shrink-0 gap-2 bg-sky-500 hover:bg-sky-600"
                   disabled={isDemoMode || !isWhitelisted}
                   data-testid="button-mint-diploma"
                 >
@@ -559,7 +534,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-primary" />
+              <GraduationCap className="w-5 h-5 text-sky-500" />
               Mint Your Diploma NFT
             </DialogTitle>
             <DialogDescription>
