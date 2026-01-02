@@ -63,34 +63,27 @@ export class MintService {
   }
 
   /**
-   * Build mint inscription JSON with token metadata
-   * Includes tokenId and per-token metadata for wallet display
+   * Build mint inscription JSON
+   * IMPORTANT: Keep minimal to stay under 520 byte Bitcoin Script limit
+   * Metadata is stored in IPFS via collection buri, NOT in the mint inscription
    */
   buildInscriptionJson(
     walletAddress: string,
     tokenId: number,
-    courseName: string,
-    score: number,
-    completedAt: Date
+    _courseName: string,
+    _score: number,
+    _completedAt: Date
   ): MintInscriptionData {
     const ticker = getCollectionTicker();
     console.log(`[MintService] Building inscription with ticker: ${ticker} (KRC721_TESTNET=${process.env.KRC721_TESTNET})`);
+    // Minimal mint inscription per KRC-721 spec
+    // Metadata is stored via IPFS/buri, not in the on-chain inscription
     return {
       p: "krc-721",
       op: "mint",
       tick: ticker,
       to: walletAddress,
       tokenId: tokenId,
-      metadata: {
-        name: `${courseName} - Certificate #${tokenId}`,
-        description: `Proof of Learning certificate from Kaspa University. Awarded for completing ${courseName} with a score of ${score}%.`,
-        attributes: [
-          { trait_type: "Course", value: courseName },
-          { trait_type: "Score", value: score },
-          { trait_type: "Completed", value: completedAt.toISOString().split("T")[0] },
-          { trait_type: "Platform", value: "Kaspa University" },
-        ],
-      },
     };
   }
 
