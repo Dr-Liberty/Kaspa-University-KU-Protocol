@@ -265,5 +265,25 @@ export type MintReservation = z.infer<typeof mintReservationSchema>;
 export const insertMintReservationSchema = mintReservationSchema.omit({ id: true, createdAt: true });
 export type InsertMintReservation = z.infer<typeof insertMintReservationSchema>;
 
+// Diploma NFT for users who complete all 16 courses
+// Single diploma collection (1,000 supply) instead of per-course NFTs
+export const diplomaSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  walletAddress: z.string(),
+  coursesCompleted: z.number(), // Track how many courses completed (16 = diploma ready)
+  totalCoursesRequired: z.number().default(16),
+  isEligible: z.boolean().default(false), // True when all courses completed
+  nftStatus: z.enum(["not_eligible", "eligible", "minting", "minted"]).default("not_eligible"),
+  nftTxHash: z.string().optional(),
+  mintedAt: z.date().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type Diploma = z.infer<typeof diplomaSchema>;
+export const insertDiplomaSchema = diplomaSchema.omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDiploma = z.infer<typeof insertDiplomaSchema>;
+
 // Re-export Drizzle table definitions for database migrations
 export * from "../server/db/schema";

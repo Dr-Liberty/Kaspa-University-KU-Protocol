@@ -28,11 +28,13 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
-- **KRC-721 NFT Certificates**: Implements user-signed minting flow where users sign the mint inscription themselves and appear as the on-chain minter (not treasury wallet). Adheres to KRC-721 standard. Uses Pinata for IPFS uploads - each certificate gets direct IPFS CIDs for metadata. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
+- **KRC-721 Diploma NFT (PIVOTED ARCHITECTURE)**: Instead of per-course NFTs (16 collections × 1,000 KAS = 16,000 KAS), we deploy a **single diploma collection** (1,000 KAS budget). Users earn ONE KRC-721 diploma NFT after completing all 16 courses. Implements user-signed minting flow where users sign the mint inscription themselves. Uses Pinata for IPFS uploads. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
+    - **Diploma Model**: Single diploma NFT rewarded after 100% course completion (all 16 courses). This creates a gamified learning journey with clear progression toward a single achievement.
+    - **BlockDAG Progress Visualization**: Gamified progress tracker on the certificates page showing a Kaspa coin avatar falling through a visual BlockDAG. Each course is represented as a block with its thumbnail. Progress percentage and remaining courses displayed prominently.
     - **On-Chain First Philosophy**: The blockchain indexer is ALWAYS the source of truth for deployment/minting status. Database is only used as a cache that syncs with on-chain state. All status checks verify against the indexer API, not the local database.
-    - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete courses are automatically whitelisted via the "discount" operation. Fee structure:
+    - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete all courses are automatically whitelisted via the "discount" operation. Fee structure:
         - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
-        - Whitelisted (course completers): discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
+        - Whitelisted (diploma eligible): discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
     - **Discount Service Architecture** (`server/discount-service.ts`):
         1. **Automatic Whitelisting**: After first course completion, the discount service sends a commit-reveal transaction to whitelist the user's wallet.
         2. **Database Tracking**: `users.whitelistedAt` and `users.whitelistTxHash` fields track whitelist status to avoid redundant on-chain operations.

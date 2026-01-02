@@ -1059,6 +1059,65 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // DIPLOMA STATUS ENDPOINT
+  // ============================================
+  // Diploma eligibility is derived from certificate count
+  // Users earn ONE diploma NFT after completing all 16 courses
+  
+  app.get("/api/diploma/status", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    try {
+      const user = await storage.getUserByWalletAddress(walletAddress);
+      if (!user) {
+        return res.json({
+          isEligible: false,
+          coursesCompleted: 0,
+          totalCoursesRequired: 16,
+          progressPercent: 0,
+          nftStatus: "not_eligible",
+          reason: "No account found - complete courses to earn certificates",
+        });
+      }
+
+      const courses = await storage.getCourses();
+      // Hardcode 16 courses as the requirement (matches seed data)
+      // Prevents edge case where empty course list causes NaN/immediate eligibility
+      const totalCoursesRequired = Math.max(courses.length, 16);
+      
+      const certificates = await storage.getCertificatesByUser(user.id);
+      const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
+      const coursesCompleted = uniqueCourseIds.size;
+      const progressPercent = totalCoursesRequired > 0 
+        ? Math.round((coursesCompleted / totalCoursesRequired) * 100) 
+        : 0;
+      
+      // Require all courses AND at least 16 to prevent edge case exploits
+      const isEligible = totalCoursesRequired > 0 && coursesCompleted >= totalCoursesRequired;
+      
+      // For MVP, diploma NFT status is tracked via certificate count
+      // Future: Add dedicated diploma tracking table
+      const nftStatus = isEligible ? "eligible" : "not_eligible";
+
+      res.json({
+        isEligible,
+        coursesCompleted,
+        totalCoursesRequired,
+        progressPercent,
+        nftStatus,
+        completedCourseIds: Array.from(uniqueCourseIds),
+        remainingCourses: totalCoursesRequired - coursesCompleted,
+      });
+    } catch (error: any) {
+      console.error("[Diploma] Status check failed:", error.message);
+      res.status(500).json({ error: "Failed to check diploma status" });
+    }
+  });
+
   app.get("/api/progress", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {
