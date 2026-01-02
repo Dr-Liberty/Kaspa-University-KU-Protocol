@@ -38,7 +38,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
         2. **Database Tracking**: `users.whitelistedAt` and `users.whitelistTxHash` fields track whitelist status to avoid redundant on-chain operations.
         3. **API Endpoints**: `GET /api/whitelist/status` checks status, `POST /api/whitelist/apply` manually triggers whitelist for retry scenarios.
         4. **Frontend Integration**: Certificate cards show whitelist status and enable mint button only for whitelisted users.
-        5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KUTEST4",to:walletAddress,discountFee:"0"}`). Note: 0 sompi = free royalty for course completers.
+        5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KUTEST5",to:walletAddress,discountFee:"0"}`). Note: 0 sompi = free royalty for course completers.
     - **User-Signed Minting Architecture**: Users sign the mint inscription directly with their wallet. The reservation system holds tokenIds temporarily while users sign. Key files: `server/mint-service.ts` (reservation logic), `client/src/components/user-signed-mint.tsx` (frontend flow).
     - **Key Files**: `server/nft-metadata-manager.ts` (coordinates IPFS uploads), `server/pinata.ts` (IPFS uploads via Pinata API).
     - **Reservation Lifecycle**:

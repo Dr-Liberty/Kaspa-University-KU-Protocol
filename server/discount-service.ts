@@ -29,7 +29,7 @@ function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
     // Must match the current testnet ticker in krc721.ts
-    return process.env.KRC721_TESTNET_TICKER || "KUTEST4";
+    return process.env.KRC721_TESTNET_TICKER || "KUTEST5";
   }
   return process.env.KRC721_TICKER || "KUPROOF";
 }
