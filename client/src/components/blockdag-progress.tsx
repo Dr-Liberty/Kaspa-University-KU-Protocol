@@ -489,8 +489,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
               className="relative mx-auto"
               style={{ 
                 width: totalWidth,
-                height: totalHeight,
-                minWidth: '100%'
+                height: totalHeight
               }}
             >
               <svg 
