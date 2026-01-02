@@ -162,6 +162,7 @@ function ConversationView({
 }) {
   const { toast } = useToast();
   const [messageContent, setMessageContent] = useState("");
+  const [isSigning, setIsSigning] = useState(false);
 
   const isInitiator = conversation.initiatorAddress === walletAddress;
   const otherAddress = isInitiator ? conversation.recipientAddress : conversation.initiatorAddress;
@@ -176,17 +177,55 @@ function ConversationView({
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
-        encryptedContent: content,
-      });
-      return response.json();
+      setIsSigning(true);
+      try {
+        // Step 1: Prepare the message payload for signing
+        const prepareRes = await apiRequest("POST", "/api/messages/prepare", {
+          content,
+          conversationId: conversation.id,
+          messageType: "private",
+        });
+        const prepareData = await prepareRes.json();
+        
+        if (!prepareData.success || !prepareData.messageToSign) {
+          throw new Error("Failed to prepare message for signing");
+        }
+
+        // Step 2: Request wallet signature via KasWare
+        let signature: string | undefined;
+        let senderPubkey: string | undefined;
+        
+        if (window.kasware) {
+          try {
+            senderPubkey = await window.kasware.getPublicKey();
+            signature = await window.kasware.signMessage(prepareData.messageToSign, { type: "ecdsa" });
+          } catch (signError: any) {
+            console.error("[Message] Wallet signing failed:", signError);
+            // Continue without signature if user cancels
+            if (signError.message?.includes("cancel") || signError.message?.includes("reject")) {
+              throw new Error("Signing cancelled by user");
+            }
+          }
+        }
+
+        // Step 3: Submit the signed message
+        const response = await apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
+          encryptedContent: content,
+          signature,
+          signedPayload: prepareData.messageToSign,
+          senderPubkey,
+        });
+        return response.json();
+      } finally {
+        setIsSigning(false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversation.id, "messages"] });
       setMessageContent("");
       toast({
         title: "Message Sent",
-        description: "Your encrypted message has been sent.",
+        description: "Your wallet-signed message has been sent.",
       });
     },
     onError: (error: Error) => {
@@ -357,12 +396,16 @@ function ConversationView({
             />
             <Button
               onClick={handleSend}
-              disabled={!messageContent.trim() || sendMessage.isPending}
+              disabled={!messageContent.trim() || sendMessage.isPending || isSigning}
               size="icon"
               className="h-auto"
               data-testid="button-send-message"
             >
-              <Send className="h-5 w-5" />
+              {isSigning ? (
+                <span className="animate-pulse">...</span>
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>

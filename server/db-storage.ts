@@ -976,7 +976,10 @@ export class DbStorage implements IStorage {
   async createPrivateMessage(message: {
     conversationId: string;
     senderAddress: string;
+    senderPubkey?: string;
     encryptedContent: string;
+    signature?: string;
+    signedPayload?: string;
     txHash?: string;
     txStatus?: string;
   }): Promise<any> {
@@ -984,7 +987,10 @@ export class DbStorage implements IStorage {
       .values({
         conversationId: message.conversationId,
         senderAddress: message.senderAddress,
+        senderPubkey: message.senderPubkey || null,
         encryptedContent: message.encryptedContent,
+        signature: message.signature || null,
+        signedPayload: message.signedPayload || null,
         txHash: message.txHash || null,
         txStatus: message.txStatus || "pending",
       })

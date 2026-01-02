@@ -1435,7 +1435,7 @@ export async function registerRoutes(
 
   app.post("/api/qa/:lessonId", async (req: Request, res: Response) => {
     const { lessonId } = req.params;
-    const { content, isQuestion, authorAddress, postOnChain } = req.body;
+    const { content, isQuestion, authorAddress, postOnChain, signature, signedPayload, authorPubkey } = req.body;
 
     if (!authorAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
@@ -1456,7 +1456,7 @@ export async function registerRoutes(
     let onChainStatus: "success" | "failed" | "not_requested" = "not_requested";
     let onChainError: string | undefined;
 
-    // Post on-chain if requested
+    // Post on-chain if requested (with user signature if available)
     if (postOnChain) {
       try {
         const kaspaService = await getKaspaService();
@@ -1485,12 +1485,16 @@ export async function registerRoutes(
       content: sanitizedContent,
       isQuestion: isQuestion ?? true,
       txHash,
+      signature: signature || undefined,
+      signedPayload: signedPayload || undefined,
+      authorPubkey: authorPubkey || undefined,
     });
 
     res.json({
       ...post,
       onChainStatus,
       onChainError,
+      signed: !!signature,
     });
   });
 
@@ -3923,6 +3927,96 @@ export async function registerRoutes(
     return walletAddress;
   };
 
+  // Prepare a message for wallet signing (user signs their own messages)
+  app.post("/api/messages/prepare", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { content, conversationId, messageType } = req.body;
+      
+      if (!content || content.length === 0) {
+        return res.status(400).json({ error: "Message content required" });
+      }
+
+      if (content.length > 1000) {
+        return res.status(400).json({ error: "Message too long (max 1000 characters)" });
+      }
+
+      // Create the message payload that the user will sign
+      const timestamp = Date.now();
+      const nonce = randomUUID().slice(0, 8);
+      
+      // Message format: {type}:{timestamp}:{nonce}:{conversationId}:{content}
+      const messageToSign = `ku:msg:${messageType || "private"}:${timestamp}:${nonce}:${conversationId || "public"}:${content}`;
+      
+      res.json({
+        success: true,
+        messageToSign,
+        metadata: {
+          timestamp,
+          nonce,
+          conversationId: conversationId || null,
+          messageType: messageType || "private",
+          senderAddress: authenticatedWallet,
+        }
+      });
+    } catch (error: any) {
+      console.error("[Messaging] Failed to prepare message:", error);
+      res.status(500).json({ error: "Failed to prepare message" });
+    }
+  });
+
+  // Prepare a K Protocol public comment for wallet signing
+  app.post("/api/k-protocol/prepare", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { content, lessonId, parentCommentId } = req.body;
+      
+      if (!content || content.length === 0) {
+        return res.status(400).json({ error: "Comment content required" });
+      }
+
+      if (content.length > 1000) {
+        return res.status(400).json({ error: "Comment too long (max 1000 characters)" });
+      }
+
+      if (!lessonId) {
+        return res.status(400).json({ error: "Lesson ID required" });
+      }
+
+      const timestamp = Date.now();
+      const nonce = randomUUID().slice(0, 8);
+      const action = parentCommentId ? "reply" : "post";
+      
+      // K Protocol message format for signing
+      // k:1:{action}:{timestamp}:{nonce}:{lessonId}:{parentId}:{content}
+      const messageToSign = `k:1:${action}:${timestamp}:${nonce}:${lessonId}:${parentCommentId || ""}:${content}`;
+      
+      res.json({
+        success: true,
+        messageToSign,
+        metadata: {
+          timestamp,
+          nonce,
+          lessonId,
+          action,
+          parentCommentId: parentCommentId || null,
+          senderAddress: authenticatedWallet,
+        }
+      });
+    } catch (error: any) {
+      console.error("[K Protocol] Failed to prepare comment:", error);
+      res.status(500).json({ error: "Failed to prepare comment" });
+    }
+  });
+
   // Start a new private conversation (initiate handshake)
   app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
@@ -4055,7 +4149,7 @@ export async function registerRoutes(
     }
   });
 
-  // Send a private message in a conversation
+  // Send a private message in a conversation (with wallet signature)
   app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4064,7 +4158,7 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const { encryptedContent, txHash } = req.body;
+      const { encryptedContent, txHash, signature, signedPayload, senderPubkey } = req.body;
       
       if (!encryptedContent) {
         return res.status(400).json({ error: "Encrypted content required" });
@@ -4094,7 +4188,10 @@ export async function registerRoutes(
       const message = await storage.createPrivateMessage({
         conversationId,
         senderAddress: authenticatedWallet,
+        senderPubkey: senderPubkey || undefined,
         encryptedContent,
+        signature: signature || undefined,
+        signedPayload: signedPayload || undefined,
         txHash,
         txStatus: txHash ? "confirmed" : "pending",
       });

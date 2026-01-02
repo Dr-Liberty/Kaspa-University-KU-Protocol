@@ -132,6 +132,7 @@ function PublicCommentsTab({ lessonId }: { lessonId: string }) {
   const [content, setContent] = useState("");
   const [isQuestion, setIsQuestion] = useState(true);
   const [postOnChain, setPostOnChain] = useState(true);
+  const [isSigning, setIsSigning] = useState(false);
 
   const { data: posts, isLoading } = useQuery<QAPost[]>({
     queryKey: ["/api/qa", lessonId],
@@ -139,10 +140,44 @@ function PublicCommentsTab({ lessonId }: { lessonId: string }) {
 
   const createPost = useMutation({
     mutationFn: async (data: { content: string; isQuestion: boolean; postOnChain: boolean }) => {
+      let signature: string | undefined;
+      let signedPayload: string | undefined;
+      let authorPubkey: string | undefined;
+
+      // Request wallet signature for on-chain posts
+      if (data.postOnChain && window.kasware) {
+        setIsSigning(true);
+        try {
+          // Prepare the message for signing
+          const prepareRes = await apiRequest("POST", "/api/k-protocol/prepare", {
+            content: data.content,
+            lessonId,
+          });
+          const prepareData = await prepareRes.json();
+          
+          if (prepareData.success && prepareData.messageToSign) {
+            signedPayload = prepareData.messageToSign;
+            authorPubkey = await window.kasware.getPublicKey();
+            signature = await window.kasware.signMessage(prepareData.messageToSign, { type: "ecdsa" });
+          }
+        } catch (signError: any) {
+          console.error("[K Protocol] Wallet signing failed:", signError);
+          if (signError.message?.includes("cancel") || signError.message?.includes("reject")) {
+            setIsSigning(false);
+            throw new Error("Signing cancelled by user");
+          }
+        } finally {
+          setIsSigning(false);
+        }
+      }
+
       const response = await apiRequest("POST", `/api/qa/${lessonId}`, {
         ...data,
         authorAddress: wallet?.address,
         lessonId,
+        signature,
+        signedPayload,
+        authorPubkey,
       });
       return response.json();
     },
@@ -238,12 +273,12 @@ function PublicCommentsTab({ lessonId }: { lessonId: string }) {
             </div>
             <Button
               onClick={handleSubmit}
-              disabled={!content.trim() || createPost.isPending}
+              disabled={!content.trim() || createPost.isPending || isSigning}
               className="gap-2"
               data-testid="button-post-qa"
             >
               <Send className="h-4 w-4" />
-              {createPost.isPending ? "Posting..." : postOnChain ? "Post On-Chain" : "Post"}
+              {isSigning ? "Signing..." : createPost.isPending ? "Posting..." : postOnChain ? "Sign & Post" : "Post"}
             </Button>
           </div>
           {postOnChain && (

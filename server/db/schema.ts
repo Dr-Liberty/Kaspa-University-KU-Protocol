@@ -249,8 +249,11 @@ export const privateMessages = pgTable("private_messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   conversationId: text("conversation_id").notNull(),
   senderAddress: text("sender_address").notNull(),
+  senderPubkey: text("sender_pubkey"), // Sender's public key for signature verification
   encryptedContent: text("encrypted_content").notNull(), // Hex-encoded encrypted payload
   decryptedPreview: text("decrypted_preview"), // Optional server-side decrypted preview for notifications
+  signature: text("signature"), // User's wallet signature
+  signedPayload: text("signed_payload"), // The payload that was signed
   txHash: text("tx_hash"),
   txStatus: text("tx_status").default("pending").notNull(), // pending, confirmed, failed
   createdAt: timestamp("created_at").defaultNow().notNull(),

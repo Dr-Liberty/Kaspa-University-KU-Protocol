@@ -125,17 +125,20 @@ export const qaPostSchema = z.object({
   id: z.string(),
   lessonId: z.string(),
   authorAddress: z.string(),
+  authorPubkey: z.string().optional(),
   authorDisplayName: z.string().optional(),
   content: z.string(),
   isQuestion: z.boolean(),
   parentId: z.string().optional(),
   txHash: z.string().optional(),
+  signature: z.string().optional(),
+  signedPayload: z.string().optional(),
   createdAt: z.date(),
 });
 
 export type QAPost = z.infer<typeof qaPostSchema>;
 
-export const insertQAPostSchema = qaPostSchema.omit({ id: true, createdAt: true }).partial({ txHash: true });
+export const insertQAPostSchema = qaPostSchema.omit({ id: true, createdAt: true }).partial({ txHash: true, signature: true, signedPayload: true, authorPubkey: true });
 export type InsertQAPost = z.infer<typeof insertQAPostSchema>;
 
 export const walletConnectionSchema = z.object({
@@ -320,8 +323,11 @@ export const privateMessageSchema = z.object({
   id: z.string(),
   conversationId: z.string(),
   senderAddress: z.string(),
+  senderPubkey: z.string().optional(),
   encryptedContent: z.string(),
   decryptedPreview: z.string().optional(),
+  signature: z.string().optional(), // User's wallet signature
+  signedPayload: z.string().optional(), // The payload that was signed
   txHash: z.string().optional(),
   txStatus: z.enum(["pending", "confirmed", "failed"]).default("pending"),
   createdAt: z.date(),

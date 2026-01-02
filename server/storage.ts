@@ -135,7 +135,10 @@ export interface IStorage {
   createPrivateMessage(message: {
     conversationId: string;
     senderAddress: string;
+    senderPubkey?: string;
     encryptedContent: string;
+    signature?: string;
+    signedPayload?: string;
     txHash?: string;
     txStatus?: string;
   }): Promise<any>;
@@ -807,7 +810,10 @@ export class MemStorage implements IStorage {
   async createPrivateMessage(message: {
     conversationId: string;
     senderAddress: string;
+    senderPubkey?: string;
     encryptedContent: string;
+    signature?: string;
+    signedPayload?: string;
     txHash?: string;
     txStatus?: string;
   }): Promise<any> {
