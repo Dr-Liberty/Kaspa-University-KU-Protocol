@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { GraduationCap, CheckCircle2, Lock, Sparkles, Wallet, Loader2 } from "lucide-react";
+import { GraduationCap, CheckCircle2, Sparkles, Wallet, Loader2 } from "lucide-react";
 import { useWhitelistStatus } from "@/hooks/use-whitelist";
 import { useDiplomaStatus } from "@/hooks/use-diploma";
 import { useWallet } from "@/lib/wallet-context";
@@ -16,6 +16,50 @@ interface BlockDAGProgressProps {
   courses: Course[];
   certificates: Certificate[];
   walletConnected: boolean;
+}
+
+type NodeType = 'course' | 'decorative' | 'anticone';
+
+interface DAGNode {
+  id: string;
+  type: NodeType;
+  course?: Course;
+  isCompleted?: boolean;
+  isMainChain?: boolean;
+  row: number;
+  col: number;
+  x: number;
+  y: number;
+}
+
+interface DAGConnection {
+  fromId: string;
+  toId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  isMainChain: boolean;
+  isAnticone: boolean;
+}
+
+const CUBE_SIZE = 72;
+const GAP = 16;
+const ROW_HEIGHT = CUBE_SIZE + 50;
+const MAX_COLS = 10;
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function shuffleWithSeed<T>(array: T[], seed: number): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 function KaspaCoinAvatar({ className = "" }: { className?: string }) {
@@ -56,34 +100,38 @@ function KaspaCoinAvatar({ className = "" }: { className?: string }) {
   );
 }
 
-function DecorativeCube({ delay, isActive = false }: { delay: number; isActive?: boolean }) {
+function DecorativeCube({ node, delay }: { node: DAGNode; delay: number }) {
+  const isAnticone = node.type === 'anticone';
+  
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: isActive ? 0.9 : 0.5, scale: 1 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.4 }}
       className={`
-        w-20 h-20 rounded-lg flex items-center justify-center
-        ${isActive 
-          ? 'bg-gradient-to-br from-primary/60 to-primary/30 border-2 border-primary/50 shadow-lg shadow-primary/20' 
-          : 'bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20'
+        w-[72px] h-[72px] rounded-lg flex items-center justify-center
+        ${isAnticone 
+          ? 'bg-gradient-to-br from-red-500/50 to-red-600/30 border-2 border-red-500/60 shadow-lg shadow-red-500/20' 
+          : 'bg-gradient-to-br from-primary/50 to-primary/30 border-2 border-primary/50 shadow-lg shadow-primary/20'
         }
       `}
     >
-      <div className={`w-5 h-5 rounded-md ${isActive ? 'bg-primary/80' : 'bg-primary/40'}`} />
+      <div className={`w-5 h-5 rounded-md ${isAnticone ? 'bg-red-500/70' : 'bg-primary/70'}`} />
     </motion.div>
   );
 }
 
 function CourseBlock({ 
-  course, 
-  isCompleted, 
+  node, 
   delay 
 }: { 
-  course: Course; 
-  isCompleted: boolean;
+  node: DAGNode;
   delay: number;
 }) {
+  const course = node.course!;
+  const isCompleted = node.isCompleted ?? false;
+  const isMainChain = node.isMainChain ?? false;
+  
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -93,10 +141,10 @@ function CourseBlock({
     >
       <div 
         className={`
-          relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all
-          ${isCompleted 
-            ? 'border-primary shadow-lg shadow-primary/30' 
-            : 'border-border/50 opacity-70 grayscale'
+          relative w-[72px] h-[72px] rounded-lg overflow-hidden transition-all
+          ${isMainChain 
+            ? 'border-[3px] border-primary shadow-xl shadow-primary/40' 
+            : 'border-2 border-primary/60 shadow-lg shadow-primary/20'
           }
         `}
       >
@@ -107,7 +155,7 @@ function CourseBlock({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-primary/50 to-primary/30 flex items-center justify-center">
             <span className="text-lg font-bold text-primary-foreground">
               {course.title.charAt(0)}
             </span>
@@ -119,33 +167,13 @@ function CourseBlock({
             <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
           </div>
         )}
-        
-        {!isCompleted && (
-          <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-            <Lock className="w-6 h-6 text-muted-foreground" />
-          </div>
-        )}
       </div>
       
-      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-10 z-20 bg-popover border rounded-md px-3 py-1.5 shadow-lg whitespace-nowrap max-w-48">
+      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-12 z-20 bg-popover border rounded-md px-3 py-1.5 shadow-lg whitespace-nowrap max-w-52">
         <p className="text-xs font-medium truncate">{course.title}</p>
       </div>
     </motion.div>
   );
-}
-
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function shuffleWithSeed<T>(array: T[], seed: number): T[] {
-  const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i) * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
 }
 
 export function BlockDAGProgress({ courses, certificates, walletConnected }: BlockDAGProgressProps) {
@@ -196,138 +224,151 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     setShowMintDialog(false);
   };
 
-  const dagRows = useMemo(() => {
-    const rows: Array<{
-      items: Array<{ type: 'course' | 'decorative'; course?: Course; isCompleted?: boolean; id: string }>;
-      rowIndex: number;
-    }> = [];
+  const { nodes, connections, rows, totalWidth, totalHeight } = useMemo(() => {
+    const allNodes: DAGNode[] = [];
+    const allConnections: DAGConnection[] = [];
+    const rowsData: DAGNode[][] = [];
     
     let courseIndex = 0;
     const totalCourses = courses.length;
-    
-    const rowSizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let rowIdx = 0;
     
-    while (courseIndex < totalCourses && rowIdx < rowSizes.length) {
-      const rowSize = rowSizes[rowIdx];
-      const row: typeof rows[0] = { items: [], rowIndex: rowIdx };
-      
-      const coursesInThisRow = Math.min(
-        Math.ceil(rowSize / 2),
-        totalCourses - courseIndex
-      );
-      
-      const decorativeCount = rowSize - coursesInThisRow;
-      
-      const items: typeof row.items = [];
-      
-      for (let i = 0; i < coursesInThisRow && courseIndex < totalCourses; i++) {
-        const course = courses[courseIndex];
-        items.push({
-          type: 'course',
-          course,
-          isCompleted: completedCourseIds.has(course.id),
-          id: course.id
-        });
-        courseIndex++;
-      }
-      
-      for (let i = 0; i < decorativeCount; i++) {
-        items.push({
-          type: 'decorative',
-          id: `dec-${rowIdx}-${i}`
-        });
-      }
-      
-      row.items = shuffleWithSeed(items, rowIdx * 17 + 42);
-      rows.push(row);
-      rowIdx++;
-    }
+    const getCoursesForRow = (row: number): number => {
+      if (row < 4) return 1;
+      if (row < 6) return 2;
+      return Math.min(2 + Math.floor((row - 4) / 2), 5);
+    };
+    
+    const getRowWidth = (row: number): number => {
+      if (row === 0) return 1;
+      if (row === 1) return 2;
+      if (row === 2) return 3;
+      if (row === 3) return 4;
+      if (row === 4) return 5;
+      if (row === 5) return 6;
+      if (row === 6) return 7;
+      if (row === 7) return 8;
+      if (row === 8) return 9;
+      return MAX_COLS;
+    };
     
     while (courseIndex < totalCourses) {
-      const rowSize = Math.min(10, totalCourses - courseIndex + 4);
-      const row: typeof rows[0] = { items: [], rowIndex: rowIdx };
+      const rowWidth = getRowWidth(rowIdx);
+      const coursesInRow = Math.min(getCoursesForRow(rowIdx), totalCourses - courseIndex);
+      const decorativeCount = rowWidth - coursesInRow;
       
-      const coursesInThisRow = Math.min(rowSize - 2, totalCourses - courseIndex);
-      const decorativeCount = rowSize - coursesInThisRow;
+      const anticoneCount = rowIdx >= 3 && decorativeCount >= 2 
+        ? Math.floor(seededRandom(rowIdx * 77) * Math.min(2, Math.floor(decorativeCount / 3))) 
+        : 0;
+      const normalDecorativeCount = decorativeCount - anticoneCount;
       
-      const items: typeof row.items = [];
+      const rowItems: Array<{ type: NodeType; course?: Course; isCompleted?: boolean }> = [];
       
-      for (let i = 0; i < coursesInThisRow && courseIndex < totalCourses; i++) {
+      for (let i = 0; i < coursesInRow && courseIndex < totalCourses; i++) {
         const course = courses[courseIndex];
-        items.push({
+        rowItems.push({
           type: 'course',
           course,
-          isCompleted: completedCourseIds.has(course.id),
-          id: course.id
+          isCompleted: completedCourseIds.has(course.id)
         });
         courseIndex++;
       }
       
-      for (let i = 0; i < decorativeCount; i++) {
-        items.push({
-          type: 'decorative',
-          id: `dec-${rowIdx}-${i}`
-        });
+      for (let i = 0; i < normalDecorativeCount; i++) {
+        rowItems.push({ type: 'decorative' });
       }
       
-      row.items = shuffleWithSeed(items, rowIdx * 17 + 42);
-      rows.push(row);
+      for (let i = 0; i < anticoneCount; i++) {
+        rowItems.push({ type: 'anticone' });
+      }
+      
+      const shuffledItems = shuffleWithSeed(rowItems, rowIdx * 31 + 7);
+      
+      const rowStartX = ((MAX_COLS - rowWidth) / 2) * (CUBE_SIZE + GAP);
+      
+      const rowNodes: DAGNode[] = shuffledItems.map((item, colIdx) => {
+        const x = rowStartX + colIdx * (CUBE_SIZE + GAP) + CUBE_SIZE / 2;
+        const y = rowIdx * ROW_HEIGHT + CUBE_SIZE / 2;
+        
+        const isMainChain = item.type === 'course' && 
+          (seededRandom(rowIdx * 100 + colIdx) > 0.5 || rowIdx === 0);
+        
+        return {
+          id: item.type === 'course' ? item.course!.id : `${item.type}-${rowIdx}-${colIdx}`,
+          type: item.type,
+          course: item.course,
+          isCompleted: item.isCompleted,
+          isMainChain,
+          row: rowIdx,
+          col: colIdx,
+          x,
+          y
+        };
+      });
+      
+      allNodes.push(...rowNodes);
+      rowsData.push(rowNodes);
       rowIdx++;
     }
     
-    return rows;
-  }, [courses, completedCourseIds]);
-
-  const connectionLines = useMemo(() => {
-    const lines: Array<{
-      fromRow: number;
-      fromIdx: number;
-      toRow: number;
-      toIdx: number;
-      isActive: boolean;
-    }> = [];
-    
-    for (let rowIdx = 1; rowIdx < dagRows.length; rowIdx++) {
-      const currentRow = dagRows[rowIdx];
-      const prevRow = dagRows[rowIdx - 1];
-      const prevPrevRow = rowIdx > 1 ? dagRows[rowIdx - 2] : null;
+    for (let r = 1; r < rowsData.length; r++) {
+      const currentRow = rowsData[r];
+      const prevRow = rowsData[r - 1];
+      const prevPrevRow = r > 1 ? rowsData[r - 2] : null;
       
-      currentRow.items.forEach((item, itemIdx) => {
-        const numConnections = Math.floor(seededRandom(rowIdx * 100 + itemIdx) * 2) + 1;
+      currentRow.forEach((node, nodeIdx) => {
+        const numParents = Math.floor(seededRandom(r * 50 + nodeIdx) * 2) + 1;
         
-        for (let c = 0; c < numConnections && c < prevRow.items.length; c++) {
-          const prevIdx = Math.floor(seededRandom(rowIdx * 50 + itemIdx * 10 + c) * prevRow.items.length);
-          const prevItem = prevRow.items[prevIdx];
-          const isActive = prevItem.type === 'course' && (prevItem.isCompleted ?? false);
+        for (let p = 0; p < numParents && p < prevRow.length; p++) {
+          const parentIdx = Math.floor(seededRandom(r * 25 + nodeIdx * 5 + p) * prevRow.length);
+          const parent = prevRow[parentIdx];
           
-          lines.push({
-            fromRow: rowIdx - 1,
-            fromIdx: prevIdx,
-            toRow: rowIdx,
-            toIdx: itemIdx,
-            isActive
+          const isMainChainConnection = (node.isMainChain ?? false) && (parent.isMainChain ?? false);
+          const isAnticoneConnection = node.type === 'anticone' || parent.type === 'anticone';
+          
+          allConnections.push({
+            fromId: parent.id,
+            toId: node.id,
+            fromX: parent.x,
+            fromY: parent.y + CUBE_SIZE / 2,
+            toX: node.x,
+            toY: node.y - CUBE_SIZE / 2,
+            isMainChain: isMainChainConnection,
+            isAnticone: isAnticoneConnection
           });
         }
         
-        if (prevPrevRow && seededRandom(rowIdx * 200 + itemIdx) > 0.6) {
-          const skipIdx = Math.floor(seededRandom(rowIdx * 300 + itemIdx) * prevPrevRow.items.length);
-          const skipItem = prevPrevRow.items[skipIdx];
-          const isActive = skipItem.type === 'course' && (skipItem.isCompleted ?? false);
+        if (prevPrevRow && seededRandom(r * 200 + nodeIdx) > 0.65) {
+          const skipParentIdx = Math.floor(seededRandom(r * 300 + nodeIdx) * prevPrevRow.length);
+          const skipParent = prevPrevRow[skipParentIdx];
           
-          lines.push({
-            fromRow: rowIdx - 2,
-            fromIdx: skipIdx,
-            toRow: rowIdx,
-            toIdx: itemIdx,
-            isActive
+          const isAnticoneConnection = node.type === 'anticone' || skipParent.type === 'anticone';
+          
+          allConnections.push({
+            fromId: skipParent.id,
+            toId: node.id,
+            fromX: skipParent.x,
+            fromY: skipParent.y + CUBE_SIZE / 2,
+            toX: node.x,
+            toY: node.y - CUBE_SIZE / 2,
+            isMainChain: false,
+            isAnticone: isAnticoneConnection
           });
         }
       });
     }
     
-    return lines;
-  }, [dagRows]);
+    const maxRowWidth = MAX_COLS * (CUBE_SIZE + GAP);
+    const height = rowsData.length * ROW_HEIGHT + 40;
+    
+    return {
+      nodes: allNodes,
+      connections: allConnections,
+      rows: rowsData,
+      totalWidth: maxRowWidth,
+      totalHeight: height
+    };
+  }, [courses, completedCourseIds]);
 
   if (!walletConnected) {
     return (
@@ -344,10 +385,6 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       </Card>
     );
   }
-
-  const CUBE_SIZE = 80;
-  const GAP = 12;
-  const ROW_HEIGHT = CUBE_SIZE + 40;
 
   return (
     <Card className="overflow-hidden">
@@ -374,89 +411,101 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             <Progress value={progressPercent} className="h-2" />
           </div>
 
-          <div className="relative overflow-x-auto pb-4">
+          <div className="relative overflow-x-auto pb-8">
             <div 
               className="relative mx-auto"
               style={{ 
-                minHeight: dagRows.length * ROW_HEIGHT + 60,
-                width: 'fit-content',
+                width: totalWidth,
+                height: totalHeight,
                 minWidth: '100%'
               }}
             >
               <svg 
                 className="absolute inset-0 pointer-events-none"
-                style={{ 
-                  width: '100%', 
-                  height: '100%',
-                  overflow: 'visible'
-                }}
+                width={totalWidth}
+                height={totalHeight}
+                style={{ overflow: 'visible' }}
               >
-                {connectionLines.map((line, idx) => {
-                  const fromRow = dagRows[line.fromRow];
-                  const toRow = dagRows[line.toRow];
+                <defs>
+                  <marker
+                    id="arrowhead"
+                    markerWidth="6"
+                    markerHeight="6"
+                    refX="3"
+                    refY="3"
+                    orient="auto"
+                  >
+                    <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--primary))" />
+                  </marker>
+                </defs>
+                
+                {connections.map((conn, idx) => {
+                  const midY = (conn.fromY + conn.toY) / 2;
                   
-                  const fromRowWidth = fromRow.items.length * (CUBE_SIZE + GAP) - GAP;
-                  const toRowWidth = toRow.items.length * (CUBE_SIZE + GAP) - GAP;
+                  let strokeColor = "hsl(var(--border))";
+                  let strokeWidth = 1;
+                  let strokeDasharray = "4,4";
+                  let opacity = 0.4;
                   
-                  const fromX = (line.fromIdx * (CUBE_SIZE + GAP)) + CUBE_SIZE / 2 + (500 - fromRowWidth) / 2;
-                  const fromY = line.fromRow * ROW_HEIGHT + CUBE_SIZE + 20;
-                  
-                  const toX = (line.toIdx * (CUBE_SIZE + GAP)) + CUBE_SIZE / 2 + (500 - toRowWidth) / 2;
-                  const toY = line.toRow * ROW_HEIGHT + 20;
-                  
-                  const midY = (fromY + toY) / 2;
+                  if (conn.isAnticone) {
+                    strokeColor = "hsl(0, 70%, 50%)";
+                    strokeWidth = 1.5;
+                    strokeDasharray = "6,3";
+                    opacity = 0.5;
+                  } else if (conn.isMainChain) {
+                    strokeColor = "hsl(var(--primary))";
+                    strokeWidth = 2.5;
+                    strokeDasharray = "none";
+                    opacity = 0.8;
+                  }
                   
                   return (
                     <path
                       key={idx}
-                      d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
+                      d={`M ${conn.fromX} ${conn.fromY} C ${conn.fromX} ${midY}, ${conn.toX} ${midY}, ${conn.toX} ${conn.toY}`}
                       fill="none"
-                      stroke={line.isActive ? "hsl(var(--primary))" : "hsl(var(--border))"}
-                      strokeWidth={line.isActive ? 2 : 1}
-                      opacity={line.isActive ? 0.7 : 0.3}
+                      stroke={strokeColor}
+                      strokeWidth={strokeWidth}
+                      strokeDasharray={strokeDasharray}
+                      opacity={opacity}
                     />
                   );
                 })}
               </svg>
 
-              {dagRows.map((row, rowIdx) => {
-                const rowWidth = row.items.length * (CUBE_SIZE + GAP) - GAP;
-                
-                return (
-                  <div
-                    key={rowIdx}
-                    className="absolute left-1/2 -translate-x-1/2 flex gap-3"
-                    style={{
-                      top: rowIdx * ROW_HEIGHT + 20,
-                    }}
-                  >
-                    {row.items.map((item, itemIdx) => {
-                      const delay = rowIdx * 0.1 + itemIdx * 0.05;
-                      
-                      if (item.type === 'course' && item.course) {
-                        return (
-                          <CourseBlock
-                            key={item.id}
-                            course={item.course}
-                            isCompleted={item.isCompleted ?? false}
-                            delay={delay}
-                          />
-                        );
-                      } else {
-                        const isActive = rowIdx > 0 && 
-                          dagRows[rowIdx - 1].items.some(i => i.type === 'course' && i.isCompleted);
-                        return (
-                          <DecorativeCube 
-                            key={item.id}
-                            delay={delay}
-                            isActive={isActive}
-                          />
-                        );
-                      }
-                    })}
-                  </div>
-                );
-              })}
+              {rows.map((row, rowIdx) => (
+                <div
+                  key={rowIdx}
+                  className="absolute flex"
+                  style={{
+                    left: ((MAX_COLS - row.length) / 2) * (CUBE_SIZE + GAP),
+                    top: rowIdx * ROW_HEIGHT,
+                    gap: GAP
+                  }}
+                >
+                  {row.map((node, nodeIdx) => {
+                    const delay = rowIdx * 0.08 + nodeIdx * 0.03;
+                    
+                    if (node.type === 'course' && node.course) {
+                      return (
+                        <CourseBlock
+                          key={node.id}
+                          node={node}
+                          delay={delay}
+                        />
+                      );
+                    } else {
+                      return (
+                        <DecorativeCube 
+                          key={node.id}
+                          node={node}
+                          delay={delay}
+                        />
+                      );
+                    }
+                  })}
+                </div>
+              ))}
             </div>
           </div>
 
