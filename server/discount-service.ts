@@ -257,9 +257,10 @@ class DiscountService {
     try {
       const isTestnet = process.env.KRC721_TESTNET === "true";
       const network = isTestnet ? "testnet-10" : "mainnet";
+      // Prefer KaspacomDAGs for mainnet (authoritative), KSPR for testnet
       const indexerUrl = isTestnet 
         ? "https://testnet-10.krc721.stream" 
-        : "https://mainnet.krc721.stream";
+        : "https://kaspa-krc721d.kaspa.com";
       
       const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/royalties/${walletAddress}/${getCollectionTicker()}`;
       

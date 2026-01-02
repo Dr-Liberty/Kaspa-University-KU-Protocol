@@ -81,11 +81,12 @@ const KRC721_MINT_POW_FEE_KAS = "10.5"; // 10.5 KAS PoW fee (above 10 KAS minimu
 const KRC721_MINT_POW_FEE_SOMPI = BigInt(1050000000); // 10.5 KAS in sompi
 
 // Get the indexer URL based on network
-// Use KSPR indexer (mainnet.krc721.stream) - the standard KRC-721 indexer
+// Prefer KaspacomDAGs (kaspa-krc721d.kaspa.com) for mainnet - authoritative source
+// Use KSPR (krc721.stream) for testnet since KaspacomDAGs only has mainnet
 function getIndexerUrl(): string {
   return useTestnet 
     ? "https://testnet-10.krc721.stream"
-    : "https://mainnet.krc721.stream";
+    : "https://kaspa-krc721d.kaspa.com";
 }
 
 /**
