@@ -26,7 +26,7 @@ function getCollectionTicker(): string {
 }
 
 const RESERVATION_TTL_MINUTES = 10;
-const MAX_DIPLOMA_SUPPLY = 1000;
+const MAX_DIPLOMA_SUPPLY = 10000; // Must match krc721.ts maxSupply
 const DIPLOMA_COURSE_ID = "diploma"; // Special courseId for diploma NFTs
 const REQUIRED_COURSES = 16;
 
