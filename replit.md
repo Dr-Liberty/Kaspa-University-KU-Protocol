@@ -53,8 +53,12 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
         5. **Expire** (automatic cleanup job): Runs every minute, expires old reservations.
     - **Supply Tracking**: Single collection with 1,000 max supply. Counter tracks minted count.
     - **Indexer Info**: KaspacomDAGs has 12-24 hour delay for new collections (spam prevention).
-- **On-Chain Protocols**:
-    - **Kasia Protocol**: Used for Q&A discussions and comments. Format: `1:bcast:{plain text content}`. This enables ecosystem compatibility with Kasia indexers (https://github.com/K-Kluster/Kasia) and cross-platform discovery. Metadata (lesson ID, author) is stored server-side. Implementation: `server/kasia-protocol.ts`.
+- **Dual-Protocol Messaging System**:
+    - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A. Format: `k:1:post:{content}` and `k:1:reply:{parentTxId}:{content}`. Indexed by ecosystem K-indexers for cross-platform discovery. Implementation: `server/k-protocol.ts`.
+    - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Uses `ciph_msg:1:handshake` for key exchange and `ciph_msg:1:comm` for messages. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia). Implementation: `server/kasia-encrypted.ts`.
+    - **Background Poller**: Polls pending conversations for handshake acceptance with per-conversation rate limiting (60s interval). Implementation: `server/handshake-poller.ts`.
+    - **Conversation Status Flow**: `pending` → `active` (after handshake accepted) → messaging enabled.
+    - **UI Components**: QASection tabs for public/private messaging (`client/src/components/qa-section.tsx`), Messages inbox page (`client/src/pages/messages.tsx`).
     - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.
 - **Security**:
     - **Wallet Authentication**: Challenge-response with cryptographic signature verification using Kaspa WASM. Uses PublicKey.toAddress() to verify public key ownership and verifyMessage() for ECDSA signature validation. KasWare returns base64-encoded ECDSA signatures which are decoded to raw hex (128 chars, no 0x prefix) for WASM verification.
