@@ -3,10 +3,8 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CertificateCard } from "@/components/certificate-card";
+import { BlockDAGProgress } from "@/components/blockdag-progress";
 import type { Course, UserProgress, Certificate, User, CourseReward } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,8 +14,6 @@ import {
   Coins,
   Award,
   BookOpen,
-  TrendingUp,
-  ChevronRight,
   Wallet,
   ArrowRight,
   ShieldAlert,
@@ -351,16 +347,11 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
             <TabsTrigger value="courses" className="gap-2" data-testid="tab-courses">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">My Courses</span>
-              <span className="sm:hidden">Courses</span>
-            </TabsTrigger>
-            <TabsTrigger value="certificates" className="gap-2" data-testid="tab-certificates">
-              <Award className="h-4 w-4" />
-              <span className="hidden sm:inline">NFT Certificates</span>
-              <span className="sm:hidden">NFTs</span>
+              <span className="hidden sm:inline">Diploma Progress</span>
+              <span className="sm:hidden">Progress</span>
             </TabsTrigger>
             <TabsTrigger value="rewards" className="gap-2" data-testid="tab-rewards">
               <Coins className="h-4 w-4" />
@@ -374,178 +365,20 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="courses" className="space-y-6">
-            {inProgressCourses.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="flex items-center gap-2 text-lg font-semibold">
-                  <Clock className="h-5 w-5 text-primary" />
-                  In Progress
-                </h3>
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {inProgressCourses.map((course) => {
-                    const p = progressMap.get(course.id);
-                    const completed = p?.completedLessons?.length ?? 0;
-                    const percent = Math.round((completed / course.lessonCount) * 100);
-                    
-                    return (
-                      <Link key={course.id} href={`/courses/${course.id}`}>
-                        <Card
-                          className="group overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg"
-                          data-testid={`progress-course-${course.id}`}
-                        >
-                          <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
-                            <div className="flex h-full items-center justify-center">
-                              <BookOpen className="h-12 w-12 text-primary/50" />
-                            </div>
-                          </div>
-                          <CardContent className="p-4">
-                            <h4 className="truncate font-semibold group-hover:text-primary">
-                              {course.title}
-                            </h4>
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                              {course.description}
-                            </p>
-                            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
-                                {course.lessonCount * 5}m
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <BookOpen className="h-3.5 w-3.5" />
-                                {course.lessonCount} lessons
-                              </span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Progress</span>
-                              <span className="text-sm font-semibold text-primary">{percent}%</span>
-                            </div>
-                            <Progress value={percent} className="mt-1 h-2" />
-                            <div className="mt-4 flex items-center justify-between">
-                              <span className="font-bold text-primary">{course.kasReward || 0.2} KAS</span>
-                              <Button size="sm" variant="outline">
-                                Continue
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            {enrolledCourses.length > 0 ? (
-              <div className="space-y-4">
-                <h3 className="flex items-center gap-2 text-lg font-semibold">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  All Enrolled Courses
-                </h3>
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {enrolledCourses.map((course) => {
-                    const p = progressMap.get(course.id);
-                    const completed = p?.completedLessons?.length ?? 0;
-                    const percent = Math.round((completed / course.lessonCount) * 100);
-                    const isComplete = completed >= course.lessonCount;
-                    
-                    return (
-                      <Link key={course.id} href={`/courses/${course.id}`}>
-                        <Card
-                          className="group overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg"
-                          data-testid={`enrolled-course-${course.id}`}
-                        >
-                          <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
-                            <div className="flex h-full items-center justify-center">
-                              {isComplete ? (
-                                <CheckCircle2 className="h-12 w-12 text-primary" />
-                              ) : (
-                                <BookOpen className="h-12 w-12 text-primary/50" />
-                              )}
-                            </div>
-                            {isComplete && (
-                              <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground">
-                                Completed
-                              </Badge>
-                            )}
-                          </div>
-                          <CardContent className="p-4">
-                            <h4 className="truncate font-semibold group-hover:text-primary">
-                              {course.title}
-                            </h4>
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                              {course.description}
-                            </p>
-                            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
-                                {course.lessonCount * 5}m
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <BookOpen className="h-3.5 w-3.5" />
-                                {course.lessonCount} lessons
-                              </span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Progress</span>
-                              <span className="text-sm font-semibold text-primary">{percent}%</span>
-                            </div>
-                            <Progress value={percent} className="mt-1 h-2" />
-                            <div className="mt-4 flex items-center justify-between">
-                              <span className="font-bold text-primary">{course.kasReward || 0.2} KAS</span>
-                              <Button size="sm" variant={isComplete ? "secondary" : "outline"}>
-                                {isComplete ? "Review" : "Continue"}
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+            {courses && courses.length > 0 ? (
+              <BlockDAGProgress 
+                courses={courses} 
+                certificates={certificates || []} 
+                walletConnected={!!wallet}
+              />
             ) : (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <BookOpen className="h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-lg font-medium">No courses enrolled</p>
+                  <p className="mt-4 text-lg font-medium">Loading courses...</p>
                   <p className="text-sm text-muted-foreground">
-                    Start learning to earn KAS rewards
+                    Please wait while we load the curriculum
                   </p>
-                  <Link href="/courses">
-                    <Button className="mt-4 gap-2">
-                      Browse Courses
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="certificates" className="space-y-4">
-            {certificates && certificates.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {certificates.map((cert) => (
-                  <CertificateCard
-                    key={cert.id}
-                    certificate={cert}
-                    showActions={true}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Award className="h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-lg font-medium">No certificates yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    Complete a course to earn your first NFT certificate
-                  </p>
-                  <Link href="/courses">
-                    <Button className="mt-4 gap-2">
-                      Start Learning
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 </CardContent>
               </Card>
             )}
