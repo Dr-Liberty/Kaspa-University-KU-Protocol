@@ -41,6 +41,8 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
         5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription (`{p:"krc-721",op:"discount",tick:"KUTEST5",to:walletAddress,discountFee:"0"}`). Note: 0 sompi = free royalty for course completers.
     - **User-Signed Minting Architecture**: Users sign the mint inscription directly with their wallet. The reservation system holds tokenIds temporarily while users sign. Key files: `server/mint-service.ts` (reservation logic), `client/src/components/user-signed-mint.tsx` (frontend flow).
     - **Key Files**: `server/nft-metadata-manager.ts` (coordinates IPFS uploads), `server/pinata.ts` (IPFS uploads via Pinata API).
+    - **Collection Image CID**: Mainnet uses hardcoded `QmePybcjw8MVigsaf5cXBKfoqW5kF5EEK9enxQNwMkbX4y` (from `attached_assets/certificate_dag.svg`) for deterministic deployment.
+    - **Legacy Endpoint**: `/api/certificates/:id/claim` is **DISABLED** (returns 410 Gone). Use user-signed mint flow only.
     - **Reservation Lifecycle**:
         1. **Reserve** (`POST /api/nft/reserve/:certificateId`): Claims a tokenId from counter or recycled pool, creates reservation with 10-minute TTL, returns inscription JSON for user to sign.
         2. **Signing** (`POST /api/nft/signing/:reservationId`): Updates reservation status to "signing" when user begins wallet interaction.

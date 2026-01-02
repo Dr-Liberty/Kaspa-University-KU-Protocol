@@ -836,14 +836,15 @@ class KRC721Service {
       } = this.kaspaModule;
 
       // PRE-FLIGHT CHECK: Verify sufficient balance before attempting deploy
-      const requiredKas = 1005; // 1000 KAS deploy + ~5 KAS for fees
+      // Deploy requires exactly 1000 KAS PoW fee + minimal dust for commit (~0.1 KAS)
+      const requiredKas = 1000;
       const balanceCheck = await this.checkTreasuryBalance();
       if (balanceCheck.balanceKas < requiredKas) {
         const error = `Insufficient treasury balance. Need ${requiredKas} KAS, have ${balanceCheck.balanceKas.toFixed(2)} KAS. Fund the treasury first.`;
         console.error(`[KRC721] ${error}`);
         return { success: false, error };
       }
-      console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available`);
+      console.log(`[KRC721] Pre-flight check passed: ${balanceCheck.balanceKas.toFixed(2)} KAS available (need ${requiredKas} KAS)`);
 
       // Create deployment data following KRC-721 specification
       // Reference: https://kaspa-krc721d.kaspa.com/docs#krc-721-specifications

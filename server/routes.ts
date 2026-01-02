@@ -2075,171 +2075,15 @@ export async function registerRoutes(
     }
   });
 
-  // Legacy claim endpoint (deprecated - use /mint instead)
-  app.post("/api/certificates/:id/claim", async (req: Request, res: Response) => {
-    const walletAddress = req.headers["x-wallet-address"] as string;
-    if (!walletAddress) {
-      return res.status(401).json({ error: "Wallet not connected" });
-    }
-
-    if (walletAddress.startsWith("demo:")) {
-      return res.status(403).json({ 
-        error: "Demo mode not supported for NFT claiming",
-        message: "Connect a real Kaspa wallet to claim your NFT certificate"
-      });
-    }
-
-    const { id } = req.params;
-    const { paymentTxHash } = req.body;
-
-    if (!paymentTxHash) {
-      return res.status(400).json({ error: "Payment transaction hash is required" });
-    }
-
-    if (paymentTxHash.startsWith("demo_")) {
-      return res.status(400).json({ error: "Invalid payment transaction" });
-    }
-
-    const txAlreadyUsed = await isPaymentTxUsed(paymentTxHash);
-    if (txAlreadyUsed) {
-      return res.status(400).json({ 
-        error: "Payment transaction already used",
-        message: "This transaction has already been used to claim an NFT"
-      });
-    }
-
-    const certificate = await storage.getCertificate(id);
-    if (!certificate) {
-      return res.status(404).json({ error: "Certificate not found" });
-    }
-
-    if (certificate.recipientAddress !== walletAddress) {
-      return res.status(403).json({ error: "You don't own this certificate" });
-    }
-
-    if (certificate.nftStatus === "claimed") {
-      return res.status(400).json({ error: "NFT already claimed", nftTxHash: certificate.nftTxHash });
-    }
-    
-    if (certificate.nftStatus === "minting") {
-      return res.status(400).json({ error: "NFT minting already in progress" });
-    }
-
-    await storage.updateCertificate(id, { nftStatus: "minting" });
-
-    try {
-      const krc721Service = await getKRC721Service();
-      const kaspaService = await getKaspaService();
-      const collectionInfo = await krc721Service.getCollectionInfo();
-      const MINTING_FEE = 10;
-
-      if (!collectionInfo.address) {
-        await storage.updateCertificate(id, { nftStatus: "pending" });
-        return res.status(500).json({ error: "Treasury address not configured" });
-      }
-
-      console.log(`[Claim] Verifying payment txHash: ${paymentTxHash}`);
-      const paymentVerified = await kaspaService.verifyPayment(
-        paymentTxHash,
-        walletAddress,
-        collectionInfo.address,
-        MINTING_FEE
-      );
-
-      if (!paymentVerified) {
-        await storage.updateCertificate(id, { nftStatus: "pending" });
-        return res.status(400).json({ 
-          error: "Payment verification failed",
-          message: "Could not verify payment to treasury. Please ensure you sent at least 10 KAS."
-        });
-      }
-
-      console.log(`[Claim] Payment verified for certificate ${id}`);
-
-      // SECURITY: Mark payment TX as used IMMEDIATELY to prevent double-claiming race conditions
-      // We mark it before minting to prevent concurrent requests using the same TX
-      await markPaymentTxUsed(paymentTxHash, walletAddress, "nft_claim", 10);
-
-      // Use pre-uploaded course asset image
-      let imageUrl = certificate.imageUrl;
-      if (!imageUrl || !imageUrl.startsWith("ipfs://")) {
-        // Look up the pre-uploaded course asset
-        const courseAsset = await storage.getCourseAsset(certificate.courseId);
-        if (!courseAsset) {
-          console.error(`[Claim] No pre-uploaded image for course ${certificate.courseId}`);
-          await storage.updateCertificate(id, { nftStatus: "pending" });
-          return res.status(503).json({
-            error: "Course image not uploaded",
-            message: "Admin must upload course images to IPFS first via /api/admin/upload-course-images"
-          });
-        }
-        
-        imageUrl = courseAsset.imageIpfsUrl;
-        console.log(`[Claim] Using pre-uploaded course image: ${imageUrl}`);
-      }
-
-      // Mint the NFT
-      const mintResult = await krc721Service.mintCertificate(
-        certificate.recipientAddress,
-        certificate.courseName,
-        certificate.score || 100,
-        certificate.issuedAt,
-        imageUrl
-      );
-
-      if (mintResult.success && mintResult.revealTxHash) {
-        // Update certificate with NFT info
-        await storage.updateCertificate(id, {
-          nftStatus: "claimed",
-          nftTxHash: mintResult.revealTxHash,
-          imageUrl,
-        });
-
-        console.log(`[Claim] NFT minted successfully: ${mintResult.revealTxHash}`);
-        
-        // Update metadata folder with the confirmed tokenId
-        if (mintResult.tokenId !== undefined && imageUrl?.startsWith("ipfs://")) {
-          try {
-            const { getMetadataManager } = await import("./nft-metadata-manager");
-            const metadataManager = getMetadataManager();
-            
-            const metadataResult = await metadataManager.addTokenMetadata(
-              mintResult.tokenId,
-              certificate.courseName,
-              certificate.score || 100,
-              certificate.recipientAddress,
-              certificate.issuedAt,
-              imageUrl
-            );
-            
-            if (metadataResult.success) {
-              console.log(`[Claim] Metadata updated for token #${mintResult.tokenId}`);
-            }
-          } catch (metadataError: any) {
-            console.warn(`[Claim] Metadata update failed (non-fatal): ${metadataError.message}`);
-          }
-        }
-
-        return res.json({
-          success: true,
-          nftTxHash: mintResult.revealTxHash,
-          tokenId: mintResult.tokenId,
-          imageUrl,
-        });
-      } else {
-        // Minting failed - revert to pending
-        await storage.updateCertificate(id, { nftStatus: "pending" });
-        return res.status(500).json({ 
-          error: "NFT minting failed", 
-          details: mintResult.error 
-        });
-      }
-    } catch (error: any) {
-      // Revert to pending on error
-      await storage.updateCertificate(id, { nftStatus: "pending" });
-      safeErrorLog("[Claim] Error:", error);
-      return res.status(500).json({ error: sanitizeError(error) });
-    }
+  // Legacy claim endpoint - DISABLED for mainnet (use user-signed mint flow instead)
+  // This endpoint used treasury-signed minting which is deprecated.
+  // Keep endpoint registered to avoid 404s but return clear deprecation message.
+  app.post("/api/certificates/:id/claim", async (_req: Request, res: Response) => {
+    return res.status(410).json({ 
+      error: "This endpoint is deprecated",
+      message: "Please use the new user-signed minting flow. Click 'Mint NFT' on your certificate card to mint directly with your wallet.",
+      migrationPath: "/api/nft/reserve -> /api/nft/signing -> /api/nft/confirm"
+    });
   });
 
   // Get reservation status for a certificate (for retry functionality)
@@ -2893,45 +2737,58 @@ export async function registerRoutes(
         });
       }
 
-      // Use pregenerated collection image (not dynamic generation)
-      const { getPinataService } = await import("./pinata");
-      const pinataService = getPinataService();
-      const fs = await import("fs/promises");
-      const path = await import("path");
+      // Use pre-uploaded deterministic CID for collection image
+      // This ensures the same CID is used for every deploy, preventing indexer mismatches
+      // Pre-uploaded via: npx tsx /tmp/upload-collection-image.ts
+      const MAINNET_COLLECTION_CID = "QmePybcjw8MVigsaf5cXBKfoqW5kF5EEK9enxQNwMkbX4y";
       
-      // CRITICAL: Pinata must be configured for IPFS upload - indexer requires ipfs:// URLs
-      if (!pinataService.isConfigured()) {
-        return res.status(503).json({ 
-          error: "Pinata IPFS not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY secrets before deploying." 
-        });
+      // For mainnet, use the pre-uploaded deterministic CID
+      // For testnet, we can still upload fresh (for testing image changes)
+      const isMainnet = process.env.KRC721_TESTNET !== "true";
+      let collectionImageUrl: string;
+      
+      if (isMainnet) {
+        // MAINNET: Use hardcoded CID for deterministic deployment
+        collectionImageUrl = `ipfs://${MAINNET_COLLECTION_CID}`;
+        console.log(`[Admin] Using pre-uploaded mainnet collection image: ${collectionImageUrl}`);
+      } else {
+        // TESTNET: Upload fresh for testing flexibility
+        const { getPinataService } = await import("./pinata");
+        const pinataService = getPinataService();
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        
+        if (!pinataService.isConfigured()) {
+          return res.status(503).json({ 
+            error: "Pinata IPFS not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY secrets before deploying." 
+          });
+        }
+        
+        const collectionImagePath = path.join(process.cwd(), "attached_assets", "certificate_dag.svg");
+        let collectionSvg: string;
+        try {
+          collectionSvg = await fs.readFile(collectionImagePath, "utf-8");
+          console.log(`[Admin] Loaded pregenerated collection image from ${collectionImagePath}`);
+        } catch (err: any) {
+          return res.status(500).json({ 
+            error: `Failed to load collection image: ${err.message}. Ensure attached_assets/certificate_dag.svg exists.` 
+          });
+        }
+        
+        const uploadResult = await pinataService.uploadImage(
+          collectionSvg,
+          `KUTEST-collection-${Date.now()}`
+        );
+        
+        if (!uploadResult.success || !uploadResult.ipfsUrl) {
+          return res.status(500).json({ 
+            error: `Failed to upload collection image to IPFS: ${uploadResult.error || 'Unknown error'}` 
+          });
+        }
+        
+        collectionImageUrl = uploadResult.ipfsUrl;
+        console.log(`[Admin] Testnet collection image uploaded: ${collectionImageUrl}`);
       }
-      
-      // Load pregenerated collection image from attached_assets
-      const collectionImagePath = path.join(process.cwd(), "attached_assets", "certificate_dag.svg");
-      let collectionSvg: string;
-      try {
-        collectionSvg = await fs.readFile(collectionImagePath, "utf-8");
-        console.log(`[Admin] Loaded pregenerated collection image from ${collectionImagePath}`);
-      } catch (err: any) {
-        return res.status(500).json({ 
-          error: `Failed to load collection image: ${err.message}. Ensure attached_assets/certificate_dag.svg exists.` 
-        });
-      }
-      
-      // Upload pregenerated collection image to IPFS (required by indexer)
-      const uploadResult = await pinataService.uploadImage(
-        collectionSvg,
-        `KUPROOF-collection-${Date.now()}`
-      );
-      
-      if (!uploadResult.success || !uploadResult.ipfsUrl) {
-        return res.status(500).json({ 
-          error: `Failed to upload collection image to IPFS: ${uploadResult.error || 'Unknown error'}` 
-        });
-      }
-      
-      const collectionImageUrl = uploadResult.ipfsUrl;
-      console.log(`[Admin] Collection image uploaded: ${collectionImageUrl}`);
       const result = await krc721Service.deployCollection(collectionImageUrl);
       
       if (result.success) {
