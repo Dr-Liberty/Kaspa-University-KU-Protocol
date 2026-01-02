@@ -277,7 +277,7 @@ function getDefaultConfig(): KRC721Config {
       : (process.env.KRC721_TICKER || "KUDIPLOMA"),
     collectionName: "Kaspa University Diploma",
     collectionDescription: "Kaspa University Diploma NFT. Awarded for completing all 16 courses. Mint only at Kaspa.University - external mints invalid.",
-    maxSupply: 1000, // Single diploma per student who completes all courses
+    maxSupply: 10000, // Single diploma per student who completes all courses
     royaltyFee: 20000, // 20,000 KAS deterrent price (actual deploy uses DETERRENT_PRICE_SOMPI)
     royaltyOwner: "", // Set to treasury address in deployCollection
   };

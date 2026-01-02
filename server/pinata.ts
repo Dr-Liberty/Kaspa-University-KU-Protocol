@@ -110,13 +110,61 @@ class PinataService {
 
       const result = await response.json();
       const ipfsHash = result.IpfsHash;
-      // Return ipfs:// URL for NFT standards (KRC-721 requires this format)
       const ipfsUrl = `ipfs://${ipfsHash}`;
 
-      console.log(`[Pinata] Image uploaded: ${ipfsUrl}`);
+      console.log(`[Pinata] SVG uploaded: ${ipfsUrl}`);
       return { success: true, ipfsHash, ipfsUrl };
     } catch (error: any) {
-      console.error("[Pinata] Image upload failed:", error.message);
+      console.error("[Pinata] SVG upload failed:", error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Upload a PNG image buffer to IPFS
+   */
+  async uploadPngImage(imageBuffer: Buffer, fileName: string): Promise<UploadResult> {
+    if (!this.isConfigured()) {
+      console.log("[Pinata] Not configured - skipping upload");
+      return { success: false, error: "Pinata not configured" };
+    }
+
+    try {
+      const blob = new Blob([imageBuffer], { type: "image/png" });
+      const formData = new FormData();
+      formData.append("file", blob, `${fileName}.png`);
+      
+      const pinataMetadata = JSON.stringify({
+        name: fileName,
+        keyvalues: {
+          platform: "Kaspa University",
+          type: "diploma-nft",
+        }
+      });
+      formData.append("pinataMetadata", pinataMetadata);
+
+      const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+        method: "POST",
+        headers: {
+          "pinata_api_key": this.apiKey!,
+          "pinata_secret_api_key": this.secretKey!,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Pinata PNG upload failed: ${errorText}`);
+      }
+
+      const result = await response.json();
+      const ipfsHash = result.IpfsHash;
+      const ipfsUrl = `ipfs://${ipfsHash}`;
+
+      console.log(`[Pinata] PNG uploaded: ${ipfsUrl}`);
+      return { success: true, ipfsHash, ipfsUrl };
+    } catch (error: any) {
+      console.error("[Pinata] PNG upload failed:", error.message);
       return { success: false, error: error.message };
     }
   }

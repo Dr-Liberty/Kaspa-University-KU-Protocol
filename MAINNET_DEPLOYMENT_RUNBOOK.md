@@ -5,7 +5,7 @@ This document provides the complete checklist for deploying the KUDIPLOMA collec
 ## Architecture Overview
 
 **Single Diploma Collection**: Users earn ONE diploma NFT after completing ALL 16 courses.
-- Max Supply: 1,000 diplomas (one per student)
+- Max Supply: 10,000 diplomas (one per student)
 - Whitelist-based pricing: Course completers pay 0 KAS royalty (only ~10 KAS PoW fee)
 - Non-whitelisted: 20,000 KAS royalty deterrent
 
@@ -20,7 +20,7 @@ This document provides the complete checklist for deploying the KUDIPLOMA collec
 | Parameter | Value |
 |-----------|-------|
 | Ticker | KUDIPLOMA |
-| Max Supply | 1,000 (one diploma per student) |
+| Max Supply | 10,000 (one diploma per student) |
 | Royalty Fee | 20,000 KAS (deterrent for non-whitelisted) |
 | Discount Fee | 0 KAS (for whitelisted course completers) |
 | PoW Fee | ~10 KAS (user pays via KasWare) |
@@ -33,8 +33,8 @@ For testing on the KaspacomDAGs devnet/testnet:
 | Field | Value |
 |-------|-------|
 | Collection Name | `KUTEST7` (or increment) |
-| Total Supply | `1000` |
-| Metadata URL (IPFS) | `ipfs://[DIPLOMA_IMAGE_CID]` |
+| Total Supply | `10000` |
+| Metadata URL (IPFS) | `ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4` |
 | Mint Price | `20000` (royalty deterrent) |
 | Mint Funds Recipient | (leave blank - default deployer) |
 | Premint NFT Allocation | `0` |
