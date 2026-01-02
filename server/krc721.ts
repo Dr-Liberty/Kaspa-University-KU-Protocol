@@ -1973,19 +1973,34 @@ class KRC721Service {
 
   /**
    * Get collection info
+   * IMPORTANT: Always verifies deployment status against the on-chain indexer
+   * The indexer is the source of truth, not the database
    */
   async getCollectionInfo() {
     const nextTokenId = await this.getNextTokenId();
+    
+    // ALWAYS verify against indexer - on-chain is the source of truth
+    const indexerResult = await verifyCollectionIndexed(this.config.ticker);
+    const isDeployedOnChain = indexerResult.indexed;
+    
+    // Sync local cache with on-chain state
+    if (this.collectionDeployed !== isDeployedOnChain) {
+      console.log(`[KRC721] Syncing deployment status: local=${this.collectionDeployed}, on-chain=${isDeployedOnChain}`);
+      this.collectionDeployed = isDeployedOnChain;
+      await this.saveDeploymentStatus(isDeployedOnChain);
+    }
+    
     return {
       ticker: this.config.ticker,
       name: this.config.collectionName,
       description: this.config.collectionDescription,
       maxSupply: this.config.maxSupply,
       nextTokenId,
-      isDeployed: this.collectionDeployed,
+      isDeployed: isDeployedOnChain, // Always use on-chain status
       network: this.config.network,
       address: this.address,
       isLive: this.isLive(),
+      indexerVerified: true, // Indicates this was verified on-chain
     };
   }
 

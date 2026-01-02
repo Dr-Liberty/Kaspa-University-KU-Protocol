@@ -29,6 +29,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
 - **KRC-721 NFT Certificates**: Implements user-signed minting flow where users sign the mint inscription themselves and appear as the on-chain minter (not treasury wallet). Adheres to KRC-721 standard. Uses Pinata for IPFS uploads - each certificate gets direct IPFS CIDs for metadata. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
+    - **On-Chain First Philosophy**: The blockchain indexer is ALWAYS the source of truth for deployment/minting status. Database is only used as a cache that syncs with on-chain state. All status checks verify against the indexer API, not the local database.
     - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete courses are automatically whitelisted via the "discount" operation. Fee structure:
         - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
         - Whitelisted (course completers): discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
