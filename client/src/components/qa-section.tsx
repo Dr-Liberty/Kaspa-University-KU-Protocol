@@ -7,9 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import type { QAPost } from "@shared/schema";
 import { useWallet } from "@/lib/wallet-context";
-import { MessageSquare, Send, ExternalLink, User, Link as LinkIcon, Shield, CheckCircle2 } from "lucide-react";
+import { 
+  MessageSquare, 
+  Send, 
+  ExternalLink, 
+  User, 
+  Link as LinkIcon, 
+  Shield, 
+  CheckCircle2,
+  Lock,
+  Globe,
+  Mail,
+} from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -113,7 +126,7 @@ function PostCard({ post }: { post: QAPost }) {
   );
 }
 
-export function QASection({ lessonId }: QASectionProps) {
+function PublicCommentsTab({ lessonId }: { lessonId: string }) {
   const { wallet, isDemoMode } = useWallet();
   const { toast } = useToast();
   const [content, setContent] = useState("");
@@ -177,106 +190,253 @@ export function QASection({ lessonId }: QASectionProps) {
   };
 
   return (
+    <div className="space-y-4">
+      {wallet ? (
+        <div className="space-y-3">
+          <Textarea
+            placeholder="Ask a question or share your insights..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[80px] resize-none border-border/50 bg-background focus:border-primary"
+            data-testid="input-qa-content"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex gap-2">
+                <Button
+                  variant={isQuestion ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsQuestion(true)}
+                  data-testid="button-question-type"
+                >
+                  Question
+                </Button>
+                <Button
+                  variant={!isQuestion ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsQuestion(false)}
+                  data-testid="button-answer-type"
+                >
+                  Answer / Comment
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="post-on-chain"
+                  checked={postOnChain}
+                  onCheckedChange={setPostOnChain}
+                  data-testid="switch-post-on-chain"
+                />
+                <Label 
+                  htmlFor="post-on-chain" 
+                  className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  Record on blockchain
+                </Label>
+              </div>
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={!content.trim() || createPost.isPending}
+              className="gap-2"
+              data-testid="button-post-qa"
+            >
+              <Send className="h-4 w-4" />
+              {createPost.isPending ? "Posting..." : postOnChain ? "Post On-Chain" : "Post"}
+            </Button>
+          </div>
+          {postOnChain && (
+            <p className="text-xs text-muted-foreground">
+              Your post will be permanently stored on the Kaspa blockchain and can be verified by anyone.
+              {isDemoMode && " (Demo mode - no actual transaction)"}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Connect your wallet to participate in discussions
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex gap-3 rounded-lg border border-border/50 p-4">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+          ))
+        ) : posts && posts.length > 0 ? (
+          posts.map((post) => <PostCard key={post.id} post={post} />)
+        ) : (
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
+            <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/50" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              No discussions yet. Be the first to ask a question!
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PrivateMessagesTab({ lessonId }: { lessonId: string }) {
+  const { wallet } = useWallet();
+  const { toast } = useToast();
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [messageContent, setMessageContent] = useState("");
+
+  const startConversation = useMutation({
+    mutationFn: async (data: { recipientAddress: string; message?: string }) => {
+      const response = await apiRequest("POST", "/api/conversations", {
+        recipientAddress: data.recipientAddress,
+        isAdminConversation: false,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Conversation Started",
+        description: "A handshake request has been sent. Once accepted, you can exchange encrypted messages.",
+      });
+      setRecipientAddress("");
+      setMessageContent("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to start conversation",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartConversation = () => {
+    if (!recipientAddress.trim()) return;
+    startConversation.mutate({ 
+      recipientAddress: recipientAddress.trim(),
+      message: messageContent.trim() || undefined,
+    });
+  };
+
+  if (!wallet) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
+        <Lock className="mx-auto h-8 w-8 text-muted-foreground/50" />
+        <p className="mt-2 text-sm text-muted-foreground">
+          Connect your wallet to send private messages
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-border/50 bg-card/50 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Lock className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Send Encrypted Message</span>
+        </div>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Messages are encrypted end-to-end using the Kasia Protocol. Only you and the recipient can read them.
+        </p>
+        
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="recipient" className="text-xs text-muted-foreground">
+              Recipient Kaspa Address
+            </Label>
+            <Input
+              id="recipient"
+              placeholder="kaspa:qr..."
+              value={recipientAddress}
+              onChange={(e) => setRecipientAddress(e.target.value)}
+              className="mt-1 font-mono text-sm"
+              data-testid="input-recipient-address"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="message" className="text-xs text-muted-foreground">
+              Message (optional - sent after handshake)
+            </Label>
+            <Textarea
+              id="message"
+              placeholder="Your private message..."
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              className="mt-1 min-h-[60px] resize-none"
+              data-testid="input-private-message"
+            />
+          </div>
+          
+          <Button
+            onClick={handleStartConversation}
+            disabled={!recipientAddress.trim() || startConversation.isPending}
+            className="w-full gap-2"
+            data-testid="button-start-conversation"
+          >
+            <Mail className="h-4 w-4" />
+            {startConversation.isPending ? "Initiating..." : "Start Encrypted Conversation"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+        <Mail className="mx-auto h-8 w-8 text-muted-foreground/50" />
+        <p className="mt-2 text-sm text-muted-foreground">
+          View your conversations in the Messages section
+        </p>
+        <a 
+          href="/messages" 
+          className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          data-testid="link-view-messages"
+        >
+          Go to Messages
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export function QASection({ lessonId }: QASectionProps) {
+  return (
     <Card className="border-border/50">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MessageSquare className="h-5 w-5 text-primary" />
-          On-Chain Discussions
+          Discussions
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {wallet ? (
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Ask a question or share your insights..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[80px] resize-none border-border/50 bg-background focus:border-primary"
-              data-testid="input-qa-content"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex gap-2">
-                  <Button
-                    variant={isQuestion ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsQuestion(true)}
-                    data-testid="button-question-type"
-                  >
-                    Question
-                  </Button>
-                  <Button
-                    variant={!isQuestion ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsQuestion(false)}
-                    data-testid="button-answer-type"
-                  >
-                    Answer / Comment
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="post-on-chain"
-                    checked={postOnChain}
-                    onCheckedChange={setPostOnChain}
-                    data-testid="switch-post-on-chain"
-                  />
-                  <Label 
-                    htmlFor="post-on-chain" 
-                    className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <LinkIcon className="h-3 w-3" />
-                    Record on blockchain
-                  </Label>
-                </div>
-              </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={!content.trim() || createPost.isPending}
-                className="gap-2"
-                data-testid="button-post-qa"
-              >
-                <Send className="h-4 w-4" />
-                {createPost.isPending ? "Posting..." : postOnChain ? "Post On-Chain" : "Post"}
-              </Button>
-            </div>
-            {postOnChain && (
-              <p className="text-xs text-muted-foreground">
-                Your post will be permanently stored on the Kaspa blockchain and can be verified by anyone.
-                {isDemoMode && " (Demo mode - no actual transaction)"}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Connect your wallet to participate in discussions
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex gap-3 rounded-lg border border-border/50 p-4">
-                <Skeleton className="h-9 w-9 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              </div>
-            ))
-          ) : posts && posts.length > 0 ? (
-            posts.map((post) => <PostCard key={post.id} post={post} />)
-          ) : (
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
-              <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/50" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                No discussions yet. Be the first to ask a question!
-              </p>
-            </div>
-          )}
-        </div>
+      <CardContent>
+        <Tabs defaultValue="public" className="w-full">
+          <TabsList className="mb-4 grid w-full grid-cols-2">
+            <TabsTrigger value="public" className="gap-2" data-testid="tab-public-comments">
+              <Globe className="h-4 w-4" />
+              Public Comments
+            </TabsTrigger>
+            <TabsTrigger value="private" className="gap-2" data-testid="tab-private-messages">
+              <Lock className="h-4 w-4" />
+              Private Messages
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="public">
+            <PublicCommentsTab lessonId={lessonId} />
+          </TabsContent>
+          
+          <TabsContent value="private">
+            <PrivateMessagesTab lessonId={lessonId} />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
