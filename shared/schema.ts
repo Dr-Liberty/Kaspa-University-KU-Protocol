@@ -285,5 +285,71 @@ export type Diploma = z.infer<typeof diplomaSchema>;
 export const insertDiplomaSchema = diplomaSchema.omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDiploma = z.infer<typeof insertDiplomaSchema>;
 
+// ========= MESSAGING SCHEMAS =========
+
+// Conversation status enum
+export const conversationStatusEnum = z.enum([
+  "pending_handshake",
+  "handshake_received", 
+  "active",
+  "archived"
+]);
+export type ConversationStatus = z.infer<typeof conversationStatusEnum>;
+
+// Private conversation schema (Kasia encrypted)
+export const conversationSchema = z.object({
+  id: z.string(),
+  initiatorAddress: z.string(),
+  recipientAddress: z.string(),
+  status: conversationStatusEnum.default("pending_handshake"),
+  handshakeTxHash: z.string().optional(),
+  responseTxHash: z.string().optional(),
+  initiatorAlias: z.string().optional(),
+  recipientAlias: z.string().optional(),
+  isAdminConversation: z.boolean().default(false),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type Conversation = z.infer<typeof conversationSchema>;
+export const insertConversationSchema = conversationSchema.omit({ createdAt: true, updatedAt: true });
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+// Private message schema
+export const privateMessageSchema = z.object({
+  id: z.string(),
+  conversationId: z.string(),
+  senderAddress: z.string(),
+  encryptedContent: z.string(),
+  decryptedPreview: z.string().optional(),
+  txHash: z.string().optional(),
+  txStatus: z.enum(["pending", "confirmed", "failed"]).default("pending"),
+  createdAt: z.date(),
+});
+
+export type PrivateMessage = z.infer<typeof privateMessageSchema>;
+export const insertPrivateMessageSchema = privateMessageSchema.omit({ id: true, createdAt: true });
+export type InsertPrivateMessage = z.infer<typeof insertPrivateMessageSchema>;
+
+// K Protocol public comment schema
+export const kPublicCommentSchema = z.object({
+  id: z.string(),
+  lessonId: z.string(),
+  authorAddress: z.string(),
+  authorPubkey: z.string(),
+  content: z.string(),
+  signature: z.string(),
+  txHash: z.string().optional(),
+  txStatus: z.enum(["pending", "confirmed", "failed"]).default("pending"),
+  parentTxHash: z.string().optional(),
+  isReply: z.boolean().default(false),
+  votes: z.number().default(0),
+  createdAt: z.date(),
+});
+
+export type KPublicComment = z.infer<typeof kPublicCommentSchema>;
+export const insertKPublicCommentSchema = kPublicCommentSchema.omit({ id: true, createdAt: true, votes: true });
+export type InsertKPublicComment = z.infer<typeof insertKPublicCommentSchema>;
+
 // Re-export Drizzle table definitions for database migrations
 export * from "../server/db/schema";

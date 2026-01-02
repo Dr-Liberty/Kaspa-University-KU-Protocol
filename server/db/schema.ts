@@ -226,3 +226,48 @@ export const courseAssets = pgTable("course_assets", {
   imageIpfsHash: text("image_ipfs_hash").notNull(), // Just the CID
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
+
+// ========= MESSAGING TABLES (P2P Communication) =========
+
+// Private conversations - Kasia encrypted P2P messaging
+export const conversations = pgTable("conversations", {
+  id: text("id").primaryKey(), // Deterministic ID from both addresses
+  initiatorAddress: text("initiator_address").notNull(),
+  recipientAddress: text("recipient_address").notNull(),
+  status: text("status").default("pending_handshake").notNull(), // pending_handshake, handshake_received, active, archived
+  handshakeTxHash: text("handshake_tx_hash"),
+  responseTxHash: text("response_tx_hash"),
+  initiatorAlias: text("initiator_alias"),
+  recipientAlias: text("recipient_alias"),
+  isAdminConversation: boolean("is_admin_conversation").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Private messages - encrypted messages within conversations
+export const privateMessages = pgTable("private_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: text("conversation_id").notNull(),
+  senderAddress: text("sender_address").notNull(),
+  encryptedContent: text("encrypted_content").notNull(), // Hex-encoded encrypted payload
+  decryptedPreview: text("decrypted_preview"), // Optional server-side decrypted preview for notifications
+  txHash: text("tx_hash"),
+  txStatus: text("tx_status").default("pending").notNull(), // pending, confirmed, failed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// K Protocol public comments - indexed for ecosystem discovery
+export const kPublicComments = pgTable("k_public_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  lessonId: text("lesson_id").notNull(),
+  authorAddress: text("author_address").notNull(),
+  authorPubkey: text("author_pubkey").notNull(),
+  content: text("content").notNull(),
+  signature: text("signature").notNull(),
+  txHash: text("tx_hash"),
+  txStatus: text("tx_status").default("pending").notNull(), // pending, confirmed, failed
+  parentTxHash: text("parent_tx_hash"), // For replies
+  isReply: boolean("is_reply").default(false).notNull(),
+  votes: integer("votes").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
