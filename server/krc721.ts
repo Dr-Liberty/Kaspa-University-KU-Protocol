@@ -275,7 +275,7 @@ function getDefaultConfig(): KRC721Config {
       ? (process.env.KRC721_TESTNET_TICKER || "KUTEST5") 
       : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
     collectionName: "Kaspa Proof of Learning",
-    collectionDescription: "Verifiable proof of learning certificates from Kaspa University - Learn-to-Earn on Kaspa L1",
+    collectionDescription: "Kaspa University Learn-to-Earn certificates. Mint only at kaspauniversity.replit.app - external mints invalid.",
     maxSupply: 16000, // 1,000 NFTs per course × 16 courses
     royaltyFee: 20000, // 20,000 KAS deterrent price (actual deploy uses DETERRENT_PRICE_SOMPI)
     royaltyOwner: "", // Set to treasury address in deployCollection
