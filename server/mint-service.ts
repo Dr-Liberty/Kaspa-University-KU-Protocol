@@ -10,10 +10,8 @@ import type { MintReservation, Certificate } from "@shared/schema";
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
-    // Must match krc721.ts - currently KUTEST5
-    return process.env.KRC721_TESTNET_TICKER || "KUTEST5";
+    return process.env.KRC721_TESTNET_TICKER || "KUTEST6";
   }
-  // Default to KUPROOF to match krc721.ts getDefaultConfig()
   return process.env.KRC721_TICKER || "KUPROOF";
 }
 

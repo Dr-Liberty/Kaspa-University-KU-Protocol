@@ -273,8 +273,8 @@ function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
     ticker: useTestnet 
-      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST5") 
-      : (process.env.KRC721_TICKER || "KUPROOF"), // Use env var or defaults
+      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST6") 
+      : (process.env.KRC721_TICKER || "KUPROOF"),
     collectionName: "Kaspa Proof of Learning",
     collectionDescription: "Kaspa University Learn-to-Earn certificates. Mint only at Kaspa.University - external mints invalid.",
     maxSupply: 16000, // 1,000 NFTs per course × 16 courses
