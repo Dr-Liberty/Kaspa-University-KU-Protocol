@@ -91,19 +91,15 @@ class NFTMetadataManager {
           continue;
         }
 
+        // Generic course metadata - no user-specific info (score, date, recipient)
         const metadata: TokenMetadata = {
-          name: `Kaspa University Certificate: ${cert.courseName}`,
-          description: `This certificate verifies completion of "${cert.courseName}" on Kaspa University with a score of ${cert.score || 0}%. Quiz completion was recorded on-chain via KU Protocol. Verify at: kaspa.university/verify/${cert.verificationCode}`,
+          name: `Kaspa University: ${cert.courseName}`,
+          description: `Certificate of completion for "${cert.courseName}" on Kaspa University. Verify at kaspa.university`,
           image: imageUrl,
           tokenId: mint.tokenId,
           attributes: [
             { trait_type: "Course", value: cert.courseName },
-            { trait_type: "Score", value: cert.score || 0 },
-            { trait_type: "Completion Date", value: cert.issuedAt ? new Date(cert.issuedAt).toISOString().split("T")[0] : "" },
-            { trait_type: "Recipient", value: cert.recipientAddress },
-            { trait_type: "Verification", value: `KU Protocol (kaspa.university)` },
             { trait_type: "Platform", value: "Kaspa University" },
-            { trait_type: "Network", value: process.env.KRC721_TESTNET === "true" ? "Kaspa Testnet-10" : "Kaspa Mainnet" },
           ],
         };
         this.tokenMetadata.set(mint.tokenId, metadata);
@@ -157,20 +153,15 @@ class NFTMetadataManager {
     }
 
     try {
-      // Create metadata for this token with KU Protocol verification reference
+      // Generic course metadata - no user-specific info (score, date, recipient)
       const metadata: TokenMetadata = {
-        name: `Kaspa University Certificate: ${courseName}`,
-        description: `This certificate verifies completion of "${courseName}" on Kaspa University with a score of ${score}%. Quiz completion was recorded on-chain via KU Protocol. Verify quiz data at: kaspa.university`,
+        name: `Kaspa University: ${courseName}`,
+        description: `Certificate of completion for "${courseName}" on Kaspa University. Verify at kaspa.university`,
         image: imageIpfsUrl,
         tokenId,
         attributes: [
           { trait_type: "Course", value: courseName },
-          { trait_type: "Score", value: score },
-          { trait_type: "Completion Date", value: completionDate.toISOString().split("T")[0] },
-          { trait_type: "Recipient", value: recipientAddress },
-          { trait_type: "Verification", value: `KU Protocol (kaspa.university)` },
           { trait_type: "Platform", value: "Kaspa University" },
-          { trait_type: "Network", value: process.env.KRC721_TESTNET === "true" ? "Kaspa Testnet-10" : "Kaspa Mainnet" },
         ],
       };
 

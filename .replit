@@ -46,7 +46,7 @@ integrations = ["javascript_mem_db:1.0.0"]
 
 [userenv.shared]
 KRC721_TESTNET = "true"
-KRC721_TESTNET_TICKER = "KUTEST5"
+KRC721_TESTNET_TICKER = "KUTEST6"
 VITE_KASPA_NETWORK = "testnet-10"
 
 [userenv.development]

@@ -26,12 +26,7 @@ export interface MintInscriptionData {
   tick: string;
   to: string;
   tokenId?: number;
-  metadata?: {
-    name: string;
-    description: string;
-    image?: string;
-    attributes?: Array<{ trait_type: string; value: string | number }>;
-  };
+  meta?: string; // IPFS URL to metadata JSON (preferred for wallet display)
 }
 
 export class MintService {
@@ -64,36 +59,39 @@ export class MintService {
 
   /**
    * Build mint inscription JSON
-   * IMPORTANT: Keep minimal to stay under 520 byte Bitcoin Script limit
-   * Metadata is stored in IPFS via collection buri, NOT in the mint inscription
+   * Includes meta field pointing to IPFS metadata for wallet display
+   * Per KRC-721 spec, meta field in mint inscription points to token-specific metadata
    */
   buildInscriptionJson(
     walletAddress: string,
     tokenId: number,
-    _courseName: string,
-    _score: number,
-    _completedAt: Date
+    metadataIpfsUrl?: string
   ): MintInscriptionData {
     const ticker = getCollectionTicker();
-    console.log(`[MintService] Building inscription with ticker: ${ticker} (KRC721_TESTNET=${process.env.KRC721_TESTNET})`);
-    // Minimal mint inscription per KRC-721 spec
-    // Metadata is stored via IPFS/buri, not in the on-chain inscription
-    return {
+    console.log(`[MintService] Building inscription with ticker: ${ticker}, meta: ${metadataIpfsUrl || "none"}`);
+    
+    const inscription: MintInscriptionData = {
       p: "krc-721",
       op: "mint",
       tick: ticker,
       to: walletAddress,
       tokenId: tokenId,
     };
+    
+    // Add meta field for wallet display if IPFS URL is provided
+    // This allows wallets to fetch and display the NFT image
+    if (metadataIpfsUrl) {
+      inscription.meta = metadataIpfsUrl;
+    }
+    
+    return inscription;
   }
 
   async reserveMint(
     certificateId: string,
     courseId: string,
     walletAddress: string,
-    courseName?: string,
-    score?: number,
-    completedAt?: Date
+    metadataIpfsUrl?: string
   ): Promise<{ reservation: MintReservation; inscriptionJson: string } | { error: string }> {
     await this.initialize();
 
@@ -117,13 +115,11 @@ export class MintService {
       return { error: "Course NFT collection is sold out" };
     }
 
-    // Build inscription with token metadata
+    // Build inscription with meta field for wallet display
     const inscriptionData = this.buildInscriptionJson(
       walletAddress,
       tokenId,
-      courseName || "Kaspa University Course",
-      score || 100,
-      completedAt || new Date()
+      metadataIpfsUrl
     );
     const inscriptionJson = JSON.stringify(inscriptionData);
 

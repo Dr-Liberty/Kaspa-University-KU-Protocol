@@ -1848,14 +1848,40 @@ export async function registerRoutes(
 
     try {
       const { mintService } = await import("./mint-service");
-      // Pass certificate info for token metadata in the mint inscription
+      
+      // Upload metadata to IPFS for wallet display
+      // Use certificate imageUrl if available, otherwise generate one
+      let metadataIpfsUrl: string | undefined;
+      const imageUrl = certificate.imageUrl;
+      
+      if (imageUrl?.startsWith("ipfs://")) {
+        // Create and upload metadata JSON to IPFS
+        // Metadata is GENERIC per course - no user-specific info (score, date, recipient)
+        const pinataService = getPinataService();
+        if (pinataService.isConfigured()) {
+          const metadata = {
+            name: `Kaspa University: ${certificate.courseName}`,
+            description: `Certificate of completion for "${certificate.courseName}" on Kaspa University. Verify at kaspa.university`,
+            image: imageUrl,
+            attributes: [
+              { trait_type: "Course", value: certificate.courseName },
+              { trait_type: "Platform", value: "Kaspa University" },
+            ],
+          };
+          const uploadResult = await pinataService.uploadMetadata(metadata, `kuproof-course-${certificate.courseId}`);
+          if (uploadResult.success && uploadResult.ipfsUrl) {
+            metadataIpfsUrl = uploadResult.ipfsUrl;
+            console.log(`[Reserve] Metadata uploaded: ${metadataIpfsUrl}`);
+          }
+        }
+      }
+      
+      // Reserve tokenId and build inscription with meta field
       const result = await mintService.reserveMint(
         certificateId, 
         certificate.courseId, 
         walletAddress,
-        certificate.courseName,
-        certificate.score || 100,
-        certificate.issuedAt ? new Date(certificate.issuedAt) : new Date()
+        metadataIpfsUrl
       );
 
       if ("error" in result) {
