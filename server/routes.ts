@@ -2893,9 +2893,11 @@ export async function registerRoutes(
         });
       }
 
-      // Generate collection image and upload to IPFS
+      // Use pregenerated collection image (not dynamic generation)
       const { getPinataService } = await import("./pinata");
       const pinataService = getPinataService();
+      const fs = await import("fs/promises");
+      const path = await import("path");
       
       // CRITICAL: Pinata must be configured for IPFS upload - indexer requires ipfs:// URLs
       if (!pinataService.isConfigured()) {
@@ -2904,14 +2906,19 @@ export async function registerRoutes(
         });
       }
       
-      const collectionSvg = krc721Service.generateCertificateImageSvg(
-        "kaspa:collection",
-        "Kaspa University Certificate Collection",
-        100,
-        new Date()
-      );
+      // Load pregenerated collection image from attached_assets
+      const collectionImagePath = path.join(process.cwd(), "attached_assets", "certificate_dag.svg");
+      let collectionSvg: string;
+      try {
+        collectionSvg = await fs.readFile(collectionImagePath, "utf-8");
+        console.log(`[Admin] Loaded pregenerated collection image from ${collectionImagePath}`);
+      } catch (err: any) {
+        return res.status(500).json({ 
+          error: `Failed to load collection image: ${err.message}. Ensure attached_assets/certificate_dag.svg exists.` 
+        });
+      }
       
-      // Upload collection image to IPFS (required by indexer)
+      // Upload pregenerated collection image to IPFS (required by indexer)
       const uploadResult = await pinataService.uploadImage(
         collectionSvg,
         `KUPROOF-collection-${Date.now()}`
