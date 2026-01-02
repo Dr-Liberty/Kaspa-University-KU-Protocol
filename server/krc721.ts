@@ -273,11 +273,11 @@ function getDefaultConfig(): KRC721Config {
   return {
     network: getNetworkId(),
     ticker: useTestnet 
-      ? (process.env.KRC721_TESTNET_TICKER || "KUTEST6") 
-      : (process.env.KRC721_TICKER || "KUPROOF"),
-    collectionName: "Kaspa Proof of Learning",
-    collectionDescription: "Kaspa University Learn-to-Earn certificates. Mint only at Kaspa.University - external mints invalid.",
-    maxSupply: 16000, // 1,000 NFTs per course × 16 courses
+      ? (process.env.KRC721_TESTNET_TICKER || "KUDIPLOMA") 
+      : (process.env.KRC721_TICKER || "KUDIPLOMA"),
+    collectionName: "Kaspa University Diploma",
+    collectionDescription: "Kaspa University Diploma NFT. Awarded for completing all 16 courses. Mint only at Kaspa.University - external mints invalid.",
+    maxSupply: 1000, // Single diploma per student who completes all courses
     royaltyFee: 20000, // 20,000 KAS deterrent price (actual deploy uses DETERRENT_PRICE_SOMPI)
     royaltyOwner: "", // Set to treasury address in deployCollection
   };
@@ -1882,7 +1882,7 @@ class KRC721Service {
         
         <!-- Footer -->
         <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">
-          KRC-721 NFT Certificate | KUPROOF Collection
+          KRC-721 NFT Diploma | KUDIPLOMA Collection
         </text>
       </svg>
     `.trim();

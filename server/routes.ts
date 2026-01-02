@@ -2835,7 +2835,7 @@ export async function registerRoutes(
         
         const uploadResult = await pinataService.uploadImage(
           collectionSvg,
-          `KUTEST-collection-${Date.now()}`
+          `KUDIPLOMA-collection-${Date.now()}`
         );
         
         if (!uploadResult.success || !uploadResult.ipfsUrl) {

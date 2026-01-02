@@ -28,31 +28,31 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
 - **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
 - **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
-- **KRC-721 Diploma NFT (PIVOTED ARCHITECTURE)**: Instead of per-course NFTs (16 collections × 1,000 KAS = 16,000 KAS), we deploy a **single diploma collection** (1,000 KAS budget). Users earn ONE KRC-721 diploma NFT after completing all 16 courses. Implements user-signed minting flow where users sign the mint inscription themselves. Uses Pinata for IPFS uploads. Mainnet indexer: https://kaspa-krc721d.kaspa.com/ (KaspacomDAGs).
-    - **Diploma Model**: Single diploma NFT rewarded after 100% course completion (all 16 courses). This creates a gamified learning journey with clear progression toward a single achievement.
-    - **BlockDAG Progress Visualization**: Gamified progress tracker on the certificates page showing a Kaspa coin avatar falling through a visual BlockDAG. Each course is represented as a block with its thumbnail. Progress percentage and remaining courses displayed prominently.
-    - **On-Chain First Philosophy**: The blockchain indexer is ALWAYS the source of truth for deployment/minting status. Database is only used as a cache that syncs with on-chain state. All status checks verify against the indexer API, not the local database.
+- **KRC-721 Diploma NFT (SINGLE COLLECTION ARCHITECTURE)**: 
+    - **Collection Ticker**: KUDIPLOMA (testnet & mainnet)
+    - **Max Supply**: 1,000 diplomas (one per student who completes all 16 courses)
+    - **Deploy Cost**: 1,000 KAS budget
+    - **Diploma Eligibility**: Must complete ALL 16 courses before minting
+    - **Diploma Model**: Single diploma NFT rewarded after 100% course completion. Creates a gamified learning journey with clear progression toward a single achievement.
+    - **BlockDAG Progress Visualization**: Gamified progress tracker on the Dashboard showing a visual BlockDAG with 72px cubes. Each course is represented as a block with its thumbnail. Blue blocks are DAG set, red blocks are anticone. Bold blue main chain connects courses. Diploma cube at bottom.
+    - **On-Chain First Philosophy**: The blockchain indexer is ALWAYS the source of truth. Database is only used as a cache.
     - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete all courses are automatically whitelisted via the "discount" operation. Fee structure:
-        - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
-        - Whitelisted (diploma eligible): discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
-    - **Discount Service Architecture** (`server/discount-service.ts`):
-        1. **Automatic Whitelisting**: After first course completion, the discount service sends a commit-reveal transaction to whitelist the user's wallet.
-        2. **Database Tracking**: `users.whitelistedAt` and `users.whitelistTxHash` fields track whitelist status to avoid redundant on-chain operations.
-        3. **API Endpoints**: `GET /api/whitelist/status` checks status, `POST /api/whitelist/apply` manually triggers whitelist for retry scenarios.
-        4. **Frontend Integration**: Certificate cards show whitelist status and enable mint button only for whitelisted users.
-        5. **Commit-Reveal Flow**: Treasury wallet signs discount inscription per KRC-721 spec: `{p:"krc-721",op:"discount",tick:"KUTEST6",to:walletAddress}`. Whitelisted users automatically get discounted royalty (0 KAS) when minting.
-    - **User-Signed Minting Architecture**: Users sign the mint inscription per KRC-721 spec: `{p:"krc-721",op:"mint",tick:"KUTEST6",to:walletAddress}`. Token IDs are assigned randomly by the indexer. Key files: `server/mint-service.ts` (reservation logic), `client/src/components/user-signed-mint.tsx` (frontend flow).
-    - **Key Files**: `server/nft-metadata-manager.ts` (coordinates IPFS uploads), `server/pinata.ts` (IPFS uploads via Pinata API).
-    - **Collection Image CID**: Mainnet uses hardcoded `QmePybcjw8MVigsaf5cXBKfoqW5kF5EEK9enxQNwMkbX4y` (from `attached_assets/certificate_dag.svg`) for deterministic deployment.
-    - **Legacy Endpoint**: `/api/certificates/:id/claim` is **DISABLED** (returns 410 Gone). Use user-signed mint flow only.
+        - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (~10 KAS) = ~20,010 KAS total
+        - Whitelisted (diploma eligible): discountFee (0 KAS) + PoW fee (~10 KAS) = ~10 KAS total
+    - **Discount Service** (`server/discount-service.ts`): Automatic whitelisting after course completion. Treasury signs discount inscription: `{p:"krc-721",op:"discount",tick:"KUDIPLOMA",to:walletAddress}`.
+    - **User-Signed Minting**: Users sign the mint inscription: `{p:"krc-721",op:"mint",tick:"KUDIPLOMA",to:walletAddress}`. Token IDs assigned randomly by indexer.
+    - **Key Files**: `server/mint-service.ts` (diploma reservation logic), `server/nft-metadata-manager.ts` (IPFS uploads), `server/pinata.ts` (Pinata API).
+    - **Diploma Designs**: 3 pre-generated cypherpunk-styled designs in `attached_assets/generated_images/`.
+    - **Deployment Guide**: See `MAINNET_DEPLOYMENT_RUNBOOK.md` for complete testnet/mainnet deployment instructions.
+    - **Legacy Endpoint**: `/api/certificates/:id/claim` is **DISABLED** (returns 410 Gone).
     - **Reservation Lifecycle**:
-        1. **Reserve** (`POST /api/nft/reserve/:certificateId`): Claims a tokenId from counter or recycled pool, creates reservation with 10-minute TTL, returns inscription JSON for user to sign.
-        2. **Signing** (`POST /api/nft/signing/:reservationId`): Updates reservation status to "signing" when user begins wallet interaction.
-        3. **Confirm** (`POST /api/nft/confirm/:reservationId`): Atomically updates reservation to "minted" and certificate nftStatus to "claimed" within a transaction.
-        4. **Cancel** (`POST /api/nft/cancel/:reservationId`): Atomically cancels reservation and recycles tokenId back to available pool.
-        5. **Expire** (automatic cleanup job): Runs every minute, expires old reservations and recycles their tokenIds.
-    - **Supply Tracking**: Each course has 1,000 NFTs (tokenIds 1-1000, 1001-2000, etc.). Counter tracks offsets 0-999 per course. Recycled tokenIds are stored in `available_token_pool` with unique constraint. Course is sold out only when counter >= 1000 AND recycled pool is empty.
-    - **Transaction Safety**: All multi-table operations use Postgres transactions with row-level locking (`FOR UPDATE`, `FOR UPDATE SKIP LOCKED`) to prevent race conditions during concurrent reservations.
+        1. **Reserve** (`POST /api/diploma/reserve`): Checks eligibility (all 16 courses), creates reservation with 10-minute TTL.
+        2. **Signing** (`POST /api/nft/signing/:reservationId`): Updates reservation status to "signing".
+        3. **Confirm** (`POST /api/nft/confirm/:reservationId`): Atomically updates reservation to "minted".
+        4. **Cancel** (`POST /api/nft/cancel/:reservationId`): Cancels reservation and recycles slot.
+        5. **Expire** (automatic cleanup job): Runs every minute, expires old reservations.
+    - **Supply Tracking**: Single collection with 1,000 max supply. Counter tracks minted count.
+    - **Indexer Info**: KaspacomDAGs has 12-24 hour delay for new collections (spam prevention).
 - **On-Chain Protocols**:
     - **Kasia Protocol**: Used for Q&A discussions and comments. Format: `1:bcast:{plain text content}`. This enables ecosystem compatibility with Kasia indexers (https://github.com/K-Kluster/Kasia) and cross-platform discovery. Metadata (lesson ID, author) is stored server-side. Implementation: `server/kasia-protocol.ts`.
     - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.

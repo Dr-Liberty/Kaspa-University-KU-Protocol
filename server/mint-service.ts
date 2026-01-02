@@ -1,6 +1,16 @@
 import { storage } from "./storage";
-import { courses as seedCourses } from "./seed-data";
 import type { MintReservation, Certificate } from "@shared/schema";
+
+/**
+ * Diploma Mint Service for Kaspa University
+ * 
+ * ARCHITECTURE: Single diploma collection (1,000 max supply)
+ * - Users earn ONE diploma NFT after completing ALL 16 courses
+ * - Token IDs are assigned randomly by the KRC-721 indexer
+ * - Whitelist-based pricing: 0 KAS royalty for course completers, 20,000 KAS for others
+ * 
+ * NOTE: Uses existing storage methods with "diploma" as a special courseId
+ */
 
 // Dynamic ticker based on network mode - MUST match krc721.ts defaults
 // All ticker defaults must be kept in sync across:
@@ -10,13 +20,15 @@ import type { MintReservation, Certificate } from "@shared/schema";
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
-    return process.env.KRC721_TESTNET_TICKER || "KUTEST6";
+    return process.env.KRC721_TESTNET_TICKER || "KUDIPLOMA";
   }
-  return process.env.KRC721_TICKER || "KUPROOF";
+  return process.env.KRC721_TICKER || "KUDIPLOMA";
 }
 
 const RESERVATION_TTL_MINUTES = 10;
-const MAX_TOKENS_PER_COURSE = 1000;
+const MAX_DIPLOMA_SUPPLY = 1000;
+const DIPLOMA_COURSE_ID = "diploma"; // Special courseId for diploma NFTs
+const REQUIRED_COURSES = 16;
 
 // KRC-721 Mint inscription format per official spec
 // Token IDs are assigned randomly by the indexer ("Full randomization of tokens during minting")
@@ -24,45 +36,60 @@ export interface MintInscriptionData {
   p: "krc-721";
   op: "mint";
   tick: string;
-  to?: string; // optional recipient address
+  to?: string;
 }
 
 export class MintService {
   private initialized = false;
-  private courseIndexMap: Map<string, number> = new Map();
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
+    
+    // Initialize diploma token counter
+    await storage.initializeCourseTokenCounter(DIPLOMA_COURSE_ID, 0);
+    
+    this.initialized = true;
+    console.log(`[MintService] Initialized for diploma collection`);
+  }
 
-    const courses = seedCourses;
-    for (let i = 0; i < courses.length; i++) {
-      const course = courses[i];
-      this.courseIndexMap.set(course.id, i);
-      await storage.initializeCourseTokenCounter(course.id, i);
+  /**
+   * Check if user is eligible for diploma (completed all 16 courses)
+   */
+  async checkDiplomaEligibility(walletAddress: string): Promise<{ 
+    eligible: boolean; 
+    completedCourses: number; 
+    requiredCourses: number;
+    certificates: Certificate[];
+  }> {
+    // Get user by wallet, then get their certificates
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return {
+        eligible: false,
+        completedCourses: 0,
+        requiredCourses: REQUIRED_COURSES,
+        certificates: []
+      };
     }
 
-    this.initialized = true;
-    console.log(`[MintService] Initialized with ${courses.length} courses`);
-  }
-
-  getCourseIndex(courseId: string): number | undefined {
-    return this.courseIndexMap.get(courseId);
-  }
-
-  calculateTokenIdRange(courseIndex: number): { start: number; end: number } {
-    const start = courseIndex * MAX_TOKENS_PER_COURSE + 1;
-    const end = (courseIndex + 1) * MAX_TOKENS_PER_COURSE;
-    return { start, end };
+    const certificates = await storage.getCertificatesByUser(user.id);
+    const uniqueCourses = new Set(certificates.map((c: Certificate) => c.courseId));
+    const completedCount = uniqueCourses.size;
+    
+    return {
+      eligible: completedCount >= REQUIRED_COURSES,
+      completedCourses: completedCount,
+      requiredCourses: REQUIRED_COURSES,
+      certificates
+    };
   }
 
   /**
    * Build mint inscription JSON per KRC-721 spec
-   * Token IDs are assigned randomly by the indexer (not specified in inscription)
-   * Reference: https://kaspa-krc721d.kaspa.com/docs#krc-721-specifications
    */
   buildInscriptionJson(walletAddress: string): MintInscriptionData {
     const ticker = getCollectionTicker();
-    console.log(`[MintService] Building inscription with ticker: ${ticker}, to: ${walletAddress}`);
+    console.log(`[MintService] Building diploma inscription with ticker: ${ticker}, to: ${walletAddress}`);
     
     return {
       p: "krc-721",
@@ -72,14 +99,25 @@ export class MintService {
     };
   }
 
-  async reserveMint(
-    certificateId: string,
-    courseId: string,
+  /**
+   * Reserve a diploma mint slot
+   * Only users who completed all 16 courses can mint
+   */
+  async reserveDiplomaMint(
     walletAddress: string
   ): Promise<{ reservation: MintReservation; inscriptionJson: string } | { error: string }> {
     await this.initialize();
 
-    const existingReservation = await storage.getActiveMintReservation(walletAddress, courseId);
+    // Check eligibility
+    const eligibility = await this.checkDiplomaEligibility(walletAddress);
+    if (!eligibility.eligible) {
+      return { 
+        error: `Complete all ${eligibility.requiredCourses} courses first. You have ${eligibility.completedCourses} completed.` 
+      };
+    }
+
+    // Check for existing active reservation
+    const existingReservation = await storage.getActiveMintReservation(walletAddress, DIPLOMA_COURSE_ID);
     if (existingReservation) {
       return {
         reservation: existingReservation,
@@ -87,21 +125,22 @@ export class MintService {
       };
     }
 
-    const existingMint = await storage.getMintReservationByCertificate(certificateId);
+    // Check if this wallet already has a minted diploma using deterministic certificateId
+    const diplomaCertificateId = `diploma-${walletAddress}`;
+    const existingMint = await storage.getMintReservationByCertificate(diplomaCertificateId);
     if (existingMint && existingMint.status === "minted") {
-      return { error: "Certificate already minted as NFT" };
+      return { error: "You already have a diploma NFT" };
     }
 
     await storage.expireOldReservations();
 
-    // Note: We still reserve a tokenId for internal tracking, but the indexer
-    // assigns tokenIds randomly. Our tokenId is for supply tracking only.
-    const tokenId = await storage.reserveTokenId(courseId);
-    if (tokenId === null) {
-      return { error: "Course NFT collection is sold out" };
+    // Reserve a token slot (internal tracking only)
+    const tokenId = await storage.reserveTokenId(DIPLOMA_COURSE_ID);
+    if (tokenId === null || tokenId >= MAX_DIPLOMA_SUPPLY) {
+      return { error: "Diploma collection is sold out" };
     }
 
-    // Build inscription per KRC-721 spec (no tokenId or meta fields)
+    // Build inscription per KRC-721 spec
     const inscriptionData = this.buildInscriptionJson(walletAddress);
     const inscriptionJson = JSON.stringify(inscriptionData);
 
@@ -109,8 +148,8 @@ export class MintService {
     expiresAt.setMinutes(expiresAt.getMinutes() + RESERVATION_TTL_MINUTES);
 
     const reservation = await storage.createMintReservation({
-      certificateId,
-      courseId,
+      certificateId: diplomaCertificateId,
+      courseId: DIPLOMA_COURSE_ID,
       walletAddress,
       tokenId,
       inscriptionJson,
@@ -118,7 +157,7 @@ export class MintService {
       expiresAt,
     });
 
-    console.log(`[MintService] Reserved for ${walletAddress} (course: ${courseId}, internal tokenId: ${tokenId})`);
+    console.log(`[MintService] Diploma reserved for ${walletAddress} (internal tokenId: ${tokenId})`);
 
     return { reservation, inscriptionJson };
   }
@@ -127,7 +166,6 @@ export class MintService {
     reservationId: string,
     mintTxHash: string
   ): Promise<{ reservation: MintReservation } | { error: string }> {
-    // Use atomic confirm that updates both reservation and certificate in a transaction
     const result = await storage.confirmMintReservation(reservationId, mintTxHash);
     
     if (!result.success) {
@@ -135,7 +173,7 @@ export class MintService {
     }
     
     if (result.reservation) {
-      console.log(`[MintService] Confirmed mint for tokenId ${result.reservation.tokenId}, txHash: ${mintTxHash}`);
+      console.log(`[MintService] Confirmed diploma mint, txHash: ${mintTxHash}`);
       return { reservation: result.reservation };
     }
     
@@ -150,26 +188,26 @@ export class MintService {
   }
 
   async cancelReservation(reservationId: string): Promise<boolean> {
-    // Use atomic cancel that also recycles tokenId within a transaction
     const result = await storage.cancelMintReservation(reservationId);
     
     if (result.success && result.reservation) {
-      console.log(`[MintService] Cancelled reservation ${reservationId}, recycled tokenId ${result.reservation.tokenId}`);
+      console.log(`[MintService] Cancelled reservation ${reservationId}`);
     }
     
     return result.success;
   }
 
-  async getMintStats(courseId: string): Promise<{
+  async getDiplomaStats(): Promise<{
     totalMinted: number;
-    totalAvailable: number;
+    totalSupply: number;
     remainingSupply: number;
   }> {
-    const minted = await storage.getMintedTokenCount(courseId);
+    await this.initialize();
+    const minted = await storage.getMintedTokenCount(DIPLOMA_COURSE_ID);
     return {
       totalMinted: minted,
-      totalAvailable: MAX_TOKENS_PER_COURSE,
-      remainingSupply: MAX_TOKENS_PER_COURSE - minted,
+      totalSupply: MAX_DIPLOMA_SUPPLY,
+      remainingSupply: MAX_DIPLOMA_SUPPLY - minted,
     };
   }
 
@@ -195,6 +233,14 @@ export class MintService {
     cleanup();
 
     return setInterval(cleanup, intervalMinutes * 60 * 1000);
+  }
+
+  getCollectionTicker(): string {
+    return getCollectionTicker();
+  }
+
+  getDiplomaCourseId(): string {
+    return DIPLOMA_COURSE_ID;
   }
 }
 
