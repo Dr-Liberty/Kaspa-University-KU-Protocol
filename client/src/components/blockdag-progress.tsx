@@ -69,14 +69,14 @@ function BlueCube({ node, delay }: { node: DAGNode; delay: number }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
       className={`
-        w-[56px] h-[56px] rounded-full flex items-center justify-center
+        w-[56px] h-[56px] rounded-lg flex items-center justify-center
         ${node.isMainChain 
           ? 'bg-sky-400 border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
           : 'bg-sky-400/80 border-2 border-sky-500/50'
         }
       `}
     >
-      <div className="w-3 h-3 rounded-full bg-sky-600/50" />
+      <div className="w-4 h-4 rounded-md bg-sky-600/50" />
     </motion.div>
   );
 }
@@ -87,9 +87,9 @@ function RedCube({ node, delay }: { node: DAGNode; delay: number }) {
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
-      className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
+      className="w-[56px] h-[56px] rounded-lg flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
     >
-      <div className="w-3 h-3 rounded-full bg-rose-600/50" />
+      <div className="w-4 h-4 rounded-md bg-rose-600/50" />
     </motion.div>
   );
 }
@@ -114,7 +114,7 @@ function CourseBlock({
     >
       <div 
         className={`
-          relative w-[56px] h-[56px] rounded-full overflow-hidden transition-all
+          relative w-[56px] h-[56px] rounded-lg overflow-hidden transition-all
           ${isMainChain 
             ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/30' 
             : 'border-2 border-sky-500/60'
