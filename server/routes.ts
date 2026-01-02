@@ -3834,5 +3834,252 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // K PROTOCOL PUBLIC COMMENTS ENDPOINTS
+  // ============================================
+
+  // Post a public comment on a lesson (K Protocol)
+  app.post("/api/lessons/:lessonId/comments", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { lessonId } = req.params;
+      const { content, authorAddress, authorPubkey, signature, parentTxHash } = req.body;
+      
+      if (!content || !authorAddress || !authorPubkey || !signature) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      if (content.length > 1000) {
+        return res.status(400).json({ error: "Comment too long (max 1000 characters)" });
+      }
+      
+      // Store the comment (blockchain submission handled client-side)
+      const comment = await storage.createKPublicComment({
+        lessonId,
+        authorAddress,
+        authorPubkey,
+        content,
+        signature,
+        parentTxHash,
+        isReply: !!parentTxHash,
+        txStatus: "pending",
+      });
+      
+      res.json({ success: true, comment });
+    } catch (error: any) {
+      console.error("[K Protocol] Failed to create comment:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Get public comments for a lesson
+  app.get("/api/lessons/:lessonId/comments", async (req: Request, res: Response) => {
+    try {
+      const { lessonId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const comments = await storage.getKPublicComments(lessonId, limit, offset);
+      
+      res.json({ comments, total: comments.length });
+    } catch (error: any) {
+      console.error("[K Protocol] Failed to fetch comments:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Update comment with transaction hash after blockchain submission
+  app.patch("/api/comments/:commentId/tx", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { commentId } = req.params;
+      const { txHash, txStatus } = req.body;
+      
+      if (!txHash) {
+        return res.status(400).json({ error: "Transaction hash required" });
+      }
+      
+      await storage.updateKPublicCommentTx(commentId, txHash, txStatus || "confirmed");
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[K Protocol] Failed to update comment tx:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // ============================================
+  // KASIA ENCRYPTED MESSAGING ENDPOINTS
+  // ============================================
+
+  // Start a new private conversation (initiate handshake)
+  app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { initiatorAddress, recipientAddress, initiatorAlias, handshakeTxHash } = req.body;
+      
+      if (!initiatorAddress || !recipientAddress) {
+        return res.status(400).json({ error: "Both addresses required" });
+      }
+      
+      // Generate deterministic conversation ID
+      const conversationId = generateConversationId(initiatorAddress, recipientAddress);
+      
+      // Check if conversation already exists
+      const existing = await storage.getConversation(conversationId);
+      if (existing) {
+        return res.json({ success: true, conversation: existing, existing: true });
+      }
+      
+      // Check if this is admin support conversation
+      const adminAddress = process.env.ADMIN_WALLET_ADDRESS || "";
+      const isAdminConversation = initiatorAddress === adminAddress || recipientAddress === adminAddress;
+      
+      const conversation = await storage.createConversation({
+        id: conversationId,
+        initiatorAddress,
+        recipientAddress,
+        status: "pending_handshake",
+        handshakeTxHash,
+        initiatorAlias,
+        isAdminConversation,
+      });
+      
+      res.json({ success: true, conversation, existing: false });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to create conversation:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Get conversations for a wallet address
+  app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.query.address as string;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address required" });
+      }
+      
+      const conversations = await storage.getConversationsForWallet(walletAddress);
+      
+      res.json({ conversations });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to fetch conversations:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Get a specific conversation
+  app.get("/api/conversations/:conversationId", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
+      
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      res.json({ conversation });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to fetch conversation:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Accept handshake (respond to conversation request)
+  app.post("/api/conversations/:conversationId/accept", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
+      const { responseTxHash, recipientAlias } = req.body;
+      
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (conversation.status !== "pending_handshake" && conversation.status !== "handshake_received") {
+        return res.status(400).json({ error: "Conversation already active" });
+      }
+      
+      await storage.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to accept handshake:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Send a private message in a conversation
+  app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
+      const { senderAddress, encryptedContent, txHash } = req.body;
+      
+      if (!senderAddress || !encryptedContent) {
+        return res.status(400).json({ error: "Sender address and encrypted content required" });
+      }
+      
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      // Verify sender is part of conversation
+      if (senderAddress !== conversation.initiatorAddress && senderAddress !== conversation.recipientAddress) {
+        return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+      }
+      
+      const message = await storage.createPrivateMessage({
+        conversationId,
+        senderAddress,
+        encryptedContent,
+        txHash,
+        txStatus: txHash ? "confirmed" : "pending",
+      });
+      
+      res.json({ success: true, message });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to send message:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Get messages in a conversation
+  app.get("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { conversationId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      const messages = await storage.getPrivateMessages(conversationId, limit, offset);
+      
+      res.json({ messages, conversation });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to fetch messages:", error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   return httpServer;
+}
+
+// Helper function to generate conversation ID
+function generateConversationId(address1: string, address2: string): string {
+  const sorted = [address1, address2].sort();
+  const combined = sorted.join(":");
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, "0");
 }

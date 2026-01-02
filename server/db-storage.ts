@@ -866,4 +866,145 @@ export class DbStorage implements IStorage {
         set: { imageIpfsUrl, imageIpfsHash, uploadedAt: new Date() },
       });
   }
+
+  // K Protocol public comments
+  async createKPublicComment(comment: {
+    lessonId: string;
+    authorAddress: string;
+    authorPubkey: string;
+    content: string;
+    signature: string;
+    parentTxHash?: string;
+    isReply?: boolean;
+    txStatus?: string;
+  }): Promise<{ id: string; lessonId: string; authorAddress: string; content: string; createdAt: Date }> {
+    const result = await db.insert(schema.kPublicComments)
+      .values({
+        lessonId: comment.lessonId,
+        authorAddress: comment.authorAddress,
+        authorPubkey: comment.authorPubkey,
+        content: comment.content,
+        signature: comment.signature,
+        parentTxHash: comment.parentTxHash || null,
+        isReply: comment.isReply || false,
+        txStatus: comment.txStatus || "pending",
+      })
+      .returning();
+    
+    const row = result[0];
+    return {
+      id: row.id,
+      lessonId: row.lessonId,
+      authorAddress: row.authorAddress,
+      content: row.content,
+      createdAt: row.createdAt,
+    };
+  }
+
+  async getKPublicComments(lessonId: string, limit: number = 50, offset: number = 0): Promise<any[]> {
+    const result = await db.select()
+      .from(schema.kPublicComments)
+      .where(eq(schema.kPublicComments.lessonId, lessonId))
+      .orderBy(desc(schema.kPublicComments.createdAt))
+      .limit(limit)
+      .offset(offset);
+    return result;
+  }
+
+  async updateKPublicCommentTx(commentId: string, txHash: string, txStatus: string): Promise<void> {
+    await db.update(schema.kPublicComments)
+      .set({ txHash, txStatus })
+      .where(eq(schema.kPublicComments.id, commentId));
+  }
+
+  // Kasia encrypted conversations
+  async createConversation(conversation: {
+    id: string;
+    initiatorAddress: string;
+    recipientAddress: string;
+    status: string;
+    handshakeTxHash?: string;
+    initiatorAlias?: string;
+    isAdminConversation?: boolean;
+  }): Promise<any> {
+    const result = await db.insert(schema.conversations)
+      .values({
+        id: conversation.id,
+        initiatorAddress: conversation.initiatorAddress,
+        recipientAddress: conversation.recipientAddress,
+        status: conversation.status,
+        handshakeTxHash: conversation.handshakeTxHash || null,
+        initiatorAlias: conversation.initiatorAlias || null,
+        isAdminConversation: conversation.isAdminConversation || false,
+      })
+      .returning();
+    return result[0];
+  }
+
+  async getConversation(id: string): Promise<any | undefined> {
+    const result = await db.select()
+      .from(schema.conversations)
+      .where(eq(schema.conversations.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getConversationsForWallet(walletAddress: string): Promise<any[]> {
+    const result = await db.select()
+      .from(schema.conversations)
+      .where(
+        sql`${schema.conversations.initiatorAddress} = ${walletAddress} OR ${schema.conversations.recipientAddress} = ${walletAddress}`
+      )
+      .orderBy(desc(schema.conversations.updatedAt));
+    return result;
+  }
+
+  async updateConversationStatus(id: string, status: string, responseTxHash?: string, recipientAlias?: string): Promise<void> {
+    const updates: Record<string, any> = {
+      status,
+      updatedAt: new Date(),
+    };
+    if (responseTxHash) updates.responseTxHash = responseTxHash;
+    if (recipientAlias) updates.recipientAlias = recipientAlias;
+    
+    await db.update(schema.conversations)
+      .set(updates)
+      .where(eq(schema.conversations.id, id));
+  }
+
+  // Private messages
+  async createPrivateMessage(message: {
+    conversationId: string;
+    senderAddress: string;
+    encryptedContent: string;
+    txHash?: string;
+    txStatus?: string;
+  }): Promise<any> {
+    const result = await db.insert(schema.privateMessages)
+      .values({
+        conversationId: message.conversationId,
+        senderAddress: message.senderAddress,
+        encryptedContent: message.encryptedContent,
+        txHash: message.txHash || null,
+        txStatus: message.txStatus || "pending",
+      })
+      .returning();
+    
+    // Update conversation's updatedAt
+    await db.update(schema.conversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(schema.conversations.id, message.conversationId));
+    
+    return result[0];
+  }
+
+  async getPrivateMessages(conversationId: string, limit: number = 50, offset: number = 0): Promise<any[]> {
+    const result = await db.select()
+      .from(schema.privateMessages)
+      .where(eq(schema.privateMessages.conversationId, conversationId))
+      .orderBy(schema.privateMessages.createdAt)
+      .limit(limit)
+      .offset(offset);
+    return result;
+  }
 }

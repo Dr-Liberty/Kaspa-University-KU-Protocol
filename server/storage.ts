@@ -102,6 +102,44 @@ export interface IStorage {
   // Course asset methods (pre-uploaded IPFS images)
   getCourseAsset(courseId: string): Promise<{ courseId: string; imageIpfsUrl: string; imageIpfsHash: string } | undefined>;
   saveCourseAsset(courseId: string, imageIpfsUrl: string, imageIpfsHash: string): Promise<void>;
+  
+  // K Protocol public comments
+  createKPublicComment(comment: {
+    lessonId: string;
+    authorAddress: string;
+    authorPubkey: string;
+    content: string;
+    signature: string;
+    parentTxHash?: string;
+    isReply?: boolean;
+    txStatus?: string;
+  }): Promise<{ id: string; lessonId: string; authorAddress: string; content: string; createdAt: Date }>;
+  getKPublicComments(lessonId: string, limit?: number, offset?: number): Promise<any[]>;
+  updateKPublicCommentTx(commentId: string, txHash: string, txStatus: string): Promise<void>;
+  
+  // Kasia encrypted conversations
+  createConversation(conversation: {
+    id: string;
+    initiatorAddress: string;
+    recipientAddress: string;
+    status: string;
+    handshakeTxHash?: string;
+    initiatorAlias?: string;
+    isAdminConversation?: boolean;
+  }): Promise<any>;
+  getConversation(id: string): Promise<any | undefined>;
+  getConversationsForWallet(walletAddress: string): Promise<any[]>;
+  updateConversationStatus(id: string, status: string, responseTxHash?: string, recipientAlias?: string): Promise<void>;
+  
+  // Private messages
+  createPrivateMessage(message: {
+    conversationId: string;
+    senderAddress: string;
+    encryptedContent: string;
+    txHash?: string;
+    txStatus?: string;
+  }): Promise<any>;
+  getPrivateMessages(conversationId: string, limit?: number, offset?: number): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -677,6 +715,126 @@ export class MemStorage implements IStorage {
 
   async saveCourseAsset(courseId: string, imageIpfsUrl: string, imageIpfsHash: string): Promise<void> {
     this.courseAssets.set(courseId, { courseId, imageIpfsUrl, imageIpfsHash });
+  }
+
+  // K Protocol public comments (in-memory)
+  private kPublicComments: Map<string, any> = new Map();
+
+  async createKPublicComment(comment: {
+    lessonId: string;
+    authorAddress: string;
+    authorPubkey: string;
+    content: string;
+    signature: string;
+    parentTxHash?: string;
+    isReply?: boolean;
+    txStatus?: string;
+  }): Promise<{ id: string; lessonId: string; authorAddress: string; content: string; createdAt: Date }> {
+    const id = randomUUID();
+    const newComment = {
+      id,
+      ...comment,
+      votes: 0,
+      createdAt: new Date(),
+    };
+    this.kPublicComments.set(id, newComment);
+    return newComment;
+  }
+
+  async getKPublicComments(lessonId: string, limit: number = 50, offset: number = 0): Promise<any[]> {
+    return Array.from(this.kPublicComments.values())
+      .filter(c => c.lessonId === lessonId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(offset, offset + limit);
+  }
+
+  async updateKPublicCommentTx(commentId: string, txHash: string, txStatus: string): Promise<void> {
+    const comment = this.kPublicComments.get(commentId);
+    if (comment) {
+      this.kPublicComments.set(commentId, { ...comment, txHash, txStatus });
+    }
+  }
+
+  // Kasia encrypted conversations (in-memory)
+  private conversations: Map<string, any> = new Map();
+
+  async createConversation(conversation: {
+    id: string;
+    initiatorAddress: string;
+    recipientAddress: string;
+    status: string;
+    handshakeTxHash?: string;
+    initiatorAlias?: string;
+    isAdminConversation?: boolean;
+  }): Promise<any> {
+    const now = new Date();
+    const newConversation = {
+      ...conversation,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.conversations.set(conversation.id, newConversation);
+    return newConversation;
+  }
+
+  async getConversation(id: string): Promise<any | undefined> {
+    return this.conversations.get(id);
+  }
+
+  async getConversationsForWallet(walletAddress: string): Promise<any[]> {
+    return Array.from(this.conversations.values())
+      .filter(c => c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  async updateConversationStatus(id: string, status: string, responseTxHash?: string, recipientAlias?: string): Promise<void> {
+    const conversation = this.conversations.get(id);
+    if (conversation) {
+      this.conversations.set(id, {
+        ...conversation,
+        status,
+        responseTxHash: responseTxHash || conversation.responseTxHash,
+        recipientAlias: recipientAlias || conversation.recipientAlias,
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  // Private messages (in-memory)
+  private privateMessages: Map<string, any> = new Map();
+
+  async createPrivateMessage(message: {
+    conversationId: string;
+    senderAddress: string;
+    encryptedContent: string;
+    txHash?: string;
+    txStatus?: string;
+  }): Promise<any> {
+    const id = randomUUID();
+    const newMessage = {
+      id,
+      ...message,
+      createdAt: new Date(),
+    };
+    this.privateMessages.set(id, newMessage);
+    
+    // Update conversation's updatedAt
+    const conversation = this.conversations.get(message.conversationId);
+    if (conversation) {
+      this.conversations.set(message.conversationId, {
+        ...conversation,
+        updatedAt: new Date(),
+      });
+    }
+    
+    return newMessage;
+  }
+
+  async getPrivateMessages(conversationId: string, limit: number = 50, offset: number = 0): Promise<any[]> {
+    return Array.from(this.privateMessages.values())
+      .filter(m => m.conversationId === conversationId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .slice(offset, offset + limit);
   }
 }
 
