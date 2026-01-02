@@ -60,17 +60,17 @@ function DecorativeCube({ delay, isActive = false }: { delay: number; isActive?:
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: isActive ? 0.9 : 0.4, scale: 1 }}
+      animate={{ opacity: isActive ? 0.9 : 0.5, scale: 1 }}
       transition={{ delay, duration: 0.4 }}
       className={`
-        w-12 h-12 rounded-md flex items-center justify-center
+        w-20 h-20 rounded-lg flex items-center justify-center
         ${isActive 
           ? 'bg-gradient-to-br from-primary/60 to-primary/30 border-2 border-primary/50 shadow-lg shadow-primary/20' 
           : 'bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20'
         }
       `}
     >
-      <div className={`w-3 h-3 rounded-sm ${isActive ? 'bg-primary/80' : 'bg-primary/40'}`} />
+      <div className={`w-5 h-5 rounded-md ${isActive ? 'bg-primary/80' : 'bg-primary/40'}`} />
     </motion.div>
   );
 }
@@ -93,7 +93,7 @@ function CourseBlock({
     >
       <div 
         className={`
-          relative w-12 h-12 rounded-md overflow-hidden border-2 transition-all
+          relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all
           ${isCompleted 
             ? 'border-primary shadow-lg shadow-primary/30' 
             : 'border-border/50 opacity-70 grayscale'
@@ -108,7 +108,7 @@ function CourseBlock({
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center">
-            <span className="text-xs font-bold text-primary-foreground">
+            <span className="text-lg font-bold text-primary-foreground">
               {course.title.charAt(0)}
             </span>
           </div>
@@ -116,38 +116,36 @@ function CourseBlock({
         
         {isCompleted && (
           <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5 text-white drop-shadow-lg" />
+            <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
           </div>
         )}
         
         {!isCompleted && (
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-            <Lock className="w-4 h-4 text-muted-foreground" />
+            <Lock className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
       </div>
       
-      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-8 z-10 bg-popover border rounded-md px-2 py-1 shadow-lg whitespace-nowrap">
-        <p className="text-xs font-medium">{course.title}</p>
+      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-10 z-20 bg-popover border rounded-md px-3 py-1.5 shadow-lg whitespace-nowrap max-w-48">
+        <p className="text-xs font-medium truncate">{course.title}</p>
       </div>
     </motion.div>
   );
 }
 
-function ConnectionLine({ from, to, isActive }: { from: string; to: string; isActive: boolean }) {
-  return (
-    <svg 
-      className="absolute inset-0 pointer-events-none" 
-      style={{ zIndex: 0 }}
-    >
-      <defs>
-        <linearGradient id={`lineGrad-${from}-${to}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={isActive ? "hsl(var(--primary))" : "hsl(var(--border))"} />
-          <stop offset="100%" stopColor={isActive ? "hsl(var(--primary) / 0.5)" : "hsl(var(--border) / 0.5)"} />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function shuffleWithSeed<T>(array: T[], seed: number): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 export function BlockDAGProgress({ courses, certificates, walletConnected }: BlockDAGProgressProps) {
@@ -200,58 +198,136 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
 
   const dagRows = useMemo(() => {
     const rows: Array<{
-      items: Array<{ type: 'course' | 'decorative'; course?: Course; isCompleted?: boolean }>;
+      items: Array<{ type: 'course' | 'decorative'; course?: Course; isCompleted?: boolean; id: string }>;
+      rowIndex: number;
     }> = [];
     
     let courseIndex = 0;
-    let rowIndex = 0;
+    const totalCourses = courses.length;
     
-    while (courseIndex < courses.length) {
-      const row: typeof rows[0] = { items: [] };
+    const rowSizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let rowIdx = 0;
+    
+    while (courseIndex < totalCourses && rowIdx < rowSizes.length) {
+      const rowSize = rowSizes[rowIdx];
+      const row: typeof rows[0] = { items: [], rowIndex: rowIdx };
       
-      if (rowIndex === 0) {
+      const coursesInThisRow = Math.min(
+        Math.ceil(rowSize / 2),
+        totalCourses - courseIndex
+      );
+      
+      const decorativeCount = rowSize - coursesInThisRow;
+      
+      const items: typeof row.items = [];
+      
+      for (let i = 0; i < coursesInThisRow && courseIndex < totalCourses; i++) {
         const course = courses[courseIndex];
-        row.items.push({ 
-          type: 'course', 
-          course, 
-          isCompleted: completedCourseIds.has(course.id) 
+        items.push({
+          type: 'course',
+          course,
+          isCompleted: completedCourseIds.has(course.id),
+          id: course.id
         });
         courseIndex++;
-      } else if (rowIndex === 1) {
-        if (courseIndex < courses.length) {
-          const course = courses[courseIndex];
-          row.items.push({ 
-            type: 'course', 
-            course, 
-            isCompleted: completedCourseIds.has(course.id) 
-          });
-          courseIndex++;
-        }
-        row.items.push({ type: 'decorative' });
-      } else {
-        const numDecorative = Math.min(rowIndex - 1, 3);
-        
-        if (courseIndex < courses.length) {
-          const course = courses[courseIndex];
-          row.items.push({ 
-            type: 'course', 
-            course, 
-            isCompleted: completedCourseIds.has(course.id) 
-          });
-          courseIndex++;
-        }
-        
-        for (let i = 0; i < numDecorative; i++) {
-          row.items.push({ type: 'decorative' });
-        }
       }
       
+      for (let i = 0; i < decorativeCount; i++) {
+        items.push({
+          type: 'decorative',
+          id: `dec-${rowIdx}-${i}`
+        });
+      }
+      
+      row.items = shuffleWithSeed(items, rowIdx * 17 + 42);
       rows.push(row);
-      rowIndex++;
+      rowIdx++;
+    }
+    
+    while (courseIndex < totalCourses) {
+      const rowSize = Math.min(10, totalCourses - courseIndex + 4);
+      const row: typeof rows[0] = { items: [], rowIndex: rowIdx };
+      
+      const coursesInThisRow = Math.min(rowSize - 2, totalCourses - courseIndex);
+      const decorativeCount = rowSize - coursesInThisRow;
+      
+      const items: typeof row.items = [];
+      
+      for (let i = 0; i < coursesInThisRow && courseIndex < totalCourses; i++) {
+        const course = courses[courseIndex];
+        items.push({
+          type: 'course',
+          course,
+          isCompleted: completedCourseIds.has(course.id),
+          id: course.id
+        });
+        courseIndex++;
+      }
+      
+      for (let i = 0; i < decorativeCount; i++) {
+        items.push({
+          type: 'decorative',
+          id: `dec-${rowIdx}-${i}`
+        });
+      }
+      
+      row.items = shuffleWithSeed(items, rowIdx * 17 + 42);
+      rows.push(row);
+      rowIdx++;
     }
     
     return rows;
   }, [courses, completedCourseIds]);
+
+  const connectionLines = useMemo(() => {
+    const lines: Array<{
+      fromRow: number;
+      fromIdx: number;
+      toRow: number;
+      toIdx: number;
+      isActive: boolean;
+    }> = [];
+    
+    for (let rowIdx = 1; rowIdx < dagRows.length; rowIdx++) {
+      const currentRow = dagRows[rowIdx];
+      const prevRow = dagRows[rowIdx - 1];
+      const prevPrevRow = rowIdx > 1 ? dagRows[rowIdx - 2] : null;
+      
+      currentRow.items.forEach((item, itemIdx) => {
+        const numConnections = Math.floor(seededRandom(rowIdx * 100 + itemIdx) * 2) + 1;
+        
+        for (let c = 0; c < numConnections && c < prevRow.items.length; c++) {
+          const prevIdx = Math.floor(seededRandom(rowIdx * 50 + itemIdx * 10 + c) * prevRow.items.length);
+          const prevItem = prevRow.items[prevIdx];
+          const isActive = prevItem.type === 'course' && (prevItem.isCompleted ?? false);
+          
+          lines.push({
+            fromRow: rowIdx - 1,
+            fromIdx: prevIdx,
+            toRow: rowIdx,
+            toIdx: itemIdx,
+            isActive
+          });
+        }
+        
+        if (prevPrevRow && seededRandom(rowIdx * 200 + itemIdx) > 0.6) {
+          const skipIdx = Math.floor(seededRandom(rowIdx * 300 + itemIdx) * prevPrevRow.items.length);
+          const skipItem = prevPrevRow.items[skipIdx];
+          const isActive = skipItem.type === 'course' && (skipItem.isCompleted ?? false);
+          
+          lines.push({
+            fromRow: rowIdx - 2,
+            fromIdx: skipIdx,
+            toRow: rowIdx,
+            toIdx: itemIdx,
+            isActive
+          });
+        }
+      });
+    }
+    
+    return lines;
+  }, [dagRows]);
 
   if (!walletConnected) {
     return (
@@ -268,6 +344,10 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       </Card>
     );
   }
+
+  const CUBE_SIZE = 80;
+  const GAP = 12;
+  const ROW_HEIGHT = CUBE_SIZE + 40;
 
   return (
     <Card className="overflow-hidden">
@@ -294,87 +374,86 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             <Progress value={progressPercent} className="h-2" />
           </div>
 
-          <div className="relative py-4">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute left-4 top-0 z-20"
+          <div className="relative overflow-x-auto pb-4">
+            <div 
+              className="relative mx-auto"
+              style={{ 
+                minHeight: dagRows.length * ROW_HEIGHT + 60,
+                width: 'fit-content',
+                minWidth: '100%'
+              }}
             >
-              <KaspaCoinAvatar className="w-10 h-10" />
-              <motion.div
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -inset-1 rounded-full border-2 border-primary/30"
-              />
-            </motion.div>
+              <svg 
+                className="absolute inset-0 pointer-events-none"
+                style={{ 
+                  width: '100%', 
+                  height: '100%',
+                  overflow: 'visible'
+                }}
+              >
+                {connectionLines.map((line, idx) => {
+                  const fromRow = dagRows[line.fromRow];
+                  const toRow = dagRows[line.toRow];
+                  
+                  const fromRowWidth = fromRow.items.length * (CUBE_SIZE + GAP) - GAP;
+                  const toRowWidth = toRow.items.length * (CUBE_SIZE + GAP) - GAP;
+                  
+                  const fromX = (line.fromIdx * (CUBE_SIZE + GAP)) + CUBE_SIZE / 2 + (500 - fromRowWidth) / 2;
+                  const fromY = line.fromRow * ROW_HEIGHT + CUBE_SIZE + 20;
+                  
+                  const toX = (line.toIdx * (CUBE_SIZE + GAP)) + CUBE_SIZE / 2 + (500 - toRowWidth) / 2;
+                  const toY = line.toRow * ROW_HEIGHT + 20;
+                  
+                  const midY = (fromY + toY) / 2;
+                  
+                  return (
+                    <path
+                      key={idx}
+                      d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
+                      fill="none"
+                      stroke={line.isActive ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                      strokeWidth={line.isActive ? 2 : 1}
+                      opacity={line.isActive ? 0.7 : 0.3}
+                    />
+                  );
+                })}
+              </svg>
 
-            <div className="ml-16 space-y-4">
               {dagRows.map((row, rowIdx) => {
-                const totalWidth = row.items.length;
-                const justifyClass = totalWidth === 1 ? 'justify-start' : 'justify-start';
+                const rowWidth = row.items.length * (CUBE_SIZE + GAP) - GAP;
                 
                 return (
-                  <div key={rowIdx} className="relative">
-                    {rowIdx > 0 && (
-                      <svg 
-                        className="absolute -top-4 left-0 w-full h-4 overflow-visible"
-                        style={{ zIndex: 0 }}
-                      >
-                        {row.items.map((item, itemIdx) => {
-                          const prevRow = dagRows[rowIdx - 1];
-                          const prevItemCount = prevRow.items.length;
-                          
-                          const xEnd = 24 + itemIdx * 64;
-                          
-                          for (let prevIdx = 0; prevIdx < prevItemCount; prevIdx++) {
-                            const xStart = 24 + prevIdx * 64;
-                            const prevItem = prevRow.items[prevIdx];
-                            const isActive = prevItem.type === 'course' && prevItem.isCompleted;
-                            
-                            return (
-                              <line
-                                key={`${rowIdx}-${itemIdx}-${prevIdx}`}
-                                x1={xStart}
-                                y1={0}
-                                x2={xEnd}
-                                y2={16}
-                                stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--border))"}
-                                strokeWidth={isActive ? 2 : 1}
-                                opacity={isActive ? 0.8 : 0.4}
-                              />
-                            );
-                          }
-                          return null;
-                        })}
-                      </svg>
-                    )}
-                    
-                    <div className={`flex gap-4 ${justifyClass}`}>
-                      {row.items.map((item, itemIdx) => {
-                        const delay = rowIdx * 0.15 + itemIdx * 0.08;
-                        
-                        if (item.type === 'course' && item.course) {
-                          return (
-                            <CourseBlock
-                              key={item.course.id}
-                              course={item.course}
-                              isCompleted={item.isCompleted ?? false}
-                              delay={delay}
-                            />
-                          );
-                        } else {
-                          const prevRowHasCompletedCourse = rowIdx > 0 && 
-                            dagRows[rowIdx - 1].items.some(i => i.type === 'course' && i.isCompleted);
-                          return (
-                            <DecorativeCube 
-                              key={`dec-${rowIdx}-${itemIdx}`} 
-                              delay={delay}
-                              isActive={prevRowHasCompletedCourse}
-                            />
-                          );
-                        }
-                      })}
-                    </div>
+                  <div
+                    key={rowIdx}
+                    className="absolute left-1/2 -translate-x-1/2 flex gap-3"
+                    style={{
+                      top: rowIdx * ROW_HEIGHT + 20,
+                    }}
+                  >
+                    {row.items.map((item, itemIdx) => {
+                      const delay = rowIdx * 0.1 + itemIdx * 0.05;
+                      
+                      if (item.type === 'course' && item.course) {
+                        return (
+                          <CourseBlock
+                            key={item.id}
+                            course={item.course}
+                            isCompleted={item.isCompleted ?? false}
+                            delay={delay}
+                          />
+                        );
+                      } else {
+                        const isActive = rowIdx > 0 && 
+                          dagRows[rowIdx - 1].items.some(i => i.type === 'course' && i.isCompleted);
+                        return (
+                          <DecorativeCube 
+                            key={item.id}
+                            delay={delay}
+                            isActive={isActive}
+                          />
+                        );
+                      }
+                    })}
                   </div>
                 );
               })}
