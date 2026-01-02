@@ -43,9 +43,9 @@ interface DAGConnection {
   isAnticone: boolean;
 }
 
-const CUBE_SIZE = 168;
-const GAP = 16;
-const ROW_HEIGHT = CUBE_SIZE + 48;
+const CUBE_SIZE = 72;
+const GAP = 10;
+const ROW_HEIGHT = CUBE_SIZE + 28;
 const MAX_COLS = 12;
 
 function seededRandom(seed: number): number {
@@ -68,9 +68,9 @@ function BlueCube({ node, delay }: { node: DAGNode; delay: number }) {
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
-      className="w-[168px] h-[168px] rounded-xl flex items-center justify-center bg-sky-400/80 border-2 border-sky-500/50"
+      className="w-[72px] h-[72px] rounded-lg flex items-center justify-center bg-sky-400/80 border-2 border-sky-500/50"
     >
-      <div className="w-10 h-10 rounded-lg bg-sky-600/50" />
+      <div className="w-5 h-5 rounded bg-sky-600/50" />
     </motion.div>
   );
 }
@@ -81,9 +81,9 @@ function RedCube({ node, delay }: { node: DAGNode; delay: number }) {
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.3 }}
-      className="w-[168px] h-[168px] rounded-xl flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
+      className="w-[72px] h-[72px] rounded-lg flex items-center justify-center bg-rose-400/90 border-2 border-rose-500/60"
     >
-      <div className="w-10 h-10 rounded-lg bg-rose-600/50" />
+      <div className="w-5 h-5 rounded bg-rose-600/50" />
     </motion.div>
   );
 }
@@ -95,14 +95,14 @@ function DiplomaCube({ delay, isComplete }: { delay: number; isComplete: boolean
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.4 }}
       className={`
-        w-[168px] h-[168px] rounded-xl flex items-center justify-center
+        w-[72px] h-[72px] rounded-lg flex items-center justify-center
         ${isComplete 
-          ? 'bg-gradient-to-br from-sky-400 to-blue-600 border-[4px] border-blue-500 shadow-xl shadow-blue-500/40' 
+          ? 'bg-gradient-to-br from-sky-400 to-blue-600 border-[3px] border-blue-500 shadow-lg shadow-blue-500/40' 
           : 'bg-slate-700/80 border-2 border-slate-600'
         }
       `}
     >
-      <GraduationCap className={`w-16 h-16 ${isComplete ? 'text-white' : 'text-slate-500'}`} />
+      <GraduationCap className={`w-8 h-8 ${isComplete ? 'text-white' : 'text-slate-500'}`} />
     </motion.div>
   );
 }
@@ -127,9 +127,9 @@ function CourseBlock({
     >
       <div 
         className={`
-          relative w-[168px] h-[168px] rounded-xl overflow-hidden transition-all
+          relative w-[72px] h-[72px] rounded-lg overflow-hidden transition-all
           ${isMainChain 
-            ? 'border-[4px] border-blue-600 shadow-xl shadow-blue-500/40' 
+            ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/40' 
             : 'border-2 border-sky-500/60'
           }
         `}
@@ -142,7 +142,7 @@ function CourseBlock({
           />
         ) : (
           <div className="w-full h-full bg-sky-400 flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">
+            <span className="text-lg font-bold text-white">
               {course.title.charAt(0)}
             </span>
           </div>
@@ -150,13 +150,13 @@ function CourseBlock({
         
         {isCompleted && (
           <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
-            <CheckCircle2 className="w-16 h-16 text-white drop-shadow-lg" />
+            <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
           </div>
         )}
       </div>
       
-      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-14 z-20 bg-popover border rounded-md px-4 py-2 shadow-lg whitespace-nowrap max-w-64">
-        <p className="text-sm font-medium truncate">{course.title}</p>
+      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-10 z-20 bg-popover border rounded-md px-2 py-1 shadow-lg whitespace-nowrap max-w-48">
+        <p className="text-xs font-medium truncate">{course.title}</p>
       </div>
     </motion.div>
   );
@@ -288,13 +288,15 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       rowIdx++;
     }
     
-    // Find course nodes for main chain connections
-    const courseNodes = allNodes.filter(n => n.type === 'course');
-    
+    // Build connections ensuring every course connects to at least one other course
     for (let r = 1; r < rowsData.length; r++) {
       const currentRow = rowsData[r];
       const prevRow = rowsData[r - 1];
       const prevPrevRow = r > 1 ? rowsData[r - 2] : null;
+      
+      // Find courses in previous rows for guaranteed connections
+      const prevRowCourses = prevRow.filter(n => n.type === 'course');
+      const prevPrevRowCourses = prevPrevRow?.filter(n => n.type === 'course') || [];
       
       currentRow.forEach((node, nodeIdx) => {
         const numParents = Math.min(
@@ -304,6 +306,35 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         
         const parentIndices = new Set<number>();
         
+        // If this is a course, first ensure connection to a course in prev row (or prev-prev if none in prev)
+        if (node.type === 'course') {
+          if (prevRowCourses.length > 0) {
+            // Connect to nearest course in previous row
+            const courseIdx = Math.floor(seededRandom(r * 777 + nodeIdx) * prevRowCourses.length);
+            const courseParent = prevRowCourses[courseIdx];
+            const parentRowIdx = prevRow.findIndex(n => n.id === courseParent.id);
+            if (parentRowIdx >= 0) {
+              parentIndices.add(parentRowIdx);
+            }
+          } else if (prevPrevRowCourses.length > 0) {
+            // No courses in prev row, connect to prev-prev row course
+            const courseIdx = Math.floor(seededRandom(r * 888 + nodeIdx) * prevPrevRowCourses.length);
+            const skipCourse = prevPrevRowCourses[courseIdx];
+            
+            allConnections.push({
+              fromId: skipCourse.id,
+              toId: node.id,
+              fromX: skipCourse.x,
+              fromY: skipCourse.y + CUBE_SIZE / 2,
+              toX: node.x,
+              toY: node.y - CUBE_SIZE / 2,
+              isMainChain: true,
+              isAnticone: false
+            });
+          }
+        }
+        
+        // Add additional random parents
         for (let p = 0; p < numParents * 2 && parentIndices.size < numParents; p++) {
           const offset = Math.floor(seededRandom(r * 25 + nodeIdx * 5 + p) * 3) - 1;
           let targetIdx = Math.max(0, Math.min(prevRow.length - 1, nodeIdx + offset));
@@ -338,7 +369,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
           });
         });
         
-        if (prevPrevRow && seededRandom(r * 200 + nodeIdx) > 0.5) {
+        // Add row-skipping connections for non-course nodes
+        if (prevPrevRow && node.type !== 'course' && seededRandom(r * 200 + nodeIdx) > 0.5) {
           const skipCount = Math.floor(seededRandom(r * 150 + nodeIdx) * 2) + 1;
           
           for (let s = 0; s < skipCount && s < prevPrevRow.length; s++) {
@@ -346,8 +378,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
             const skipParent = prevPrevRow[skipParentIdx];
             
             // Skip red connections to course blocks
-            if (node.type === 'course' && skipParent.type === 'red') continue;
-            if (skipParent.type === 'course' && node.type === 'red') continue;
+            if (skipParent.type === 'course') continue;
             
             const isAnticoneConnection = node.type === 'red' || skipParent.type === 'red';
             
