@@ -18,13 +18,13 @@ function getCollectionTicker(): string {
 const RESERVATION_TTL_MINUTES = 10;
 const MAX_TOKENS_PER_COURSE = 1000;
 
+// KRC-721 Mint inscription format per official spec
+// Token IDs are assigned randomly by the indexer ("Full randomization of tokens during minting")
 export interface MintInscriptionData {
-  p: string;
-  op: string;
+  p: "krc-721";
+  op: "mint";
   tick: string;
-  to: string;
-  tokenId?: number;
-  meta?: string; // IPFS URL to metadata JSON (preferred for wallet display)
+  to?: string; // optional recipient address
 }
 
 export class MintService {
@@ -56,40 +56,26 @@ export class MintService {
   }
 
   /**
-   * Build mint inscription JSON
-   * Includes meta field pointing to IPFS metadata for wallet display
-   * Per KRC-721 spec, meta field in mint inscription points to token-specific metadata
+   * Build mint inscription JSON per KRC-721 spec
+   * Token IDs are assigned randomly by the indexer (not specified in inscription)
+   * Reference: https://kaspa-krc721d.kaspa.com/docs#krc-721-specifications
    */
-  buildInscriptionJson(
-    walletAddress: string,
-    tokenId: number,
-    metadataIpfsUrl?: string
-  ): MintInscriptionData {
+  buildInscriptionJson(walletAddress: string): MintInscriptionData {
     const ticker = getCollectionTicker();
-    console.log(`[MintService] Building inscription with ticker: ${ticker}, meta: ${metadataIpfsUrl || "none"}`);
+    console.log(`[MintService] Building inscription with ticker: ${ticker}, to: ${walletAddress}`);
     
-    const inscription: MintInscriptionData = {
+    return {
       p: "krc-721",
       op: "mint",
       tick: ticker,
       to: walletAddress,
-      tokenId: tokenId,
     };
-    
-    // Add meta field for wallet display if IPFS URL is provided
-    // This allows wallets to fetch and display the NFT image
-    if (metadataIpfsUrl) {
-      inscription.meta = metadataIpfsUrl;
-    }
-    
-    return inscription;
   }
 
   async reserveMint(
     certificateId: string,
     courseId: string,
-    walletAddress: string,
-    metadataIpfsUrl?: string
+    walletAddress: string
   ): Promise<{ reservation: MintReservation; inscriptionJson: string } | { error: string }> {
     await this.initialize();
 
@@ -108,17 +94,15 @@ export class MintService {
 
     await storage.expireOldReservations();
 
+    // Note: We still reserve a tokenId for internal tracking, but the indexer
+    // assigns tokenIds randomly. Our tokenId is for supply tracking only.
     const tokenId = await storage.reserveTokenId(courseId);
     if (tokenId === null) {
       return { error: "Course NFT collection is sold out" };
     }
 
-    // Build inscription with meta field for wallet display
-    const inscriptionData = this.buildInscriptionJson(
-      walletAddress,
-      tokenId,
-      metadataIpfsUrl
-    );
+    // Build inscription per KRC-721 spec (no tokenId or meta fields)
+    const inscriptionData = this.buildInscriptionJson(walletAddress);
     const inscriptionJson = JSON.stringify(inscriptionData);
 
     const expiresAt = new Date();
@@ -134,7 +118,7 @@ export class MintService {
       expiresAt,
     });
 
-    console.log(`[MintService] Reserved tokenId ${tokenId} for ${walletAddress} (course: ${courseId})`);
+    console.log(`[MintService] Reserved for ${walletAddress} (course: ${courseId}, internal tokenId: ${tokenId})`);
 
     return { reservation, inscriptionJson };
   }

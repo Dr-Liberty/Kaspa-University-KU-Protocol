@@ -40,12 +40,13 @@ interface DiscountResult {
   error?: string;
 }
 
+// KRC-721 Discount inscription format per official spec
+// No discountFee field - discount simply whitelists the address
 interface DiscountInscription {
-  p: string;
-  op: string;
+  p: "krc-721";
+  op: "discount";
   tick: string;
-  to: string;
-  discountFee: string;
+  to?: string; // recipient address to whitelist
 }
 
 class DiscountService {
@@ -237,7 +238,8 @@ class DiscountService {
   }
 
   /**
-   * Build the discount inscription JSON
+   * Build the discount inscription JSON per KRC-721 spec
+   * Reference: https://kaspa-krc721d.kaspa.com/docs#krc-721-specifications
    */
   buildDiscountInscription(walletAddress: string): DiscountInscription {
     return {
@@ -245,7 +247,6 @@ class DiscountService {
       op: "discount",
       tick: getCollectionTicker(),
       to: walletAddress,
-      discountFee: DISCOUNT_FEE_SOMPI.toString(),
     };
   }
 
