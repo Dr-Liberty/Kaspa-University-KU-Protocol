@@ -4300,7 +4300,9 @@ export async function registerRoutes(
         status: conversationStatus,
       });
       
-      // If handshakeTxHash provided, record it in the indexer (with on-chain verification)
+      // If handshakeTxHash provided, record it in the indexer
+      // Skip immediate verification - tx was just broadcast and won't be indexed yet
+      // The periodic sync from public Kasia indexer will confirm it later
       if (handshakeTxHash) {
         await kasiaIndexer.recordHandshake({
           txHash: handshakeTxHash,
@@ -4310,7 +4312,7 @@ export async function registerRoutes(
           senderAlias: initiatorAlias || "User",
           isResponse: false,
           timestamp: new Date(),
-        });
+        }, true); // Skip verification for freshly broadcast transactions
       }
       
       if (isAdminConversation) {
@@ -4408,7 +4410,9 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not pending" });
       }
       
-      // Record response handshake in indexer (with on-chain verification)
+      // Record response handshake in indexer
+      // Skip immediate verification - tx was just broadcast and won't be indexed yet
+      // The periodic sync from public Kasia indexer will confirm it later
       if (responseTxHash) {
         await kasiaIndexer.recordHandshake({
           txHash: responseTxHash,
@@ -4418,7 +4422,7 @@ export async function registerRoutes(
           senderAlias: recipientAlias || "User",
           isResponse: true,
           timestamp: new Date(),
-        });
+        }, true); // Skip verification for freshly broadcast transactions
       }
       
       // Update conversation status to active

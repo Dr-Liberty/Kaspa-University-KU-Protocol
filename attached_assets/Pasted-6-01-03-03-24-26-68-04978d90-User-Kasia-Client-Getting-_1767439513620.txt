@@ -1,0 +1,62 @@
+6-01-03 03:24:26.68
+04978d90
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 03:24:26.68
+04978d90
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 03:24:26.68
+04978d90
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 03:24:27.48
+04978d90
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 03:24:27.68
+04978d90
+User
+[Kasia Client] Found 0 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 03:24:27.68
+04978d90
+User
+[Kasia Client] Found 0 conversations (0 active)
+2026-01-03 03:24:27.78
+8edef361
+User
+11:24:27 AM [express] POST /api/kasia/handshake/prepare 200 in 158ms :: {"success":true,"existing":false,"conversationId":"000000002064321b","inscriptionJson":"{\"p\":\"ciph_msg\",\"op\":\"handshake\",\"data\":\"636970685f6d73673a313a68616e647368616b653a303030303030303032303634333231623a6b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c3a416e6f6e796d6f75733a6d6a793774706674\"}","payloadHex":"636970685f6d73673a313a68616e647368616b653a303030303030303032303634333231623a6b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c3a416e6f6e796d6f75733a6d6a793774706674","messageToSign":"kasia:handshake:000000002064321b:kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel:1767439467785","protocol":"ciph_msg:1:handshake","metadata":{"senderAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","senderAlias":"Anonymous"}}
+2026-01-03 03:24:31.09
+8edef361
+User
+[Kasia Indexer] Persisting conversation 000000002064321b with status=pending_handshake, isAdmin=false
+2026-01-03 03:24:31.09
+8edef361
+User
+[Kasia] Checking admin conversation: auth=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrmzgsh8chv72q..., support=kaspa:qrewk7s6gnzuzx..., isAdmin=false
+2026-01-03 03:24:31.12
+8edef361
+User
+[Kasia Indexer] Successfully persisted conversation 000000002064321b
+2026-01-03 03:24:31.25
+8edef361
+User
+11:24:31 AM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-03 03:24:31.29
+8edef361
+User
+[Kaspa] RPC tx verification failed: undefined
+2026-01-03 03:24:31.39
+8edef361
+User
+[Kasia Indexer] Rejected handshake - invalid or not found: {"id":"144020438...
+2026-01-03 03:24:31.39
+8edef361
+User
+[Kaspa] Transaction verification error: API error: 422 Unprocessable Entity
+2026-01-03 03:24:31.39
+8edef361
+User
+[Kasia Indexer] TX not found on-chain: {"id":"144020438...
+2026-01-03 03:24:31.39
+8edef36
