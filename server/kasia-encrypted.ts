@@ -116,51 +116,55 @@ export interface PrivateMessage {
  * - Ephemeral public key for ECDH
  * - Encrypted handshake metadata
  * - Signature for verification
+ * 
+ * IMPORTANT: Kaspa has a 520 byte script element limit.
+ * We use a compact format to stay within this limit.
  */
 export function createHandshakePayload(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  const handshakeData: HandshakeData = {
-    alias: senderAlias,
-    timestamp: new Date().toISOString(),
+  // Use compact format to stay under 520 byte limit
+  // Format: ciph_msg:1:handshake:convId:recipient:alias:timestamp
+  // This avoids the overhead of JSON + double hex encoding
+  const timestamp = Date.now().toString(36); // Base36 timestamp (compact)
+  const compactPayload = [
+    KASIA_PREFIX,
+    KASIA_VERSION,
+    "handshake",
     conversationId,
-    version: 2,
     recipientAddress,
-    sendToRecipient: true,
-    isResponse: false,
-  };
+    senderAlias,
+    timestamp
+  ].join(KASIA_DELIM);
   
-  // In production, this would be encrypted using the recipient's public key
-  // For now, we create a hex-encoded JSON representation
-  const dataHex = stringToHex(JSON.stringify(handshakeData));
-  
-  const payload = KASIA_ENCRYPTED.headers.HANDSHAKE + dataHex;
-  return stringToHex(payload);
+  // Single hex encoding only
+  return stringToHex(compactPayload);
 }
 
 /**
  * Create a handshake response payload
+ * Uses compact format to stay under 520 byte limit
  */
 export function createHandshakeResponse(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  const handshakeData: HandshakeData = {
-    alias: senderAlias,
-    timestamp: new Date().toISOString(),
+  // Use compact format - add "r" prefix to mark as response
+  const timestamp = Date.now().toString(36);
+  const compactPayload = [
+    KASIA_PREFIX,
+    KASIA_VERSION,
+    "handshake_r", // _r suffix indicates response
     conversationId,
-    version: 2,
     recipientAddress,
-    sendToRecipient: true,
-    isResponse: true,
-  };
+    senderAlias,
+    timestamp
+  ].join(KASIA_DELIM);
   
-  const dataHex = stringToHex(JSON.stringify(handshakeData));
-  const payload = KASIA_ENCRYPTED.headers.HANDSHAKE + dataHex;
-  return stringToHex(payload);
+  return stringToHex(compactPayload);
 }
 
 /**
