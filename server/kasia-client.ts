@@ -110,6 +110,7 @@ export async function getHandshakesByReceiver(
  * Parse a handshake payload to extract conversation metadata
  * 
  * Handshake format: ciph_msg:1:handshake:convId:recipient:alias:timestamp
+ * Response format: ciph_msg:1:handshake_r:convId:recipient:alias:timestamp
  * Or legacy format: ciph_msg:1:handshake:{json}
  */
 export function parseHandshakePayload(hexPayload: string): {
@@ -122,13 +123,17 @@ export function parseHandshakePayload(hexPayload: string): {
   try {
     const payload = Buffer.from(hexPayload, "hex").toString("utf-8");
     
+    // Check for both handshake types
     if (!payload.startsWith("ciph_msg:1:handshake")) {
       return null;
     }
     
     const parts = payload.split(":");
     
+    // Compact format: ciph_msg:1:handshake[_r]:convId:recipient:alias:timestamp
     if (parts.length >= 6) {
+      // Check if this is a response handshake (handshake_r)
+      const isResponse = parts[2] === "handshake_r";
       const convId = parts[3];
       const recipient = parts[4];
       const alias = parts[5];
@@ -139,10 +144,11 @@ export function parseHandshakePayload(hexPayload: string): {
         recipient,
         alias,
         timestamp,
-        isResponse: false,
+        isResponse,
       };
     }
     
+    // Legacy JSON format
     if (parts.length === 4 && parts[3].startsWith("{")) {
       try {
         const jsonData = JSON.parse(parts[3]);
@@ -158,7 +164,9 @@ export function parseHandshakePayload(hexPayload: string): {
       }
     }
     
-    return { isResponse: false };
+    // Fallback for minimal payloads
+    const isResponse = parts[2] === "handshake_r";
+    return { isResponse };
   } catch (error) {
     return null;
   }
@@ -198,13 +206,24 @@ export async function getConversationsFromIndexer(
     hasResponse: boolean;
   }>();
   
+  // Process sent handshakes - add initial handshakes and track response handshakes
   for (const hs of sentHandshakes) {
     const parsed = parseHandshakePayload(hs.message_payload);
     if (!parsed) continue;
     
     const convId = parsed.conversationId || hs.tx_id.slice(0, 16);
     
-    if (!conversationsMap.has(convId)) {
+    if (parsed.isResponse) {
+      // This is a response handshake sent by this wallet
+      // Update the conversation to active if it exists
+      const existing = conversationsMap.get(convId);
+      if (existing) {
+        existing.status = "active";
+        existing.responseTxHash = hs.tx_id;
+        existing.hasResponse = true;
+      }
+    } else if (!conversationsMap.has(convId)) {
+      // Initial handshake - create conversation
       conversationsMap.set(convId, {
         id: convId,
         initiatorAddress: hs.sender,
@@ -218,46 +237,57 @@ export async function getConversationsFromIndexer(
     }
   }
   
+  // Process received handshakes - add incoming handshakes and track responses to our handshakes
   for (const hs of receivedHandshakes) {
     const parsed = parseHandshakePayload(hs.message_payload);
     if (!parsed) continue;
     
     const convId = parsed.conversationId || hs.tx_id.slice(0, 16);
     
-    const existing = conversationsMap.get(convId);
-    if (existing) {
-      if (hs.sender === existing.recipientAddress) {
+    if (parsed.isResponse) {
+      // This is a response handshake sent TO this wallet
+      // The sender of this response is accepting our handshake
+      const existing = conversationsMap.get(convId);
+      if (existing) {
         existing.status = "active";
         existing.responseTxHash = hs.tx_id;
         existing.hasResponse = true;
       }
     } else {
-      conversationsMap.set(convId, {
-        id: convId,
-        initiatorAddress: hs.sender,
-        recipientAddress: walletAddress,
-        status: "pending",
-        initiatorAlias: parsed.alias,
-        handshakeTxHash: hs.tx_id,
-        createdAt: new Date(hs.block_time),
-        hasResponse: false,
-      });
+      // Initial handshake received - someone wants to start a conversation with us
+      const existing = conversationsMap.get(convId);
+      if (existing) {
+        // Already have this conversation, potentially update responseTxHash if we sent a response
+      } else {
+        conversationsMap.set(convId, {
+          id: convId,
+          initiatorAddress: hs.sender,
+          recipientAddress: walletAddress,
+          status: "pending",
+          initiatorAlias: parsed.alias,
+          handshakeTxHash: hs.tx_id,
+          createdAt: new Date(hs.block_time),
+          hasResponse: false,
+        });
+      }
     }
   }
   
+  // Additional pass: Look for response handshakes by checking if sender sent a response to receiver
+  // This handles cases where the response uses a different conversationId format
   for (const hs of sentHandshakes) {
     const parsed = parseHandshakePayload(hs.message_payload);
-    if (!parsed) continue;
+    if (!parsed || !parsed.isResponse) continue;
     
-    Array.from(conversationsMap.entries()).forEach(([convId, conv]) => {
-      if (conv.initiatorAddress === hs.receiver && 
-          conv.recipientAddress === hs.sender &&
-          !conv.hasResponse) {
-        conv.status = "active";
-        conv.responseTxHash = hs.tx_id;
-        conv.hasResponse = true;
+    const convId = parsed.conversationId;
+    if (convId) {
+      const existing = conversationsMap.get(convId);
+      if (existing && !existing.hasResponse) {
+        existing.status = "active";
+        existing.responseTxHash = hs.tx_id;
+        existing.hasResponse = true;
       }
-    });
+    }
   }
   
   const result = Array.from(conversationsMap.values()).map(({ hasResponse, ...conv }) => conv);
