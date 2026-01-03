@@ -4220,12 +4220,32 @@ export async function registerRoutes(
       // Check if conversation already exists in indexer
       const existing = await kasiaIndexer.getConversation(conversationId);
       if (existing) {
+        // Check if this is an admin conversation that should be auto-activated
+        const supportAddress = process.env.SUPPORT_ADDRESS || "";
+        const normalizedSupport = supportAddress.toLowerCase().trim();
+        const isExistingAdmin = 
+          existing.initiatorAddress.toLowerCase().trim() === normalizedSupport ||
+          existing.recipientAddress.toLowerCase().trim() === normalizedSupport;
+        
+        // Auto-activate if it's an admin conversation that's still pending
+        if (isExistingAdmin && existing.status === "pending") {
+          console.log(`[Kasia] Auto-activating existing admin conversation ${conversationId}`);
+          await kasiaIndexer.updateConversationStatus(conversationId, "active");
+          existing.status = "active";
+        }
+        
         return res.json({ success: true, conversation: existing, existing: true });
       }
       
       // Check if this is admin support conversation (support address is admin)
       const supportAddress = process.env.SUPPORT_ADDRESS || "";
-      const isAdminConversation = authenticatedWallet === supportAddress || recipientAddress === supportAddress;
+      const normalizedSupport = supportAddress.toLowerCase().trim();
+      const normalizedAuth = authenticatedWallet.toLowerCase().trim();
+      const normalizedRecipient = recipientAddress.toLowerCase().trim();
+      
+      const isAdminConversation = normalizedAuth === normalizedSupport || normalizedRecipient === normalizedSupport;
+      
+      console.log(`[Kasia] Checking admin conversation: auth=${authenticatedWallet.slice(0, 20)}..., recipient=${recipientAddress.slice(0, 20)}..., support=${supportAddress.slice(0, 20)}..., isAdmin=${isAdminConversation}`);
       
       // Auto-accept handshake for admin/support conversations so users can chat immediately
       const conversationStatus = isAdminConversation ? "active" : "pending";
