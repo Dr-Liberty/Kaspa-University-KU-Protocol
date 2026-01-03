@@ -416,8 +416,10 @@ function ConversationView({
 
 function NewConversationView({ onBack }: { onBack: () => void }) {
   const { toast } = useToast();
+  const { signKasiaHandshake } = useWallet();
   const [recipientAddress, setRecipientAddress] = useState("");
   const [isAdminConversation, setIsAdminConversation] = useState(false);
+  const [signingStep, setSigningStep] = useState<"idle" | "preparing" | "signing" | "confirming">("idle");
 
   // Fetch support address
   const { data: supportData, isLoading: supportLoading } = useQuery<{ address: string }>({
@@ -443,21 +445,53 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
 
   const startConversation = useMutation({
     mutationFn: async () => {
+      const trimmedAddress = recipientAddress.trim();
+      
+      // Step 1: Prepare the handshake payload
+      setSigningStep("preparing");
+      const prepareResponse = await apiRequest("POST", "/api/kasia/handshake/prepare", {
+        recipientAddress: trimmedAddress,
+        senderAlias: "Anonymous",
+      });
+      const prepareData = await prepareResponse.json();
+      
+      // If conversation already exists, return it
+      if (prepareData.existing) {
+        return prepareData;
+      }
+      
+      // Step 2: Sign the handshake with KasWare
+      setSigningStep("signing");
+      const txHash = await signKasiaHandshake(prepareData.inscriptionJson);
+      
+      // Step 3: Confirm the conversation with the txHash
+      setSigningStep("confirming");
       const response = await apiRequest("POST", "/api/conversations", {
-        recipientAddress: recipientAddress.trim(),
+        recipientAddress: trimmedAddress,
         isAdminConversation,
+        handshakeTxHash: txHash,
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setSigningStep("idle");
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      toast({
-        title: "Conversation Started",
-        description: "A handshake request has been sent.",
-      });
+      
+      if (data?.existing) {
+        toast({
+          title: "Conversation Exists",
+          description: data.message || "Returning to existing conversation.",
+        });
+      } else {
+        toast({
+          title: "Conversation Started",
+          description: "Your handshake has been broadcast to the Kaspa blockchain.",
+        });
+      }
       onBack();
     },
     onError: (error: Error) => {
+      setSigningStep("idle");
       toast({
         title: "Failed to start conversation",
         description: error.message || "Please try again.",
@@ -465,6 +499,15 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
       });
     },
   });
+  
+  const getButtonText = () => {
+    switch (signingStep) {
+      case "preparing": return "Preparing handshake...";
+      case "signing": return "Sign in KasWare...";
+      case "confirming": return "Confirming...";
+      default: return "Start Conversation";
+    }
+  };
 
   return (
     <div className="p-6">
@@ -516,7 +559,7 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
           data-testid="button-create-conversation"
         >
           <Mail className="h-4 w-4" />
-          {startConversation.isPending ? "Starting..." : "Start Conversation"}
+          {getButtonText()}
         </Button>
 
         <p className="text-xs text-muted-foreground">

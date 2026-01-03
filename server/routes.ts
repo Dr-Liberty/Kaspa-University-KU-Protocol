@@ -4089,10 +4089,17 @@ export async function registerRoutes(
       // Check if conversation already exists
       const existing = await kasiaIndexer.getConversation(conversationId);
       if (existing) {
+        // If the current user initiated the existing conversation, they already signed
+        // If the other party initiated, this user should accept via the messages UI
+        const isInitiator = existing.initiatorAddress === authenticatedWallet;
         return res.json({ 
           success: true, 
           existing: true, 
-          conversation: existing 
+          conversation: existing,
+          userRole: isInitiator ? "initiator" : "recipient",
+          message: isInitiator 
+            ? "You already started this conversation."
+            : "This user has already initiated a conversation with you. Check your inbox.",
         });
       }
       
