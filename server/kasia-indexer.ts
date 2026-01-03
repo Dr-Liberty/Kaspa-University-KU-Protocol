@@ -23,6 +23,7 @@ import {
   HandshakeData,
 } from "./kasia-encrypted";
 import { getKaspaService } from "./kaspa";
+import { getConversationsFromIndexer, isConversationActive } from "./kasia-client";
 
 export interface IndexedConversation {
   id: string;
@@ -554,12 +555,52 @@ class KasiaIndexer {
   }
 
   /**
-   * Get all conversations for a wallet address
+   * Get all conversations for a wallet address (from local cache)
    */
   getConversationsForWallet(walletAddress: string): IndexedConversation[] {
     return Array.from(this.conversations.values())
       .filter(c => c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress)
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  /**
+   * Get all conversations for a wallet by querying the public Kasia indexer
+   * This is the TRUE on-chain source of truth for conversations
+   */
+  async getConversationsFromOnChain(walletAddress: string): Promise<IndexedConversation[]> {
+    console.log(`[Kasia Indexer] Fetching on-chain conversations for ${walletAddress.slice(0, 20)}...`);
+    
+    try {
+      const onChainConversations = await getConversationsFromIndexer(walletAddress);
+      
+      const result: IndexedConversation[] = onChainConversations.map(conv => ({
+        id: conv.id,
+        initiatorAddress: conv.initiatorAddress,
+        recipientAddress: conv.recipientAddress,
+        initiatorAlias: conv.initiatorAlias,
+        status: conv.status,
+        handshakeTxHash: conv.handshakeTxHash,
+        responseTxHash: conv.responseTxHash,
+        createdAt: conv.createdAt,
+        updatedAt: conv.createdAt,
+      }));
+      
+      const localConversations = this.getConversationsForWallet(walletAddress);
+      
+      const onChainIds = new Set(result.map(c => c.id));
+      for (const local of localConversations) {
+        if (!onChainIds.has(local.id)) {
+          result.push(local);
+        }
+      }
+      
+      console.log(`[Kasia Indexer] Found ${onChainConversations.length} on-chain + ${localConversations.length} local conversations`);
+      
+      return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    } catch (error: any) {
+      console.error(`[Kasia Indexer] Error fetching on-chain conversations: ${error.message}`);
+      return this.getConversationsForWallet(walletAddress);
+    }
   }
 
   /**

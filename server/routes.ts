@@ -4298,7 +4298,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get conversations for authenticated user (from on-chain indexer)
+  // Get conversations for authenticated user (supports on-chain or local source)
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4306,9 +4306,16 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
       
-      const conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
+      const useOnChain = req.query.source === "onchain";
       
-      res.json({ conversations });
+      let conversations;
+      if (useOnChain) {
+        conversations = await kasiaIndexer.getConversationsFromOnChain(authenticatedWallet);
+      } else {
+        conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
+      }
+      
+      res.json({ conversations, source: useOnChain ? "onchain" : "local" });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversations:", error);
       res.status(500).json({ error: "Failed to fetch conversations" });
