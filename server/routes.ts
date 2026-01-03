@@ -4079,9 +4079,9 @@ export async function registerRoutes(
         return res.json({ success: true, conversation: existing, existing: true });
       }
       
-      // Check if this is admin support conversation (treasury wallet is admin)
-      const adminAddress = kaspaService.getTreasuryAddress() || "";
-      const isAdminConversation = authenticatedWallet === adminAddress || recipientAddress === adminAddress;
+      // Check if this is admin support conversation (support address is admin)
+      const supportAddress = process.env.SUPPORT_ADDRESS || "";
+      const isAdminConversation = authenticatedWallet === supportAddress || recipientAddress === supportAddress;
       
       const conversation = await storage.createConversation({
         id: conversationId,
