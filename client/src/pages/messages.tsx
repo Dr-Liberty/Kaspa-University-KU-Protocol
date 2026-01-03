@@ -623,7 +623,7 @@ export default function Messages() {
               </ScrollArea>
             </div>
 
-            <div className={`h-full ${!selectedConversation && !showNewConversation ? "hidden md:flex" : ""}`}>
+            <div className={`flex h-full w-full flex-1 ${!selectedConversation && !showNewConversation ? "hidden md:flex" : ""}`}>
               {showNewConversation ? (
                 <NewConversationView onBack={() => setShowNewConversation(false)} />
               ) : selectedConversation ? (
@@ -633,7 +633,7 @@ export default function Messages() {
                   onBack={() => setSelectedConversation(null)}
                 />
               ) : (
-                <div className="flex h-full items-center justify-center">
+                <div className="flex h-full w-full items-center justify-center">
                   <div className="text-center">
                     <Lock className="mx-auto h-12 w-12 text-muted-foreground/30" />
                     <p className="mt-4 text-sm text-muted-foreground">
