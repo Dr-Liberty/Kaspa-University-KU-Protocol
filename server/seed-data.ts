@@ -2046,7 +2046,9 @@ Kaspa can increase blocks per second by:
 <p><strong>Non-Fungible Token Fundamentals</strong></p>
 <p>Non-Fungible Tokens (NFTs) represent unique digital assets on a blockchain. Unlike fungible tokens such as KAS, where each unit is interchangeable with any other, each NFT possesses distinct properties and cannot be substituted. This distinction mirrors the difference between a specific artwork and a unit of currency.</p>
 <p><strong>The KRC-721 Standard</strong></p>
-<p>KRC-721 establishes Kaspa's standard for creating and managing non-fungible tokens. The specification draws conceptual parallels to Ethereum's ERC-721 while implementing optimizations suited to Kaspa's BlockDAG architecture. The standard defines how collections are deployed, how individual tokens are minted, and how ownership is tracked.</p>
+<p>KRC-721 establishes Kaspa's standard for creating and managing non-fungible tokens using an inscription-based model similar to Bitcoin Ordinals. Unlike Ethereum's ERC-721 which relies on smart contracts, KRC-721 embeds NFT data directly into transaction payloads on the Kaspa blockchain. This inscription approach stores all token information on-chain permanently—no external storage or contract state is required for core ownership records.</p>
+<p><strong>Inscription Architecture</strong></p>
+<p>The inscription model works through a commit-reveal process. During the commit phase, a user creates a transaction containing a hidden commitment to their intended action. After confirmation, the reveal transaction exposes the actual NFT operation (deploy, mint, or transfer) encoded in the transaction data. This two-phase approach prevents front-running attacks and ensures fair access to limited collections. The Kasplex indexer continuously scans blocks for these inscription patterns, building a queryable database of collections, tokens, and ownership records.</p>
 <p><strong>Technical Capabilities</strong></p>
 <p>KRC-721 provides several key features. Each token maintains a distinct identifier and property set. Ownership records are stored directly on the Kaspa blockchain. Associated metadata and images utilize the InterPlanetary File System (IPFS) for decentralized storage. The standard supports royalty mechanisms enabling creators to receive compensation from secondary market sales. A commit-reveal minting process prevents front-running attacks during token creation.</p>
 <p><strong>Application Domains</strong></p>
@@ -2084,7 +2086,7 @@ Kaspa can increase blocks per second by:
 <p><strong>Trading Platforms</strong></p>
 <p>Several marketplaces facilitate KRC-721 trading. The Kaspa.com NFT Marketplace provides an official trading platform for the ecosystem. KaspaBOX (kaspabox.fyi) offers high-performance KRC-721 trading capabilities. KSPR Bot provides a Telegram-based interface for users who prefer conversational trading.</p>
 <p><strong>Wallet Integration</strong></p>
-<p>Major Kaspa wallets support KRC-721 functionality. The KSPR Wallet Extension for Chrome and Firefox provides comprehensive KRC-721 support including viewing, minting, and transfers. KasWare, a popular Kaspa wallet, includes NFT viewing capabilities for portfolio management.</p>
+<p>Major Kaspa wallets support KRC-721 functionality. KasWare, a popular Kaspa wallet, includes NFT viewing capabilities for portfolio management. Additional wallets in the ecosystem continue to add KRC-721 support as the standard matures.</p>
 <p><strong>Developer Resources</strong></p>
 <p>Several resources support KRC-721 development. Technical documentation is available at testnet-10.krc721.stream/docs. The Kasplex Protocol FAQ at kaspa.org/kasplex-faq provides context on the broader token infrastructure. Sample application code demonstrating KRC-721 integration is available at github.com/coinchimp/kaspa-krc721-apps.</p>
 <p><strong>Decentralized Storage</strong></p>
@@ -2107,7 +2109,7 @@ Kaspa can increase blocks per second by:
 <p><strong>Whitelist-Based Access Control</strong></p>
 <p>The collection implements a creative use of KRC-721's royalty mechanism to control access. Non-whitelisted addresses face a 20,000 KAS deterrent fee, while graduates who have completed all courses are automatically whitelisted with a 0 KAS discount, paying only network fees (approximately 10 KAS). This economic design ensures that only verified graduates can practically obtain diplomas.</p>
 <p><strong>Minting Process</strong></p>
-<p>The diploma minting workflow proceeds through defined stages. First, the student completes all courses in the curriculum, establishing eligibility. Upon navigating to the Diploma page, the platform automatically whitelists the student's wallet address. The student then signs the mint transaction with their wallet, and the unique diploma NFT is created and assigned to their address.</p>
+<p>The diploma minting workflow proceeds through defined stages. First, the student completes all courses in the curriculum, establishing eligibility. Upon navigating to the Diploma page, the platform automatically whitelists the student's wallet address. The student then signs the mint transaction with their wallet, and the diploma NFT is created and assigned to their address.</p>
 <p><strong>Credential Significance</strong></p>
 <p>A KUDIPLOMA NFT serves as verifiable proof of several accomplishments: completion of comprehensive Kaspa education, demonstrated understanding of protocols, consensus mechanisms, and ecosystem tools, practical engagement with blockchain technology, and a permanent, on-chain credential tied to the graduate's wallet address.</p>
 <p><strong>Key Takeaway</strong></p>

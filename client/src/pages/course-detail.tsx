@@ -174,33 +174,102 @@ function QuizSection({
     
     return (
       <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="p-6 text-center">
-          {passed ? (
-            <>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-                <CheckCircle2 className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold">
-                {isDemoMode ? "Great Job! (Demo Mode)" : "Congratulations!"}
-              </h3>
-              <p className="mt-2 text-muted-foreground">
-                You scored {score}%
-                {!isDemoMode && courseCompleted && (
-                  <>
-                    {" - "}
-                    <span className="font-semibold text-primary">
-                      Course reward ready to claim!
-                    </span>
-                  </>
-                )}
-              </p>
-              {isDemoMode && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Connect a wallet to earn real KAS rewards and NFT certificates
+        <CardContent className="space-y-6 p-6">
+          <div className="text-center">
+            {passed ? (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+                  <CheckCircle2 className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">
+                  {isDemoMode ? "Great Job! (Demo Mode)" : "Congratulations!"}
+                </h3>
+                <p className="mt-2 text-muted-foreground">
+                  You scored {score}%
+                  {!isDemoMode && courseCompleted && (
+                    <>
+                      {" - "}
+                      <span className="font-semibold text-primary">
+                        Course reward ready to claim!
+                      </span>
+                    </>
+                  )}
                 </p>
-              )}
+                {isDemoMode && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Connect a wallet to earn real KAS rewards and NFT certificates
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20">
+                  <Circle className="h-8 w-8 text-destructive" />
+                </div>
+                <h3 className="text-xl font-bold">Not Quite</h3>
+                <p className="mt-2 text-muted-foreground">
+                  You scored {score}%. Review the answers below.
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Show questions with correct/incorrect indicators */}
+          <div className="space-y-4 border-t pt-4">
+            <h4 className="font-semibold text-muted-foreground">Answer Review</h4>
+            {questions?.map((question, qIndex) => {
+              const userAnswer = answers[question.id];
+              const isCorrect = userAnswer === question.correctIndex;
+              return (
+                <div key={question.id} className="space-y-2">
+                  <p className="font-medium flex items-start gap-2">
+                    {isCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    )}
+                    <span>{qIndex + 1}. {question.question}</span>
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2 ml-7">
+                    {question.options.map((option, oIndex) => {
+                      const isUserChoice = userAnswer === oIndex;
+                      const isCorrectAnswer = question.correctIndex === oIndex;
+                      let variant: "default" | "outline" | "secondary" | "destructive" = "outline";
+                      let extraClasses = "";
+                      
+                      if (isCorrectAnswer) {
+                        variant = "default";
+                        extraClasses = "bg-primary/20 border-primary text-primary hover:bg-primary/20";
+                      } else if (isUserChoice && !isCorrectAnswer) {
+                        variant = "outline";
+                        extraClasses = "border-destructive/50 text-destructive";
+                      }
+                      
+                      return (
+                        <div
+                          key={oIndex}
+                          className={`h-auto justify-start whitespace-normal px-4 py-3 text-left rounded-md border ${extraClasses} ${isCorrectAnswer ? 'font-medium' : ''}`}
+                        >
+                          {isCorrectAnswer && <span className="text-primary mr-1">Correct:</span>}
+                          {option}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {question.explanation && (
+                    <p className="text-sm text-muted-foreground ml-7 mt-1">
+                      {question.explanation}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center pt-2">
+            {passed ? (
               <Button 
-                className="mt-4 gap-2" 
+                className="gap-2" 
                 onClick={() => {
                   if (courseCompleted && isLastLesson) {
                     navigate("/dashboard");
@@ -213,19 +282,9 @@ function QuizSection({
                 {courseCompleted && isLastLesson ? "View Rewards" : "Continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            </>
-          ) : (
-            <>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/20">
-                <Circle className="h-8 w-8 text-destructive" />
-              </div>
-              <h3 className="text-xl font-bold">Not Quite</h3>
-              <p className="mt-2 text-muted-foreground">
-                You scored {score}%. Review the material and try again.
-              </p>
+            ) : (
               <Button
                 variant="outline"
-                className="mt-4"
                 onClick={() => {
                   setSubmitted(false);
                   setResult(null);
@@ -236,8 +295,8 @@ function QuizSection({
               >
                 Try Again
               </Button>
-            </>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     );
