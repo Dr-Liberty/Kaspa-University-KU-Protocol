@@ -141,7 +141,7 @@ export default function Landing() {
       color: "from-amber-500 to-amber-500/70",
       format: "{p:\"krc-721\",op:\"mint\",...}",
       description: "Diploma NFTs for graduates. Whitelist-based pricing: 0 KAS for graduates, 20,000 KAS deterrent for others.",
-      features: ["Verifiable credentials", "Whitelist pricing", "1,000 max supply"],
+      features: ["Verifiable credentials", "Whitelist pricing", "10,000 max supply"],
     },
   ];
 
