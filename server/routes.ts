@@ -4205,8 +4205,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Recipient address required" });
       }
 
-      // Validate recipient address format
-      if (!recipientAddress.startsWith("kaspa:") || recipientAddress.length < 60) {
+      // Validate recipient address format (accept both mainnet and testnet)
+      if ((!recipientAddress.startsWith("kaspa:") && !recipientAddress.startsWith("kaspatest:")) || recipientAddress.length < 60) {
         return res.status(400).json({ error: "Invalid Kaspa address format" });
       }
 
@@ -4214,18 +4214,35 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Cannot start conversation with yourself" });
       }
       
+      // Helper function to compare addresses across networks (mainnet/testnet)
+      // The same key produces different addresses on different networks
+      const getAddressBase = (addr: string): string => {
+        // Strip network prefix to get the address portion
+        const withoutPrefix = addr.replace(/^kaspatest:/, "").replace(/^kaspa:/, "");
+        // Return just the first 50 chars of the address portion (main hash, excludes checksum)
+        return withoutPrefix.slice(0, 50).toLowerCase();
+      };
+      
+      const isSameAddress = (addr1: string, addr2: string): boolean => {
+        if (!addr1 || !addr2) return false;
+        // First try exact match
+        if (addr1.toLowerCase().trim() === addr2.toLowerCase().trim()) return true;
+        // Then try base comparison for cross-network
+        return getAddressBase(addr1) === getAddressBase(addr2);
+      };
+      
       // Generate deterministic conversation ID
       const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
       
       // Check if conversation already exists in indexer
       const existing = await kasiaIndexer.getConversation(conversationId);
+      const supportAddress = process.env.SUPPORT_ADDRESS || "";
+      
       if (existing) {
         // Check if this is an admin conversation that should be auto-activated
-        const supportAddress = process.env.SUPPORT_ADDRESS || "";
-        const normalizedSupport = supportAddress.toLowerCase().trim();
         const isExistingAdmin = 
-          existing.initiatorAddress.toLowerCase().trim() === normalizedSupport ||
-          existing.recipientAddress.toLowerCase().trim() === normalizedSupport;
+          isSameAddress(existing.initiatorAddress, supportAddress) ||
+          isSameAddress(existing.recipientAddress, supportAddress);
         
         // Auto-activate if it's an admin conversation that's still pending
         if (isExistingAdmin && existing.status === "pending") {
@@ -4238,12 +4255,8 @@ export async function registerRoutes(
       }
       
       // Check if this is admin support conversation (support address is admin)
-      const supportAddress = process.env.SUPPORT_ADDRESS || "";
-      const normalizedSupport = supportAddress.toLowerCase().trim();
-      const normalizedAuth = authenticatedWallet.toLowerCase().trim();
-      const normalizedRecipient = recipientAddress.toLowerCase().trim();
-      
-      const isAdminConversation = normalizedAuth === normalizedSupport || normalizedRecipient === normalizedSupport;
+      // Use cross-network comparison to support both mainnet and testnet wallets
+      const isAdminConversation = isSameAddress(authenticatedWallet, supportAddress) || isSameAddress(recipientAddress, supportAddress);
       
       console.log(`[Kasia] Checking admin conversation: auth=${authenticatedWallet.slice(0, 20)}..., recipient=${recipientAddress.slice(0, 20)}..., support=${supportAddress.slice(0, 20)}..., isAdmin=${isAdminConversation}`);
       
