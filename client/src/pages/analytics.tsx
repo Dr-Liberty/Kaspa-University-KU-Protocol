@@ -74,6 +74,7 @@ interface AnalyticsData {
     score?: number;
     courseTitle?: string;
     verified?: boolean;
+    reconciled?: boolean;
   }>;
 }
 
@@ -520,7 +521,14 @@ export default function Analytics() {
                     ) : activity.txStatus === "pending" ? (
                       <span className="text-xs text-yellow-600 dark:text-yellow-400">Broadcasting...</span>
                     ) : activity.txStatus === "failed" ? (
-                      <span className="text-xs text-red-600 dark:text-red-400">Transaction failed</span>
+                      <span className="text-xs text-red-600 dark:text-red-400">
+                        Transaction failed
+                        <span className="ml-1 text-muted-foreground">(verifying on-chain...)</span>
+                      </span>
+                    ) : activity.reconciled ? (
+                      <span className="text-xs text-green-600 dark:text-green-400">
+                        Reconciled from blockchain
+                      </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Not yet on-chain</span>
                     )}

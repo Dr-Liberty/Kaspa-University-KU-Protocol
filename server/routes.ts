@@ -880,7 +880,11 @@ export async function registerRoutes(
     await antiSybil.recordQuizCompletion(walletAddress, lessonId, score, passed, 0);
     
     // Create on-chain transaction for quiz result (async - don't block response)
+    // Uses exponential backoff retry to prevent false negatives from transient RPC errors
     (async () => {
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 1000;
+      
       try {
         const kaspaService = await getKaspaService();
         const quizPayload = createQuizPayload({
@@ -892,21 +896,42 @@ export async function registerRoutes(
           timestamp: Date.now(),
         }, answers);
         
-        // Send payload to blockchain using public method
-        const txResult = await kaspaService.sendQuizProof(quizPayload, walletAddress);
-        
-        if (txResult.success && txResult.txHash) {
-          await storage.updateQuizResult(result.id, { 
-            txHash: txResult.txHash, 
-            txStatus: "confirmed" 
-          });
-          console.log(`[Quiz] On-chain TX confirmed: ${txResult.txHash} for lesson ${lessonId}`);
-        } else {
-          await storage.updateQuizResult(result.id, { txStatus: "failed" });
-          console.log(`[Quiz] On-chain TX failed for lesson ${lessonId}: ${txResult.error}`);
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            // Send payload to blockchain using public method
+            const txResult = await kaspaService.sendQuizProof(quizPayload, walletAddress);
+            
+            if (txResult.success && txResult.txHash) {
+              await storage.updateQuizResult(result.id, { 
+                txHash: txResult.txHash, 
+                txStatus: "confirmed" 
+              });
+              console.log(`[Quiz] On-chain TX confirmed: ${txResult.txHash} for lesson ${lessonId}`);
+              return; // Success - exit retry loop
+            } else {
+              console.log(`[Quiz] On-chain TX attempt ${attempt}/${MAX_RETRIES} failed: ${txResult.error}`);
+              if (attempt < MAX_RETRIES) {
+                const delayMs = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                console.log(`[Quiz] Retrying in ${delayMs}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+            }
+          } catch (error: any) {
+            safeErrorLog(`[Quiz] On-chain TX attempt ${attempt}/${MAX_RETRIES} error:`, error);
+            if (attempt < MAX_RETRIES) {
+              const delayMs = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+              console.log(`[Quiz] Retrying in ${delayMs}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+          }
         }
+        
+        // All retries exhausted - mark as failed
+        await storage.updateQuizResult(result.id, { txStatus: "failed" });
+        console.log(`[Quiz] On-chain TX failed after ${MAX_RETRIES} attempts for lesson ${lessonId}`);
       } catch (error: any) {
-        safeErrorLog("[Quiz] On-chain TX error:", error);
+        // Outer catch for service initialization errors
+        safeErrorLog("[Quiz] Kaspa service initialization error:", error);
         await storage.updateQuizResult(result.id, { txStatus: "failed" });
       }
     })();
