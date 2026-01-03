@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -163,6 +164,48 @@ export default function AdminPage() {
     },
     enabled: authenticated,
     staleTime: 30000,
+  });
+
+  // State for active conversation messaging
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [adminMessage, setAdminMessage] = useState("");
+
+  // Fetch active conversations
+  const { data: activeConversationsData, refetch: refetchActiveConvs } = useQuery<{
+    active: KasiaConversation[];
+    all: KasiaConversation[];
+    stats: KasiaStats;
+  }>({
+    queryKey: ["/api/admin/kasia/conversations"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/kasia/conversations", { headers });
+      if (!res.ok) throw new Error("Failed to fetch active conversations");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 15000,
+  });
+
+  // Fetch messages for selected conversation
+  const { data: conversationMessages, refetch: refetchMessages } = useQuery<{
+    conversation: KasiaConversation;
+    messages: Array<{
+      txHash: string;
+      conversationId: string;
+      senderAddress: string;
+      encryptedContent: string;
+      timestamp: string;
+    }>;
+  }>({
+    queryKey: ["/api/admin/kasia/conversations", selectedConvId, "messages"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/kasia/conversations/${selectedConvId}/messages`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    enabled: authenticated && !!selectedConvId,
+    staleTime: 10000,
+    refetchInterval: selectedConvId ? 10000 : false,
   });
 
   const { data: collectionStatus, refetch: refetchCollection } = useQuery<{
@@ -404,9 +447,34 @@ export default function AdminPage() {
     onSuccess: (data) => {
       toast({ title: "Handshake accepted", description: `TX: ${data.txHash?.slice(0, 20)}...` });
       refetchKasia();
+      refetchActiveConvs();
     },
     onError: (error: any) => {
       toast({ title: "Accept failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Send admin message mutation
+  const sendAdminMessageMutation = useMutation({
+    mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {
+      const res = await fetch(`/api/admin/kasia/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send message");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Message sent", description: `TX: ${data.txHash?.slice(0, 20)}...` });
+      setAdminMessage("");
+      refetchMessages();
+    },
+    onError: (error: any) => {
+      toast({ title: "Send failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1131,12 +1199,121 @@ export default function AdminPage() {
                 <div className="mt-4">
                   <Button
                     variant="outline"
-                    onClick={() => refetchKasia()}
+                    onClick={() => { refetchKasia(); refetchActiveConvs(); }}
                     data-testid="button-refresh-kasia"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
+                </div>
+
+                <Separator className="my-6" />
+
+                <h3 className="font-medium mb-3">Active Conversations ({activeConversationsData?.active?.length || 0})</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="border rounded-md">
+                    <ScrollArea className="h-[300px]">
+                      <div className="p-2 space-y-1">
+                        {activeConversationsData?.active?.map((conv) => (
+                          <div
+                            key={conv.id}
+                            onClick={() => setSelectedConvId(conv.id)}
+                            className={`p-3 rounded-md cursor-pointer hover-elevate ${selectedConvId === conv.id ? "bg-primary/10 border border-primary/30" : "border border-transparent"}`}
+                            data-testid={`conv-item-${conv.id}`}
+                          >
+                            <div className="font-medium text-sm">
+                              {conv.initiatorAlias || "Anonymous User"}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {formatAddress(conv.initiatorAddress)}
+                            </div>
+                            <Badge variant="secondary" className="mt-1 text-xs bg-green-500/20 text-green-400">
+                              Active
+                            </Badge>
+                          </div>
+                        ))}
+                        {(!activeConversationsData?.active || activeConversationsData.active.length === 0) && (
+                          <div className="text-center text-muted-foreground py-8">
+                            <p className="text-sm">No active conversations</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  <div className="border rounded-md flex flex-col">
+                    {selectedConvId ? (
+                      <>
+                        <div className="p-3 border-b">
+                          <div className="font-medium text-sm">
+                            {conversationMessages?.conversation?.initiatorAlias || "Anonymous User"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatAddress(conversationMessages?.conversation?.initiatorAddress || "")}
+                          </div>
+                        </div>
+                        <ScrollArea className="flex-1 h-[180px] p-3">
+                          <div className="space-y-2">
+                            {conversationMessages?.messages?.map((msg, idx) => (
+                              <div
+                                key={msg.txHash || idx}
+                                className={`p-2 rounded-md text-sm max-w-[85%] ${
+                                  msg.senderAddress === conversationMessages?.conversation?.initiatorAddress
+                                    ? "bg-muted"
+                                    : "bg-primary/10 ml-auto"
+                                }`}
+                              >
+                                <p className="break-words">{msg.encryptedContent}</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {formatDate(msg.timestamp)}
+                                </p>
+                              </div>
+                            ))}
+                            {(!conversationMessages?.messages || conversationMessages.messages.length === 0) && (
+                              <div className="text-center text-muted-foreground py-4">
+                                <p className="text-sm">No messages yet</p>
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                        <div className="p-3 border-t">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Type a message..."
+                              value={adminMessage}
+                              onChange={(e) => setAdminMessage(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && adminMessage.trim() && selectedConvId) {
+                                  sendAdminMessageMutation.mutate({ conversationId: selectedConvId, content: adminMessage.trim() });
+                                }
+                              }}
+                              data-testid="input-admin-message"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (adminMessage.trim() && selectedConvId) {
+                                  sendAdminMessageMutation.mutate({ conversationId: selectedConvId, content: adminMessage.trim() });
+                                }
+                              }}
+                              disabled={!adminMessage.trim() || sendAdminMessageMutation.isPending}
+                              data-testid="button-send-admin-message"
+                            >
+                              {sendAdminMessageMutation.isPending ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Send"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        <p className="text-sm">Select a conversation to view messages</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

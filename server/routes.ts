@@ -4609,6 +4609,103 @@ export async function registerRoutes(
     }
   });
 
+  // Get all active conversations for admin messaging
+  app.get("/api/admin/kasia/conversations", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const activeConversations = kasiaIndexer.getActiveConversations();
+      const allConversations = kasiaIndexer.getAllConversations();
+      
+      res.json({ 
+        active: activeConversations,
+        all: allConversations,
+        stats: kasiaIndexer.getStats()
+      });
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to fetch conversations:", error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  // Get messages for a conversation (admin)
+  app.get("/api/admin/kasia/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { conversationId } = req.params;
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      const messages = kasiaIndexer.getMessages(conversationId);
+      
+      res.json({ conversation, messages });
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to fetch messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Admin send message (stored locally for MVP - full on-chain encryption requires key derivation)
+  app.post("/api/admin/kasia/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { conversationId } = req.params;
+      const { content } = req.body;
+      
+      if (!content || typeof content !== "string") {
+        return res.status(400).json({ error: "Message content required" });
+      }
+      
+      if (content.length > 500) {
+        return res.status(400).json({ error: "Message too long (max 500 characters)" });
+      }
+      
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (conversation.status !== "active") {
+        return res.status(400).json({ error: "Conversation is not active" });
+      }
+      
+      // For MVP: Store message locally without on-chain broadcast
+      // Full Kasia Protocol would require key derivation from handshake for encryption
+      const supportAddress = process.env.SUPPORT_ADDRESS || "kaspa:admin";
+      const messageId = `admin-msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      
+      await kasiaIndexer.recordMessage({
+        txHash: messageId,
+        conversationId,
+        senderAddress: supportAddress,
+        encryptedContent: content,
+        timestamp: new Date(),
+      });
+      
+      console.log(`[Kasia Admin] Stored message for ${conversationId}: ${messageId}`);
+      
+      res.json({ success: true, messageId });
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to send message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
   // ============================================
   // ON-CHAIN EXPLORER / KU PROTOCOL INDEXER API
   // ============================================

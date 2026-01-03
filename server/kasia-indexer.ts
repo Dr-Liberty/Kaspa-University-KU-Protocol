@@ -622,6 +622,23 @@ class KasiaIndexer {
   }
 
   /**
+   * Get all active conversations (for admin to view and reply)
+   */
+  getActiveConversations(): IndexedConversation[] {
+    return Array.from(this.conversations.values())
+      .filter(c => c.status === "active")
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  /**
+   * Get all conversations regardless of wallet (admin only)
+   */
+  getAllConversations(): IndexedConversation[] {
+    return Array.from(this.conversations.values())
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  /**
    * Get pending handshakes for admin review
    */
   getPendingHandshakes(): HandshakeRecord[] {
