@@ -83,14 +83,14 @@ export function CourseCard({ course, progress, stats }: CourseCardProps) {
                 <Coins className="h-3.5 w-3.5 text-primary" />
                 <span className="font-medium text-primary">+{course.kasReward} KAS</span>
               </div>
-              {stats && stats.completions > 0 && (
+              {stats && (
                 <div className="flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" />
                   <span>{stats.completions} completed</span>
                 </div>
               )}
             </div>
-            {stats && stats.totalKasPaid > 0 && (
+            {stats && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Coins className="h-3 w-3" />
                 <span>{stats.totalKasPaid.toFixed(1)} KAS distributed</span>
