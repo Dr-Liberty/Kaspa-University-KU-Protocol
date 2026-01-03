@@ -4406,7 +4406,7 @@ export async function registerRoutes(
     }
   });
 
-  // Record a message (user broadcasts via KasWare, we track the on-chain reference)
+  // Record a message (supports both on-chain txHash and signature-based MVP)
   app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4415,14 +4415,10 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const { encryptedContent, txHash, senderAlias } = req.body;
+      const { encryptedContent, txHash, senderAlias, signature, signedPayload, senderPubkey } = req.body;
       
       if (!encryptedContent) {
         return res.status(400).json({ error: "Encrypted content required" });
-      }
-
-      if (!txHash) {
-        return res.status(400).json({ error: "Transaction hash required - messages must be broadcast on-chain" });
       }
 
       // Validate message length
@@ -4446,27 +4442,70 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not active. Handshake must be accepted first." });
       }
       
-      // Record message in on-chain indexer (with txHash as proof, verified on-chain)
       const messageId = randomUUID();
-      const recorded = await kasiaIndexer.recordMessage({
-        id: messageId,
-        txHash,
-        conversationId,
-        senderAddress: authenticatedWallet,
-        senderAlias,
-        encryptedContent,
-        timestamp: new Date(),
-      });
+      let recorded = false;
+      let finalTxHash = txHash;
+      
+      // Mode 1: On-chain txHash provided - verify on blockchain
+      if (txHash) {
+        recorded = await kasiaIndexer.recordMessage({
+          id: messageId,
+          txHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          senderAlias,
+          encryptedContent,
+          timestamp: new Date(),
+        }); // On-chain verification enabled
+        
+        if (!recorded) {
+          return res.status(400).json({ error: "Transaction not verified on-chain. Please ensure the transaction is confirmed." });
+        }
+      } 
+      // Mode 2: Signature-based MVP (no on-chain broadcast, wallet signature authenticates)
+      else if (signature && signedPayload) {
+        // Session already validates wallet ownership, signature adds extra integrity
+        // Generate a local message ID (not a real txHash)
+        finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        
+        // Store locally with skipVerification since this isn't on-chain
+        recorded = await kasiaIndexer.recordMessage({
+          id: messageId,
+          txHash: finalTxHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          senderAlias,
+          encryptedContent,
+          signature,
+          signedPayload,
+          senderPubkey,
+          timestamp: new Date(),
+        }, true); // skipVerification = true for signature-based messages
+      }
+      // Mode 3: Just authenticated session (minimal security for MVP)
+      else {
+        finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        
+        recorded = await kasiaIndexer.recordMessage({
+          id: messageId,
+          txHash: finalTxHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          senderAlias,
+          encryptedContent,
+          timestamp: new Date(),
+        }, true); // skipVerification = true for session-authenticated messages
+      }
       
       if (!recorded) {
-        return res.status(400).json({ error: "Transaction not verified on-chain. Please ensure the transaction is confirmed." });
+        return res.status(500).json({ error: "Failed to store message" });
       }
       
       res.json({ 
         success: true, 
         message: { 
           id: messageId, 
-          txHash, 
+          txHash: finalTxHash, 
           conversationId, 
           senderAddress: authenticatedWallet 
         } 

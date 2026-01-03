@@ -48,6 +48,10 @@ export interface IndexedMessage {
   encryptedContent: string;
   timestamp: Date;
   confirmations?: number;
+  // MVP signature-based fields (for non on-chain messages)
+  signature?: string;
+  signedPayload?: string;
+  senderPubkey?: string;
 }
 
 export interface HandshakeRecord {
