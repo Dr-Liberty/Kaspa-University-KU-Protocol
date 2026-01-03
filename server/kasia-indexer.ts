@@ -66,11 +66,16 @@ export interface HandshakeRecord {
 }
 
 /**
- * Kasia Indexer - indexes on-chain Kasia messages
+ * Kasia Indexer - ON-CHAIN FIRST architecture
  * 
- * In a full implementation, this would connect to a Kasia indexer service
- * or run its own blockchain scanner. For now, we maintain a local cache
- * that tracks txHashes as proof of on-chain existence.
+ * The public Kasia indexer (https://indexer.kasia.fyi/) is the SOURCE OF TRUTH.
+ * The local database is just a CACHE for performance and offline fallback.
+ * 
+ * On startup and periodically, we sync from the on-chain indexer to:
+ * 1. Populate/refresh the in-memory cache
+ * 2. Update the database cache
+ * 
+ * This maintains decentralization - the blockchain is always authoritative.
  */
 class KasiaIndexer {
   private handshakes: Map<string, HandshakeRecord> = new Map();
@@ -78,39 +83,153 @@ class KasiaIndexer {
   private conversations: Map<string, IndexedConversation> = new Map();
   private isRunning = false;
   private storage: any = null;
+  private lastSyncTime: Date | null = null;
+  private syncInterval: NodeJS.Timeout | null = null;
+  private supportAddress: string = "";
 
   constructor() {
-    console.log("[Kasia Indexer] Initialized on-chain message indexer");
+    console.log("[Kasia Indexer] Initialized on-chain message indexer (ON-CHAIN FIRST)");
   }
 
   /**
-   * Set the storage backend for persistence
+   * Set the storage backend for persistence (cache only)
    */
   setStorage(storage: any): void {
     this.storage = storage;
-    console.log("[Kasia Indexer] Storage backend connected");
+    console.log("[Kasia Indexer] Storage backend connected (cache mode)");
   }
 
   /**
-   * Start the indexer and load persisted data
+   * Set the support address for admin sync
+   */
+  setSupportAddress(address: string): void {
+    this.supportAddress = address;
+  }
+
+  /**
+   * Start the indexer with on-chain first approach
    */
   async start(): Promise<void> {
     if (this.isRunning) return;
     
-    console.log("[Kasia Indexer] Starting on-chain indexer...");
+    console.log("[Kasia Indexer] Starting on-chain indexer (ON-CHAIN FIRST)...");
     this.isRunning = true;
     
-    // Load persisted conversations from database
+    // Step 1: Load from database cache (fast startup)
     if (this.storage) {
       try {
-        const allConversations = await this.loadFromStorage();
-        console.log(`[Kasia Indexer] Loaded ${allConversations} conversations from database`);
+        const cachedCount = await this.loadFromStorage();
+        console.log(`[Kasia Indexer] Loaded ${cachedCount} conversations from database cache`);
       } catch (error: any) {
-        console.error(`[Kasia Indexer] Error loading from storage: ${error.message}`);
+        console.error(`[Kasia Indexer] Cache load error: ${error.message}`);
       }
     }
     
-    console.log("[Kasia Indexer] Ready to index Kasia protocol messages");
+    // Step 2: Sync from on-chain indexer for support address (async, don't block startup)
+    if (this.supportAddress) {
+      this.syncForWallet(this.supportAddress).catch(error => {
+        console.error(`[Kasia Indexer] Background sync error: ${error.message}`);
+      });
+    }
+    
+    // Step 3: Start periodic sync job (every 60 seconds)
+    this.startPeriodicSync();
+    
+    console.log("[Kasia Indexer] Ready to index Kasia protocol messages (on-chain first)");
+  }
+
+  /**
+   * Start periodic background sync from on-chain
+   */
+  private startPeriodicSync(): void {
+    if (this.syncInterval) return;
+    
+    const SYNC_INTERVAL_MS = 60_000; // 60 seconds
+    
+    this.syncInterval = setInterval(async () => {
+      if (this.supportAddress) {
+        try {
+          await this.syncForWallet(this.supportAddress);
+        } catch (error: any) {
+          console.error(`[Kasia Indexer] Periodic sync error: ${error.message}`);
+        }
+      }
+    }, SYNC_INTERVAL_MS);
+    
+    console.log("[Kasia Indexer] Started periodic on-chain sync (every 60s)");
+  }
+
+  /**
+   * Sync conversations for a specific wallet from the public Kasia indexer
+   * This is the ON-CHAIN FIRST approach - fetches from blockchain indexer
+   */
+  async syncForWallet(walletAddress: string): Promise<number> {
+    console.log(`[Kasia Indexer] Syncing from on-chain for ${walletAddress.slice(0, 20)}...`);
+    
+    try {
+      const onChainConversations = await getConversationsFromIndexer(walletAddress);
+      let syncedCount = 0;
+      
+      for (const conv of onChainConversations) {
+        const indexed: IndexedConversation = {
+          id: conv.id,
+          initiatorAddress: conv.initiatorAddress,
+          recipientAddress: conv.recipientAddress,
+          initiatorAlias: conv.initiatorAlias,
+          status: conv.status,
+          handshakeTxHash: conv.handshakeTxHash,
+          responseTxHash: conv.responseTxHash,
+          createdAt: conv.createdAt,
+          updatedAt: conv.createdAt,
+          isAdminConversation: this.supportAddress ? 
+            (conv.initiatorAddress === this.supportAddress || conv.recipientAddress === this.supportAddress) : false,
+        };
+        
+        // Update in-memory cache
+        const existing = this.conversations.get(conv.id);
+        if (!existing || conv.createdAt > existing.createdAt) {
+          this.conversations.set(conv.id, indexed);
+          syncedCount++;
+          
+          // Also update database cache
+          if (this.storage) {
+            try {
+              const existingDb = await this.storage.getConversation(conv.id);
+              if (!existingDb) {
+                await this.storage.createConversation({
+                  id: indexed.id,
+                  initiatorAddress: indexed.initiatorAddress,
+                  recipientAddress: indexed.recipientAddress,
+                  status: indexed.status === "pending" ? "pending_handshake" : indexed.status,
+                  handshakeTxHash: indexed.handshakeTxHash,
+                  initiatorAlias: indexed.initiatorAlias,
+                  isAdminConversation: indexed.isAdminConversation,
+                });
+              }
+            } catch (error: any) {
+              // Ignore cache errors
+            }
+          }
+        }
+      }
+      
+      this.lastSyncTime = new Date();
+      console.log(`[Kasia Indexer] Synced ${syncedCount} new conversations from on-chain`);
+      return syncedCount;
+    } catch (error: any) {
+      console.error(`[Kasia Indexer] On-chain sync error: ${error.message}`);
+      return 0;
+    }
+  }
+
+  /**
+   * Get sync status for diagnostics
+   */
+  getSyncStatus(): { lastSync: Date | null; isRunning: boolean } {
+    return {
+      lastSync: this.lastSyncTime,
+      isRunning: this.isRunning,
+    };
   }
 
   /**
