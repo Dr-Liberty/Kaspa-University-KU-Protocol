@@ -454,19 +454,6 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            Recipient Kaspa Address
-          </label>
-          <Input
-            placeholder="kaspa:qr..."
-            value={recipientAddress}
-            onChange={(e) => setRecipientAddress(e.target.value)}
-            className="font-mono"
-            data-testid="input-new-recipient"
-          />
-        </div>
-
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -481,9 +468,24 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
           </label>
         </div>
 
+        {!isAdminConversation && (
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Recipient Kaspa Address
+            </label>
+            <Input
+              placeholder="kaspa:qr..."
+              value={recipientAddress}
+              onChange={(e) => setRecipientAddress(e.target.value)}
+              className="font-mono"
+              data-testid="input-new-recipient"
+            />
+          </div>
+        )}
+
         <Button
           onClick={() => startConversation.mutate()}
-          disabled={!recipientAddress.trim() || startConversation.isPending}
+          disabled={(!isAdminConversation && !recipientAddress.trim()) || startConversation.isPending}
           className="w-full gap-2"
           data-testid="button-create-conversation"
         >
