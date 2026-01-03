@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -420,11 +420,18 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
   const [isAdminConversation, setIsAdminConversation] = useState(false);
 
   // Fetch support address
-  const { data: supportData } = useQuery<{ address: string }>({
+  const { data: supportData, isLoading: supportLoading } = useQuery<{ address: string }>({
     queryKey: ["/api/support/address"],
   });
 
-  // Auto-fill recipient when admin checkbox is toggled
+  // Sync recipient address when admin mode or support data changes
+  useEffect(() => {
+    if (isAdminConversation && supportData?.address) {
+      setRecipientAddress(supportData.address);
+    }
+  }, [isAdminConversation, supportData?.address]);
+
+  // Handle admin checkbox toggle
   const handleAdminToggle = (checked: boolean) => {
     setIsAdminConversation(checked);
     if (checked && supportData?.address) {
@@ -497,14 +504,14 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
           />
           {isAdminConversation && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Support address auto-filled
+              {supportLoading ? "Loading support address..." : recipientAddress ? `Support: ${recipientAddress.slice(0, 16)}...${recipientAddress.slice(-8)}` : "Support address not available"}
             </p>
           )}
         </div>
 
         <Button
           onClick={() => startConversation.mutate()}
-          disabled={!recipientAddress.trim() || startConversation.isPending}
+          disabled={!recipientAddress.trim() || startConversation.isPending || (isAdminConversation && supportLoading)}
           className="w-full gap-2"
           data-testid="button-create-conversation"
         >
