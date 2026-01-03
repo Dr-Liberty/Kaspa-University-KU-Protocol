@@ -4083,15 +4083,22 @@ export async function registerRoutes(
       const supportAddress = process.env.SUPPORT_ADDRESS || "";
       const isAdminConversation = authenticatedWallet === supportAddress || recipientAddress === supportAddress;
       
+      // Auto-accept handshake for admin/support conversations so users can chat immediately
+      const conversationStatus = isAdminConversation ? "active" : "pending";
+      
       const conversation = await storage.createConversation({
         id: conversationId,
         initiatorAddress: authenticatedWallet,
         recipientAddress,
-        status: "pending",
+        status: conversationStatus,
         handshakeTxHash,
         initiatorAlias,
         isAdminConversation,
       });
+      
+      if (isAdminConversation) {
+        console.log(`[Kasia] Auto-accepted support conversation ${conversationId}`);
+      }
       
       res.json({ success: true, conversation, existing: false });
     } catch (error: any) {
