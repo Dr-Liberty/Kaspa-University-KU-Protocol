@@ -4060,6 +4060,78 @@ export async function registerRoutes(
   // Messages are broadcast to blockchain, not stored in database
   // ============================================
 
+  // Prepare handshake payload for client-side KasWare signing
+  app.post("/api/kasia/handshake/prepare", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { recipientAddress, senderAlias } = req.body;
+      
+      if (!recipientAddress) {
+        return res.status(400).json({ error: "Recipient address required" });
+      }
+
+      // Validate recipient address format
+      if (!recipientAddress.startsWith("kaspa:") || recipientAddress.length < 60) {
+        return res.status(400).json({ error: "Invalid Kaspa address format" });
+      }
+
+      if (recipientAddress === authenticatedWallet) {
+        return res.status(400).json({ error: "Cannot start conversation with yourself" });
+      }
+      
+      // Generate deterministic conversation ID
+      const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
+      
+      // Check if conversation already exists
+      const existing = await kasiaIndexer.getConversation(conversationId);
+      if (existing) {
+        return res.json({ 
+          success: true, 
+          existing: true, 
+          conversation: existing 
+        });
+      }
+      
+      // Create the handshake payload for signing
+      const alias = senderAlias || "Anonymous";
+      const handshakeData = kasiaBroadcast.createHandshakeForSigning({
+        senderAlias: alias,
+        recipientAddress,
+        conversationId,
+        isResponse: false,
+      });
+      
+      // Create inscription JSON for KasWare signKRC20Transaction
+      const inscriptionJson = JSON.stringify({
+        p: "ciph_msg",
+        op: "handshake",
+        data: handshakeData.payloadHex,
+      });
+      
+      res.json({
+        success: true,
+        existing: false,
+        conversationId,
+        inscriptionJson,
+        payloadHex: handshakeData.payloadHex,
+        messageToSign: handshakeData.messageToSign,
+        protocol: handshakeData.protocol,
+        metadata: {
+          senderAddress: authenticatedWallet,
+          recipientAddress,
+          senderAlias: alias,
+        }
+      });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to prepare handshake:", error);
+      res.status(500).json({ error: "Failed to prepare handshake" });
+    }
+  });
+
   // Start a new private conversation (initiate handshake)
   // User broadcasts handshake tx via KasWare, we track the on-chain reference
   app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {

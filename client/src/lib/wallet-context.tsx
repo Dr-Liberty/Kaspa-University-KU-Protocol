@@ -37,6 +37,7 @@ interface WalletContextType {
   sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
   getBalance: () => Promise<number>;
   signKRC721Mint: (inscriptionJson: string) => Promise<string>;
+  signKasiaHandshake: (inscriptionJson: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -344,6 +345,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return txHash;
   }, [isDemoMode]);
 
+  const signKasiaHandshake = useCallback(async (inscriptionJson: string): Promise<string> => {
+    if (isDemoMode) {
+      throw new Error("Kasia messaging not available in demo mode. Please connect a real wallet.");
+    }
+    
+    if (!window.kasware) {
+      throw new Error("KasWare wallet not installed");
+    }
+    
+    if (typeof window.kasware.signKRC20Transaction !== "function") {
+      throw new Error("Your KasWare wallet does not support Kasia Protocol. Please update to the latest version.");
+    }
+    
+    console.log("[Wallet] Signing Kasia handshake transaction...");
+    const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
+    console.log(`[Wallet] Kasia handshake signed, txHash: ${txHash}`);
+    return txHash;
+  }, [isDemoMode]);
+
   const truncatedAddress = wallet?.address
     ? `${wallet.address.slice(0, 12)}...${wallet.address.slice(-6)}`
     : "";
@@ -365,6 +385,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         sendKaspa,
         getBalance,
         signKRC721Mint,
+        signKasiaHandshake,
       }}
     >
       {children}
