@@ -37,7 +37,7 @@ interface WalletContextType {
   sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
   getBalance: () => Promise<number>;
   signKRC721Mint: (inscriptionJson: string) => Promise<string>;
-  signKasiaHandshake: (inscriptionJson: string) => Promise<string>;
+  signKasiaHandshake: (recipientAddress: string, amountKas?: number) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -345,7 +345,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return txHash;
   }, [isDemoMode]);
 
-  const signKasiaHandshake = useCallback(async (inscriptionJson: string): Promise<string> => {
+  const signKasiaHandshake = useCallback(async (recipientAddress: string, amountKas: number = 0.2): Promise<string> => {
     if (isDemoMode) {
       throw new Error("Kasia messaging not available in demo mode. Please connect a real wallet.");
     }
@@ -354,13 +354,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
-    if (typeof window.kasware.signKRC20Transaction !== "function") {
+    if (typeof window.kasware.sendKaspa !== "function") {
       throw new Error("Your KasWare wallet does not support Kasia Protocol. Please update to the latest version.");
     }
     
-    console.log("[Wallet] Signing Kasia handshake transaction...");
-    const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
-    console.log(`[Wallet] Kasia handshake signed, txHash: ${txHash}`);
+    console.log(`[Wallet] Sending Kasia handshake (${amountKas} KAS) to ${recipientAddress}...`);
+    const sompi = Math.floor(amountKas * 100000000);
+    const txHash = await window.kasware.sendKaspa(recipientAddress, sompi);
+    console.log(`[Wallet] Kasia handshake sent, txHash: ${txHash}`);
     return txHash;
   }, [isDemoMode]);
 

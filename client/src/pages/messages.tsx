@@ -450,7 +450,7 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
     mutationFn: async () => {
       const trimmedAddress = recipientAddress.trim();
       
-      // Step 1: Prepare the handshake payload
+      // Step 1: Prepare the handshake (check for existing conversation)
       setSigningStep("preparing");
       const prepareResponse = await apiRequest("POST", "/api/kasia/handshake/prepare", {
         recipientAddress: trimmedAddress,
@@ -463,9 +463,10 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
         return prepareData;
       }
       
-      // Step 2: Sign the handshake with KasWare
+      // Step 2: Send handshake transaction (0.2 KAS to recipient)
+      // This uses sendKaspa which prompts user to approve KAS spend
       setSigningStep("signing");
-      const txHash = await signKasiaHandshake(prepareData.inscriptionJson);
+      const txHash = await signKasiaHandshake(trimmedAddress, 0.2);
       
       // Step 3: Confirm the conversation with the txHash
       setSigningStep("confirming");
@@ -506,9 +507,9 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
   const getButtonText = () => {
     switch (signingStep) {
       case "preparing": return "Preparing handshake...";
-      case "signing": return "Sign in KasWare...";
+      case "signing": return "Approve 0.2 KAS in KasWare...";
       case "confirming": return "Confirming...";
-      default: return "Start Conversation";
+      default: return "Start Conversation (0.2 KAS)";
     }
   };
 
