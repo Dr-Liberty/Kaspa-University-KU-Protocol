@@ -189,6 +189,15 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // Get support/admin wallet address for contacting support
+  app.get("/api/support/address", generalRateLimiter, (_req: Request, res: Response) => {
+    const supportAddress = process.env.ADMIN_WALLET_ADDRESS || "";
+    if (!supportAddress) {
+      return res.status(503).json({ error: "Support address not configured" });
+    }
+    res.json({ address: supportAddress });
+  });
+
   app.get("/api/jobs/:jobId", async (req: Request, res: Response) => {
     const jobQueue = getJobQueue();
     const job = jobQueue.getJob(req.params.jobId);

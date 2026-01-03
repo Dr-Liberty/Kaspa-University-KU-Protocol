@@ -419,6 +419,21 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [isAdminConversation, setIsAdminConversation] = useState(false);
 
+  // Fetch support address
+  const { data: supportData } = useQuery<{ address: string }>({
+    queryKey: ["/api/support/address"],
+  });
+
+  // Auto-fill recipient when admin checkbox is toggled
+  const handleAdminToggle = (checked: boolean) => {
+    setIsAdminConversation(checked);
+    if (checked && supportData?.address) {
+      setRecipientAddress(supportData.address);
+    } else if (!checked) {
+      setRecipientAddress("");
+    }
+  };
+
   const startConversation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/conversations", {
@@ -459,7 +474,7 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
             type="checkbox"
             id="admin-conversation"
             checked={isAdminConversation}
-            onChange={(e) => setIsAdminConversation(e.target.checked)}
+            onChange={(e) => handleAdminToggle(e.target.checked)}
             className="h-4 w-4 rounded border-border"
             data-testid="checkbox-admin-conversation"
           />
@@ -468,24 +483,28 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
           </label>
         </div>
 
-        {!isAdminConversation && (
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Recipient Kaspa Address
-            </label>
-            <Input
-              placeholder="kaspa:qr..."
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
-              className="font-mono"
-              data-testid="input-new-recipient"
-            />
-          </div>
-        )}
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Recipient Kaspa Address
+          </label>
+          <Input
+            placeholder="kaspa:qr..."
+            value={recipientAddress}
+            onChange={(e) => setRecipientAddress(e.target.value)}
+            className="font-mono"
+            disabled={isAdminConversation}
+            data-testid="input-new-recipient"
+          />
+          {isAdminConversation && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Support address auto-filled
+            </p>
+          )}
+        </div>
 
         <Button
           onClick={() => startConversation.mutate()}
-          disabled={(!isAdminConversation && !recipientAddress.trim()) || startConversation.isPending}
+          disabled={!recipientAddress.trim() || startConversation.isPending}
           className="w-full gap-2"
           data-testid="button-create-conversation"
         >
