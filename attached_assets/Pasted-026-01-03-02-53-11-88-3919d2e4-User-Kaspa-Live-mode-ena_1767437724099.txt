@@ -1,0 +1,180 @@
+026-01-03 02:53:11.88
+3919d2e4
+User
+[Kaspa] Live mode enabled - RPC connected, treasury: kaspa:qrewk7s6gnzuzxvces8...
+2026-01-03 02:53:11.88
+3919d2e4
+User
+[Kaspa] Network: kaspa-mainnet
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-03 02:53:12.01
+3919d2e4
+User
+}
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"index": 1
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"outpoint": {
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-03 02:53:12.01
+3919d2e4
+User
+[UTXO] Reserved 1 UTXOs (2161830248 sompi) for payload:636970685f6d7367
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"amount": "2161830248",
+2026-01-03 02:53:12.01
+3919d2e4
+User
+[Kaspa] Reserved entry sample structure: {
+2026-01-03 02:53:12.01
+3919d2e4
+User
+},
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"isCoinbase": false
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"utxoEntry": {
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"transactionId": "9726875828283be5be6c37faac8e91730fc0fe296070774a04476d8a1da3098d",
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"scriptPublicKey": {
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"version": 0,
+2026-01-03 02:53:12.01
+3919d2e4
+User
+}
+2026-01-03 02:53:12.01
+3919d2e4
+User
+},
+2026-01-03 02:53:12.01
+3919d2e4
+User
+"blockDaaScore": "320113520",
+2026-01-03 02:53:12.02
+3919d2e4
+User
+[Kaspa] Transformed 1 entries for WASM createTransactions
+2026-01-03 02:53:12.02
+3919d2e4
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-03 02:53:12.02
+3919d2e4
+User
+[Kaspa] Created 1 payload transaction(s) with 32 bytes
+2026-01-03 02:53:17.57
+3919d2e4
+User
+10:53:17 AM [express] GET /api/admin/kasia/conversations/000000004d5e12fc/messages 304 in 1ms :: {"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\",\"revealId\":\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\",\"commitTxStr\":\"{\\\"id\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"62f10ad12ce485a5142b6f4b3be6f688c59e4815b937246330021027cfa54759\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41e7aaff4169dcc82abde1fb52349abc9c99b8e76eec7581772d4dd3eaeb652e1ddd2d4a010f738529479bbefe16ac24fc1ae6ca17533498a51f4116b88f15186901\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"98675905763\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"320098865\\\",\\\"isCoinbase\\\":false}},{\\\"transactionId\\\":\\\"762cf1a1df103bd4108e82ef7c90f2566d7a90e549f9f6f91978b63760b727d8\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41ab746c1097fda1f2eddb0f1caddbcda673ca7fb4f2f5fa404978eeb765b5afb1685680ac7091361bd2176d783752f9be1ae48d5994edeca4269a2a39123a0b7801\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"125000000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"319142538\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\"},{\\\"value\\\":\\\"223275902598\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3165\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"412d9273a810682190d92ee3910646ca43ae410f852955e55e0667c11a6982a31ee8b9bc81546f0035e76985b1cf87ed04428589cde19538072b946cec3b62616e014d540120f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033343634333536353331333236363633336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323666373733323666227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:prqtuy0fvc6a2ux3vs7lyme8t9l6c4je5krvljla7dkpusgstnnzj4jn69khz\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\",\\\"blockDaaScore\\\":\\\"320112072\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T09:00:49.668Z","updatedAt":"2026-01-03T09:00:49.668Z","isAdminConversation":true},"messages":[]}
+2026-01-03 02:53:22.72
+3919d2e4
+User
+[KRC721] Resolver connection failed: Resolver connect timed out after 15000ms, trying direct URL...
+2026-01-03 02:53:22.94
+3919d2e4
+User
+[KRC721] Collection KUDIPLOMA is not deployed
+2026-01-03 02:53:22.94
+3919d2e4
+User
+[KRC721] Live mode enabled - RPC connected, keys ready
+2026-01-03 02:53:27.67
+3919d2e4
+User
+10:53:27 AM [express] GET /api/admin/kasia/conversations/000000004d5e12fc/messages 304 in 1ms :: {"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\",\"revealId\":\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\",\"commitTxStr\":\"{\\\"id\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"62f10ad12ce485a5142b6f4b3be6f688c59e4815b937246330021027cfa54759\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41e7aaff4169dcc82abde1fb52349abc9c99b8e76eec7581772d4dd3eaeb652e1ddd2d4a010f738529479bbefe16ac24fc1ae6ca17533498a51f4116b88f15186901\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"98675905763\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"320098865\\\",\\\"isCoinbase\\\":false}},{\\\"transactionId\\\":\\\"762cf1a1df103bd4108e82ef7c90f2566d7a90e549f9f6f91978b63760b727d8\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41ab746c1097fda1f2eddb0f1caddbcda673ca7fb4f2f5fa404978eeb765b5afb1685680ac7091361bd2176d783752f9be1ae48d5994edeca4269a2a39123a0b7801\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"125000000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"319142538\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\"},{\\\"value\\\":\\\"223275902598\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3165\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"412d9273a810682190d92ee3910646ca43ae410f852955e55e0667c11a6982a31ee8b9bc81546f0035e76985b1cf87ed04428589cde19538072b946cec3b62616e014d540120f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033343634333536353331333236363633336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323666373733323666227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:prqtuy0fvc6a2ux3vs7lyme8t9l6c4je5krvljla7dkpusgstnnzj4jn69khz\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\",\\\"blockDaaScore\\\":\\\"320112072\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T09:00:49.668Z","updatedAt":"2026-01-03T09:00:49.668Z","isAdminConversation":true},"messages":[]}
+2026-01-03 02:53:32.38
+3919d2e4
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-03 02:53:32.38
+3919d2e4
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-03 02:53:32.39
+3919d2e4
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-03 02:53:32.39
+3919d2e4
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-03 02:53:32.52
+3919d2e4
+User
+[Kaspa] Payload transaction 1 submitted: 986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d
+2026-01-03 02:53:32.53
+3919d2e4
+User
+[UTXO] Marked 1 UTXOs as spent in tx 986bd62c96d02656...
+2026-01-03 02:53:32.53
+3919d2e4
+User
+[Kasia Admin] Message broadcast: 986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d
+2026-01-03 02:53:32.53
+3919d2e4
+User
+[Kasia Broadcast] Message broadcast: 986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d
+2026-01-03 02:53:32.60
+3919d2e4
+User
+[Kasia Admin] Sent message for 000000004d5e12fc: 986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d
+2026-01-03 02:53:32.60
+3919d2e4
+User
+[Kasia Indexer] Recorded verified message: 986bd62c96d02656...
+2026-01-03 02:53:32.60
+3919d2e4
+User
+10:53:32 AM [express] POST /api/admin/kasia/conversations/000000004d5e12fc/messages 200 in 21240ms :: {"success":true,"txHash":"986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d","messageId":"ee94603a-4e43-441b-be12-d481a1eeff08"}
+2026-01-03 02:53:32.69
+3919d2e4
+User
+10:53:32 AM [express] GET /api/admin/kasia/conversations/000000004d5e12fc/messages 200 in 1ms :: {"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\",\"revealId\":\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\",\"commitTxStr\":\"{\\\"id\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"62f10ad12ce485a5142b6f4b3be6f688c59e4815b937246330021027cfa54759\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41e7aaff4169dcc82abde1fb52349abc9c99b8e76eec7581772d4dd3eaeb652e1ddd2d4a010f738529479bbefe16ac24fc1ae6ca17533498a51f4116b88f15186901\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"98675905763\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"320098865\\\",\\\"isCoinbase\\\":false}},{\\\"transactionId\\\":\\\"762cf1a1df103bd4108e82ef7c90f2566d7a90e549f9f6f91978b63760b727d8\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41ab746c1097fda1f2eddb0f1caddbcda673ca7fb4f2f5fa404978eeb765b5afb1685680ac7091361bd2176d783752f9be1ae48d5994edeca4269a2a39123a0b7801\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"125000000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"319142538\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\"},{\\\"value\\\":\\\"223275902598\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3165\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"412d9273a810682190d92ee3910646ca43ae410f852955e55e0667c11a6982a31ee8b9bc81546f0035e76985b1cf87ed04428589cde19538072b946cec3b62616e014d540120f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033343634333536353331333236363633336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323666373733323666227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:prqtuy0fvc6a2ux3vs7lyme8t9l6c4je5krvljla7dkpusgstnnzj4jn69khz\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\",\\\"blockDaaScore\\\":\\\"320112072\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T09:00:49.668Z","updatedAt":"2026-01-03T10:53:32.532Z","isAdminConversation":true},"messages":[{"id":"ee94603a-4e43-441b-be12-d481a1eeff08","txHash":"986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d","conversationId":"000000004d5e12fc","senderAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","senderAlias":"KU Support","encryptedContent":"hello","timestamp":"2026-01-03T10:53:32.531Z"}]}
+2026-01-03 02:53:42.79
+3919d2e4
+User
+10:53:42 AM [express] GET /api/admin/kasia/conversations/000000004d5e12fc/messages 304 in 1ms :: {"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\",\"revealId\":\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\",\"commitTxStr\":\"{\\\"id\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"62f10ad12ce485a5142b6f4b3be6f688c59e4815b937246330021027cfa54759\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41e7aaff4169dcc82abde1fb52349abc9c99b8e76eec7581772d4dd3eaeb652e1ddd2d4a010f738529479bbefe16ac24fc1ae6ca17533498a51f4116b88f15186901\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"98675905763\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"320098865\\\",\\\"isCoinbase\\\":false}},{\\\"transactionId\\\":\\\"762cf1a1df103bd4108e82ef7c90f2566d7a90e549f9f6f91978b63760b727d8\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41ab746c1097fda1f2eddb0f1caddbcda673ca7fb4f2f5fa404978eeb765b5afb1685680ac7091361bd2176d783752f9be1ae48d5994edeca4269a2a39123a0b7801\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"125000000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"319142538\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\"},{\\\"value\\\":\\\"223275902598\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3165\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"412d9273a810682190d92ee3910646ca43ae410f852955e55e0667c11a6982a31ee8b9bc81546f0035e76985b1cf87ed04428589cde19538072b946cec3b62616e014d540120f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033343634333536353331333236363633336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323666373733323666227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:prqtuy0fvc6a2ux3vs7lyme8t9l6c4je5krvljla7dkpusgstnnzj4jn69khz\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\",\\\"blockDaaScore\\\":\\\"320112072\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T09:00:49.668Z","updatedAt":"2026-01-03T10:53:32.532Z","isAdminConversation":true},"messages":[{"id":"ee94603a-4e43-441b-be12-d481a1eeff08","txHash":"986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d","conversationId":"000000004d5e12fc","senderAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","senderAlias":"KU Support","encryptedContent":"hello","timestamp":"2026-01-03T10:53:32.531Z"}]}
+2026-01-03 02:53:46.15
+3919d2e4
+User
+10:53:46 AM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-03 02:53:49.76
+3919d2e4
+User
+10:53:49 AM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-03 02:53:55.01
+3919d2e4
+User
+10:53:55 AM [express] GET /api/support/address 304 in 302ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-03 02:54:02.88
+3919d2e4
+User
+10:54:02 AM [express] GET /api/admin/kasia/conversations/000000004d5e12fc/messages 304 in 1ms :: {"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\",\"revealId\":\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\",\"commitTxStr\":\"{\\\"id\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"62f10ad12ce485a5142b6f4b3be6f688c59e4815b937246330021027cfa54759\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41e7aaff4169dcc82abde1fb52349abc9c99b8e76eec7581772d4dd3eaeb652e1ddd2d4a010f738529479bbefe16ac24fc1ae6ca17533498a51f4116b88f15186901\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"98675905763\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"320098865\\\",\\\"isCoinbase\\\":false}},{\\\"transactionId\\\":\\\"762cf1a1df103bd4108e82ef7c90f2566d7a90e549f9f6f91978b63760b727d8\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41ab746c1097fda1f2eddb0f1caddbcda673ca7fb4f2f5fa404978eeb765b5afb1685680ac7091361bd2176d783752f9be1ae48d5994edeca4269a2a39123a0b7801\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"125000000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"319142538\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\"},{\\\"value\\\":\\\"223275902598\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3165\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"cbf9b44325e1b6c497546f0d897a0522c61e5a1cb0020fddddc7ad5052637080\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"4e926a586be20f143cdf8e45a662a379605b99a4ad2e4995021341fa2c934079\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"412d9273a810682190d92ee3910646ca43ae410f852955e55e0667c11a6982a31ee8b9bc81546f0035e76985b1cf87ed04428589cde19538072b946cec3b62616e014d540120f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033343634333536353331333236363633336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323666373733323666227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:prqtuy0fvc6a2ux3vs7lyme8t9l6c4je5krvljla7dkpusgstnnzj4jn69khz\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20c0be11e96635d570d1643df26f27597fac5659a586cfcbfdf36c1e41105ce62987\\\",\\\"blockDaaScore\\\":\\\"320112072\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T09:00:49.668Z","updatedAt":"2026-01-03T10:53:32.532Z","isAdminConversation":true},"messages":[{"id":"ee94603a-4e43-441b-be12-d481a1eeff08","txHash":"986bd62c96d02656278a79570448566e2b0b85215c2c88311bb5082828c6e84d","conversationId":"000000004d5e12fc","senderAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","senderAlias":"KU Support","encryptedContent":"hello","timestamp":"2026-01-03T10:53:32.531Z"}]}
+2026-01-03 02:54:12.86
+3919d2e4
+User
+10:54:12 AM [express] GET /api/conversations 401 in 0ms :: {"error":"Authentication required"}
