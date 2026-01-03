@@ -57,6 +57,7 @@ import { kasiaIndexer } from "./kasia-indexer";
 import { kasiaBroadcast } from "./kasia-broadcast";
 import { createHandshakePayload, createHandshakeResponse } from "./kasia-encrypted";
 import { kuIndexer } from "./ku-indexer";
+import { verifyMessageSignature } from "./crypto";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -4290,8 +4291,37 @@ export async function registerRoutes(
       const conversationStatus = isAdminConversation ? "active" : "pending";
       
       // Track user's handshake and treasury's response separately
-      const userHandshakeTxHash = handshakeTxHash;
+      const userPaymentTxHash = handshakeTxHash; // User's payment tx (0.2 KAS)
+      let userHandshakeTxHash: string | undefined; // Actual Kasia handshake broadcast
       let treasuryHandshakeTxHash: string | undefined;
+      
+      // ALWAYS broadcast the user's handshake payload via treasury (they authorized by paying 0.2 KAS)
+      // This ensures the Kasia protocol payload is actually on-chain
+      if (userPaymentTxHash) {
+        console.log(`[Kasia] User paid ${userPaymentTxHash}, broadcasting Kasia handshake payload via treasury`);
+        
+        const userHandshakeData = kasiaBroadcast.createHandshakeForSigning({
+          senderAddress: authenticatedWallet,
+          senderAlias: initiatorAlias || "Anonymous",
+          recipientAddress,
+          conversationId,
+          isResponse: false, // This is the initiating handshake
+        });
+        
+        const userBroadcastResult = await kasiaBroadcast.broadcastHandshake(
+          userHandshakeData.payloadHex,
+          recipientAddress
+        );
+        
+        if (userBroadcastResult.success && userBroadcastResult.txHash) {
+          userHandshakeTxHash = userBroadcastResult.txHash;
+          console.log(`[Kasia] User handshake broadcast on-chain: ${userHandshakeTxHash}`);
+        } else {
+          // Use payment tx as fallback identifier
+          userHandshakeTxHash = userPaymentTxHash;
+          console.warn(`[Kasia] User handshake broadcast failed: ${userBroadcastResult.error}, using payment tx`);
+        }
+      }
       
       // For admin/support conversations, ALWAYS broadcast treasury response handshake
       // This is the support team's acceptance of the conversation (separate from user's handshake)
@@ -4548,13 +4578,117 @@ export async function registerRoutes(
           return res.status(400).json({ error: "Transaction not verified on-chain. Please ensure the transaction is confirmed." });
         }
       } 
-      // Mode 2: Signature-based MVP (no on-chain broadcast, wallet signature authenticates)
+      // Mode 2: Signature-based with on-chain broadcast via treasury
+      else if (signature && signedPayload && senderPubkey) {
+        // SECURITY: Verify signedPayload binds to this message
+        // Expected format: ku:msg:private:{timestamp}:{nonce}:{conversationId}:{content}
+        // This prevents reusing signatures for different messages
+        const payloadParts = signedPayload.split(":");
+        if (payloadParts.length < 7 || payloadParts[0] !== "ku" || payloadParts[1] !== "msg" || payloadParts[2] !== "private") {
+          return res.status(400).json({ error: "Invalid signed payload format" });
+        }
+        
+        const payloadTimestamp = parseInt(payloadParts[3], 10);
+        const payloadConvoId = payloadParts[5];
+        const payloadContent = payloadParts.slice(6).join(":"); // Content may contain colons
+        
+        // Verify payload timestamp is recent (within 5 minutes to prevent replay attacks)
+        const now = Date.now();
+        if (isNaN(payloadTimestamp) || Math.abs(now - payloadTimestamp) > 5 * 60 * 1000) {
+          console.warn(`[Kasia] Payload timestamp expired: ${payloadTimestamp}, now: ${now}`);
+          return res.status(403).json({ error: "Signed payload has expired (replay protection)" });
+        }
+        
+        // Verify payload is for this conversation
+        if (payloadConvoId !== conversationId) {
+          console.warn(`[Kasia] Payload conversation mismatch: ${payloadConvoId} vs ${conversationId}`);
+          return res.status(403).json({ error: "Signed payload does not match this conversation" });
+        }
+        
+        // Verify payload content matches (prevents signing one message, sending another)
+        if (payloadContent !== encryptedContent) {
+          console.warn(`[Kasia] Payload content mismatch`);
+          return res.status(403).json({ error: "Signed payload does not match message content" });
+        }
+        
+        // SECURITY: Cryptographically verify the signature
+        const verificationResult = await verifyMessageSignature(
+          authenticatedWallet,
+          signedPayload,
+          signature,
+          senderPubkey
+        );
+        
+        if (!verificationResult.valid) {
+          console.warn(`[Kasia] Signature verification failed for ${authenticatedWallet.slice(0, 20)}...: ${verificationResult.error}`);
+          return res.status(403).json({ 
+            error: "Invalid signature - cannot authorize on-chain broadcast",
+            details: verificationResult.error
+          });
+        }
+        
+        console.log(`[Kasia] Signature verified for ${authenticatedWallet.slice(0, 20)}..., proceeding with treasury broadcast`);
+        
+        // Get the other party's address for the broadcast
+        const recipientAddress = authenticatedWallet === conversation.initiatorAddress 
+          ? conversation.recipientAddress 
+          : conversation.initiatorAddress;
+        
+        // Create the on-chain Kasia payload and broadcast via treasury
+        const { payloadHex } = kasiaBroadcast.createMessageForSigning({
+          senderAddress: authenticatedWallet,
+          senderAlias: senderAlias || "Anonymous",
+          conversationId,
+          encryptedContent,
+          recipientAddress,
+        });
+        
+        // Broadcast the Kasia comm payload on-chain (treasury pays, authorized by verified signature)
+        const broadcastResult = await kasiaBroadcast.broadcastMessage(payloadHex, recipientAddress);
+        
+        if (broadcastResult.success && broadcastResult.txHash) {
+          finalTxHash = broadcastResult.txHash;
+          console.log(`[Kasia] Message broadcast on-chain: ${finalTxHash}`);
+          
+          // Record with the real txHash
+          recorded = await kasiaIndexer.recordMessage({
+            id: messageId,
+            txHash: finalTxHash,
+            conversationId,
+            senderAddress: authenticatedWallet,
+            senderAlias,
+            encryptedContent,
+            signature,
+            signedPayload,
+            senderPubkey,
+            timestamp: new Date(),
+          }, true); // Skip verification since we just broadcast it
+        } else {
+          // Fallback to local storage if broadcast fails (treasury not configured)
+          console.warn(`[Kasia] On-chain broadcast failed: ${broadcastResult.error}, storing locally`);
+          finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          
+          recorded = await kasiaIndexer.recordMessage({
+            id: messageId,
+            txHash: finalTxHash,
+            conversationId,
+            senderAddress: authenticatedWallet,
+            senderAlias,
+            encryptedContent,
+            signature,
+            signedPayload,
+            senderPubkey,
+            timestamp: new Date(),
+          }, true);
+        }
+      }
+      // Mode 3: Session-only fallback (signature missing required components)
+      // NOTE: This mode does NOT broadcast on-chain - local storage only
       else if (signature && signedPayload) {
-        // Session already validates wallet ownership, signature adds extra integrity
-        // Generate a local message ID (not a real txHash)
+        // Signature present but missing pubkey - store locally only
+        console.warn(`[Kasia] Missing pubkey for signature verification, storing locally only`);
         finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         
-        // Store locally with skipVerification since this isn't on-chain
         recorded = await kasiaIndexer.recordMessage({
           id: messageId,
           txHash: finalTxHash,
@@ -4564,23 +4698,14 @@ export async function registerRoutes(
           encryptedContent,
           signature,
           signedPayload,
-          senderPubkey,
           timestamp: new Date(),
-        }, true); // skipVerification = true for signature-based messages
+        }, true);
       }
-      // Mode 3: Just authenticated session (minimal security for MVP)
+      // Mode 4: No signature at all - reject for security
       else {
-        finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        
-        recorded = await kasiaIndexer.recordMessage({
-          id: messageId,
-          txHash: finalTxHash,
-          conversationId,
-          senderAddress: authenticatedWallet,
-          senderAlias,
-          encryptedContent,
-          timestamp: new Date(),
-        }, true); // skipVerification = true for session-authenticated messages
+        return res.status(400).json({ 
+          error: "Wallet signature required. Please sign the message with your wallet." 
+        });
       }
       
       if (!recorded) {

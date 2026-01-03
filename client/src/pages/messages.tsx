@@ -237,12 +237,17 @@ function ConversationView({
         setIsSigning(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversation.id, "messages"] });
       setMessageContent("");
+      
+      // Check if message was broadcast on-chain (real txHash vs local fallback)
+      const isOnChain = data?.message?.txHash && !data.message.txHash.startsWith("msg-");
       toast({
-        title: "Message Sent",
-        description: "Your wallet-signed message has been sent.",
+        title: isOnChain ? "Message Broadcast" : "Message Sent",
+        description: isOnChain 
+          ? "Your message has been broadcast to the Kaspa blockchain." 
+          : "Your message has been signed and stored.",
       });
     },
     onError: (error: Error) => {

@@ -177,6 +177,74 @@ async function verifyKaspaSignature(
   }
 }
 
+/**
+ * Verify a wallet signature for Kasia message authorization
+ * This is a simpler verification that doesn't require a challenge/nonce
+ * Used for authorizing treasury broadcasts
+ */
+export async function verifyMessageSignature(
+  walletAddress: string,
+  message: string,
+  signatureBase64: string,
+  publicKeyHex: string
+): Promise<{ valid: boolean; error?: string }> {
+  try {
+    // Normalize pubkey (remove 0x prefix if present)
+    let normalizedPubKey = publicKeyHex;
+    if (publicKeyHex && publicKeyHex.startsWith("0x")) {
+      normalizedPubKey = publicKeyHex.slice(2);
+    }
+    
+    // Validate public key format (compressed = 33 bytes = 66 hex chars)
+    if (!normalizedPubKey || normalizedPubKey.length !== 66) {
+      console.warn(`[Crypto] Invalid public key length: ${publicKeyHex?.length || 0} chars`);
+      return { valid: false, error: "Invalid public key format" };
+    }
+    
+    // Verify pubkey derives to the expected wallet address
+    const derivedAddress = deriveAddressFromPublicKey(normalizedPubKey);
+    if (!derivedAddress) {
+      return { valid: false, error: "Could not derive address from public key" };
+    }
+    
+    // Compare addresses (handle both mainnet and testnet)
+    const normalizedWallet = walletAddress.toLowerCase().trim();
+    const normalizedDerived = derivedAddress.toLowerCase().trim();
+    
+    // Check if derived address matches (strip network prefix for comparison)
+    const walletBase = normalizedWallet.replace(/^kaspa(test)?:/, "");
+    const derivedBase = normalizedDerived.replace(/^kaspa(test)?:/, "");
+    
+    if (walletBase !== derivedBase) {
+      console.warn(`[Crypto] Address mismatch: wallet=${walletBase.slice(0, 20)}, derived=${derivedBase.slice(0, 20)}`);
+      return { valid: false, error: "Public key does not match wallet address" };
+    }
+    
+    // Decode base64 signature to hex for verification
+    // KasWare returns base64-encoded signatures
+    let signatureHex: string;
+    try {
+      const sigBuffer = Buffer.from(signatureBase64, "base64");
+      signatureHex = sigBuffer.toString("hex");
+    } catch {
+      // Try treating as hex directly
+      signatureHex = signatureBase64.replace(/^0x/, "");
+    }
+    
+    // Verify the actual signature
+    const isValid = await verifyKaspaSignature(message, signatureHex, normalizedPubKey);
+    
+    if (!isValid) {
+      return { valid: false, error: "Invalid signature" };
+    }
+    
+    return { valid: true };
+  } catch (error: any) {
+    console.error("[Crypto] Message signature verification error:", error.message);
+    return { valid: false, error: "Verification failed" };
+  }
+}
+
 export function createQuizSession(
   walletAddress: string,
   lessonId: string,
