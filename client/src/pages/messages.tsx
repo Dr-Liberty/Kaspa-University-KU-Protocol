@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import kasiaLogo from "@assets/kasia_logo.png";
 import {
   Mail,
   Send,
@@ -26,6 +27,7 @@ import {
   Database,
   RefreshCw,
   Inbox,
+  ExternalLink,
 } from "lucide-react";
 
 interface Conversation {
@@ -382,11 +384,14 @@ function ConversationView({
             })}
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <Mail className="mx-auto h-12 w-12 text-muted-foreground/30" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                No messages yet. Send the first message!
+          <div className="flex h-full items-center justify-center p-6">
+            <div className="text-center max-w-xs">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <Mail className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <h4 className="font-medium">No messages yet</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Type a message below to start the conversation. All messages are encrypted and stored on-chain.
               </p>
             </div>
           </div>
@@ -395,34 +400,42 @@ function ConversationView({
 
       {conversation.status === "active" && (
         <div className="border-t border-border/50 p-4">
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Type your message..."
-              value={messageContent}
-              onChange={(e) => setMessageContent(e.target.value)}
-              className="min-h-[60px] resize-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              data-testid="input-message-content"
-            />
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Textarea
+                placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                className="min-h-[80px] max-h-[200px] resize-y text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                data-testid="input-message-content"
+              />
+            </div>
             <Button
               onClick={handleSend}
               disabled={!messageContent.trim() || sendMessage.isPending || isSigning}
-              size="icon"
-              className="h-auto"
+              size="default"
+              className="shrink-0"
               data-testid="button-send-message"
             >
               {isSigning ? (
-                <span className="animate-pulse">...</span>
+                <span className="animate-pulse">Signing...</span>
               ) : (
-                <Send className="h-5 w-5" />
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send
+                </>
               )}
             </Button>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Messages are wallet-signed and stored on-chain via Kasia Protocol
+          </p>
         </div>
       )}
     </div>
@@ -629,17 +642,25 @@ export default function Messages() {
   return (
     <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-messages-title">
-                Messages
-              </h1>
-              <p className="mt-1 text-muted-foreground">
-                End-to-end encrypted conversations using Kasia Protocol
-              </p>
+        <div className="mb-8">
+          <div className="flex items-start gap-6 flex-wrap md:flex-nowrap">
+            <div className="flex items-center gap-4">
+              <img 
+                src={kasiaLogo} 
+                alt="Kasia Protocol" 
+                className="h-16 w-16 rounded-lg"
+                data-testid="img-kasia-logo"
+              />
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-messages-title">
+                  Private Messages
+                </h1>
+                <p className="mt-1 text-muted-foreground">
+                  Powered by Kasia Protocol
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <Button
                 variant={useOnChain ? "default" : "outline"}
                 size="sm"
@@ -669,16 +690,44 @@ export default function Messages() {
               </Button>
             </div>
           </div>
+          
+          <Card className="mt-6 border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-4">
+                <Lock className="mt-1 h-5 w-5 text-primary shrink-0" />
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm">About Kasia Protocol</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Kasia is an encrypted, decentralized P2P messaging protocol built on Kaspa. 
+                    We integrated Kasia because it ensures your private conversations are truly private - 
+                    all messages are end-to-end encrypted and stored on the Kaspa blockchain, 
+                    not on any central server. This means nobody, including us, can read your messages.
+                  </p>
+                  <a 
+                    href="https://kasia.fyi" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    data-testid="link-kasia-website"
+                  >
+                    Learn more about Kasia
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           {useOnChain && (
-            <Badge variant="secondary" className="mt-2 gap-1">
+            <Badge variant="secondary" className="mt-4 gap-1">
               <Globe className="h-3 w-3" />
               Fetching from Kasia Indexer (on-chain source of truth)
             </Badge>
           )}
         </div>
 
-        <Card className="h-[600px] overflow-hidden border-border/50">
-          <div className="grid h-full md:grid-cols-[300px_1fr]">
+        <Card className="min-h-[500px] h-[calc(100vh-400px)] max-h-[700px] overflow-hidden border-border/50">
+          <div className="grid h-full md:grid-cols-[320px_1fr]">
             <div className={`flex h-full flex-col border-r border-border/50 ${selectedConversation || showNewConversation ? "hidden md:flex" : ""}`}>
               <div className="flex items-center justify-between border-b border-border/50 p-4">
                 <h2 className="font-semibold">Conversations</h2>
@@ -753,12 +802,25 @@ export default function Messages() {
                   onBack={() => setSelectedConversation(null)}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <div className="text-center">
-                    <Lock className="mx-auto h-12 w-12 text-muted-foreground/30" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Select a conversation or start a new one
+                <div className="flex h-full w-full items-center justify-center p-8">
+                  <div className="text-center max-w-sm">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                      <Lock className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-lg">Secure Messaging</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Select a conversation from the list or start a new encrypted chat with any Kaspa wallet address
                     </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 gap-2"
+                      onClick={() => setShowNewConversation(true)}
+                      data-testid="button-start-conversation-empty"
+                    >
+                      <Plus className="h-4 w-4" />
+                      New Conversation
+                    </Button>
                   </div>
                 </div>
               )}
