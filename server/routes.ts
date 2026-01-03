@@ -62,8 +62,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Initialize Kasia indexer with storage for persistence
+  // Initialize Kasia indexer with storage for persistence (cache)
+  // On-chain first architecture: blockchain is source of truth, DB is cache
   kasiaIndexer.setStorage(storage);
+  const supportAddress = process.env.SUPPORT_ADDRESS || "";
+  if (supportAddress) {
+    kasiaIndexer.setSupportAddress(supportAddress);
+    console.log(`[Kasia] Support address set for on-chain sync: ${supportAddress.slice(0, 25)}...`);
+  }
   await kasiaIndexer.start();
   
   // Apply security middleware globally for API routes

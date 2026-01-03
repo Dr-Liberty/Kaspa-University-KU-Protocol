@@ -62,9 +62,10 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
 - **Dual-Protocol Messaging System (ON-CHAIN ARCHITECTURE)**:
     - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A. Format: `k:1:post:{content}` and `k:1:reply:{parentTxId}:{content}`. Indexed by ecosystem K-indexers for cross-platform discovery. Implementation: `server/k-protocol.ts`.
     - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Uses `ciph_msg:1:handshake` for key exchange and `ciph_msg:1:comm` for messages. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia).
-        - **On-Chain First Architecture**: Messages are broadcast to the Kaspa blockchain, NOT stored in database. Platform is a viewer/indexer of on-chain data.
+        - **On-Chain First Architecture**: The public Kasia indexer (https://indexer.kasia.fyi/) is the SOURCE OF TRUTH. PostgreSQL database is ONLY a performance cache. On startup and every 60 seconds, the system syncs from the public indexer to populate/refresh the local cache. This maintains full decentralization - blockchain is always authoritative.
+        - **Kasia Client** (`server/kasia-client.ts`): Queries public Kasia indexer API endpoints (`/handshakes/by-sender`, `/handshakes/by-receiver`, `/messages/by-conversation-alias`).
         - **Broadcast Service** (`server/kasia-broadcast.ts`): Prepares payloads for client-side signing. Users broadcast via KasWare (paying their own fees). Treasury only broadcasts for admin auto-accept.
-        - **On-Chain Indexer** (`server/kasia-indexer.ts`): Tracks conversations and messages with txHash references as proof of on-chain existence. In-memory cache regenerable from blockchain.
+        - **On-Chain Indexer** (`server/kasia-indexer.ts`): Syncs from public Kasia indexer on startup. Tracks conversations and messages with txHash references as proof of on-chain existence. In-memory cache + database cache both regenerable from blockchain.
         - **Payload Encryption** (`server/kasia-encrypted.ts`): Creates Kasia protocol payloads (handshakes and comm messages).
         - **Security Model**: Wallet signatures authenticate messages only - no KAS spending involved. Message signatures cannot be used to transfer funds.
     - **Conversation Status Flow**: `pending` → `active` (after handshake accepted) → messaging enabled.
