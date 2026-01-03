@@ -18,6 +18,12 @@ import {
   Link2,
   FileText,
   Layers,
+  Lock,
+  Globe,
+  GraduationCap,
+  MessagesSquare,
+  Key,
+  Signature,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 
@@ -46,15 +52,21 @@ export default function Landing() {
     },
     {
       icon: Award,
-      title: "KRC-721 NFT Certificates",
+      title: "KRC-721 NFT Diploma",
       description:
-        "Receive verifiable NFT certificates for completed courses. Non-custodial minting means you own your credentials with no intermediaries.",
+        "Complete all 16 courses to earn your diploma NFT. Whitelist-based minting means graduates pay only network fees while others pay 20,000 KAS.",
     },
     {
-      icon: Link2,
-      title: "On-Chain Verification",
+      icon: MessagesSquare,
+      title: "Dual-Protocol Messaging",
       description:
-        "Every quiz completion is recorded on Kaspa L1 using the KU Protocol. Your achievements are permanently verifiable on the blockchain.",
+        "Public Q&A via K Protocol for ecosystem discovery, plus end-to-end encrypted P2P messaging via Kasia Protocol for private discussions.",
+    },
+    {
+      icon: Signature,
+      title: "Wallet-Signed Messages",
+      description:
+        "Every message is signed by your wallet for cryptographic attribution. Your contributions are verifiable and permanently tied to your identity.",
     },
   ];
 
@@ -83,11 +95,54 @@ export default function Landing() {
 
   const benefits = [
     "No registration required",
-    "0.1 KAS per course",
-    "KRC-721 NFT certificates",
-    "On-chain verification",
+    "4 on-chain protocols",
+    "Encrypted P2P messaging",
+    "Wallet-signed attribution",
     "Anti-Sybil protection",
     "Non-custodial minting",
+  ];
+
+  const protocols = [
+    {
+      id: "ku",
+      name: "KU Protocol",
+      tagline: "Achievement Proofs",
+      icon: GraduationCap,
+      color: "from-primary to-primary/70",
+      format: "ku:1:quiz:{data}",
+      description: "Records quiz completions on-chain. Each passing score generates a verifiable proof transaction.",
+      features: ["Quiz result verification", "Score attestation", "Reward eligibility"],
+    },
+    {
+      id: "k",
+      name: "K Protocol",
+      tagline: "Public Comments",
+      icon: Globe,
+      color: "from-accent to-accent/70",
+      format: "k:1:post:{content}",
+      description: "Public Q&A indexed by ecosystem K-indexers. Your comments are discoverable across the Kaspa ecosystem.",
+      features: ["Ecosystem indexing", "Cross-platform discovery", "Public attribution"],
+    },
+    {
+      id: "kasia",
+      name: "Kasia Protocol",
+      tagline: "Encrypted Messaging",
+      icon: Lock,
+      color: "from-violet-500 to-violet-500/70",
+      format: "ciph_msg:1:comm:{encrypted}",
+      description: "End-to-end encrypted P2P messaging with handshake-based key exchange. Private conversations on-chain.",
+      features: ["E2E encryption", "Handshake key exchange", "Private P2P chat"],
+    },
+    {
+      id: "krc721",
+      name: "KRC-721",
+      tagline: "NFT Diplomas",
+      icon: Award,
+      color: "from-amber-500 to-amber-500/70",
+      format: "{p:\"krc-721\",op:\"mint\",...}",
+      description: "Diploma NFTs for graduates. Whitelist-based pricing: 0 KAS for graduates, 20,000 KAS deterrent for others.",
+      features: ["Verifiable credentials", "Whitelist pricing", "1,000 max supply"],
+    },
   ];
 
   return (
@@ -129,8 +184,8 @@ export default function Landing() {
             data-testid="text-hero-subtitle"
           >
             Master BlockDAG technology while earning real cryptocurrency rewards.
-            Complete courses, earn instant KAS, and receive verifiable NFT certificates
-            on the world's fastest proof-of-work BlockDAG.
+            Powered by 4 on-chain protocols: KU for achievements, K for public Q&A, 
+            Kasia for encrypted messaging, and KRC-721 for diploma NFTs.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -208,7 +263,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature) => (
               <div
                 key={feature.title}
@@ -218,8 +273,8 @@ export default function Landing() {
                 <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary/20">
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+                <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -254,71 +309,132 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="px-4 py-20" id="ku-protocol">
+      <section className="px-4 py-20" id="protocol-stack">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              The KU Protocol
+              The Protocol Stack
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              True decentralization through on-chain verification
+            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+              Four interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
+              from achievements to messaging to credentials.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="rounded-2xl border border-border/50 bg-card/50 p-6">
-              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h3 className="mb-3 text-xl font-semibold">What is KU Protocol?</h3>
-              <p className="text-muted-foreground mb-4">
-                KU Protocol is our custom on-chain data format for recording educational achievements on Kaspa L1. 
-                Every quiz completion generates a unique payload that is embedded in a real blockchain transaction.
-              </p>
-              <div className="rounded-lg bg-muted/50 p-3 font-mono text-xs break-all">
-                <span className="text-primary">ku:1:quiz:</span>
-                <span className="text-muted-foreground">wallet:courseId:lessonId:score:maxScore:timestamp:contentHash</span>
-              </div>
+          <div className="relative mb-12">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-[300px] w-[300px] rounded-full border-2 border-dashed border-primary/20" />
+              <div className="absolute h-[200px] w-[200px] rounded-full border-2 border-dashed border-accent/20" />
             </div>
-
-            <div className="rounded-2xl border border-border/50 bg-card/50 p-6">
-              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
-                <Layers className="h-6 w-6" />
-              </div>
-              <h3 className="mb-3 text-xl font-semibold">How It Works</h3>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">1</span>
-                  <span>Quiz answers are hashed and signed by your wallet</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">2</span>
-                  <span>A proof transaction with embedded KU payload is sent to Kaspa L1</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">3</span>
-                  <span>Your reward (0.1 KAS) becomes claimable on-chain</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">4</span>
-                  <span>Anyone can verify your achievement using the blockchain explorer</span>
-                </li>
-              </ul>
+            
+            <div className="relative grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {protocols.map((protocol, index) => (
+                <div
+                  key={protocol.id}
+                  className="group relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 transition-all hover:border-primary/40 hover:bg-card"
+                  data-testid={`protocol-${protocol.id}`}
+                >
+                  <div className={`mb-3 inline-flex rounded-xl bg-gradient-to-br ${protocol.color} p-2.5 text-white`}>
+                    <protocol.icon className="h-5 w-5" />
+                  </div>
+                  
+                  <div className="mb-2">
+                    <h3 className="text-lg font-semibold">{protocol.name}</h3>
+                    <span className="text-xs text-muted-foreground">{protocol.tagline}</span>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {protocol.description}
+                  </p>
+                  
+                  <div className="rounded-md bg-muted/50 p-2 font-mono text-[10px] text-muted-foreground break-all mb-3">
+                    {protocol.format}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1">
+                    {protocol.features.map((feature) => (
+                      <span
+                        key={feature}
+                        className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 p-6 text-center">
-            <p className="text-muted-foreground">
-              <span className="font-semibold text-foreground">True Decentralization:</span>{" "}
-              Unlike traditional platforms, your achievements exist independently on Kaspa L1. 
-              Even if Kaspa University goes offline, your credentials remain verifiable forever on the blockchain.
+          <div className="rounded-2xl border border-border/50 bg-card/50 p-6 md:p-8">
+            <h3 className="text-xl font-semibold mb-6 text-center">How They Work Together</h3>
+            
+            <div className="relative">
+              <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent via-violet-500 to-amber-500 -translate-y-1/2 opacity-30" />
+              
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="relative rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">
+                    Step 1
+                  </div>
+                  <GraduationCap className="mx-auto mb-2 h-8 w-8 text-primary" />
+                  <p className="text-sm font-medium">Complete Quiz</p>
+                  <p className="text-xs text-muted-foreground mt-1">KU Protocol records your achievement on-chain</p>
+                </div>
+                
+                <div className="relative rounded-xl border border-accent/30 bg-accent/5 p-4 text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-0.5 text-xs font-semibold text-accent-foreground">
+                    Step 2
+                  </div>
+                  <Globe className="mx-auto mb-2 h-8 w-8 text-accent" />
+                  <p className="text-sm font-medium">Ask Questions</p>
+                  <p className="text-xs text-muted-foreground mt-1">K Protocol posts public Q&A, indexed ecosystem-wide</p>
+                </div>
+                
+                <div className="relative rounded-xl border border-violet-500/30 bg-violet-500/5 p-4 text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-violet-500 px-3 py-0.5 text-xs font-semibold text-white">
+                    Step 3
+                  </div>
+                  <Lock className="mx-auto mb-2 h-8 w-8 text-violet-500" />
+                  <p className="text-sm font-medium">Private Chat</p>
+                  <p className="text-xs text-muted-foreground mt-1">Kasia Protocol enables encrypted P2P messaging</p>
+                </div>
+                
+                <div className="relative rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-3 py-0.5 text-xs font-semibold text-white">
+                    Step 4
+                  </div>
+                  <Award className="mx-auto mb-2 h-8 w-8 text-amber-500" />
+                  <p className="text-sm font-medium">Claim Diploma</p>
+                  <p className="text-xs text-muted-foreground mt-1">KRC-721 mints your NFT diploma after all courses</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-accent/5 to-violet-500/5 p-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Key className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-foreground">Wallet-Signed Attribution</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+              Every message and achievement is cryptographically signed by your wallet. Your contributions are permanently 
+              attributable to your identity, creating an immutable record of your educational journey on Kaspa L1.
             </p>
-            <Link href="/verify">
-              <Button variant="outline" className="mt-4 gap-2" data-testid="button-verify-cta">
-                <Shield className="h-4 w-4" />
-                KU Protocol Explorer
-              </Button>
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-4">
+              <Link href="/verify">
+                <Button variant="outline" className="gap-2" data-testid="button-verify-cta">
+                  <Shield className="h-4 w-4" />
+                  Protocol Explorer
+                </Button>
+              </Link>
+              <Link href="/messages">
+                <Button variant="outline" className="gap-2" data-testid="button-messages-cta">
+                  <MessageSquare className="h-4 w-4" />
+                  Encrypted Messages
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
