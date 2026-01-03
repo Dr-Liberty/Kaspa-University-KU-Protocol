@@ -1,0 +1,66 @@
+026-01-03 11:56:22.44
+a6d1a497
+User
+[Auth] First attempt failed, trying with full 96-byte signature
+2026-01-03 11:56:22.44
+a6d1a497
+User
+[Auth] WASM failed, trying secp256k1 with SHA-256 hash...
+2026-01-03 11:56:22.48
+a6d1a497
+User
+Wallet: kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7c...
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] Signature has valid ECDSA format (64 bytes)
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] Signature format mismatch (KasWare compatibility) - using address verification
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] All verification methods failed - signature mismatch
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] Signature verified for kaspa:qpysmev6qxpfhd446cl...
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] Address verified from public key, accepting authentication
+2026-01-03 11:56:22.48
+a6d1a497
+User
+[Auth] Message preview: Kaspa University Authentication
+2026-01-03 11:56:22.49
+a6d1a497
+User
+[Auth] Session created for kaspa:qpysmev6qxpfhd... from 73.140.7.168
+2026-01-03 11:56:22.49
+a6d1a497
+User
+7:56:22 PM [express] POST /api/auth/verify 200 in 238ms :: {"success":true,"token":"478d3eb861bec5eddf536eb856c7b742586e6651ba4ecc19f9a32b397d9c807a5d6cd3094a93afb2aae7b695b705e3cd","expiresAt":1767556582489}
+2026-01-03 11:56:22.59
+a6d1a497
+User
+7:56:22 PM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-03 11:56:24.67
+a6d1a497
+User
+[SecurityStorage] Database connection established
+2026-01-03 11:56:24.99
+a6d1a497
+User
+7:56:24 PM [express] GET /api/support/address 304 in 315ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-03 11:56:29.65
+a6d1a497
+User
+7:56:29 PM [express] POST /api/kasia/handshake/prepare 200 in 125ms :: {"success":true,"existing":true,"conversation":{"id":"000000002bcfcf63","initiatorAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"status":"active","handshakeTxHash":"{\"commitId\":\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\",\"revealId\":\"832b81dc96f2077fc8e259bbfa88e49f12203af74ad0ee66fcdf6bba3fb88282\",\"commitTxStr\":\"{\\\"id\\\":\\\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"f459206b23738b287ad6113623135388af49997375aed2ec90de0cc25f5d82b2\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41d18abe0b9c35bd37c903d9296b701d31f1f88a02f99b6323421b9a0dac9b913d4036921370ebba713cd70dded4ab12b03275ec8802ba4f37aebbcce1555d80b001\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3\\\",\\\"amount\\\":\\\"1799776518\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\",\\\"blockDaaScore\\\":\\\"320100210\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20eaff067e8adcaf85cec7181ad4d3391888aa2d222c0770999664a80ecf7ea39a87\\\"},{\\\"value\\\":\\\"1399773859\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"2659\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"832b81dc96f2077fc8e259bbfa88e49f12203af74ad0ee66fcdf6bba3fb88282\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"414bfbfede5e5ea8b9fbdb4fad310a7382e845896873ec48b0bf42709fc7a758168d40bf4935b6b87e34e2c6edd1e66cf63abdd2a8c646c84ca550155059ed9ff1014d540120490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033323632363336363633363633363333336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323631333737393638227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:pr407pn73tw2lpwwcuvp44xn8yvg323dygkqwuyejej2srk0063e5289kk3l3\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20eaff067e8adcaf85cec7181ad4d3391888aa2d222c0770999664a80ecf7ea39a87\\\",\\\"blockDaaScore\\\":\\\"320105289\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T08:49:26.568Z","updatedAt":"2026-01-03T11:23:47.580Z","isAdminConversation":true},"userRole":"initiator","message":"You already started this conversation."}
+2026-01-03 11:56:29.74
+a6d1a497
+User
+7:56:29 PM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+Wrap
+Colors

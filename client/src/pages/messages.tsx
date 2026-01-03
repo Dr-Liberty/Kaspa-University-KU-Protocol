@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useWallet } from "@/lib/wallet-context";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Mail,
@@ -584,7 +584,13 @@ export default function Messages() {
     queryKey: ["/api/conversations", useOnChain ? "onchain" : "local"],
     queryFn: async () => {
       const url = useOnChain ? "/api/conversations?source=onchain" : "/api/conversations";
-      const res = await fetch(url, { credentials: "include" });
+      const headers: Record<string, string> = {};
+      const authToken = getAuthToken();
+      const walletAddress = getWalletAddress();
+      if (authToken) headers["x-auth-token"] = authToken;
+      if (walletAddress) headers["x-wallet-address"] = walletAddress;
+      
+      const res = await fetch(url, { credentials: "include", headers });
       if (!res.ok) throw new Error("Failed to fetch conversations");
       return res.json();
     },
