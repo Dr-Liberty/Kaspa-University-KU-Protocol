@@ -4163,6 +4163,7 @@ export async function registerRoutes(
       // Create the handshake payload for signing
       const alias = senderAlias || "Anonymous";
       const handshakeData = kasiaBroadcast.createHandshakeForSigning({
+        senderAddress: authenticatedWallet,
         senderAlias: alias,
         recipientAddress,
         conversationId,
@@ -4304,7 +4305,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get conversations for authenticated user (supports on-chain or local source)
+  // Get conversations for authenticated user
+  // ON-CHAIN FIRST: Always sync from public Kasia indexer to ensure we have latest data
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4312,23 +4314,21 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
       
-      const useOnChain = req.query.source === "onchain";
-      
       // Debug logging
       const allStats = kasiaIndexer.getStats();
       console.log(`[Kasia] GET /api/conversations for wallet: ${authenticatedWallet.slice(0, 20)}...`);
       console.log(`[Kasia] Total conversations in indexer: ${allStats.conversations}, active: ${allStats.activeConversations}`);
       
-      let conversations;
-      if (useOnChain) {
-        conversations = await kasiaIndexer.getConversationsFromOnChain(authenticatedWallet);
-      } else {
-        conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
-      }
+      // ON-CHAIN FIRST: Always sync from public Kasia indexer for this wallet
+      // This ensures blockchain is the source of truth, not the local database
+      await kasiaIndexer.syncForWallet(authenticatedWallet);
       
-      console.log(`[Kasia] Returning ${conversations.length} conversations for wallet (source: ${useOnChain ? "onchain" : "local"})`);
+      // After sync, return from local cache (which is now updated from on-chain)
+      const conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
       
-      res.json({ conversations, source: useOnChain ? "onchain" : "local" });
+      console.log(`[Kasia] Returning ${conversations.length} conversations for wallet (on-chain synced)`);
+      
+      res.json({ conversations, source: "onchain" });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversations:", error);
       res.status(500).json({ error: "Failed to fetch conversations" });
@@ -4733,15 +4733,21 @@ export async function registerRoutes(
       const kaspaService = await getKaspaService();
       const treasuryAddress = kaspaService.getTreasuryAddress();
       
-      // Create Kasia comm payload for on-chain broadcast
-      const messagePayload = kasiaBroadcast.createMessageForSigning({
-        senderAlias: "KU Support",
-        conversationId,
-        encryptedContent: content,
-      });
+      if (!treasuryAddress) {
+        return res.status(500).json({ error: "Treasury not available" });
+      }
       
       // Determine recipient (send to the user, not back to admin)
       const recipientAddress = conversation.initiatorAddress;
+      
+      // Create Kasia comm payload for on-chain broadcast
+      const messagePayload = kasiaBroadcast.createMessageForSigning({
+        senderAddress: treasuryAddress,
+        senderAlias: "KU Support",
+        conversationId,
+        encryptedContent: content,
+        recipientAddress,
+      });
       
       // Broadcast message on-chain via treasury
       console.log(`[Kasia Admin] Broadcasting message to ${recipientAddress.slice(0, 20)}...`);
@@ -4810,7 +4816,7 @@ export async function registerRoutes(
       // Merge stats for complete view
       const mergedStats = {
         ...stats,
-        kasiaConversations: kasiaStats.activeConversations + kasiaStats.pendingConversations,
+        kasiaConversations: kasiaStats.activeConversations + kasiaStats.pendingHandshakes,
         kasiaMessages: kasiaStats.totalMessages,
       };
       

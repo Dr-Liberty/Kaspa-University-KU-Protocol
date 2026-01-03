@@ -162,6 +162,7 @@ class KasiaIndexer {
   /**
    * Sync conversations for a specific wallet from the public Kasia indexer
    * This is the ON-CHAIN FIRST approach - fetches from blockchain indexer
+   * Uses UPSERT pattern to update existing records with on-chain state
    */
   async syncForWallet(walletAddress: string): Promise<number> {
     console.log(`[Kasia Indexer] Syncing from on-chain for ${walletAddress.slice(0, 20)}...`);
@@ -171,6 +172,9 @@ class KasiaIndexer {
       let syncedCount = 0;
       
       for (const conv of onChainConversations) {
+        const isAdminConv = this.supportAddress ? 
+          (conv.initiatorAddress === this.supportAddress || conv.recipientAddress === this.supportAddress) : false;
+        
         const indexed: IndexedConversation = {
           id: conv.id,
           initiatorAddress: conv.initiatorAddress,
@@ -180,31 +184,50 @@ class KasiaIndexer {
           handshakeTxHash: conv.handshakeTxHash,
           responseTxHash: conv.responseTxHash,
           createdAt: conv.createdAt,
-          updatedAt: conv.createdAt,
-          isAdminConversation: this.supportAddress ? 
-            (conv.initiatorAddress === this.supportAddress || conv.recipientAddress === this.supportAddress) : false,
+          updatedAt: new Date(),
+          isAdminConversation: isAdminConv,
         };
         
-        // Update in-memory cache
+        // UPSERT: Always update in-memory cache with on-chain data (blockchain is source of truth)
         const existing = this.conversations.get(conv.id);
-        if (!existing || conv.createdAt > existing.createdAt) {
+        const isNewOrUpdated = !existing || 
+          existing.status !== conv.status ||
+          existing.responseTxHash !== conv.responseTxHash ||
+          existing.initiatorAlias !== conv.initiatorAlias;
+        
+        if (isNewOrUpdated) {
+          // Preserve local data if it's newer (e.g., recipientAlias set locally)
+          if (existing) {
+            indexed.recipientAlias = existing.recipientAlias || indexed.recipientAlias;
+          }
           this.conversations.set(conv.id, indexed);
           syncedCount++;
           
-          // Also update database cache
+          // UPSERT to database cache
           if (this.storage) {
             try {
               const existingDb = await this.storage.getConversation(conv.id);
+              const dbStatus = indexed.status === "pending" ? "pending_handshake" : indexed.status;
+              
               if (!existingDb) {
+                // Insert new
                 await this.storage.createConversation({
                   id: indexed.id,
                   initiatorAddress: indexed.initiatorAddress,
                   recipientAddress: indexed.recipientAddress,
-                  status: indexed.status === "pending" ? "pending_handshake" : indexed.status,
+                  status: dbStatus,
                   handshakeTxHash: indexed.handshakeTxHash,
                   initiatorAlias: indexed.initiatorAlias,
                   isAdminConversation: indexed.isAdminConversation,
                 });
+              } else if (existingDb.status !== dbStatus || existingDb.responseTxHash !== indexed.responseTxHash) {
+                // Update existing with on-chain state
+                await this.storage.updateConversationStatus(
+                  conv.id, 
+                  dbStatus, 
+                  indexed.responseTxHash, 
+                  indexed.recipientAlias
+                );
               }
             } catch (error: any) {
               // Ignore cache errors
@@ -214,7 +237,9 @@ class KasiaIndexer {
       }
       
       this.lastSyncTime = new Date();
-      console.log(`[Kasia Indexer] Synced ${syncedCount} new conversations from on-chain`);
+      if (syncedCount > 0) {
+        console.log(`[Kasia Indexer] Synced ${syncedCount} conversations from on-chain`);
+      }
       return syncedCount;
     } catch (error: any) {
       console.error(`[Kasia Indexer] On-chain sync error: ${error.message}`);
@@ -337,12 +362,19 @@ class KasiaIndexer {
   }
 
   /**
-   * Stop the indexer
+   * Stop the indexer and clean up resources
    */
   async stop(): Promise<void> {
     if (!this.isRunning) return;
     
     console.log("[Kasia Indexer] Stopping indexer...");
+    
+    // Clear periodic sync interval
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+    
     this.isRunning = false;
   }
 
