@@ -56,6 +56,7 @@ import { getDiscountService } from "./discount-service";
 import { kasiaIndexer } from "./kasia-indexer";
 import { kasiaBroadcast } from "./kasia-broadcast";
 import { createHandshakePayload, createHandshakeResponse } from "./kasia-encrypted";
+import { kuIndexer } from "./ku-indexer";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -4428,6 +4429,148 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Kasia Admin] Failed to fetch stats:", error);
       res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  // ============================================
+  // ON-CHAIN EXPLORER / KU PROTOCOL INDEXER API
+  // ============================================
+
+  // Get on-chain protocol statistics
+  // Note: Stats come from indexer which is populated as transactions are broadcast
+  // The indexer receives data when transactions are created, not by scanning the blockchain
+  app.get("/api/onchain/stats", statsRateLimiter, async (_req: Request, res: Response) => {
+    try {
+      await kuIndexer.start();
+      
+      // Get stats from the indexer (populated when transactions are broadcast)
+      const stats = kuIndexer.getStats();
+      
+      // Also get Kasia indexer stats for cross-protocol view
+      const kasiaStats = kasiaIndexer.getStats();
+      
+      // Merge stats for complete view
+      const mergedStats = {
+        ...stats,
+        kasiaConversations: kasiaStats.activeConversations + kasiaStats.pendingConversations,
+        kasiaMessages: kasiaStats.totalMessages,
+      };
+      
+      res.json({
+        success: true,
+        stats: mergedStats,
+        source: "indexer",
+        note: "Stats populated from transaction broadcasts. Full blockchain scan not implemented.",
+      });
+    } catch (error: any) {
+      console.error("[OnChain] Stats error:", error.message);
+      res.status(500).json({ error: "Failed to fetch on-chain stats" });
+    }
+  });
+
+  // Get quiz proofs from on-chain indexer
+  app.get("/api/onchain/proofs", statsRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { address, limit = "50", offset = "0" } = req.query;
+      
+      await kuIndexer.start();
+      
+      let proofs;
+      if (address && typeof address === "string") {
+        proofs = kuIndexer.getProofsForWallet(address);
+      } else {
+        proofs = kuIndexer.getAllProofs(
+          parseInt(limit as string, 10),
+          parseInt(offset as string, 10)
+        );
+      }
+      
+      res.json({
+        success: true,
+        proofs,
+        count: proofs.length,
+        source: "on-chain-indexed",
+      });
+    } catch (error: any) {
+      console.error("[OnChain] Proofs error:", error.message);
+      res.status(500).json({ error: "Failed to fetch proofs" });
+    }
+  });
+
+  // Verify a specific transaction on-chain
+  app.get("/api/onchain/verify/:txHash", statsRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { txHash } = req.params;
+      
+      if (!txHash || txHash.length < 32) {
+        return res.status(400).json({ error: "Invalid transaction hash" });
+      }
+      
+      const kaspaService = await getKaspaService();
+      const result = await kaspaService.verifyTransactionOnChain(txHash);
+      
+      if (!result.exists) {
+        return res.json({
+          success: false,
+          exists: false,
+          message: "Transaction not found on-chain",
+        });
+      }
+      
+      // Try to identify the protocol
+      let protocol = null;
+      let parsedData = null;
+      
+      if (result.payload) {
+        protocol = kuIndexer.identifyProtocol(result.payload);
+        
+        // Parse KU protocol data if applicable
+        if (protocol?.protocol === "ku") {
+          const parsed = parseKUPayload(result.payload);
+          parsedData = parsed?.quiz || parsed?.question || parsed?.answer;
+        }
+      }
+      
+      res.json({
+        success: true,
+        exists: true,
+        txHash,
+        protocol: protocol?.protocol,
+        type: protocol?.type,
+        parsedData,
+        source: "on-chain-verified",
+      });
+    } catch (error: any) {
+      console.error("[OnChain] Verify error:", error.message);
+      res.status(500).json({ error: "Failed to verify transaction" });
+    }
+  });
+
+  // Get recent on-chain transactions by protocol
+  app.get("/api/onchain/transactions", statsRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { protocol, limit = "50" } = req.query;
+      
+      await kuIndexer.start();
+      const stats = kuIndexer.getStats();
+      
+      let transactions = stats.recentTransactions;
+      
+      if (protocol && typeof protocol === "string") {
+        transactions = transactions.filter(tx => tx.protocol === protocol);
+      }
+      
+      transactions = transactions.slice(0, parseInt(limit as string, 10));
+      
+      res.json({
+        success: true,
+        transactions,
+        protocolBreakdown: stats.protocolBreakdown,
+        source: "on-chain-indexed",
+      });
+    } catch (error: any) {
+      console.error("[OnChain] Transactions error:", error.message);
+      res.status(500).json({ error: "Failed to fetch transactions" });
     }
   });
 
