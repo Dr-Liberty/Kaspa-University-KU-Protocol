@@ -2213,6 +2213,55 @@ class KaspaService {
     const content = await this.verifyBroadcastContent(txHash);
     return content ? { content } : null;
   }
+
+  /**
+   * Verify a transaction exists on-chain and return its payload if available
+   * Used for Kasia protocol verification
+   */
+  async verifyTransactionOnChain(txHash: string): Promise<{ exists: boolean; payload?: string }> {
+    try {
+      // Try RPC client first
+      if (this.rpcConnected && this.rpcClient) {
+        try {
+          const rpcResult = await this.rpcClient.request("getTransactionsByIdsRequest", {
+            transactionIds: [txHash]
+          });
+          
+          if (rpcResult?.transactions && rpcResult.transactions.length > 0) {
+            const tx = rpcResult.transactions[0];
+            return { exists: true, payload: tx.payload || undefined };
+          }
+        } catch (rpcError: any) {
+          console.log(`[Kaspa] RPC tx verification failed: ${rpcError.message}`);
+        }
+      }
+
+      // Try WASM RPC client
+      if (this.wasmRpcClient) {
+        try {
+          const wasmResult = await this.wasmRpcClient.getTransactionsByIds([txHash]);
+          
+          if (wasmResult?.transactions && wasmResult.transactions.length > 0) {
+            const tx = wasmResult.transactions[0];
+            return { exists: true, payload: tx.payload || undefined };
+          }
+        } catch (wasmError: any) {
+          console.log(`[Kaspa] WASM RPC tx verification failed: ${wasmError.message}`);
+        }
+      }
+
+      // Fallback to REST API
+      const txData = await this.apiCall(`/transactions/${txHash}`);
+      if (txData) {
+        return { exists: true, payload: txData.payload || undefined };
+      }
+
+      return { exists: false };
+    } catch (error: any) {
+      console.error("[Kaspa] Transaction verification error:", error.message);
+      return { exists: false };
+    }
+  }
 }
 
 // Singleton instance

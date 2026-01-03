@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Certificate {
@@ -69,6 +69,32 @@ interface P2SHRecoveryData {
   errors: string[];
 }
 
+interface KasiaConversation {
+  id: string;
+  initiatorAddress: string;
+  recipientAddress: string;
+  initiatorAlias?: string;
+  recipientAlias?: string;
+  status: "pending" | "active" | "archived";
+  handshakeTxHash?: string;
+  responseTxHash?: string;
+  createdAt: string;
+  updatedAt: string;
+  isAdminConversation?: boolean;
+}
+
+interface KasiaStats {
+  conversations: number;
+  pendingHandshakes: number;
+  activeConversations: number;
+  totalMessages: number;
+}
+
+interface KasiaHandshakeData {
+  conversations: KasiaConversation[];
+  stats: KasiaStats;
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -126,6 +152,17 @@ export default function AdminPage() {
     },
     enabled: authenticated,
     staleTime: 60000,
+  });
+
+  const { data: kasiaHandshakes, refetch: refetchKasia } = useQuery<KasiaHandshakeData>({
+    queryKey: ["/api/admin/kasia/handshakes"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/kasia/handshakes", { headers });
+      if (!res.ok) throw new Error("Failed to fetch Kasia data");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 30000,
   });
 
   const { data: collectionStatus, refetch: refetchCollection } = useQuery<{
@@ -351,6 +388,28 @@ export default function AdminPage() {
     }
   };
 
+  const acceptKasiaHandshakeMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      const res = await fetch(`/api/admin/kasia/handshakes/${conversationId}/accept`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientAlias: "Kaspa University Support" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to accept handshake");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Handshake accepted", description: `TX: ${data.txHash?.slice(0, 20)}...` });
+      refetchKasia();
+    },
+    onError: (error: any) => {
+      toast({ title: "Accept failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const refreshAll = () => {
     refetchStats();
     refetchCerts();
@@ -358,6 +417,7 @@ export default function AdminPage() {
     refetchErrors();
     refetchP2SH();
     refetchDemoCerts();
+    refetchKasia();
     toast({ title: "Refreshed", description: "All data refreshed" });
   };
 
@@ -587,7 +647,7 @@ export default function AdminPage() {
         )}
 
         <Tabs defaultValue="certificates" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="certificates" data-testid="tab-certificates">
               Certificates ({certificates.length})
             </TabsTrigger>
@@ -602,6 +662,9 @@ export default function AdminPage() {
             </TabsTrigger>
             <TabsTrigger value="recovery" data-testid="tab-recovery">
               Recovery {p2shRecovery && p2shRecovery.totalStuckFunds > 0 && `(${p2shRecovery.totalStuckFunds})`}
+            </TabsTrigger>
+            <TabsTrigger value="messages" data-testid="tab-messages">
+              Messages {kasiaHandshakes?.stats?.pendingHandshakes ? `(${kasiaHandshakes.stats.pendingHandshakes})` : ""}
             </TabsTrigger>
           </TabsList>
 
@@ -976,6 +1039,105 @@ export default function AdminPage() {
                 <p className="text-xs text-muted-foreground mt-2">
                   This will clear all quiz attempt history for the specified wallet, allowing unlimited retries.
                 </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="messages" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Kasia Protocol Messages
+                </CardTitle>
+                <CardDescription>
+                  On-chain encrypted messaging via Kasia Protocol. Accept pending handshakes to enable conversations.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {kasiaHandshakes?.stats && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="p-3 border rounded-md">
+                      <div className="text-2xl font-bold">{kasiaHandshakes.stats.conversations}</div>
+                      <div className="text-xs text-muted-foreground">Total Conversations</div>
+                    </div>
+                    <div className="p-3 border rounded-md">
+                      <div className="text-2xl font-bold text-yellow-400">{kasiaHandshakes.stats.pendingHandshakes}</div>
+                      <div className="text-xs text-muted-foreground">Pending Handshakes</div>
+                    </div>
+                    <div className="p-3 border rounded-md">
+                      <div className="text-2xl font-bold text-green-400">{kasiaHandshakes.stats.activeConversations}</div>
+                      <div className="text-xs text-muted-foreground">Active Conversations</div>
+                    </div>
+                    <div className="p-3 border rounded-md">
+                      <div className="text-2xl font-bold">{kasiaHandshakes.stats.totalMessages}</div>
+                      <div className="text-xs text-muted-foreground">Total Messages</div>
+                    </div>
+                  </div>
+                )}
+                
+                <h3 className="font-medium mb-3">Pending Handshakes</h3>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-3">
+                    {kasiaHandshakes?.conversations?.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className="p-4 border rounded-md space-y-2"
+                        data-testid={`handshake-${conv.id}`}
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-medium text-sm">
+                            {conv.initiatorAlias || "Anonymous User"}
+                          </div>
+                          <Badge className="bg-yellow-500/20 text-yellow-400">
+                            {conv.status}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>Conversation ID: {conv.id}</div>
+                          <div>From: {formatAddress(conv.initiatorAddress)}</div>
+                          <div>To: {formatAddress(conv.recipientAddress)}</div>
+                          {conv.handshakeTxHash && (
+                            <div className="truncate">Handshake TX: {conv.handshakeTxHash}</div>
+                          )}
+                          <div>Created: {formatDate(conv.createdAt)}</div>
+                        </div>
+                        {conv.status === "pending" && (
+                          <Button
+                            size="sm"
+                            onClick={() => acceptKasiaHandshakeMutation.mutate(conv.id)}
+                            disabled={acceptKasiaHandshakeMutation.isPending}
+                            data-testid={`button-accept-${conv.id}`}
+                          >
+                            {acceptKasiaHandshakeMutation.isPending ? (
+                              <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3 mr-1" />
+                            )}
+                            Accept Handshake
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {(!kasiaHandshakes?.conversations || kasiaHandshakes.conversations.length === 0) && (
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No pending handshakes</p>
+                        <p className="text-sm mt-1">All conversation requests have been accepted</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => refetchKasia()}
+                    data-testid="button-refresh-kasia"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

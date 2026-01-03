@@ -53,11 +53,18 @@ import {
   getSessionByToken 
 } from "./wallet-auth";
 import { getDiscountService } from "./discount-service";
+import { kasiaIndexer } from "./kasia-indexer";
+import { kasiaBroadcast } from "./kasia-broadcast";
+import { createHandshakePayload, createHandshakeResponse } from "./kasia-encrypted";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Initialize Kasia indexer with storage for persistence
+  kasiaIndexer.setStorage(storage);
+  await kasiaIndexer.start();
+  
   // Apply security middleware globally for API routes
   app.use("/api", securityMiddleware);
   app.use("/api", generalRateLimiter);
@@ -4047,7 +4054,13 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // ON-CHAIN KASIA MESSAGING (via Indexer)
+  // Messages are broadcast to blockchain, not stored in database
+  // ============================================
+
   // Start a new private conversation (initiate handshake)
+  // User broadcasts handshake tx via KasWare, we track the on-chain reference
   app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4073,8 +4086,8 @@ export async function registerRoutes(
       // Generate deterministic conversation ID
       const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
       
-      // Check if conversation already exists
-      const existing = await storage.getConversation(conversationId);
+      // Check if conversation already exists in indexer
+      const existing = await kasiaIndexer.getConversation(conversationId);
       if (existing) {
         return res.json({ success: true, conversation: existing, existing: true });
       }
@@ -4086,15 +4099,29 @@ export async function registerRoutes(
       // Auto-accept handshake for admin/support conversations so users can chat immediately
       const conversationStatus = isAdminConversation ? "active" : "pending";
       
-      const conversation = await storage.createConversation({
+      // Create conversation in on-chain indexer (tracks on-chain references)
+      const conversation = await kasiaIndexer.createConversation({
         id: conversationId,
         initiatorAddress: authenticatedWallet,
         recipientAddress,
-        status: conversationStatus,
-        handshakeTxHash,
         initiatorAlias,
+        handshakeTxHash,
         isAdminConversation,
+        status: conversationStatus,
       });
+      
+      // If handshakeTxHash provided, record it in the indexer (with on-chain verification)
+      if (handshakeTxHash) {
+        await kasiaIndexer.recordHandshake({
+          txHash: handshakeTxHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          recipientAddress,
+          senderAlias: initiatorAlias || "User",
+          isResponse: false,
+          timestamp: new Date(),
+        });
+      }
       
       if (isAdminConversation) {
         console.log(`[Kasia] Auto-accepted support conversation ${conversationId}`);
@@ -4107,7 +4134,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get conversations for authenticated user
+  // Get conversations for authenticated user (from on-chain indexer)
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4115,7 +4142,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
       
-      const conversations = await storage.getConversationsForWallet(authenticatedWallet);
+      const conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
       
       res.json({ conversations });
     } catch (error: any) {
@@ -4133,7 +4160,7 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = await kasiaIndexer.getConversation(conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -4152,6 +4179,7 @@ export async function registerRoutes(
   });
 
   // Accept handshake (respond to conversation request)
+  // User broadcasts response handshake tx via KasWare
   app.post("/api/conversations/:conversationId/accept", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4162,7 +4190,7 @@ export async function registerRoutes(
       const { conversationId } = req.params;
       const { responseTxHash, recipientAlias } = req.body;
       
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = await kasiaIndexer.getConversation(conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -4177,7 +4205,21 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not pending" });
       }
       
-      await storage.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
+      // Record response handshake in indexer (with on-chain verification)
+      if (responseTxHash) {
+        await kasiaIndexer.recordHandshake({
+          txHash: responseTxHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          recipientAddress: conversation.initiatorAddress,
+          senderAlias: recipientAlias || "User",
+          isResponse: true,
+          timestamp: new Date(),
+        });
+      }
+      
+      // Update conversation status to active
+      await kasiaIndexer.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
       
       res.json({ success: true });
     } catch (error: any) {
@@ -4186,7 +4228,7 @@ export async function registerRoutes(
     }
   });
 
-  // Send a private message in a conversation (with wallet signature)
+  // Record a message (user broadcasts via KasWare, we track the on-chain reference)
   app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4195,10 +4237,14 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const { encryptedContent, txHash, signature, signedPayload, senderPubkey } = req.body;
+      const { encryptedContent, txHash, senderAlias } = req.body;
       
       if (!encryptedContent) {
         return res.status(400).json({ error: "Encrypted content required" });
+      }
+
+      if (!txHash) {
+        return res.status(400).json({ error: "Transaction hash required - messages must be broadcast on-chain" });
       }
 
       // Validate message length
@@ -4206,7 +4252,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message too long" });
       }
       
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = await kasiaIndexer.getConversation(conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -4222,25 +4268,38 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not active. Handshake must be accepted first." });
       }
       
-      const message = await storage.createPrivateMessage({
+      // Record message in on-chain indexer (with txHash as proof, verified on-chain)
+      const messageId = randomUUID();
+      const recorded = await kasiaIndexer.recordMessage({
+        id: messageId,
+        txHash,
         conversationId,
         senderAddress: authenticatedWallet,
-        senderPubkey: senderPubkey || undefined,
+        senderAlias,
         encryptedContent,
-        signature: signature || undefined,
-        signedPayload: signedPayload || undefined,
-        txHash,
-        txStatus: txHash ? "confirmed" : "pending",
+        timestamp: new Date(),
       });
       
-      res.json({ success: true, message });
+      if (!recorded) {
+        return res.status(400).json({ error: "Transaction not verified on-chain. Please ensure the transaction is confirmed." });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: { 
+          id: messageId, 
+          txHash, 
+          conversationId, 
+          senderAddress: authenticatedWallet 
+        } 
+      });
     } catch (error: any) {
-      console.error("[Kasia] Failed to send message:", error);
-      res.status(500).json({ error: "Failed to send message" });
+      console.error("[Kasia] Failed to record message:", error);
+      res.status(500).json({ error: "Failed to record message" });
     }
   });
 
-  // Get messages in a conversation (only if participant)
+  // Get messages in a conversation (from on-chain indexer)
   app.get("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4252,7 +4311,7 @@ export async function registerRoutes(
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = parseInt(req.query.offset as string) || 0;
       
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = await kasiaIndexer.getConversation(conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -4263,12 +4322,112 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized to view messages in this conversation" });
       }
       
-      const messages = await storage.getPrivateMessages(conversationId, limit, offset);
+      const messages = kasiaIndexer.getMessages(conversationId, limit, offset);
       
       res.json({ messages, conversation });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // ============================================
+  // ADMIN KASIA HANDSHAKE MANAGEMENT
+  // ============================================
+
+  // Get pending handshakes for admin review
+  app.get("/api/admin/kasia/handshakes", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const pendingConversations = kasiaIndexer.getPendingConversations();
+      const stats = kasiaIndexer.getStats();
+      
+      res.json({ 
+        conversations: pendingConversations,
+        stats
+      });
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to fetch pending handshakes:", error);
+      res.status(500).json({ error: "Failed to fetch pending handshakes" });
+    }
+  });
+
+  // Admin manually accept a handshake (treasury broadcasts response)
+  app.post("/api/admin/kasia/handshakes/:conversationId/accept", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { conversationId } = req.params;
+      const { recipientAlias } = req.body;
+      
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (conversation.status !== "pending") {
+        return res.status(400).json({ error: "Conversation is not pending" });
+      }
+      
+      // Create handshake response payload
+      const supportAddress = process.env.SUPPORT_ADDRESS || "";
+      const alias = recipientAlias || "Kaspa University Support";
+      const payloadHex = createHandshakeResponse(alias, conversation.initiatorAddress, conversationId);
+      
+      // Broadcast via treasury
+      const result = await kasiaBroadcast.broadcastHandshake(payloadHex, conversation.initiatorAddress);
+      
+      if (!result.success) {
+        return res.status(500).json({ error: result.error || "Failed to broadcast handshake response" });
+      }
+      
+      // Update conversation status
+      await kasiaIndexer.updateConversationStatus(conversationId, "active", result.txHash, alias);
+      
+      // Record the response handshake (skip verification since we just broadcast it)
+      if (result.txHash) {
+        await kasiaIndexer.recordHandshake({
+          txHash: result.txHash,
+          conversationId,
+          senderAddress: supportAddress,
+          recipientAddress: conversation.initiatorAddress,
+          senderAlias: alias,
+          isResponse: true,
+          timestamp: new Date(),
+        }, true); // Skip verification for freshly broadcast transactions
+      }
+      
+      console.log(`[Kasia Admin] Manually accepted handshake for ${conversationId}, tx: ${result.txHash}`);
+      
+      res.json({ success: true, txHash: result.txHash });
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to accept handshake:", error);
+      res.status(500).json({ error: "Failed to accept handshake" });
+    }
+  });
+
+  // Get Kasia indexer stats
+  app.get("/api/admin/kasia/stats", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const adminPassword = req.headers["x-admin-password"] as string;
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const stats = kasiaIndexer.getStats();
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error("[Kasia Admin] Failed to fetch stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
     }
   });
 
