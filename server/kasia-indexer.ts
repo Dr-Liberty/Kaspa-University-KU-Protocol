@@ -558,7 +558,16 @@ class KasiaIndexer {
    * Get all conversations for a wallet address (from local cache)
    */
   getConversationsForWallet(walletAddress: string): IndexedConversation[] {
-    return Array.from(this.conversations.values())
+    const allConvs = Array.from(this.conversations.values());
+    console.log(`[Kasia Indexer] getConversationsForWallet: checking ${allConvs.length} conversations for wallet ${walletAddress.slice(0, 20)}...`);
+    
+    // Debug: log all conversation addresses
+    for (const c of allConvs) {
+      const isMatch = c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress;
+      console.log(`[Kasia Indexer]   Conv ${c.id}: initiator=${c.initiatorAddress.slice(0, 20)}..., recipient=${c.recipientAddress.slice(0, 20)}..., status=${c.status}, match=${isMatch}`);
+    }
+    
+    return allConvs
       .filter(c => c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress)
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }

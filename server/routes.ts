@@ -4308,12 +4308,19 @@ export async function registerRoutes(
       
       const useOnChain = req.query.source === "onchain";
       
+      // Debug logging
+      const allStats = kasiaIndexer.getStats();
+      console.log(`[Kasia] GET /api/conversations for wallet: ${authenticatedWallet.slice(0, 20)}...`);
+      console.log(`[Kasia] Total conversations in indexer: ${allStats.conversations}, active: ${allStats.activeConversations}`);
+      
       let conversations;
       if (useOnChain) {
         conversations = await kasiaIndexer.getConversationsFromOnChain(authenticatedWallet);
       } else {
         conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
       }
+      
+      console.log(`[Kasia] Returning ${conversations.length} conversations for wallet (source: ${useOnChain ? "onchain" : "local"})`);
       
       res.json({ conversations, source: useOnChain ? "onchain" : "local" });
     } catch (error: any) {
