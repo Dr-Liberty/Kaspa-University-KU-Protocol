@@ -2087,13 +2087,14 @@ Kaspa can increase blocks per second by:
 <p>4. Wallet Signing: Your wallet signs the payload (proves it's you)</p>
 <p>5. On-Chain Recording: The signed proof is broadcast to Kaspa</p>
 <p>6. Reward Distribution: KAS rewards are sent to your wallet</p>
-<p>**Anti-Cheating Measures**</p>
-<p>KU Protocol includes security features:</p>
+<p>**Platform Security (Kaspa University Implementation)**</p>
+<p>Kaspa University adds security measures on top of the protocol:</p>
 <p>• Minimum completion times (can't speed-run)</p>
 <p>• Quiz attempt limits</p>
 <p>• Wallet trust scoring</p>
 <p>• IP session binding</p>
 <p>• Concurrent submission locking</p>
+<p>Note: These are platform-level protections, not part of the KU Protocol specification itself.</p>
 <p>**The Signed Payload**</p>
 <p>Your wallet signature proves:</p>
 <p>• You control the wallet that earned the achievement</p>
