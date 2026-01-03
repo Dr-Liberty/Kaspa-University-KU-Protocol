@@ -4694,7 +4694,7 @@ export async function registerRoutes(
     }
   });
 
-  // Admin send message (stored locally for MVP - full on-chain encryption requires key derivation)
+  // Admin send message (broadcasts on-chain via treasury wallet)
   app.post("/api/admin/kasia/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const adminPassword = req.headers["x-admin-password"] as string;
@@ -4723,28 +4723,61 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not active" });
       }
       
-      // For MVP: Store message locally without on-chain broadcast
-      // Full Kasia Protocol would require key derivation from handshake for encryption
-      const supportAddress = process.env.SUPPORT_ADDRESS || "kaspa:admin";
-      const messageId = `admin-msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Get treasury address for sending
+      const kaspaService = await getKaspaService();
+      const treasuryAddress = kaspaService.getTreasuryAddress();
       
-      // Skip on-chain verification for admin messages (they use local ID, not real txHash)
-      const stored = await kasiaIndexer.recordMessage({
-        txHash: messageId,
+      // Create Kasia comm payload for on-chain broadcast
+      const messagePayload = kasiaBroadcast.createMessageForSigning({
+        senderAlias: "KU Support",
         conversationId,
-        senderAddress: supportAddress,
         encryptedContent: content,
-        timestamp: new Date(),
-      }, true); // skipVerification = true for local admin messages
+      });
       
-      if (!stored) {
-        console.error(`[Kasia Admin] Failed to store message for ${conversationId}`);
-        return res.status(500).json({ error: "Failed to store message" });
+      // Determine recipient (send to the user, not back to admin)
+      const recipientAddress = conversation.initiatorAddress;
+      
+      // Broadcast message on-chain via treasury
+      console.log(`[Kasia Admin] Broadcasting message to ${recipientAddress.slice(0, 20)}...`);
+      const broadcastResult = await kasiaBroadcast.broadcastMessage(
+        messagePayload.payloadHex,
+        recipientAddress
+      );
+      
+      if (!broadcastResult.success || !broadcastResult.txHash) {
+        console.error(`[Kasia Admin] Broadcast failed: ${broadcastResult.error}`);
+        return res.status(500).json({ 
+          error: "Failed to broadcast message on-chain", 
+          details: broadcastResult.error 
+        });
       }
       
-      console.log(`[Kasia Admin] Stored message for ${conversationId}: ${messageId}`);
+      console.log(`[Kasia Admin] Message broadcast: ${broadcastResult.txHash}`);
       
-      res.json({ success: true, messageId });
+      // Record message with real txHash (skip verification since we just broadcast it)
+      const messageId = randomUUID();
+      const stored = await kasiaIndexer.recordMessage({
+        id: messageId,
+        txHash: broadcastResult.txHash,
+        conversationId,
+        senderAddress: treasuryAddress,
+        senderAlias: "KU Support",
+        encryptedContent: content,
+        timestamp: new Date(),
+      }, true); // skipVerification for freshly broadcast tx (not yet indexed)
+      
+      if (!stored) {
+        console.error(`[Kasia Admin] Failed to record message for ${conversationId}`);
+        // Message was broadcast but failed to record - still report success with txHash
+      }
+      
+      console.log(`[Kasia Admin] Sent message for ${conversationId}: ${broadcastResult.txHash}`);
+      
+      res.json({ 
+        success: true, 
+        txHash: broadcastResult.txHash,
+        messageId 
+      });
     } catch (error: any) {
       console.error("[Kasia Admin] Failed to send message:", error);
       res.status(500).json({ error: "Failed to send message" });
