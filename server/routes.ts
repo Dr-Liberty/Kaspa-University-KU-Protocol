@@ -4689,13 +4689,19 @@ export async function registerRoutes(
       const supportAddress = process.env.SUPPORT_ADDRESS || "kaspa:admin";
       const messageId = `admin-msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       
-      await kasiaIndexer.recordMessage({
+      // Skip on-chain verification for admin messages (they use local ID, not real txHash)
+      const stored = await kasiaIndexer.recordMessage({
         txHash: messageId,
         conversationId,
         senderAddress: supportAddress,
         encryptedContent: content,
         timestamp: new Date(),
-      });
+      }, true); // skipVerification = true for local admin messages
+      
+      if (!stored) {
+        console.error(`[Kasia Admin] Failed to store message for ${conversationId}`);
+        return res.status(500).json({ error: "Failed to store message" });
+      }
       
       console.log(`[Kasia Admin] Stored message for ${conversationId}: ${messageId}`);
       
