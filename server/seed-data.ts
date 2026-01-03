@@ -16,14 +16,24 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
-        id: "dag-terminology",
-        title: "DAG Terminology",
-        description: "Past, Future, Anticone, Mergeset, K parameter, what does it all mean?",
-        thumbnail: "/thumbnails/dag_terminology_visualization.png",
-        lessonCount: 8,
+        id: "sound-money",
+        title: "Sound Money & Monetary Debasement",
+        description: "Explore the principles of sound money and how fiat currency debasement erodes purchasing power over time. Learn about the inflation hurdle every investor must overcome, the history of dollar devaluation, and why scarce digital assets like Kaspa represent a return to sound monetary principles.",
+        thumbnail: "/thumbnails/sound_money_gold_scale.png",
+        lessonCount: 4,
         kasReward: 0.1,
         difficulty: "beginner",
-        category: "Development",
+        category: "Fundamentals",
+      },
+      {
+        id: "self-custody",
+        title: "Self-Custody & Hardware Wallets",
+        description: "Understand the critical importance of self-custody for financial sovereignty. Learn about hot wallets, cold storage, hardware wallets, and seed phrase security. Discover why holding your own keys to native Kaspa is essential for true ownership.",
+        thumbnail: "/thumbnails/self_custody_wallet_key.png",
+        lessonCount: 4,
+        kasReward: 0.1,
+        difficulty: "beginner",
+        category: "Fundamentals",
       },
       {
         id: "k-protocol",
@@ -68,11 +78,21 @@ const courses: Course[] = [
       {
         id: "l2-on-kaspa",
         title: "Layer 2 on Kaspa: Smart Contracts & Beyond",
-        description: "Discover Kaspa's L2 ecosystem including Kasplex zkEVM and Igra Labs. Learn step-by-step how to bridge KAS using Kurve and KSPR Bot. Understand how smart contracts expand Kaspa's capabilities for DeFi, gaming, and more.",
+        description: "Discover Kaspa's L2 ecosystem including Kasplex zkEVM (birthplace of BMTUniversity.com) and Igra Labs. Learn step-by-step how to bridge KAS using Kurve and KSPR Bot. Understand how smart contracts expand Kaspa's capabilities for DeFi, gaming, and more.",
         thumbnail: "/thumbnails/l2_kaspa_ecosystem.png",
         lessonCount: 5,
         kasReward: 0.1,
         difficulty: "intermediate",
+        category: "Development",
+      },
+      {
+        id: "dag-terminology",
+        title: "DAG Terminology",
+        description: "Past, Future, Anticone, Mergeset, K parameter, what does it all mean?",
+        thumbnail: "/thumbnails/dag_terminology_visualization.png",
+        lessonCount: 8,
+        kasReward: 0.1,
+        difficulty: "beginner",
         category: "Development",
       },
       {
@@ -475,6 +495,157 @@ const courses: Course[] = [
 <p><strong>Key Takeaway</strong></p>
 <p>Continue learning through other courses, follow Kaspa development, and share your knowledge. Welcome to the future of proof-of-work cryptocurrency.</p>`,
       },
+
+      // Course 2: Sound Money & Monetary Debasement - 4 lessons
+      {
+        id: "lesson-sm-1",
+        courseId: "sound-money",
+        title: "What is Sound Money?",
+        order: 1,
+        duration: "12 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson defines sound money, explains its essential characteristics, and examines why these properties matter for preserving purchasing power across generations.</p>
+<p><strong>Defining Sound Money</strong></p>
+<p>Sound money refers to currency that reliably maintains its value over time and cannot be arbitrarily created or manipulated by any central authority. Historically, gold served as the quintessential sound money for thousands of years because of its natural scarcity, durability, and resistance to counterfeiting. Sound money acts as a stable measuring stick for economic value, enabling individuals to plan for the future with confidence.</p>
+<p><strong>Essential Characteristics</strong></p>
+<p>Sound money must possess several key properties. Scarcity ensures that the supply cannot be easily expanded, protecting against dilution. Durability means the money retains its physical integrity over time. Divisibility allows it to be broken into smaller units for various transaction sizes. Portability enables efficient transfer across distances. Fungibility ensures that each unit is interchangeable with every other unit.</p>
+<p><strong>Sound Money vs Fiat Currency</strong></p>
+<p>Fiat currency—government-issued money not backed by physical commodities—lacks the scarcity constraint that defines sound money. Central banks can create unlimited quantities of fiat currency through monetary policy, gradually eroding purchasing power. This fundamental difference explains why a dollar today purchases far less than a dollar from previous decades.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Sound money preserves value through scarcity and resistance to manipulation, serving as a reliable store of wealth across time while fiat currencies systematically lose purchasing power.</p>`,
+      },
+      {
+        id: "lesson-sm-2",
+        courseId: "sound-money",
+        title: "The History of Dollar Debasement",
+        order: 2,
+        duration: "15 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson traces the historical transition from gold-backed currency to pure fiat money, explains the mechanisms of monetary debasement, and quantifies the dollar's loss of purchasing power since 1971.</p>
+<p><strong>The Gold Standard Era</strong></p>
+<p>Under the classical gold standard, paper currency represented a claim on physical gold held in reserve. This constraint limited government spending to actual revenues, as printing excess currency would trigger gold redemption demands. The Bretton Woods system (1944-1971) maintained a modified version where foreign governments could exchange dollars for gold at $35 per ounce.</p>
+<p><strong>The Nixon Shock of 1971</strong></p>
+<p>On August 15, 1971, President Nixon suspended the dollar's convertibility to gold, ending the last link between major currencies and precious metals. This "temporary" measure became permanent, inaugurating the era of purely fiat currency. The dollar was no longer constrained by physical reserves, enabling unlimited monetary expansion.</p>
+<p><strong>Quantifying the Debasement</strong></p>
+<p>Since 1971, the dollar has lost approximately 98% of its purchasing power relative to gold. What cost $1 in 1971 costs over $7.50 today. The M2 money supply grew from approximately $600 billion in 1971 to over $20 trillion by 2023—a 30-fold expansion. This monetary inflation systematically transfers wealth from savers to debtors and asset holders.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>The severing of the dollar from gold in 1971 removed all constraints on monetary expansion, resulting in continuous purchasing power erosion that penalizes savers and distorts economic calculation.</p>`,
+      },
+      {
+        id: "lesson-sm-3",
+        courseId: "sound-money",
+        title: "The Inflation Hurdle",
+        order: 3,
+        duration: "15 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains the inflation hurdle every investor must overcome, examines how official inflation metrics understate true purchasing power loss, and calculates the minimum return required to preserve wealth.</p>
+<p><strong>Understanding the Hurdle</strong></p>
+<p>The inflation hurdle represents the minimum investment return required simply to maintain purchasing power—before any real wealth creation occurs. If inflation runs at 7% annually, an investor must earn at least 7% just to break even in real terms. Any return below this threshold represents actual wealth destruction despite nominally positive gains.</p>
+<p><strong>Official vs Real Inflation</strong></p>
+<p>Consumer Price Index (CPI) calculations have been modified numerous times since 1980, consistently reducing reported inflation. Substitution effects, hedonic adjustments, and geometric weighting all serve to understate price increases. Alternative calculations using consistent 1980s methodology suggest true inflation often runs 5-10 percentage points higher than official figures.</p>
+<p><strong>The Savings Penalty</strong></p>
+<p>Traditional savings accounts offering 0.5-2% interest rates impose severe real wealth destruction when actual inflation exceeds these returns by wide margins. Over decades, this difference compounds dramatically. $100,000 saved in 1971 would need to be worth approximately $800,000 today to maintain equivalent purchasing power—yet bank savings would yield only a fraction of this amount.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>The inflation hurdle forces all savers into higher-risk investments just to preserve existing wealth, fundamentally distorting capital allocation and penalizing conservative financial behavior.</p>`,
+      },
+      {
+        id: "lesson-sm-4",
+        courseId: "sound-money",
+        title: "Kaspa as Digital Sound Money",
+        order: 4,
+        duration: "15 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains how Kaspa implements sound money principles through cryptographic scarcity, compares its monetary policy to Bitcoin and fiat currencies, and examines why proof-of-work provides superior security guarantees.</p>
+<p><strong>Cryptographic Scarcity</strong></p>
+<p>Kaspa implements absolute supply scarcity through mathematics rather than political promises. The maximum supply is fixed and verifiable by anyone running a node. No central authority can create additional units, modify emission schedules, or dilute existing holders. This represents a return to gold's scarcity properties with superior portability and divisibility.</p>
+<p><strong>Emission Schedule</strong></p>
+<p>Kaspa's emission follows a chromatic halving schedule inspired by musical theory, with smooth monthly reductions rather than abrupt halving events. This creates a predictable and steadily declining inflation rate approaching zero, ensuring early participants are not unfairly advantaged by dramatic supply shocks.</p>
+<p><strong>Proof-of-Work Integrity</strong></p>
+<p>Unlike proof-of-stake systems where wealthy validators can accumulate influence without ongoing cost, Kaspa's proof-of-work requires continuous energy expenditure to participate in consensus. This creates an unforgeable cost basis for security, preventing plutocratic capture and ensuring that network security scales with real-world resource commitment.</p>
+<p><strong>Sound Money Properties Satisfied</strong></p>
+<p>Kaspa satisfies all sound money requirements: absolute scarcity through fixed supply, extreme durability through distributed redundancy, perfect divisibility to eight decimal places, instant global portability through BlockDAG, and complete fungibility at the protocol level.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Kaspa represents sound money for the digital age—combining gold's scarcity with superior transaction properties, secured by proof-of-work rather than trust in institutions.</p>`,
+      },
+
+      // Course 3: Self-Custody & Hardware Wallets - 4 lessons
+      {
+        id: "lesson-sc-1",
+        courseId: "self-custody",
+        title: "What is Self-Custody?",
+        order: 1,
+        duration: "12 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson defines self-custody, explains the critical distinction between custodial and non-custodial solutions, and articulates why key ownership equals asset ownership in cryptocurrency.</p>
+<p><strong>The Fundamental Principle</strong></p>
+<p>Self-custody means maintaining direct, exclusive control over the cryptographic private keys that authorize spending of your cryptocurrency. The phrase "not your keys, not your coins" encapsulates this principle: whoever controls the private keys controls the assets, regardless of any claimed ownership. When you trust a third party with your keys, you trust them with your funds.</p>
+<p><strong>Custodial vs Non-Custodial</strong></p>
+<p>Custodial solutions—exchanges, lending platforms, managed wallets—hold private keys on your behalf. You receive an IOU representing your balance, but the platform controls the actual assets. Non-custodial or self-custody solutions place private key responsibility entirely in your hands. You bear full responsibility for security but retain absolute control.</p>
+<p><strong>The Exchange Risk</strong></p>
+<p>History provides numerous cautionary examples: Mt. Gox lost 850,000 Bitcoin in 2014; FTX collapsed in 2022 with billions in customer funds; countless smaller exchanges have exit-scammed or been hacked. Assets held on exchanges are legally claims against the company, not direct asset ownership. In bankruptcy, customers become unsecured creditors.</p>
+<p><strong>Financial Sovereignty</strong></p>
+<p>Self-custody represents true financial sovereignty—assets that cannot be frozen, seized, or censored without physical access to your keys. No bank holiday, geopolitical event, or platform policy change can prevent access to self-custodied funds.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Self-custody transfers asset ownership from trust-based claims to cryptographic proof, eliminating counterparty risk at the cost of personal security responsibility.</p>`,
+      },
+      {
+        id: "lesson-sc-2",
+        courseId: "self-custody",
+        title: "Hot Wallets vs Cold Storage",
+        order: 2,
+        duration: "15 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson distinguishes between hot and cold storage approaches, explains the security tradeoffs of each, and provides guidelines for appropriate allocation between convenience and security.</p>
+<p><strong>Hot Wallet Characteristics</strong></p>
+<p>Hot wallets maintain private keys on internet-connected devices—mobile phones, desktop computers, or browser extensions. Examples include KasWare, Kaspium, and web wallets. Hot wallets offer maximum convenience for frequent transactions but expose keys to potential online attacks, malware, and device compromise.</p>
+<p><strong>Cold Storage Characteristics</strong></p>
+<p>Cold storage keeps private keys completely offline—never touching an internet-connected device. Hardware wallets, paper wallets, and air-gapped computers all provide cold storage. Transactions require physical access to the cold device, creating an air gap that prevents remote attacks.</p>
+<p><strong>The Security Spectrum</strong></p>
+<p>Security exists on a spectrum. Browser extensions face the highest risk from malicious websites and extensions. Mobile wallets benefit from phone security but remain online. Desktop wallets vary based on computer security practices. Hardware wallets isolate keys in tamper-resistant chips. Paper/metal backups provide ultimate offline security but require careful physical protection.</p>
+<p><strong>Practical Allocation</strong></p>
+<p>Most users should maintain a small hot wallet balance for regular transactions while keeping the majority of holdings in cold storage. A reasonable guideline: keep only what you would comfortably carry in cash on a hot wallet. Hardware wallets provide the best balance of usability and security for most users.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Hot wallets trade security for convenience while cold storage trades convenience for security; proper asset protection typically requires both, allocated appropriately to use case.</p>`,
+      },
+      {
+        id: "lesson-sc-3",
+        courseId: "self-custody",
+        title: "Seed Phrases & Security",
+        order: 3,
+        duration: "15 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains seed phrases (mnemonic recovery phrases), details proper backup procedures, and warns against common security mistakes that lead to fund loss.</p>
+<p><strong>Understanding Seed Phrases</strong></p>
+<p>A seed phrase (also called recovery phrase or mnemonic) is a list of 12 or 24 words that mathematically derives all private keys for a wallet. These words, selected from a standardized list of 2048 possibilities, encode a large random number that serves as the master secret. Anyone who knows your seed phrase controls your funds—forever.</p>
+<p><strong>Proper Backup Practices</strong></p>
+<p>Write your seed phrase on paper or stamp it into metal immediately upon wallet creation. Never store seed phrases digitally—no photos, cloud storage, password managers, or text files. Store backups in multiple secure physical locations: home safe, bank safe deposit box, or trusted family member's secure location. Consider splitting phrases or using multi-signature setups for large holdings.</p>
+<p><strong>Common Fatal Mistakes</strong></p>
+<p>Several mistakes lead to permanent fund loss. Storing seeds in cloud services enables remote theft. Photographing seeds creates hackable digital copies. Sharing seeds with "support" personnel (a common scam). Single location backup risks fire, flood, or theft. Poor physical security enables observation or theft by visitors.</p>
+<p><strong>The Inheritance Challenge</strong></p>
+<p>Self-custody creates estate planning complexity. Your heirs need access to seed phrases to recover assets after your death, but providing this access creates lifetime security risks. Solutions include sealed envelopes with attorneys, specialized inheritance services, or trusted family members with partial information.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Seed phrases are the ultimate backup—and ultimate vulnerability. Proper offline backup in multiple secure locations protects against both loss and theft.</p>`,
+      },
+      {
+        id: "lesson-sc-4",
+        courseId: "self-custody",
+        title: "Setting Up Hardware Wallet for Kaspa",
+        order: 4,
+        duration: "18 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson provides practical guidance on selecting and configuring hardware wallets for Kaspa, explains the setup process, and covers best practices for ongoing security.</p>
+<p><strong>Hardware Wallet Options</strong></p>
+<p>Several hardware wallets support Kaspa. Tangem offers a card-format wallet with NFC communication—simple, durable, and portable. Ledger devices (Nano S Plus, Nano X, Flex, Stax) provide traditional hardware wallet security through the Ledger Live application with Kaspa support. Each option trades different convenience and security factors.</p>
+<p><strong>Initial Setup Process</strong></p>
+<p>Setup follows consistent principles regardless of device. Generate the seed phrase on the hardware device itself—never on a computer. Write down the seed phrase immediately on paper or metal. Verify the seed phrase by confirming words as prompted. Set a strong PIN for device access. Install necessary companion applications (Ledger Live, Tangem app). Complete a small test transaction before transferring significant funds.</p>
+<p><strong>Receiving Kaspa</strong></p>
+<p>To receive Kaspa, generate a receiving address on the hardware wallet. Verify the address matches on the device screen—never trust computer-displayed addresses alone. Share this address with the sender. After transaction confirmation, verify the balance updated correctly on the device.</p>
+<p><strong>Sending Kaspa</strong></p>
+<p>Sending requires physical confirmation on the hardware device. Initiate the transaction in the companion application, enter the recipient address and amount, then verify transaction details on the hardware wallet screen. Confirm only if the displayed address and amount match your intent. The device signs the transaction internally without exposing private keys.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Hardware wallets provide the optimal balance of security and usability by isolating private keys while enabling convenient transaction signing through physical verification.</p>`,
+      },
+
       {
         id: "lesson-2-1",
         courseId: "dag-terminology",
@@ -1758,7 +1929,7 @@ const courses: Course[] = [
         content: `<p><strong>Learning Objectives</strong></p>
 <p>This lesson provides technical understanding of Kasplex's architecture, explains its transaction flow, and outlines the developer experience for building on the platform.</p>
 <p><strong>Platform Overview</strong></p>
-<p>Kasplex is a Layer 2 zkEVM rollup that brings Ethereum-compatible smart contract capabilities to Kaspa. Launched in late 2025, it represents the first production smart contract platform in the Kaspa ecosystem, enabling developers to deploy Solidity contracts with minimal adaptation.</p>
+<p>Kasplex is a Layer 2 zkEVM rollup that brings Ethereum-compatible smart contract capabilities to Kaspa. Launched in late 2025, it represents the first production smart contract platform in the Kaspa ecosystem, enabling developers to deploy Solidity contracts with minimal adaptation. Notably, Kasplex L2 is the birthplace of BMTUniversity.com, the first learn-to-earn educational platform on Kaspa—the very platform whose content powers Kaspa University.</p>
 <p><strong>Technical Architecture</strong></p>
 <p>Kasplex implements a based rollup architecture that utilizes Kaspa Layer 1 as its sequencer. The virtual machine maintains full EVM compatibility, allowing Solidity contracts to function without modification. The native gas token is KAS, bridged from Layer 1. The network operates under chain ID 202555 for MetaMask and wallet configuration.</p>
 <p><strong>Transaction Flow</strong></p>
@@ -1771,23 +1942,21 @@ const courses: Course[] = [
       {
         id: "lesson-21-3",
         courseId: "l2-on-kaspa",
-        title: "Igra Labs: Gaming-Optimized L2",
+        title: "Igra Labs: Based Rollup with Atomic Composability",
         order: 3,
         duration: "5 min",
         content: `<p><strong>Learning Objectives</strong></p>
-<p>This lesson examines Igra Labs' technical approach to gaming-focused Layer 2 infrastructure, explains why blockchain gaming requires specialized solutions, and surveys the project's development status.</p>
+<p>This lesson examines Igra Labs' technical approach to building a based rollup on Kaspa, explains the revolutionary concept of atomic synchronous composability, and surveys the project's development roadmap.</p>
 <p><strong>Platform Overview</strong></p>
-<p>Igra Labs develops a Layer 2 ZK-rollup optimized specifically for gaming and high-performance applications. The project name derives from the Slavic word for "game," reflecting its primary focus on interactive entertainment applications.</p>
-<p><strong>Technical Differentiation</strong></p>
-<p>Igra's architecture incorporates several distinctive features. Zero-knowledge proofs provide cryptographic verification for canonical exits, ensuring trustless asset withdrawal. The platform plans support for multiple virtual machines including EVM, Move, WASM, and Solana VM, enabling developers to work in their preferred environments. Performance targets exceed 3,000 transactions per second, suitable for real-time gaming requirements. Sub-second finality provides the instant feedback essential for interactive experiences. Kaspa's leaderless DAG architecture provides inherent MEV resistance, preventing the front-running attacks that plague other networks.</p>
-<p><strong>The Gaming Performance Challenge</strong></p>
-<p>Traditional blockchain architectures cannot support real-time gaming. Ethereum's 12-second block times create unacceptable latency for interactive applications. Bitcoin's 10-minute confirmation window makes real-time gaming structurally impossible. Igra on Kaspa achieves sub-second finality with thousands of transactions per second, meeting the performance requirements of modern gaming.</p>
-<p><strong>Project Vision</strong></p>
-<p>Igra Labs aims to establish based ZK-rollups as the industry standard for Layer 2 architecture while positioning Kaspa as the premier decentralized sequencer for high-performance applications.</p>
-<p><strong>Development Status</strong></p>
-<p>As of this writing, testnet operates with public nodes. Over 21 development teams were building on the platform by mid-2025. Multi-VM support is scheduled for 2026.</p>
+<p>Igra Labs develops a based rollup leveraging Kaspa's BlockDAG architecture to unlock next-generation decentralized applications. The platform is secured by Kaspa's 1.45 EH hash power and achieves scalable 5,000 TPS with sub-second finality. The project mission is to "Defy DeFi limitations" through atomic programmability.</p>
+<p><strong>Atomic Synchronous Composability</strong></p>
+<p>Igra's defining innovation is atomic synchronous composability—the ability to execute multiple operations across separate smart contracts in a single transaction without risk of partial failure. This enables DeFi applications that were previously impossible: on-chain risk engines that analyze transactions and trigger mitigating actions atomically, on-chain orderbook DEXs that live within single transactions, atomic perpetual markets combining transparency and efficiency, and stablecoins collateralized by Kaspa perps using delta hedge strategies.</p>
+<p><strong>Technical Architecture</strong></p>
+<p>Igra implements Bitcoin-grade security through Kaspa's proof-of-work BlockDAG. The validity of Igra's state is secured by Kaspa's proof-of-work consensus. The platform provides MEV resilience, preventing exploitative behaviors and oracle manipulation. As an interoperable L2, developers can create dApps with assets that settle across various ZK chains.</p>
+<p><strong>Development Roadmap</strong></p>
+<p>The roadmap includes: Q1 2025 Dromon (invite-only devnet), July 2025 Caravel (incentivized testnet on Kaspa TN10), Q3 2025 public nodes on Caravel, January 2026 Galleon (closed mainnet with community nodes), February 2026 Fluyt (open mainnet with TGE), and March 2026 Frigate (public open mainnet).</p>
 <p><strong>Resources</strong></p>
-<p>Project information is available at igralabs.com, with updates on Twitter at @Igra_Labs and community support through the developer Discord.</p>`,
+<p>Documentation is available at docs.igralabs.com. Project updates are shared on Twitter at @Igra_Labs. Contact the team at team@igralabs.com.</p>`,
       },
       {
         id: "lesson-21-4",
@@ -1806,7 +1975,7 @@ const courses: Course[] = [
 <p><strong>Withdrawal Process (L2 to L1)</strong></p>
 <p>Returning assets to Layer 1 follows the reverse flow. The user initiates withdrawal through the Kurve interface. The Layer 2 KAS is sent to the bridge contract and locked. Once the transaction confirms, the corresponding Layer 1 KAS is released and delivered to the user's Kaspa wallet.</p>
 <p><strong>KSPR Bot Integration</strong></p>
-<p>For users preferring a simplified interface, KSPR Bot on Telegram provides bridging functionality. Users access the bot at @kspr_home_bot, create a wallet (with careful backup of the private key), deposit KAS to their Layer 1 address, and use the /bridge command to initiate transfers.</p>
+<p>For users preferring a simplified interface, KSPR Bot on Telegram provides bridging functionality. Users access the bot at @kspr_fun_bot, create a wallet (with careful backup of the private key), deposit KAS to their Layer 1 address, and use the /bridge command to initiate transfers.</p>
 <p><strong>Best Practices</strong></p>
 <p>Several guidelines ensure successful bridging: maintain 4-5 KAS on Layer 1 for transaction fees, begin with small amounts while learning the process, verify all addresses through official documentation only, and note that the bridge employs MPC multi-signature security for asset protection.</p>`,
       },
@@ -1849,7 +2018,19 @@ const courses: Course[] = [
       { id: "q-1-14-1", lessonId: "lesson-1-14", question: "What is Kaspa's relationship to Bitcoin's vision?", options: ["Competing replacement", "Fulfilling Satoshi's original peer-to-peer cash vision", "Completely different goals", "A Bitcoin sidechain"], correctIndex: 1, explanation: "Kaspa isn't trying to replace Bitcoin - it's fulfilling the original vision of peer-to-peer electronic cash that's fast enough to use." },
       { id: "q-1-15-1", lessonId: "lesson-1-15", question: "Should I learn more about Kaspa?", options: ["No, this is enough", "Yes!", "Maybe later", "I already know everything"], correctIndex: 1, explanation: "Absolutely! There's always more to learn about Kaspa's innovative technology. Keep exploring!" },
 
-      // Course 2: DAG Terminology - 8 lessons
+      // Course 2: Sound Money & Monetary Debasement - 4 lessons
+      { id: "q-sm-1-1", lessonId: "lesson-sm-1", question: "What is the defining characteristic of sound money?", options: ["Government backing", "Digital format", "Scarcity that cannot be arbitrarily manipulated", "Wide acceptance"], correctIndex: 2, explanation: "Sound money maintains value through scarcity and resistance to manipulation—it cannot be arbitrarily created by any central authority." },
+      { id: "q-sm-2-1", lessonId: "lesson-sm-2", question: "What event in 1971 fundamentally changed the US dollar?", options: ["The Federal Reserve was created", "Nixon suspended gold convertibility", "Bitcoin was invented", "Credit cards were introduced"], correctIndex: 1, explanation: "On August 15, 1971, Nixon suspended dollar-to-gold convertibility, ending the Bretton Woods system and inaugurating pure fiat currency." },
+      { id: "q-sm-3-1", lessonId: "lesson-sm-3", question: "What is the 'inflation hurdle'?", options: ["Government inflation target", "The minimum return needed just to maintain purchasing power", "Maximum inflation rate", "Inflation insurance cost"], correctIndex: 1, explanation: "The inflation hurdle is the minimum investment return required simply to break even in real terms—before any actual wealth creation occurs." },
+      { id: "q-sm-4-1", lessonId: "lesson-sm-4", question: "How does Kaspa implement sound money principles?", options: ["Government guarantees", "Bank backing", "Cryptographic scarcity with fixed supply and proof-of-work security", "Corporate reserves"], correctIndex: 2, explanation: "Kaspa implements sound money through mathematical supply limits, verifiable by anyone, secured by proof-of-work rather than trust in institutions." },
+
+      // Course 3: Self-Custody & Hardware Wallets - 4 lessons
+      { id: "q-sc-1-1", lessonId: "lesson-sc-1", question: "What does 'not your keys, not your coins' mean?", options: ["You need physical keys", "Whoever controls the private keys controls the assets", "Keys are made of coins", "Coins require key signatures"], correctIndex: 1, explanation: "This phrase encapsulates self-custody: whoever controls the cryptographic private keys has complete control over the assets, regardless of claimed ownership." },
+      { id: "q-sc-2-1", lessonId: "lesson-sc-2", question: "What is the key difference between hot and cold wallets?", options: ["Price difference", "Hot wallets are on internet-connected devices; cold storage is offline", "Color of the device", "Country of manufacture"], correctIndex: 1, explanation: "Hot wallets maintain keys on internet-connected devices for convenience; cold storage keeps keys completely offline for maximum security." },
+      { id: "q-sc-3-1", lessonId: "lesson-sc-3", question: "How should you store your seed phrase?", options: ["In cloud storage for easy access", "As a photo on your phone", "Written on paper/metal, stored offline in multiple secure locations", "Shared with customer support"], correctIndex: 2, explanation: "Seed phrases should never be stored digitally. Write them on paper or metal and store in multiple secure physical locations." },
+      { id: "q-sc-4-1", lessonId: "lesson-sc-4", question: "Why should you verify transaction details on the hardware wallet screen?", options: ["To check battery level", "Computer displays can be manipulated by malware; the hardware wallet shows the true transaction", "To see the time", "To read the manual"], correctIndex: 1, explanation: "Malware could display incorrect addresses on your computer. Always verify the actual recipient address and amount on the hardware wallet's trusted display." },
+
+      // Course 4: DAG Terminology - 8 lessons
       { id: "q-2-1-1", lessonId: "lesson-2-1", question: "In a traditional blockchain, what happens when conflicts occur?", options: ["Both conflicting blocks are permanently kept in the chain", "Conflicting blocks are combined into a single merged block", "One block is accepted into the main chain, all others are orphaned", "A voting mechanism determines which block to include"], correctIndex: 2, explanation: "In linear chains, when conflicts occur, only one block is accepted into the main chain while all other competing blocks are orphaned and discarded." },
       { id: "q-2-2-1", lessonId: "lesson-2-2", question: "What does DAG stand for?", options: ["Digital Asset Graph structure for token management", "Directed Acyclic Graph with no cycles allowed", "Decentralized Autonomous Governance protocol system", "Distributed Account Gateway for transactions"], correctIndex: 1, explanation: "DAG stands for Directed Acyclic Graph - directed means edges have direction, acyclic means no cycles." },
       { id: "q-2-3-1", lessonId: "lesson-2-3", question: "If Block A is in the 'past' of Block B, what is Block B to Block A?", options: ["Block B is also in the past of Block A", "Block B is in the future of Block A", "Block B is in the anticone of Block A", "Block B has no relationship to Block A"], correctIndex: 1, explanation: "Past and Future are inverse relationships - if A is in B's past, then B is in A's future." },
@@ -1959,7 +2140,7 @@ const courses: Course[] = [
       // Course 21: L2 on Kaspa - 5 lessons
       { id: "q-21-1-1", lessonId: "lesson-21-1", question: "Why does Kaspa use Layer 2 instead of adding smart contracts directly to Layer 1?", options: ["L1 can't support contracts", "To keep L1 lean, fast, and secure while adding capabilities via L2", "It's cheaper", "L2 is more decentralized"], correctIndex: 1, explanation: "Kaspa's philosophy prioritizes keeping L1 simple and secure - L2 adds complexity without compromising base layer properties." },
       { id: "q-21-2-1", lessonId: "lesson-21-2", question: "What type of L2 solution is Kasplex?", options: ["Sidechain", "zkEVM rollup that brings EVM-compatible smart contracts to Kaspa", "Payment channel", "Federated network"], correctIndex: 1, explanation: "Kasplex is a Layer 2 zkEVM rollup, enabling Ethereum-compatible smart contracts (Solidity) on Kaspa." },
-      { id: "q-21-3-1", lessonId: "lesson-21-3", question: "What makes Igra Labs unique compared to Kasplex?", options: ["It's faster", "Focus on gaming with ZK proofs and planned multi-VM support (EVM, Move, WASM)", "It's cheaper", "It's older"], correctIndex: 1, explanation: "Igra Labs focuses on gaming performance with ZK proofs for canonical exits and plans to support multiple VMs beyond just EVM." },
+      { id: "q-21-3-1", lessonId: "lesson-21-3", question: "What is Igra Labs' defining innovation?", options: ["Faster block times", "Atomic synchronous composability—executing multiple contracts in one atomic transaction", "Lower gas fees", "More validators"], correctIndex: 1, explanation: "Igra's atomic synchronous composability enables multiple smart contract operations to execute atomically in a single transaction without risk of partial failure, unlocking DeFi applications previously impossible. to support multiple VMs beyond just EVM." },
       { id: "q-21-4-1", lessonId: "lesson-21-4", question: "What is Kurve Bridge used for?", options: ["Mining", "Transferring KAS between Layer 1 and Kasplex Layer 2", "Trading NFTs", "Staking"], correctIndex: 1, explanation: "Kurve Bridge enables users to move KAS from Kaspa L1 to Kasplex L2 and back, funded by the Kaspa Ecosystem Foundation." },
       { id: "q-21-5-1", lessonId: "lesson-21-5", question: "What website is recommended for continuing Kaspa education beyond this platform?", options: ["kaspa.org", "bmtuniversity.com for peer-reviewed Kaspa courses", "ethereum.org", "bitcoin.org"], correctIndex: 1, explanation: "BMT University offers peer-reviewed courses covering Kaspa from BlockDAG fundamentals to advanced consensus mechanics." },
     ];

@@ -4,15 +4,13 @@
 Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It allows users to connect their Kaspa wallets, complete courses and quizzes, and earn KAS token rewards (0.1 KAS per course). The platform issues verifiable NFT certificates for course completions and facilitates decentralized P2P Q&A discussions using Kasia Protocol for ecosystem compatibility. The core vision is "blockchain-powered education that feels effortless," aiming to hide complexity while showcasing innovation.
 
 ## Course Content
-- **Source**: 16 peer-reviewed courses from BMT University (bmtuniversity.com) + 5 protocol/ecosystem courses
-- **Total Courses**: 21 courses covering:
-  - Kaspa fundamentals, BlockDAG, GHOSTDAG consensus, technical topics (16 BMT courses)
-  - K Protocol (decentralized social media, K Social app)
-  - Kasia Protocol (encrypted P2P messaging)
-  - KU Protocol (on-chain achievement proofs)
-  - KRC-721 (NFT standard, diploma system)
-  - L2 on Kaspa (Kasplex, Igra Labs, Kurve bridge tutorials)
-- **Total Lessons**: 89 lessons
+- **Source**: 16 peer-reviewed courses from BMT University (bmtuniversity.com) + 2 fundamentals + 5 protocol/ecosystem courses
+- **Total Courses**: 18 courses covering:
+  - Bitcoin vs Kaspa, Sound Money, Self-Custody (Fundamentals)
+  - K Protocol, Kasia Protocol, KU Protocol, KRC-721, L2 on Kaspa (Protocols)
+  - DAG Terminology, DAG and Kaspa, GHOSTDAG consensus, technical topics (16 BMT courses)
+- **Course Order**: Bitcoin vs Kaspa (#1), Sound Money (#2), Self-Custody (#3), K Protocol (#4), Kasia (#5), KU Protocol (#6), KRC-721 (#7), L2 on Kaspa (#8), DAG Terminology (#9), then BMT courses
+- **Total Lessons**: 97 lessons
 - **Categories**: Fundamentals, Development, Consensus, Technical, Protocols
 - **Integration Showcase**: Each protocol course explains how it's used in Kaspa University
 - **Reward**: 0.1 KAS per course completion (storage mass optimized for KIP-0009 compliance)

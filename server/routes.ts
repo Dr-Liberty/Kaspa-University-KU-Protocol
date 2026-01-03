@@ -656,6 +656,27 @@ export async function registerRoutes(
     res.json(courses);
   });
 
+  app.get("/api/courses/stats", statsRateLimiter, async (_req: Request, res: Response) => {
+    try {
+      const completionCounts = await storage.getCourseCompletionCounts();
+      const courses = await storage.getCourses();
+      const stats: Record<string, { completions: number; totalKasPaid: number }> = {};
+      
+      for (const course of courses) {
+        const completions = completionCounts.get(course.id) || 0;
+        stats[course.id] = {
+          completions,
+          totalKasPaid: parseFloat((completions * course.kasReward).toFixed(2))
+        };
+      }
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching course stats:", error);
+      res.status(500).json({ error: "Failed to fetch course stats" });
+    }
+  });
+
   app.get("/api/courses/:id", async (req: Request, res: Response) => {
     const course = await storage.getCourse(req.params.id);
     if (!course) {

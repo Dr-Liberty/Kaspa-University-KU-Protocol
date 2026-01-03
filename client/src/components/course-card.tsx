@@ -4,14 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import type { Course, UserProgress } from "@shared/schema";
-import { BookOpen, Coins, Clock, ChevronRight } from "lucide-react";
+import { BookOpen, Coins, Users, ChevronRight } from "lucide-react";
+
+interface CourseStats {
+  completions: number;
+  totalKasPaid: number;
+}
 
 interface CourseCardProps {
   course: Course;
   progress?: UserProgress;
+  stats?: CourseStats;
 }
 
-export function CourseCard({ course, progress }: CourseCardProps) {
+export function CourseCard({ course, progress, stats }: CourseCardProps) {
   const completedCount = progress?.completedLessons?.length ?? 0;
   const progressPercent = Math.round((completedCount / course.lessonCount) * 100);
   const isStarted = completedCount > 0;
@@ -77,7 +83,19 @@ export function CourseCard({ course, progress }: CourseCardProps) {
                 <Coins className="h-3.5 w-3.5 text-primary" />
                 <span className="font-medium text-primary">+{course.kasReward} KAS</span>
               </div>
+              {stats && stats.completions > 0 && (
+                <div className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{stats.completions} completed</span>
+                </div>
+              )}
             </div>
+            {stats && stats.totalKasPaid > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Coins className="h-3 w-3" />
+                <span>{stats.totalKasPaid.toFixed(1)} KAS distributed</span>
+              </div>
+            )}
 
             {isStarted && !isCompleted && (
               <div className="space-y-1.5">

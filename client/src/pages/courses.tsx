@@ -23,6 +23,10 @@ export default function Courses() {
     enabled: !!wallet || isDemoMode,
   });
 
+  const { data: courseStats } = useQuery<Record<string, { completions: number; totalKasPaid: number }>>({
+    queryKey: ["/api/courses/stats"],
+  });
+
   const progressMap = useMemo(() => {
     if (!progressList) return new Map<string, UserProgress>();
     return new Map(progressList.map((p) => [p.courseId, p]));
@@ -119,6 +123,7 @@ export default function Courses() {
                 key={course.id}
                 course={course}
                 progress={progressMap.get(course.id)}
+                stats={courseStats?.[course.id]}
               />
             ))}
           </div>
