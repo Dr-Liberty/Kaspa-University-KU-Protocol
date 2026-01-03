@@ -196,7 +196,7 @@ function ConversationView({
     mutationFn: async (content: string) => {
       setIsSigning(true);
       try {
-        // Step 1: Prepare the message payload for signing
+        // Step 1: Prepare the Kasia protocol payload for on-chain broadcast
         const prepareRes = await apiRequest("POST", "/api/messages/prepare", {
           content,
           conversationId: conversation.id,
@@ -204,33 +204,46 @@ function ConversationView({
         });
         const prepareData = await prepareRes.json();
         
-        if (!prepareData.success || !prepareData.messageToSign) {
-          throw new Error("Failed to prepare message for signing");
+        if (!prepareData.success || !prepareData.kasiaPayload) {
+          throw new Error("Failed to prepare Kasia payload");
         }
 
-        // Step 2: Request wallet signature via KasWare
-        let signature: string | undefined;
-        let senderPubkey: string | undefined;
+        // Step 2: User broadcasts their OWN transaction with embedded Kasia payload
+        // This is fully decentralized - no treasury dependency!
+        let txHash: string | undefined;
         
         if (window.kasware) {
           try {
-            senderPubkey = await window.kasware.getPublicKey();
-            signature = await window.kasware.signMessage(prepareData.messageToSign, { type: "ecdsa" });
-          } catch (signError: any) {
-            console.error("[Message] Wallet signing failed:", signError);
-            // Continue without signature if user cancels
-            if (signError.message?.includes("cancel") || signError.message?.includes("reject")) {
-              throw new Error("Signing cancelled by user");
+            // Convert Kasia payload to hex for transaction embedding
+            const payloadHex = prepareData.kasiaPayload;
+            
+            // Send minimal dust (1000 sompi = 0.00001 KAS) to other party with embedded payload
+            // The payload contains the Kasia protocol message
+            txHash = await window.kasware.sendKaspa(
+              otherAddress, // Recipient of the conversation
+              1000, // Minimal dust amount (1000 sompi)
+              { 
+                payload: payloadHex,
+                priorityFee: 0 
+              }
+            );
+            
+            console.log("[Message] User broadcast on-chain tx:", txHash);
+          } catch (txError: any) {
+            console.error("[Message] On-chain broadcast failed:", txError);
+            if (txError.message?.includes("cancel") || txError.message?.includes("reject")) {
+              throw new Error("Transaction cancelled by user");
             }
+            // Fall back to local storage if wallet broadcast fails
+            console.log("[Message] Falling back to local message storage");
           }
         }
 
-        // Step 3: Submit the signed message
+        // Step 3: Report the transaction to backend for indexing
         const response = await apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
           encryptedContent: content,
-          signature,
-          signedPayload: prepareData.messageToSign,
-          senderPubkey,
+          txHash, // User's own on-chain transaction hash
+          kasiaPayload: prepareData.kasiaPayload,
         });
         return response.json();
       } finally {

@@ -4024,6 +4024,7 @@ export async function registerRoutes(
   };
 
   // Prepare a message for wallet signing (user signs their own messages)
+  // Returns the Kasia protocol payload for on-chain embedding via sendKaspa
   app.post("/api/messages/prepare", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4041,19 +4042,43 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message too long (max 1000 characters)" });
       }
 
-      // Create the message payload that the user will sign
+      // Get conversation to find the alias for Kasia protocol
+      const conversation = conversationId ? await kasiaIndexer.getConversation(conversationId) : null;
+      if (conversationId && !conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Build the Kasia protocol payload for on-chain embedding
+      // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
+      // sealed_hex is the hex-encoded message content
       const timestamp = Date.now();
       const nonce = randomUUID().slice(0, 8);
+      const alias = conversation?.alias || conversationId || "public";
       
-      // Message format: {type}:{timestamp}:{nonce}:{conversationId}:{content}
+      // Create sealed hex from content (simplified - full Kasia uses ECDH encryption)
+      const messageData = JSON.stringify({
+        content,
+        timestamp,
+        nonce,
+        sender: authenticatedWallet,
+      });
+      const sealedHex = Buffer.from(messageData, "utf-8").toString("hex");
+      
+      // Kasia protocol payload for on-chain embedding
+      // This will be embedded in the transaction's payload field
+      const kasiaPayload = `ciph_msg:1:comm:${alias}:${sealedHex}`;
+      
+      // Also return messageToSign for signature-based fallback
       const messageToSign = `ku:msg:${messageType || "private"}:${timestamp}:${nonce}:${conversationId || "public"}:${content}`;
       
       res.json({
         success: true,
-        messageToSign,
+        kasiaPayload, // For on-chain embedding via sendKaspa
+        messageToSign, // For signature-based fallback
         metadata: {
           timestamp,
           nonce,
+          alias,
           conversationId: conversationId || null,
           messageType: messageType || "private",
           senderAddress: authenticatedWallet,
@@ -4561,9 +4586,27 @@ export async function registerRoutes(
       const messageId = randomUUID();
       let recorded = false;
       let finalTxHash = txHash;
+      const { kasiaPayload } = req.body;
       
-      // Mode 1: On-chain txHash provided - verify on blockchain
-      if (txHash) {
+      // Mode 1: User-broadcast on-chain txHash - FULLY DECENTRALIZED
+      // User sent their own transaction with embedded Kasia payload via sendKaspa
+      if (txHash && kasiaPayload) {
+        // Skip immediate verification since the tx was just broadcast
+        // The periodic sync from public Kasia indexer will confirm it later
+        recorded = await kasiaIndexer.recordMessage({
+          id: messageId,
+          txHash,
+          conversationId,
+          senderAddress: authenticatedWallet,
+          senderAlias,
+          encryptedContent,
+          timestamp: new Date(),
+        }, true); // Skip verification for freshly broadcast user transactions
+        
+        console.log(`[Kasia] User broadcast message recorded: ${txHash} (decentralized)`);
+      }
+      // Mode 1b: On-chain txHash only (legacy) - verify on blockchain
+      else if (txHash) {
         recorded = await kasiaIndexer.recordMessage({
           id: messageId,
           txHash,
