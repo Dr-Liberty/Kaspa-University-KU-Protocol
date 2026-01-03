@@ -4,9 +4,17 @@
 Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It allows users to connect their Kaspa wallets, complete courses and quizzes, and earn KAS token rewards (0.1 KAS per course). The platform issues verifiable NFT certificates for course completions and facilitates decentralized P2P Q&A discussions using Kasia Protocol for ecosystem compatibility. The core vision is "blockchain-powered education that feels effortless," aiming to hide complexity while showcasing innovation.
 
 ## Course Content
-- **Source**: 16 peer-reviewed courses imported from BMT University (bmtuniversity.com)
-- **Total Lessons**: 69 lessons covering Kaspa fundamentals, BlockDAG technology, GHOSTDAG consensus, and technical topics
-- **Categories**: Fundamentals, Development, Consensus, Technical
+- **Source**: 16 peer-reviewed courses from BMT University (bmtuniversity.com) + 5 protocol/ecosystem courses
+- **Total Courses**: 21 courses covering:
+  - Kaspa fundamentals, BlockDAG, GHOSTDAG consensus, technical topics (16 BMT courses)
+  - K Protocol (decentralized social media, K Social app)
+  - Kasia Protocol (encrypted P2P messaging)
+  - KU Protocol (on-chain achievement proofs)
+  - KRC-721 (NFT standard, diploma system)
+  - L2 on Kaspa (Kasplex, Igra Labs, Kurve bridge tutorials)
+- **Total Lessons**: 89 lessons
+- **Categories**: Fundamentals, Development, Consensus, Technical, Protocols
+- **Integration Showcase**: Each protocol course explains how it's used in Kaspa University
 - **Reward**: 0.1 KAS per course completion (storage mass optimized for KIP-0009 compliance)
 - **Data File**: `server/seed-data.ts` contains all course content, lessons, and quiz questions
 
