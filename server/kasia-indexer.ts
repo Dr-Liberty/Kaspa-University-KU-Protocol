@@ -711,19 +711,33 @@ class KasiaIndexer {
 
   /**
    * Get all conversations for a wallet address (from local cache)
+   * Uses cross-network comparison to support both mainnet (kaspa:) and testnet (kaspatest:)
    */
   getConversationsForWallet(walletAddress: string): IndexedConversation[] {
     const allConvs = Array.from(this.conversations.values());
     console.log(`[Kasia Indexer] getConversationsForWallet: checking ${allConvs.length} conversations for wallet ${walletAddress.slice(0, 20)}...`);
     
+    // Cross-network address comparison helper
+    const getAddressBase = (addr: string): string => {
+      const withoutPrefix = addr.replace(/^kaspatest:/, "").replace(/^kaspa:/, "");
+      return withoutPrefix.slice(0, 50).toLowerCase();
+    };
+    
+    const isSameAddress = (addr1: string, addr2: string): boolean => {
+      if (!addr1 || !addr2) return false;
+      if (addr1.toLowerCase().trim() === addr2.toLowerCase().trim()) return true;
+      return getAddressBase(addr1) === getAddressBase(addr2);
+    };
+    
     // Debug: log all conversation addresses
     for (const c of allConvs) {
-      const isMatch = c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress;
-      console.log(`[Kasia Indexer]   Conv ${c.id}: initiator=${c.initiatorAddress.slice(0, 20)}..., recipient=${c.recipientAddress.slice(0, 20)}..., status=${c.status}, match=${isMatch}`);
+      const isInitiatorMatch = isSameAddress(c.initiatorAddress, walletAddress);
+      const isRecipientMatch = isSameAddress(c.recipientAddress, walletAddress);
+      console.log(`[Kasia Indexer]   Conv ${c.id}: initiator=${c.initiatorAddress.slice(0, 20)}..., recipient=${c.recipientAddress.slice(0, 20)}..., status=${c.status}, initMatch=${isInitiatorMatch}, recipMatch=${isRecipientMatch}`);
     }
     
     return allConvs
-      .filter(c => c.initiatorAddress === walletAddress || c.recipientAddress === walletAddress)
+      .filter(c => isSameAddress(c.initiatorAddress, walletAddress) || isSameAddress(c.recipientAddress, walletAddress))
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
