@@ -136,8 +136,11 @@ class KasiaIndexer {
       
       // Load ALL conversations from database (pending, active, archived)
       const allConversations = await this.storage.getAllConversations();
+      console.log(`[Kasia Indexer] Raw database returned ${allConversations?.length || 0} conversations`);
       for (const conv of allConversations) {
-        this.conversations.set(conv.id, convertConversation(conv));
+        const converted = convertConversation(conv);
+        this.conversations.set(conv.id, converted);
+        console.log(`[Kasia Indexer] Loaded conv ${conv.id}: dbStatus=${conv.status} -> memStatus=${converted.status}, isAdmin=${conv.isAdminConversation}`);
         totalLoaded++;
       }
       
@@ -478,21 +481,27 @@ class KasiaIndexer {
     };
     this.conversations.set(params.id, conversation);
     
-    // Persist to database
+    // Persist to database - critical for durability across restarts
     if (this.storage) {
       try {
+        const dbStatus = params.status === "active" ? "active" : "pending_handshake";
+        console.log(`[Kasia Indexer] Persisting conversation ${params.id} with status=${dbStatus}, isAdmin=${params.isAdminConversation}`);
         await this.storage.createConversation({
           id: params.id,
           initiatorAddress: params.initiatorAddress,
           recipientAddress: params.recipientAddress,
-          status: params.status === "active" ? "active" : "pending_handshake",
+          status: dbStatus,
           handshakeTxHash: params.handshakeTxHash,
           initiatorAlias: params.initiatorAlias,
           isAdminConversation: params.isAdminConversation,
         });
+        console.log(`[Kasia Indexer] Successfully persisted conversation ${params.id}`);
       } catch (error: any) {
-        console.error(`[Kasia Indexer] Storage persist error: ${error.message}`);
+        console.error(`[Kasia Indexer] Storage persist error for ${params.id}: ${error.message}`);
+        console.error(`[Kasia Indexer] Full error:`, error);
       }
+    } else {
+      console.warn(`[Kasia Indexer] No storage backend - conversation ${params.id} will be lost on restart!`);
     }
     
     return conversation;
