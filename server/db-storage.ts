@@ -1020,4 +1020,16 @@ export class DbStorage implements IStorage {
       .where(eq(schema.conversations.status, "pending"));
     return result;
   }
+
+  async getAllConversations(): Promise<any[]> {
+    const result = await db.select()
+      .from(schema.conversations);
+    return result;
+  }
+
+  async updateConversation(id: string, updates: Record<string, any>): Promise<void> {
+    await db.update(schema.conversations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(schema.conversations.id, id));
+  }
 }

@@ -144,6 +144,8 @@ export interface IStorage {
   }): Promise<any>;
   getPrivateMessages(conversationId: string, limit?: number, offset?: number): Promise<any[]>;
   getPendingConversations(): Promise<any[]>;
+  getAllConversations(): Promise<any[]>;
+  updateConversation(id: string, updates: Record<string, any>): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -847,6 +849,18 @@ export class MemStorage implements IStorage {
   async getPendingConversations(): Promise<any[]> {
     return Array.from(this.conversations.values())
       .filter(c => c.status === "pending");
+  }
+
+  async getAllConversations(): Promise<any[]> {
+    return Array.from(this.conversations.values());
+  }
+
+  async updateConversation(id: string, updates: Record<string, any>): Promise<void> {
+    const conv = this.conversations.get(id);
+    if (conv) {
+      Object.assign(conv, updates, { updatedAt: new Date() });
+      this.conversations.set(id, conv);
+    }
   }
 }
 

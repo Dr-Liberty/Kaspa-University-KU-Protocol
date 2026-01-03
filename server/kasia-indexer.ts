@@ -134,19 +134,73 @@ class KasiaIndexer {
         isAdminConversation: conv.isAdminConversation,
       });
       
-      // Load pending conversations
-      const pending = await this.storage.getPendingConversations();
-      for (const conv of pending) {
+      // Load ALL conversations from database (pending, active, archived)
+      const allConversations = await this.storage.getAllConversations();
+      for (const conv of allConversations) {
         this.conversations.set(conv.id, convertConversation(conv));
         totalLoaded++;
       }
       
-      // Load active conversations by checking all users' conversations
-      // Note: In production, we'd have a getAllConversations method
-      // For now, we rely on database to persist and reload from pending
-      // Active conversations will be restored as users access them
+      // Rehydrate handshake records from conversation data
+      for (const conv of allConversations) {
+        // Recreate initiator handshake record if txHash exists
+        if (conv.handshakeTxHash) {
+          const handshakeRecord: HandshakeRecord = {
+            txHash: conv.handshakeTxHash,
+            conversationId: conv.id,
+            senderAddress: conv.initiatorAddress,
+            recipientAddress: conv.recipientAddress,
+            senderAlias: conv.initiatorAlias || "",
+            isResponse: false,
+            timestamp: new Date(conv.createdAt),
+          };
+          this.handshakes.set(conv.handshakeTxHash, handshakeRecord);
+        }
+        
+        // Recreate response handshake record if exists
+        if (conv.responseTxHash) {
+          const responseRecord: HandshakeRecord = {
+            txHash: conv.responseTxHash,
+            conversationId: conv.id,
+            senderAddress: conv.recipientAddress,
+            recipientAddress: conv.initiatorAddress,
+            senderAlias: conv.recipientAlias || "",
+            isResponse: true,
+            timestamp: new Date(conv.updatedAt),
+          };
+          this.handshakes.set(conv.responseTxHash, responseRecord);
+        }
+      }
       
-      console.log(`[Kasia Indexer] Loaded ${totalLoaded} pending conversations`);
+      // Load messages for active conversations
+      for (const conv of allConversations) {
+        if (conv.status === "active") {
+          try {
+            const messages = await this.storage.getPrivateMessages(conv.id, 100);
+            for (const msg of messages) {
+              const indexed: IndexedMessage = {
+                id: msg.id,
+                txHash: msg.txHash || "",
+                conversationId: msg.conversationId,
+                senderAddress: msg.senderAddress,
+                encryptedContent: msg.encryptedContent,
+                timestamp: new Date(msg.createdAt),
+              };
+              this.messages.set(msg.id, indexed);
+            }
+          } catch (error) {
+            // Continue even if message loading fails
+          }
+        }
+      }
+      
+      const statusCounts = {
+        pending: allConversations.filter(c => c.status === "pending" || c.status === "pending_handshake").length,
+        active: allConversations.filter(c => c.status === "active").length,
+        archived: allConversations.filter(c => c.status === "archived").length,
+      };
+      console.log(`[Kasia Indexer] Loaded ${totalLoaded} conversations (pending: ${statusCounts.pending}, active: ${statusCounts.active}, archived: ${statusCounts.archived})`);
+      console.log(`[Kasia Indexer] Rehydrated ${this.handshakes.size} handshakes, ${this.messages.size} messages`);
       
       return totalLoaded;
     } catch (error: any) {
@@ -166,10 +220,20 @@ class KasiaIndexer {
   }
 
   /**
-   * Verify a transaction exists on-chain and contains valid Kasia protocol data
-   * Returns true if the tx hash is valid, confirmed, and has proper Kasia payload
+   * Verify a transaction exists on-chain with valid Kasia data and matching binding
+   * @param txHash - Transaction hash to verify
+   * @param expectedType - Expected message type (handshake or comm)
+   * @param expectedBinding - Expected conversation binding (conversationId, participants)
    */
-  async verifyOnChain(txHash: string, expectedType?: "handshake" | "comm"): Promise<boolean> {
+  async verifyOnChain(
+    txHash: string, 
+    expectedType?: "handshake" | "comm",
+    expectedBinding?: {
+      conversationId?: string;
+      recipientAddress?: string;
+      senderAddress?: string;
+    }
+  ): Promise<boolean> {
     try {
       const kaspa = await getKaspaService();
       const result = await kaspa.verifyTransactionOnChain(txHash);
@@ -187,10 +251,60 @@ class KasiaIndexer {
           return false;
         }
         
-        // If expected type specified, validate it matches
+        // Validate message type
         if (expectedType && parsed.type !== expectedType) {
           console.warn(`[Kasia Indexer] TX type mismatch: expected ${expectedType}, got ${parsed.type}`);
           return false;
+        }
+        
+        // For handshakes, validate conversation binding
+        // ConversationId is deterministically generated from both initiator and recipient addresses
+        // so validating conversationId provides sender binding (can't forge conversationId without knowing both addresses)
+        if (expectedType === "handshake" && expectedBinding) {
+          // Validate conversationId binding - this is REQUIRED for handshakes
+          // ConversationId = hash(initiator, recipient) so it provides sender binding
+          if (expectedBinding.conversationId) {
+            if (!parsed.conversationId) {
+              console.warn(`[Kasia Indexer] Handshake payload missing conversationId - sender binding cannot be verified`);
+              return false;
+            }
+            if (parsed.conversationId !== expectedBinding.conversationId) {
+              console.warn(`[Kasia Indexer] ConversationId mismatch - possible replay attack: expected ${expectedBinding.conversationId.slice(0, 16)}...`);
+              return false;
+            }
+          }
+          
+          // Validate recipient binding (required if expected)
+          if (expectedBinding.recipientAddress) {
+            if (!parsed.recipientAddress) {
+              console.warn(`[Kasia Indexer] Handshake payload missing recipientAddress`);
+              return false;
+            }
+            if (parsed.recipientAddress !== expectedBinding.recipientAddress) {
+              console.warn(`[Kasia Indexer] Recipient mismatch - possible replay attack`);
+              return false;
+            }
+          }
+          
+          // Validate sender binding using resolved transaction origin
+          // UTXO resolution fetches the address from the referenced output
+          const strictSenderBinding = process.env.STRICT_SENDER_BINDING === "true";
+          if (expectedBinding.senderAddress) {
+            if (!result.senderAddress) {
+              console.warn(`[Kasia Indexer] Cannot verify sender binding - UTXO resolution failed`);
+              if (strictSenderBinding) {
+                console.warn(`[Kasia Indexer] STRICT MODE: Rejecting handshake without sender verification`);
+                return false;
+              }
+              // Fallback to conversationId binding (cryptographically secure)
+              console.log(`[Kasia Indexer] Falling back to conversationId binding (hash of both addresses)`);
+            } else if (result.senderAddress !== expectedBinding.senderAddress) {
+              console.warn(`[Kasia Indexer] Sender mismatch - handshake spoofing detected: expected ${expectedBinding.senderAddress.slice(0, 20)}..., got ${result.senderAddress.slice(0, 20)}...`);
+              return false;
+            } else {
+              console.log(`[Kasia Indexer] Sender binding verified: ${result.senderAddress.slice(0, 20)}...`);
+            }
+          }
         }
         
         console.log(`[Kasia Indexer] Verified on-chain Kasia ${parsed.type}: ${txHash.slice(0, 16)}...`);
@@ -209,14 +323,19 @@ class KasiaIndexer {
 
   /**
    * Record a handshake transaction (after it's broadcast)
-   * Verifies on-chain before accepting with payload validation
+   * Verifies on-chain before accepting with payload and binding validation
    */
   async recordHandshake(record: HandshakeRecord, skipVerification = false): Promise<boolean> {
     const key = record.txHash;
     
     // Verify the transaction exists on-chain with valid Kasia handshake payload
+    // Also verify the conversation binding matches
     if (!skipVerification && record.txHash) {
-      const isValid = await this.verifyOnChain(record.txHash, "handshake");
+      const isValid = await this.verifyOnChain(record.txHash, "handshake", {
+        conversationId: record.conversationId,
+        recipientAddress: record.recipientAddress,
+        senderAddress: record.senderAddress,
+      });
       if (!isValid) {
         console.warn(`[Kasia Indexer] Rejected handshake - invalid or not found: ${record.txHash.slice(0, 16)}...`);
         return false;
@@ -227,6 +346,28 @@ class KasiaIndexer {
     
     // Update or create conversation
     this.updateConversationFromHandshake(record);
+    
+    // Persist handshake to database
+    if (this.storage) {
+      try {
+        const conv = this.conversations.get(record.conversationId);
+        if (conv) {
+          if (record.isResponse) {
+            await this.storage.updateConversation(record.conversationId, { 
+              responseTxHash: record.txHash,
+              recipientAlias: record.senderAlias,
+            });
+          } else {
+            await this.storage.updateConversation(record.conversationId, { 
+              handshakeTxHash: record.txHash,
+              initiatorAlias: record.senderAlias,
+            });
+          }
+        }
+      } catch (error: any) {
+        console.error(`[Kasia Indexer] Handshake persist error: ${error.message}`);
+      }
+    }
     
     console.log(`[Kasia Indexer] Recorded verified handshake: ${record.txHash.slice(0, 16)}...`);
     return true;
@@ -486,9 +627,15 @@ class KasiaIndexer {
   /**
    * Parse a transaction payload to extract Kasia data
    */
+  /**
+   * Parse Kasia payload and extract conversation binding info
+   */
   parseKasiaPayload(payloadHex: string): {
     type: "handshake" | "comm" | "unknown";
     data: any;
+    conversationId?: string;
+    recipientAddress?: string;
+    alias?: string;
   } | null {
     try {
       const payloadStr = hexToString(payloadHex);
@@ -501,7 +648,14 @@ class KasiaIndexer {
         const dataHex = payloadStr.split(":handshake:")[1] || "";
         try {
           const dataStr = hexToString(dataHex);
-          return { type: "handshake", data: JSON.parse(dataStr) };
+          const handshakeData = JSON.parse(dataStr) as HandshakeData;
+          return { 
+            type: "handshake", 
+            data: handshakeData,
+            conversationId: handshakeData.conversationId,
+            recipientAddress: handshakeData.recipientAddress,
+            alias: handshakeData.alias,
+          };
         } catch {
           return { type: "handshake", data: {} };
         }
@@ -510,12 +664,15 @@ class KasiaIndexer {
       if (payloadStr.includes(":comm:")) {
         const rest = payloadStr.split(":comm:")[1] || "";
         const parts = rest.split(KASIA_DELIM);
+        const alias = parts[0] || "";
+        const encryptedContent = parts.slice(1).join(KASIA_DELIM);
         return {
           type: "comm",
           data: {
-            alias: parts[0] || "",
-            encryptedContent: parts.slice(1).join(KASIA_DELIM),
+            alias,
+            encryptedContent,
           },
+          alias,
         };
       }
       

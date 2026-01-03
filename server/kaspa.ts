@@ -2215,11 +2215,77 @@ class KaspaService {
   }
 
   /**
-   * Verify a transaction exists on-chain and return its payload if available
-   * Used for Kasia protocol verification
+   * Resolve input address by fetching the referenced UTXO
+   * Returns the address that owned the spent UTXO
    */
-  async verifyTransactionOnChain(txHash: string): Promise<{ exists: boolean; payload?: string }> {
+  private async resolveInputAddress(prevTxId: string, prevIndex: number): Promise<string | undefined> {
     try {
+      // Fetch the previous transaction to get the output address
+      const prevTx = await this.apiCall(`/transactions/${prevTxId}`);
+      if (prevTx?.outputs && prevTx.outputs[prevIndex]) {
+        const output = prevTx.outputs[prevIndex];
+        // Script public key address format varies by API
+        if (output.script_public_key_address) {
+          return output.script_public_key_address;
+        }
+        if (output.scriptPublicKeyAddress) {
+          return output.scriptPublicKeyAddress;
+        }
+        if (output.address) {
+          return output.address;
+        }
+      }
+    } catch (error: any) {
+      console.log(`[Kaspa] Failed to resolve input address: ${error.message}`);
+    }
+    return undefined;
+  }
+
+  /**
+   * Verify a transaction exists on-chain and return its payload and sender if available
+   * Used for Kasia protocol verification with sender binding
+   */
+  async verifyTransactionOnChain(txHash: string): Promise<{ 
+    exists: boolean; 
+    payload?: string; 
+    senderAddress?: string;
+  }> {
+    try {
+      // Helper to extract sender from transaction inputs
+      const extractSenderFromTx = async (tx: any): Promise<string | undefined> => {
+        try {
+          if (!tx.inputs || tx.inputs.length === 0) return undefined;
+          
+          const firstInput = tx.inputs[0];
+          
+          // Check for direct address field
+          if (firstInput.previousOutpoint?.address) {
+            return firstInput.previousOutpoint.address;
+          }
+          if (firstInput.address) {
+            return firstInput.address;
+          }
+          
+          // Try to resolve from referenced UTXO
+          if (firstInput.previousOutpoint?.transactionId && firstInput.previousOutpoint?.index !== undefined) {
+            return await this.resolveInputAddress(
+              firstInput.previousOutpoint.transactionId,
+              firstInput.previousOutpoint.index
+            );
+          }
+          if (firstInput.previous_outpoint_hash && firstInput.previous_outpoint_index !== undefined) {
+            return await this.resolveInputAddress(
+              firstInput.previous_outpoint_hash,
+              firstInput.previous_outpoint_index
+            );
+          }
+          
+          return undefined;
+        } catch {
+          return undefined;
+        }
+      };
+
       // Try RPC client first
       if (this.rpcConnected && this.rpcClient) {
         try {
@@ -2229,7 +2295,12 @@ class KaspaService {
           
           if (rpcResult?.transactions && rpcResult.transactions.length > 0) {
             const tx = rpcResult.transactions[0];
-            return { exists: true, payload: tx.payload || undefined };
+            const senderAddress = await extractSenderFromTx(tx);
+            return { 
+              exists: true, 
+              payload: tx.payload || undefined,
+              senderAddress,
+            };
           }
         } catch (rpcError: any) {
           console.log(`[Kaspa] RPC tx verification failed: ${rpcError.message}`);
@@ -2243,7 +2314,12 @@ class KaspaService {
           
           if (wasmResult?.transactions && wasmResult.transactions.length > 0) {
             const tx = wasmResult.transactions[0];
-            return { exists: true, payload: tx.payload || undefined };
+            const senderAddress = await extractSenderFromTx(tx);
+            return { 
+              exists: true, 
+              payload: tx.payload || undefined,
+              senderAddress,
+            };
           }
         } catch (wasmError: any) {
           console.log(`[Kaspa] WASM RPC tx verification failed: ${wasmError.message}`);
@@ -2253,7 +2329,12 @@ class KaspaService {
       // Fallback to REST API
       const txData = await this.apiCall(`/transactions/${txHash}`);
       if (txData) {
-        return { exists: true, payload: txData.payload || undefined };
+        const senderAddress = await extractSenderFromTx(txData);
+        return { 
+          exists: true, 
+          payload: txData.payload || undefined,
+          senderAddress,
+        };
       }
 
       return { exists: false };
