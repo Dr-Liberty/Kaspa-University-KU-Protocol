@@ -2056,15 +2056,15 @@ Kaspa can increase blocks per second by:
         content: `<p>**On-Chain Achievement Records**</p>
 <p>Traditional education credentials are stored in databases. Universities can lose records. Certificates can be forged. Verification requires contacting institutions.</p>
 <p>**KU Protocol: Blockchain Credentials**</p>
-<p>KU Protocol creates immutable, verifiable achievement records on the Kaspa blockchain. Every quiz completion, every course finish, every reward - permanently recorded.</p>
+<p>KU Protocol creates immutable, verifiable quiz completion proofs on the Kaspa blockchain. When you pass a quiz, a cryptographic proof is recorded on-chain.</p>
 <p>**The Protocol Format**</p>
-<p>ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{timestamp}:{signature}</p>
+<p>ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}</p>
 <p>This format includes:</p>
 <p>• Your wallet address (your identity)</p>
-<p>• What you completed (course and lesson)</p>
-<p>• Your performance (score)</p>
+<p>• What you completed (course and lesson IDs)</p>
+<p>• Your performance (score and max possible score)</p>
 <p>• When you completed it (timestamp)</p>
-<p>• Cryptographic proof (signature)</p>
+<p>• Answer verification hash (proves specific answers given)</p>
 <p>**Why Blockchain Credentials Matter**</p>
 <p>• Permanent: Records exist as long as Kaspa exists</p>
 <p>• Verifiable: Anyone can check your achievements on-chain</p>
@@ -2095,16 +2095,16 @@ Kaspa can increase blocks per second by:
 <p>• IP session binding</p>
 <p>• Concurrent submission locking</p>
 <p>Note: These are platform-level protections, not part of the KU Protocol specification itself.</p>
-<p>**The Signed Payload**</p>
-<p>Your wallet signature proves:</p>
-<p>• You control the wallet that earned the achievement</p>
-<p>• You completed the quiz at that specific time</p>
-<p>• The score is accurate and verified</p>
+<p>**The Content Hash**</p>
+<p>Each quiz proof includes a content hash that:</p>
+<p>• Proves the specific answers you submitted</p>
+<p>• Allows verification that the score was calculated correctly</p>
+<p>• Creates a unique fingerprint for that quiz attempt</p>
 <p>**Verification**</p>
 <p>Anyone can verify your achievements by:</p>
 <p>1. Finding the KU Protocol transaction on-chain</p>
-<p>2. Checking the signature against your public key</p>
-<p>3. Confirming the payload data matches claims</p>`,
+<p>2. Parsing the payload to extract quiz data</p>
+<p>3. Confirming the wallet, course, lesson, and score</p>`,
       },
       {
         id: "lesson-19-3",
@@ -2114,11 +2114,9 @@ Kaspa can increase blocks per second by:
         duration: "5 min",
         content: `<p>**Your Learning Journey On-Chain**</p>
 <p>As you progress through Kaspa University, KU Protocol creates a permanent record of your achievements.</p>
-<p>**What Gets Recorded**</p>
-<p>• Every quiz you pass</p>
-<p>• Every course you complete</p>
-<p>• Your total KAS rewards earned</p>
-<p>• Your progress toward the diploma</p>
+<p>**What Gets Recorded On-Chain**</p>
+<p>• Quiz completion proofs (when you pass a quiz)</p>
+<p>Note: Course completions, total rewards, and diploma progress are computed by Kaspa University from the on-chain quiz records - the protocol itself only stores individual quiz proofs.</p>
 <p>**The Reward System**</p>
 <p>KU Protocol powers our Learn-to-Earn model:</p>
 <p>• 0.1 KAS per course completion</p>
