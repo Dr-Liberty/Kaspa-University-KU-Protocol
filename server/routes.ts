@@ -190,12 +190,18 @@ export async function registerRoutes(
   });
 
   // Get support/admin wallet address for contacting support (uses treasury wallet)
-  app.get("/api/support/address", generalRateLimiter, (_req: Request, res: Response) => {
-    const treasuryAddress = kaspaService.getTreasuryAddress();
-    if (!treasuryAddress) {
-      return res.status(503).json({ error: "Support address not configured" });
+  app.get("/api/support/address", generalRateLimiter, async (_req: Request, res: Response) => {
+    try {
+      const kaspaService = await getKaspaService();
+      const treasuryAddress = kaspaService.getTreasuryAddress();
+      if (!treasuryAddress) {
+        return res.status(503).json({ error: "Support address not configured" });
+      }
+      res.json({ address: treasuryAddress });
+    } catch (error) {
+      console.error("[Support] Error getting treasury address:", error);
+      res.status(500).json({ error: "Failed to get support address" });
     }
-    res.json({ address: treasuryAddress });
   });
 
   app.get("/api/jobs/:jobId", async (req: Request, res: Response) => {
