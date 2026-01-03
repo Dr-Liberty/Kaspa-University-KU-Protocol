@@ -22,6 +22,9 @@ import {
   Plus,
   ArrowLeft,
   Shield,
+  Globe,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 
 interface Conversation {
@@ -574,12 +577,21 @@ export default function Messages() {
   const { wallet } = useWallet();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
+  const [useOnChain, setUseOnChain] = useState(false);
 
-  const { data: conversations, isLoading } = useQuery<Conversation[]>({
-    queryKey: ["/api/conversations"],
+  const { data: conversationsData, isLoading, refetch } = useQuery<{ conversations: Conversation[], source?: string }>({
+    queryKey: ["/api/conversations", useOnChain ? "onchain" : "local"],
+    queryFn: async () => {
+      const url = useOnChain ? "/api/conversations?source=onchain" : "/api/conversations";
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch conversations");
+      return res.json();
+    },
     enabled: !!wallet,
     refetchInterval: 15000,
   });
+  
+  const conversations = conversationsData?.conversations;
 
   if (!wallet) {
     return (
@@ -599,12 +611,51 @@ export default function Messages() {
     <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-messages-title">
-            Messages
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            End-to-end encrypted conversations using Kasia Protocol
-          </p>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight md:text-3xl" data-testid="text-messages-title">
+                Messages
+              </h1>
+              <p className="mt-1 text-muted-foreground">
+                End-to-end encrypted conversations using Kasia Protocol
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={useOnChain ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseOnChain(!useOnChain)}
+                className="gap-2"
+                data-testid="button-toggle-source"
+              >
+                {useOnChain ? (
+                  <>
+                    <Globe className="h-4 w-4" />
+                    On-Chain
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4" />
+                    Local
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refetch()}
+                data-testid="button-refresh-conversations"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          {useOnChain && (
+            <Badge variant="secondary" className="mt-2 gap-1">
+              <Globe className="h-3 w-3" />
+              Fetching from Kasia Indexer (on-chain source of truth)
+            </Badge>
+          )}
         </div>
 
         <Card className="h-[600px] overflow-hidden border-border/50">
