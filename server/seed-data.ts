@@ -1891,10 +1891,10 @@ Kaspa can increase blocks per second by:
 <p>• Creators: Own your audience, no platform taking cuts</p>
 <p>• Activists: Coordinate without fear of deplatforming</p>
 <p>**Cost Comparison**</p>
-<p>At $0.10 per KAS:</p>
-<p>• 50,000 posts = 1 KAS = $0.10</p>
-<p>• Daily posting for 137 years = $0.10</p>
-<p>Compare to: Twitter Blue costs $96/year just to edit posts!</p>
+<p>With K Protocol:</p>
+<p>• ~50,000 posts cost just 1 KAS</p>
+<p>• A lifetime of daily posts for less than a coffee</p>
+<p>Compare to: Centralized platforms charge monthly fees or harvest your data!</p>
 <p>**The Ecosystem Effect**</p>
 <p>Every K Protocol transaction:</p>
 <p>• Pays miners (supports network security)</p>
