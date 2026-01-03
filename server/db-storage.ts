@@ -1032,4 +1032,9 @@ export class DbStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(schema.conversations.id, id));
   }
+
+  async deleteConversation(id: string): Promise<void> {
+    await db.delete(schema.conversations)
+      .where(eq(schema.conversations.id, id));
+  }
 }

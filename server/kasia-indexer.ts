@@ -837,6 +837,25 @@ class KasiaIndexer {
   }
 
   /**
+   * Delete a conversation (for cleaning up stale records without on-chain proof)
+   */
+  async deleteConversation(id: string): Promise<void> {
+    // Remove from in-memory cache
+    this.conversations.delete(id);
+    
+    // Remove from database
+    if (this.storage) {
+      try {
+        await this.storage.deleteConversation(id);
+      } catch (error: any) {
+        console.error(`[Kasia Indexer] Delete conversation error: ${error.message}`);
+      }
+    }
+    
+    console.log(`[Kasia Indexer] Deleted stale conversation: ${id}`);
+  }
+
+  /**
    * Get messages for a conversation
    */
   getMessages(conversationId: string, limit = 50, offset = 0): IndexedMessage[] {

@@ -146,6 +146,7 @@ export interface IStorage {
   getPendingConversations(): Promise<any[]>;
   getAllConversations(): Promise<any[]>;
   updateConversation(id: string, updates: Record<string, any>): Promise<void>;
+  deleteConversation(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -861,6 +862,10 @@ export class MemStorage implements IStorage {
       Object.assign(conv, updates, { updatedAt: new Date() });
       this.conversations.set(id, conv);
     }
+  }
+
+  async deleteConversation(id: string): Promise<void> {
+    this.conversations.delete(id);
   }
 }
 

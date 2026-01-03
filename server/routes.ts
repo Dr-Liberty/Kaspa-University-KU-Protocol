@@ -4146,18 +4146,27 @@ export async function registerRoutes(
       // Check if conversation already exists
       const existing = await kasiaIndexer.getConversation(conversationId);
       if (existing) {
-        // If the current user initiated the existing conversation, they already signed
-        // If the other party initiated, this user should accept via the messages UI
-        const isInitiator = existing.initiatorAddress === authenticatedWallet;
-        return res.json({ 
-          success: true, 
-          existing: true, 
-          conversation: existing,
-          userRole: isInitiator ? "initiator" : "recipient",
-          message: isInitiator 
-            ? "You already started this conversation."
-            : "This user has already initiated a conversation with you. Check your inbox.",
-        });
+        // ON-CHAIN FIRST: Only consider existing if it has confirmed on-chain handshake
+        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length > 10;
+        
+        if (hasOnChainProof) {
+          // If the current user initiated the existing conversation, they already signed
+          // If the other party initiated, this user should accept via the messages UI
+          const isInitiator = existing.initiatorAddress === authenticatedWallet;
+          return res.json({ 
+            success: true, 
+            existing: true, 
+            conversation: existing,
+            userRole: isInitiator ? "initiator" : "recipient",
+            message: isInitiator 
+              ? "You already started this conversation."
+              : "This user has already initiated a conversation with you. Check your inbox.",
+          });
+        } else {
+          // No on-chain proof - delete stale record and allow fresh start
+          console.log(`[Kasia] Removing stale conversation ${conversationId} (no on-chain proof)`);
+          await kasiaIndexer.deleteConversation(conversationId);
+        }
       }
       
       // Create the handshake payload for signing
@@ -4246,19 +4255,29 @@ export async function registerRoutes(
       const supportAddress = process.env.SUPPORT_ADDRESS || "";
       
       if (existing) {
-        // Check if this is an admin conversation that should be auto-activated
-        const isExistingAdmin = 
-          isSameAddress(existing.initiatorAddress, supportAddress) ||
-          isSameAddress(existing.recipientAddress, supportAddress);
+        // ON-CHAIN FIRST: Only consider existing if it has confirmed on-chain handshake
+        // Stale database records without on-chain proof should be ignored
+        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length > 10;
         
-        // Auto-activate if it's an admin conversation that's still pending
-        if (isExistingAdmin && existing.status === "pending") {
-          console.log(`[Kasia] Auto-activating existing admin conversation ${conversationId}`);
-          await kasiaIndexer.updateConversationStatus(conversationId, "active");
-          existing.status = "active";
+        if (hasOnChainProof) {
+          // Check if this is an admin conversation that should be auto-activated
+          const isExistingAdmin = 
+            isSameAddress(existing.initiatorAddress, supportAddress) ||
+            isSameAddress(existing.recipientAddress, supportAddress);
+          
+          // Auto-activate if it's an admin conversation that's still pending
+          if (isExistingAdmin && existing.status === "pending") {
+            console.log(`[Kasia] Auto-activating existing admin conversation ${conversationId}`);
+            await kasiaIndexer.updateConversationStatus(conversationId, "active");
+            existing.status = "active";
+          }
+          
+          return res.json({ success: true, conversation: existing, existing: true });
+        } else {
+          // No on-chain proof - delete stale record and allow fresh start
+          console.log(`[Kasia] Removing stale conversation ${conversationId} (no on-chain proof)`);
+          await kasiaIndexer.deleteConversation(conversationId);
         }
-        
-        return res.json({ success: true, conversation: existing, existing: true });
       }
       
       // Check if this is admin support conversation (support address is admin)
