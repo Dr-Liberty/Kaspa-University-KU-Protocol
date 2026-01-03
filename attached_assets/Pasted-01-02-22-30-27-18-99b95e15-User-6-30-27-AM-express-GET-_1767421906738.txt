@@ -1,0 +1,80 @@
+01-02 22:30:27.18
+99b95e15
+User
+6:30:27 AM [express] GET /api/conversations 401 in 346ms :: {"error":"Authentication required"}
+2026-01-02 22:30:29.19
+99b95e15
+User
+6:30:29 AM [express] GET /api/conversations 401 in 131ms :: {"error":"Authentication required"}
+2026-01-02 22:30:31.14
+99b95e15
+User
+6:30:31 AM [express] GET /api/support/address 500 in 132ms :: {"message":"kaspaService is not defined"}
+2026-01-02 22:30:31.14
+99b95e15
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-02 22:30:31.14
+99b95e15
+User
+at wn.handle_request (/home/runner/workspace/dist/index.cjs:49:3170)
+2026-01-02 22:30:31.14
+99b95e15
+User
+at c (/home/runner/workspace/dist/index.cjs:49:5250)
+2026-01-02 22:30:31.14
+99b95e15
+User
+ReferenceError: kaspaService is not defined
+2026-01-02 22:30:31.14
+99b95e15
+User
+at /home/runner/workspace/dist/index.cjs:1186:16488
+2026-01-02 22:30:31.14
+99b95e15
+User
+at /home/runner/workspace/dist/index.cjs:1180:34927
+2026-01-02 22:30:31.14
+99b95e15
+User
+at async /home/runner/workspace/dist/index.cjs:1180:33117
+2026-01-02 22:30:37.30
+99b95e15
+User
+6:30:37 AM [express] GET /api/conversations 401 in 128ms :: {"error":"Authentication required"}
+2026-01-02 22:30:38.60
+99b95e15
+User
+at /home/runner/workspace/dist/index.cjs:1180:34927
+2026-01-02 22:30:38.60
+99b95e15
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-02 22:30:38.60
+99b95e15
+User
+ReferenceError: kaspaService is not defined
+2026-01-02 22:30:38.60
+99b95e15
+User
+at /home/runner/workspace/dist/index.cjs:1186:16488
+2026-01-02 22:30:38.60
+99b95e15
+User
+at async /home/runner/workspace/dist/index.cjs:1180:33117
+2026-01-02 22:30:38.60
+99b95e15
+User
+at wn.handle_request (/home/runner/workspace/dist/index.cjs:49:3170)
+2026-01-02 22:30:38.60
+99b95e15
+User
+6:30:38 AM [express] GET /api/support/address 500 in 129ms :: {"message":"kaspaService is not defined"}
+2026-01-02 22:30:38.60
+99b95e15
+User
+at c (/home/runner/workspace/dist/index.cjs:49:5250)
+2026-01-02 22:30:52.73
+99b95e15
+User
+6:30:52 AM [express] GET /api/conversations 401 in 327
