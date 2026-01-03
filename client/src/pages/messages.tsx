@@ -25,6 +25,7 @@ import {
   Globe,
   Database,
   RefreshCw,
+  Inbox,
 } from "lucide-react";
 
 interface Conversation {
@@ -94,6 +95,17 @@ function ConversationItem({
   const statusBadge = () => {
     switch (conversation.status) {
       case "pending":
+        // Differentiate between incoming request (user needs to accept) and outgoing (waiting for other party)
+        if (!isInitiator) {
+          // Incoming handshake request - user needs to accept
+          return (
+            <Badge variant="default" className="gap-1 text-[10px]">
+              <Inbox className="h-2.5 w-2.5" />
+              Accept Request
+            </Badge>
+          );
+        }
+        // Outgoing handshake - waiting for other party
         return (
           <Badge variant="outline" className="gap-1 text-[10px]">
             <Clock className="h-2.5 w-2.5" />
