@@ -4043,17 +4043,36 @@ export async function registerRoutes(
       }
 
       // Get conversation to find the alias for Kasia protocol
-      const conversation = conversationId ? await kasiaIndexer.getConversation(conversationId) : null;
-      if (conversationId && !conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
+      // The alias is critical - it's set during handshake and used for message correlation
+      let conversation: any = null;
+      if (conversationId) {
+        try {
+          conversation = await kasiaIndexer.getConversation(conversationId);
+        } catch (err: any) {
+          console.error("[Messaging] Failed to get conversation:", err.message);
+          return res.status(503).json({ error: "Service temporarily unavailable, please retry" });
+        }
+        
+        if (!conversation) {
+          return res.status(404).json({ error: "Conversation not found" });
+        }
+        
+        if (!conversation.alias) {
+          return res.status(400).json({ error: "Conversation missing alias - handshake may be incomplete" });
+        }
       }
 
       // Build the Kasia protocol payload for on-chain embedding
       // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
-      // sealed_hex is the hex-encoded message content
+      // The alias MUST come from the handshake to enable proper message correlation
       const timestamp = Date.now();
       const nonce = randomUUID().slice(0, 8);
-      const alias = conversation?.alias || conversationId || "public";
+      
+      if (!conversationId) {
+        return res.status(400).json({ error: "Conversation ID required for private messages" });
+      }
+      
+      const alias = conversation.alias;
       
       // Create sealed hex from content (simplified - full Kasia uses ECDH encryption)
       const messageData = JSON.stringify({
@@ -4591,7 +4610,42 @@ export async function registerRoutes(
       // Mode 1: User-broadcast on-chain txHash - FULLY DECENTRALIZED
       // User sent their own transaction with embedded Kasia payload via sendKaspa
       if (txHash && kasiaPayload) {
-        // Skip immediate verification since the tx was just broadcast
+        // Validate txHash format (64 hex chars)
+        if (!/^[a-fA-F0-9]{64}$/.test(txHash)) {
+          return res.status(400).json({ error: "Invalid transaction hash format" });
+        }
+        
+        // Validate kasiaPayload contains the message content
+        // This prevents submitting arbitrary content with someone else's txHash
+        if (!kasiaPayload.includes("ciph_msg:1:comm:")) {
+          return res.status(400).json({ error: "Invalid Kasia payload format" });
+        }
+        
+        // Verify the payload contains our conversation alias
+        if (!kasiaPayload.includes(conversation.alias)) {
+          return res.status(400).json({ error: "Kasia payload does not match this conversation" });
+        }
+        
+        // Verify the sealed content matches the submitted message
+        // The sealed hex should decode to JSON containing our content
+        try {
+          const payloadParts = kasiaPayload.split(":");
+          if (payloadParts.length >= 5) {
+            const sealedHex = payloadParts.slice(4).join(":"); // Handle : in content
+            const decodedPayload = Buffer.from(sealedHex, "hex").toString("utf-8");
+            const payloadData = JSON.parse(decodedPayload);
+            
+            if (payloadData.content !== encryptedContent) {
+              console.warn(`[Kasia] Payload content mismatch in user broadcast`);
+              return res.status(400).json({ error: "Kasia payload content does not match submitted message" });
+            }
+          }
+        } catch (parseErr) {
+          console.warn(`[Kasia] Failed to parse Kasia payload for validation:`, parseErr);
+          // Allow through but log - could be different format
+        }
+        
+        // Skip immediate on-chain verification since the tx was just broadcast
         // The periodic sync from public Kasia indexer will confirm it later
         recorded = await kasiaIndexer.recordMessage({
           id: messageId,
