@@ -304,6 +304,7 @@ export async function registerRoutes(
       }));
 
       // Build recent activity from real data with full verification info
+      // RECONCILIATION: Cross-check database statuses with KU indexer (source of truth)
       const recentActivity: Array<{ 
         type: string, 
         description: string, 
@@ -313,7 +314,8 @@ export async function registerRoutes(
         txStatus?: string,
         score?: number,
         courseTitle?: string,
-        verified?: boolean
+        verified?: boolean,
+        reconciled?: boolean
       }> = [];
       
       // Add recent quiz completions with verification data
@@ -333,16 +335,40 @@ export async function registerRoutes(
           hour12: true
         });
         
+        // RECONCILIATION: If database says "failed" but txHash exists, verify on-chain
+        let actualStatus = result.txStatus || "none";
+        let wasReconciled = false;
+        
+        if (result.txHash && result.txStatus === "failed") {
+          const onChainProof = kuIndexer.getProofByTxHash(result.txHash);
+          if (onChainProof?.verified) {
+            // On-chain indexer has this as confirmed - database was wrong
+            actualStatus = "confirmed";
+            wasReconciled = true;
+            // Background: Update the database to correct the false negative
+            storage.updateQuizResult(result.id, { txStatus: "confirmed" }).catch(() => {});
+          } else {
+            // Try to verify directly on-chain
+            kuIndexer.verifyOnChain(result.txHash, "quiz").then(async (verification) => {
+              if (verification.valid) {
+                await storage.updateQuizResult(result.id, { txStatus: "confirmed" });
+                console.log(`[Analytics] Reconciled false negative: ${result.txHash?.slice(0, 16)}...`);
+              }
+            }).catch(() => {});
+          }
+        }
+        
         recentActivity.push({
           type: "verification",
           description: `Quiz verified: '${course?.title || "Course"}'`,
           timestamp: timeStr,
           fullTimestamp: fullTimeStr,
           txHash: result.txHash || undefined,
-          txStatus: result.txStatus || "none",
+          txStatus: actualStatus,
           score: result.score,
           courseTitle: course?.title,
-          verified: result.txStatus === "confirmed",
+          verified: actualStatus === "confirmed",
+          reconciled: wasReconciled,
         });
       }
       
