@@ -189,13 +189,13 @@ export async function registerRoutes(
     res.json(stats);
   });
 
-  // Get support/admin wallet address for contacting support
+  // Get support/admin wallet address for contacting support (uses treasury wallet)
   app.get("/api/support/address", generalRateLimiter, (_req: Request, res: Response) => {
-    const supportAddress = process.env.ADMIN_WALLET_ADDRESS || "";
-    if (!supportAddress) {
+    const treasuryAddress = kaspaService.getTreasuryAddress();
+    if (!treasuryAddress) {
       return res.status(503).json({ error: "Support address not configured" });
     }
-    res.json({ address: supportAddress });
+    res.json({ address: treasuryAddress });
   });
 
   app.get("/api/jobs/:jobId", async (req: Request, res: Response) => {
@@ -4079,8 +4079,8 @@ export async function registerRoutes(
         return res.json({ success: true, conversation: existing, existing: true });
       }
       
-      // Check if this is admin support conversation
-      const adminAddress = process.env.ADMIN_WALLET_ADDRESS || "";
+      // Check if this is admin support conversation (treasury wallet is admin)
+      const adminAddress = kaspaService.getTreasuryAddress() || "";
       const isAdminConversation = authenticatedWallet === adminAddress || recipientAddress === adminAddress;
       
       const conversation = await storage.createConversation({
