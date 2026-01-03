@@ -110,74 +110,95 @@ export interface PrivateMessage {
 
 /**
  * Create a handshake payload for initiating a conversation
- * Format: ciph_msg:1:handshake:{sealed_hex}
  * 
- * In a real implementation, the handshake would contain:
- * - Ephemeral public key for ECDH
- * - Encrypted handshake metadata
- * - Signature for verification
+ * Official Kasia protocol format (V2):
+ * - Raw bytes: ciph_msg:1:handshake:{sealed_hex}
+ * - sealed_hex contains: nonce (12b) + ephemeral_pk (33b) + ciphertext
  * 
- * IMPORTANT: Kaspa has a 520 byte script element limit.
- * We use a compact format to stay within this limit.
+ * Since we don't have the cipher-wasm for ECDH encryption, we create a
+ * "simplified sealed" format that the Kasia indexer can still parse:
+ * - The sealed_hex contains our handshake JSON as hex
+ * - This allows indexing even though Kasia app can't decrypt it
+ * 
+ * The indexer looks for raw bytes: ciph_msg:1:handshake:*
+ * NOT hex-encoded. The payload is raw ASCII in the transaction script.
  */
 export function createHandshakePayload(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  // Use compact format to stay under 520 byte limit
-  // Format: ciph_msg:1:handshake:convId:recipient:alias:timestamp
-  // This avoids the overhead of JSON + double hex encoding
-  const timestamp = Date.now().toString(36); // Base36 timestamp (compact)
-  const compactPayload = [
-    KASIA_PREFIX,
-    KASIA_VERSION,
-    "handshake",
-    conversationId,
-    recipientAddress,
-    senderAlias,
-    timestamp
-  ].join(KASIA_DELIM);
+  // Handshake data structure per Kasia spec
+  const handshakeData: HandshakeData = {
+    alias: senderAlias,
+    timestamp: Date.now().toString(),
+    conversationId: conversationId,
+    version: 1,
+    recipientAddress: recipientAddress,
+    sendToRecipient: true,
+    isResponse: false,
+  };
   
-  // Single hex encoding only
-  return stringToHex(compactPayload);
+  // Create sealed_hex by hex-encoding the JSON handshake data
+  // Official Kasia would ECDH-encrypt this, but we use plaintext hex for now
+  const sealed = stringToHex(JSON.stringify(handshakeData));
+  
+  // Create the raw payload string that gets embedded in the transaction
+  // Format: ciph_msg:1:handshake:{sealed_hex}
+  // This raw string becomes the OP_RETURN data (not hex-encoded again)
+  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}handshake${KASIA_DELIM}${sealed}`;
+  
+  // For Kaspa transaction embedding, we return the hex of the raw payload
+  // The transaction builder will decode this to get the raw bytes
+  return stringToHex(rawPayload);
 }
 
 /**
  * Create a handshake response payload
- * Uses compact format to stay under 520 byte limit
+ * Same format as initiation, but with isResponse: true
  */
 export function createHandshakeResponse(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  // Use compact format - add "r" prefix to mark as response
-  const timestamp = Date.now().toString(36);
-  const compactPayload = [
-    KASIA_PREFIX,
-    KASIA_VERSION,
-    "handshake_r", // _r suffix indicates response
-    conversationId,
-    recipientAddress,
-    senderAlias,
-    timestamp
-  ].join(KASIA_DELIM);
+  const handshakeData: HandshakeData = {
+    alias: senderAlias,
+    timestamp: Date.now().toString(),
+    conversationId: conversationId,
+    version: 1,
+    recipientAddress: recipientAddress,
+    sendToRecipient: true,
+    isResponse: true,
+  };
   
-  return stringToHex(compactPayload);
+  const sealed = stringToHex(JSON.stringify(handshakeData));
+  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}handshake${KASIA_DELIM}${sealed}`;
+  
+  return stringToHex(rawPayload);
 }
 
 /**
- * Create an encrypted contextual message payload
- * Format: ciph_msg:1:comm:{alias}:{sealed_hex}
+ * Create a contextual message payload
+ * 
+ * Official Kasia protocol format (V1):
+ * - Raw bytes: ciph_msg:1:comm:{alias}:{sealed_hex}
+ * - sealed_hex contains encrypted message content
+ * 
+ * We use the same simplified format - hex-encoded content for indexing
  */
 export function createCommPayload(
   senderAlias: string,
-  encryptedContent: string
+  messageContent: string
 ): string {
-  // In production, content would be encrypted with the shared secret
-  const payload = KASIA_ENCRYPTED.headers.COMM + senderAlias + KASIA_DELIM + encryptedContent;
-  return stringToHex(payload);
+  // In official Kasia, content is ECDH-encrypted with shared secret
+  // We hex-encode the content for simplified format
+  const sealedContent = stringToHex(messageContent);
+  
+  // Create the raw payload
+  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}comm${KASIA_DELIM}${senderAlias}${KASIA_DELIM}${sealedContent}`;
+  
+  return stringToHex(rawPayload);
 }
 
 /**

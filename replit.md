@@ -61,13 +61,19 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
     - **Indexer Info**: KaspacomDAGs has 12-24 hour delay for new collections (spam prevention).
 - **Dual-Protocol Messaging System (ON-CHAIN ARCHITECTURE)**:
     - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A. Format: `k:1:post:{content}` and `k:1:reply:{parentTxId}:{content}`. Indexed by ecosystem K-indexers for cross-platform discovery. Implementation: `server/k-protocol.ts`.
-    - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Uses `ciph_msg:1:handshake` for key exchange and `ciph_msg:1:comm` for messages. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia).
+    - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia).
+        - **Protocol Format Alignment (V2)**: Payloads now match official Kasia indexer format:
+            - Handshake: `ciph_msg:1:handshake:{sealed_hex}` (raw bytes in transaction)
+            - Message: `ciph_msg:1:comm:{alias}:{sealed_hex}` (raw bytes in transaction)
+            - sealed_hex contains handshake data as hex-encoded JSON (simplified format; official Kasia uses ECDH-encrypted ciphertext)
+            - Reference: https://github.com/K-Kluster/kasia-indexer/blob/main/protocol/src/operation.rs
         - **On-Chain First Architecture**: The public Kasia indexer (https://indexer.kasia.fyi/) is the SOURCE OF TRUTH. PostgreSQL database is ONLY a performance cache. On startup and every 60 seconds, the system syncs from the public indexer to populate/refresh the local cache. This maintains full decentralization - blockchain is always authoritative.
         - **Kasia Client** (`server/kasia-client.ts`): Queries public Kasia indexer API endpoints (`/handshakes/by-sender`, `/handshakes/by-receiver`, `/messages/by-conversation-alias`).
         - **Broadcast Service** (`server/kasia-broadcast.ts`): Prepares payloads for client-side signing. Users broadcast via KasWare (paying their own fees). Treasury only broadcasts for admin auto-accept.
         - **On-Chain Indexer** (`server/kasia-indexer.ts`): Syncs from public Kasia indexer on startup. Tracks conversations and messages with txHash references as proof of on-chain existence. In-memory cache + database cache both regenerable from blockchain.
-        - **Payload Encryption** (`server/kasia-encrypted.ts`): Creates Kasia protocol payloads (handshakes and comm messages).
+        - **Payload Encryption** (`server/kasia-encrypted.ts`): Creates Kasia protocol payloads (handshakes and comm messages). HandshakeData structure includes: alias, timestamp, conversationId, version, recipientAddress, sendToRecipient, isResponse.
         - **Security Model**: Wallet signatures authenticate messages only - no KAS spending involved. Message signatures cannot be used to transfer funds.
+        - **Future Enhancement**: Full ECDH encryption requires cipher-wasm module from Kasia repo (ChaCha20-Poly1305 with k256 ECDH). Current simplified format is indexable but not cross-compatible with official Kasia app decryption.
     - **Conversation Status Flow**: `pending` → `active` (after handshake accepted) → messaging enabled.
     - **Admin Handshake Management**: Admin dashboard "Messages" tab allows manual handshake acceptance if auto-accept fails. Treasury broadcasts response handshakes.
     - **UI Components**: QASection tabs for public/private messaging (`client/src/components/qa-section.tsx`), Messages inbox page (`client/src/pages/messages.tsx`).
