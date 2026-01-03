@@ -94,10 +94,10 @@ export default function Landing() {
   ];
 
   const benefits = [
-    "No registration required",
-    "4 on-chain protocols",
-    "Encrypted P2P messaging",
-    "Wallet-signed attribution",
+    "KU Protocol achievements",
+    "K Protocol public Q&A",
+    "Kasia encrypted messaging",
+    "KRC-721 diploma NFTs",
     "Anti-Sybil protection",
     "Non-custodial minting",
   ];
