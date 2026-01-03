@@ -260,7 +260,7 @@ export function generateConversationId(address1: string, address2: string): stri
 export class KasiaIndexerClient {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "https://dev-indexer.kasia.fyi") {
+  constructor(baseUrl: string = "https://indexer.kasia.fyi") {
     this.baseUrl = baseUrl;
   }
 

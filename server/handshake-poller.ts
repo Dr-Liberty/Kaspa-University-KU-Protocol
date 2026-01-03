@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 
-const KASIA_INDEXER_URL = "https://dev-indexer.kasia.fyi";
+const KASIA_INDEXER_URL = "https://indexer.kasia.fyi";
 const POLL_INTERVAL_MS = 30000;
 
 interface KasiaIndexerResponse {
