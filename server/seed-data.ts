@@ -1827,79 +1827,55 @@ Kaspa can increase blocks per second by:
         title: "What is K Protocol?",
         order: 1,
         duration: "5 min",
-        content: `<p>**The Problem with Social Media Today**</p>
-<p>Traditional social platforms like Twitter/X, Facebook, and Instagram are centralized. A company controls your account, your posts, and can ban you at any time. Your content lives on their servers, subject to their rules.</p>
-<p>**K Protocol: Social Media on the Blockchain**</p>
-<p>K Protocol is a decentralized microblogging protocol built on Kaspa. Every post, reply, and interaction is embedded directly into Kaspa blockchain transactions - permanently stored, publicly verifiable, and impossible to censor.</p>
-<p>**How It Works**</p>
-<p>K Protocol uses a simple format embedded in transaction payloads:</p>
-<p>• Posts: k:1:post:{your message}</p>
-<p>• Replies: k:1:reply:{parentTxId}:{your reply}</p>
-<p>• Votes: k:1:vote:{targetTxId}</p>
-<p>**Why Kaspa is Perfect for Social**</p>
-<p>Kaspa's BlockDAG enables:</p>
-<p>• Ultra-low costs: ~0.00002 KAS per post (50,000 posts for 1 KAS)</p>
-<p>• Fast confirmations: Posts appear in seconds, not minutes</p>
-<p>• Permanent storage: Your content lives as long as Kaspa exists</p>
-<p>• True ownership: Your wallet, your identity, your content</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>By the end of this lesson, you will understand the fundamental architecture of K Protocol, its role in decentralized social communication, and the technical format used for on-chain messaging.</p>
+<p><strong>Introduction</strong></p>
+<p>Traditional social media platforms operate under centralized control, where a single entity manages user accounts, content moderation, and platform access. This architecture creates inherent vulnerabilities: accounts can be suspended without recourse, content can be removed or shadow-banned, and user data remains subject to corporate policies that may change without notice.</p>
+<p>K Protocol addresses these limitations by implementing social communication directly on the Kaspa blockchain. Rather than storing messages on corporate servers, K Protocol embeds every post, reply, and interaction into Kaspa transactions, creating a permanent, publicly verifiable record that exists independently of any central authority.</p>
+<p><strong>Technical Architecture</strong></p>
+<p>K Protocol operates through a standardized message format embedded in transaction payloads. The protocol defines three primary message types: posts (formatted as <code>k:1:post:{content}</code>), replies (formatted as <code>k:1:reply:{parentTxId}:{content}</code>), and votes (formatted as <code>k:1:vote:{targetTxId}</code>). This simple yet extensible structure enables indexers to parse and organize social content from the blockchain.</p>
+<p><strong>Kaspa's Architectural Advantages</strong></p>
+<p>The BlockDAG architecture makes Kaspa particularly well-suited for social applications. Transaction costs remain minimal (approximately 50,000 posts per KAS), confirmations occur within seconds rather than minutes, and content persists for the lifetime of the network. Most significantly, users maintain complete ownership of their identity and content through their wallet keys.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>K Protocol transforms the Kaspa blockchain into a censorship-resistant social layer, enabling permanent, verifiable communication without reliance on centralized infrastructure.</p>`,
       },
       {
         id: "lesson-17-2",
         courseId: "k-protocol",
-        title: "K Social: The Application",
+        title: "K Social: The Application Layer",
         order: 2,
         duration: "5 min",
-        content: `<p>**From Protocol to Product**</p>
-<p>K Protocol is the standard - K Social is the application that makes it usable. Think of it like email: SMTP is the protocol, Gmail is an app.</p>
-<p>**K Social Features**</p>
-<p>• Microblogging: Post thoughts, updates, and content</p>
-<p>• Threading: Reply to posts, creating conversations</p>
-<p>• Voting: Upvote content you appreciate</p>
-<p>• Mentions: Tag other Kaspa addresses</p>
-<p>• Profile: Your Kaspa address IS your identity</p>
-<p>**The Three-Layer Architecture**</p>
-<p>1. Kaspa Node: Validates transactions on mainnet</p>
-<p>2. K-Indexer: Scans for K Protocol transactions, stores them in a database</p>
-<p>3. K Frontend: Web/app interface for reading and posting</p>
-<p>**Self-Sovereignty Option**</p>
-<p>Don't trust the public K Social? Run your own:</p>
-<p>• K-Indexer is open-source (github.com/thesheepcat/K-indexer)</p>
-<p>• Host your own frontend</p>
-<p>• Same data, your infrastructure</p>
-<p>**Access K Social**</p>
-<p>• Web: ksocialnetwork.pages.dev</p>
-<p>• Discord: discord.gg/xq7pWqH8bG</p>
-<p>• Developer: @TheSheepCat, @ReLeomerda</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson examines the relationship between protocols and applications, explores the K Social platform architecture, and introduces the concept of self-sovereign infrastructure.</p>
+<p><strong>Protocols and Applications</strong></p>
+<p>Understanding the distinction between protocols and applications is essential for comprehending decentralized systems. K Protocol defines the standard for encoding social messages on Kaspa, while K Social provides the user-facing application that implements this standard. This relationship mirrors that of email: SMTP defines how messages are transmitted, while applications like Gmail provide the interface for sending and receiving them.</p>
+<p><strong>K Social Platform Capabilities</strong></p>
+<p>K Social implements the full range of K Protocol functionality through a modern web interface. Users can publish microblog posts, engage in threaded conversations through replies, express appreciation through voting mechanisms, and reference other users via their Kaspa addresses. Notably, a user's Kaspa wallet address serves as their identity, eliminating the need for separate account creation.</p>
+<p><strong>System Architecture</strong></p>
+<p>The K Social ecosystem operates through a three-layer architecture. The Kaspa node layer validates all transactions on mainnet, ensuring cryptographic integrity. The K-Indexer layer continuously scans the blockchain for K Protocol transactions, organizing them into a queryable database. The frontend layer provides the web and mobile interfaces through which users interact with the system.</p>
+<p><strong>Self-Sovereign Deployment</strong></p>
+<p>For users requiring maximum independence, the entire K Social stack can be self-hosted. The K-Indexer is fully open-source (available at github.com/thesheepcat/K-indexer), enabling anyone to run their own indexing infrastructure. Since all data originates from the public blockchain, self-hosted instances access the same content as the public deployment.</p>
+<p><strong>Resources</strong></p>
+<p>K Social is accessible at ksocialnetwork.pages.dev, with community support available through Discord (discord.gg/xq7pWqH8bG). The protocol was developed by TheSheepCat and ReLeomerda.</p>`,
       },
       {
         id: "lesson-17-3",
         courseId: "k-protocol",
-        title: "Real-World Adoption",
+        title: "Applications and Adoption",
         order: 3,
         duration: "5 min",
-        content: `<p>**Why Decentralized Social Matters**</p>
-<p>Centralized platforms have shown they can:</p>
-<p>• Suspend accounts without explanation</p>
-<p>• Shadow-ban content based on algorithms</p>
-<p>• Sell your data to advertisers</p>
-<p>• Change rules retroactively</p>
-<p>K Protocol makes this impossible. Your posts are on-chain forever.</p>
-<p>**Use Cases**</p>
-<p>• Whistleblowers: Post evidence that can't be deleted</p>
-<p>• Journalists: Publish without platform censorship</p>
-<p>• Communities: Build groups around shared interests</p>
-<p>• Creators: Own your audience, no platform taking cuts</p>
-<p>• Activists: Coordinate without fear of deplatforming</p>
-<p>**Cost Comparison**</p>
-<p>With K Protocol:</p>
-<p>• ~50,000 posts cost just 1 KAS</p>
-<p>• A lifetime of daily posts for less than a coffee</p>
-<p>Compare to: Centralized platforms charge monthly fees or harvest your data!</p>
-<p>**The Ecosystem Effect**</p>
-<p>Every K Protocol transaction:</p>
-<p>• Pays miners (supports network security)</p>
-<p>• Adds data to the blockchain (grows the ecosystem)</p>
-<p>• Demonstrates Kaspa's real-world utility</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson analyzes the practical implications of decentralized social media, examines use cases that benefit from censorship resistance, and considers the broader ecosystem effects of on-chain communication.</p>
+<p><strong>The Case for Decentralization</strong></p>
+<p>Centralized social platforms have demonstrated significant limitations that affect users globally. These include unexplained account suspensions, algorithmic content suppression, data monetization through advertising, and retroactive policy changes. K Protocol fundamentally addresses these concerns by anchoring all content to the blockchain, where it becomes permanent and publicly verifiable.</p>
+<p><strong>Practical Applications</strong></p>
+<p>Several use cases particularly benefit from K Protocol's architecture. Investigative journalists and whistleblowers can publish documentation that cannot be removed through legal pressure or platform compliance. Communities can form around shared interests without risking deplatforming. Content creators maintain direct relationships with their audiences, free from algorithmic intermediation or platform revenue sharing. Activists can coordinate without concern for account termination.</p>
+<p><strong>Economic Considerations</strong></p>
+<p>K Protocol's transaction costs enable sustainable long-term usage. At current network rates, a single KAS supports approximately 50,000 posts, making a lifetime of daily communication economically trivial. This contrasts sharply with centralized platforms that either charge subscription fees or extract value through advertising and data collection.</p>
+<p><strong>Network Effects</strong></p>
+<p>Each K Protocol transaction contributes to the broader Kaspa ecosystem. Transaction fees compensate miners who secure the network, message data increases blockchain utility, and real-world usage demonstrates Kaspa's viability as an application platform beyond simple value transfer.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Decentralized social communication represents a fundamental shift in how individuals interact online, trading convenience for sovereignty and platform dependency for permanence.</p>`,
       },
       {
         id: "lesson-17-4",
@@ -1907,26 +1883,18 @@ Kaspa can increase blocks per second by:
         title: "K Protocol in Kaspa University",
         order: 4,
         duration: "5 min",
-        content: `<p>**How Kaspa University Uses K Protocol**</p>
-<p>Kaspa University integrates K Protocol for public lesson Q&A discussions. Every question and answer is recorded on-chain, creating a permanent knowledge base.</p>
-<p>**Public Q&A Feature**</p>
-<p>When you post a question on a lesson:</p>
-<p>• Your wallet signs the message</p>
-<p>• The message is broadcast as a K Protocol transaction</p>
-<p>• Anyone in the ecosystem can see and reply</p>
-<p>• Answers are permanently preserved</p>
-<p>**The K Protocol Format We Use**</p>
-<p>Posts: k:1:post:{lesson context}:{your question}</p>
-<p>Replies: k:1:reply:{questionTxId}:{your answer}</p>
-<p>**Benefits for Learners**</p>
-<p>• Permanent Record: Your questions and answers persist forever</p>
-<p>• Cross-Platform: Other K-indexers can discover KU discussions</p>
-<p>• Attribution: Your wallet proves authorship</p>
-<p>• No Moderation Risk: Questions can't be silently deleted</p>
-<p>**Why This Matters for Kaspa**</p>
-<p>Kaspa University showcases K Protocol's real-world utility. Every Q&A interaction demonstrates that Kaspa isn't just for payments - it's a platform for permanent, censorship-resistant communication.</p>
-<p>**Try It Now**</p>
-<p>After completing this lesson, go to any lesson's Q&A section and post a question. Watch your message become part of Kaspa's permanent record!</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson demonstrates K Protocol integration within an educational context, explaining how Kaspa University leverages on-chain messaging for public Q&A functionality.</p>
+<p><strong>Integration Overview</strong></p>
+<p>Kaspa University implements K Protocol to power its public lesson Q&A system. Rather than storing discussions in a traditional database, all questions and answers are recorded as K Protocol transactions on the Kaspa blockchain. This approach creates a permanent, publicly accessible knowledge base that persists independently of the platform itself.</p>
+<p><strong>Technical Implementation</strong></p>
+<p>When a student submits a question through the Q&A interface, the platform constructs a K Protocol message containing the lesson context and question content. The student's wallet signs this message, which is then broadcast to the Kaspa network. The message follows the standard format: <code>k:1:post:{lesson context}:{question}</code> for new questions and <code>k:1:reply:{questionTxId}:{answer}</code> for responses.</p>
+<p><strong>Benefits of On-Chain Q&A</strong></p>
+<p>This architecture provides several pedagogical advantages. All contributions become permanent records that persist indefinitely. Cross-platform discoverability allows other K-indexers to surface Kaspa University discussions within their interfaces. Cryptographic signing ensures clear attribution of authorship. Content moderation occurs transparently, as original messages remain accessible on-chain regardless of frontend display decisions.</p>
+<p><strong>Broader Implications</strong></p>
+<p>Kaspa University's K Protocol integration serves as a practical demonstration of blockchain utility beyond financial transactions. Each Q&A interaction illustrates how the Kaspa network can support rich application layers while maintaining the core properties of decentralization and permanence.</p>
+<p><strong>Practical Exercise</strong></p>
+<p>Students are encouraged to post a question in any lesson's Q&A section to experience the K Protocol workflow firsthand and observe their contribution become part of Kaspa's permanent record.</p>`,
       },
 
       // Course 18: Kasia Protocol - 4 lessons
@@ -1936,85 +1904,56 @@ Kaspa can increase blocks per second by:
         title: "What is Kasia Protocol?",
         order: 1,
         duration: "5 min",
-        content: `<p>**Private Messaging on a Public Blockchain**</p>
-<p>K Protocol is for public posts. But what about private conversations? That's where Kasia comes in.</p>
-<p>**Kasia: Encrypted P2P Messaging**</p>
-<p>Kasia is an end-to-end encrypted messaging protocol built on Kaspa. It enables private, secure conversations where only the sender and recipient can read the messages.</p>
-<p>**How Encryption Works**</p>
-<p>1. Handshake: You initiate a conversation by sending an encrypted key exchange</p>
-<p>2. Key Agreement: The recipient accepts, establishing a shared secret</p>
-<p>3. Messaging: All subsequent messages are encrypted with this shared key</p>
-<p>4. On-Chain Storage: Encrypted payloads are stored in Kaspa transactions</p>
-<p>**The Protocol Format**</p>
-<p>• Handshake: ciph_msg:1:handshake:{encrypted key data}</p>
-<p>• Messages: ciph_msg:1:comm:{encrypted content}</p>
-<p>**Why Build on Kaspa?**</p>
-<p>• Speed: Messages confirm in seconds</p>
-<p>• Cost: ~500,000 messages for 10 KAS</p>
-<p>• Decentralization: No central server to compromise</p>
-<p>• Immutability: Message history can't be altered</p>
-<p>**Developer**</p>
-<p>Built by @auzghosty and the K-Kluster team. Fully open-source.</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson introduces the Kasia Protocol, explaining how end-to-end encrypted messaging can be implemented on a public blockchain while maintaining complete privacy.</p>
+<p><strong>Introduction</strong></p>
+<p>While K Protocol enables public communication on Kaspa, many use cases require private, secure messaging. Kasia Protocol addresses this need by implementing end-to-end encrypted peer-to-peer messaging directly on the Kaspa blockchain. Only the intended sender and recipient can decrypt message contents, despite all data being stored on a public ledger.</p>
+<p><strong>Cryptographic Foundation</strong></p>
+<p>Kasia employs a multi-phase encryption process. First, a handshake phase establishes a secure channel through encrypted key exchange. The recipient accepts the handshake, and both parties derive a shared secret. All subsequent messages are encrypted using this shared key before being embedded in Kaspa transactions. The encrypted payloads are stored on-chain, visible to all but readable only by the conversation participants.</p>
+<p><strong>Protocol Specification</strong></p>
+<p>Kasia defines two primary message types: handshake messages (formatted as <code>ciph_msg:1:handshake:{encrypted key data}</code>) for initiating secure channels, and communication messages (formatted as <code>ciph_msg:1:comm:{encrypted content}</code>) for actual message exchange.</p>
+<p><strong>Architectural Advantages</strong></p>
+<p>Building on Kaspa provides several benefits for encrypted messaging. Confirmations occur within seconds, enabling near-real-time communication. Transaction costs remain minimal, supporting approximately 500,000 messages per 10 KAS. The decentralized architecture eliminates single points of failure or compromise. Message history becomes immutable once recorded, preventing retroactive alteration.</p>
+<p><strong>Development</strong></p>
+<p>Kasia Protocol was developed by auzghosty and the K-Kluster team as a fully open-source project.</p>`,
       },
       {
         id: "lesson-18-2",
         courseId: "kasia-protocol",
-        title: "Kasia Features & Capabilities",
+        title: "Platform Features and Capabilities",
         order: 2,
         duration: "5 min",
-        content: `<p>**Beyond Basic Messaging**</p>
-<p>Kasia isn't just encrypted chat - it's a full communication platform.</p>
-<p>**Core Features**</p>
-<p>• End-to-End Encryption: Only you and recipient can read messages</p>
-<p>• In-Chat Payments: Send KAS directly within conversations</p>
-<p>• KNS Integration: Use .kas names instead of long wallet addresses</p>
-<p>• Cross-Device Sync: Optional indexer for accessing messages anywhere</p>
-<p>• PWA Support: Install as a native-like app on any device</p>
-<p>**Privacy First**</p>
-<p>• No KYC required</p>
-<p>• No phone number or email needed</p>
-<p>• No central server storing your keys</p>
-<p>• Your private key = your identity</p>
-<p>**Self-Hosting Option**</p>
-<p>Run your own Kasia indexer for maximum sovereignty:</p>
-<p>• Handles 3,000+ TPS</p>
-<p>• Minimal hardware requirements</p>
-<p>• Complete control over your data</p>
-<p>**Access Kasia**</p>
-<p>• Web: kasia.fyi</p>
-<p>• Android: Google Play Store</p>
-<p>• GitHub: github.com/K-Kluster/Kasia</p>
-<p>• Discord: discord.gg/vuKyjtRGKB</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explores the full feature set of the Kasia platform, including integrated payments, identity systems, and self-hosting capabilities.</p>
+<p><strong>Comprehensive Communication Platform</strong></p>
+<p>Kasia extends beyond basic encrypted messaging to provide a complete communication infrastructure. The platform combines end-to-end encryption with native cryptocurrency payments, identity resolution, and cross-device accessibility.</p>
+<p><strong>Core Capabilities</strong></p>
+<p>The encryption system ensures that only conversation participants can decrypt messages. In-chat payment functionality enables users to send KAS directly within conversations, streamlining transactions that arise from discussions. Kaspa Name Service (KNS) integration allows users to reference contacts using human-readable .kas names rather than full wallet addresses. Cross-device synchronization through optional indexers enables message access from any device. Progressive Web App (PWA) support provides native-like installation on mobile and desktop platforms.</p>
+<p><strong>Privacy Architecture</strong></p>
+<p>Kasia implements privacy at its foundation. No identity verification is required to participate. Users need not provide phone numbers, email addresses, or any personal information. No central server stores encryption keys. The user's private key serves as their complete identity within the system.</p>
+<p><strong>Self-Sovereign Infrastructure</strong></p>
+<p>For users requiring maximum control, Kasia supports self-hosted indexer deployment. The indexer architecture handles over 3,000 transactions per second with minimal hardware requirements, enabling complete data sovereignty.</p>
+<p><strong>Resources</strong></p>
+<p>Kasia is accessible through the web interface at kasia.fyi and through Android applications on the Google Play Store. The complete source code is available at github.com/K-Kluster/Kasia, with community support through Discord at discord.gg/vuKyjtRGKB.</p>`,
       },
       {
         id: "lesson-18-3",
         courseId: "kasia-protocol",
-        title: "Use Cases & Adoption",
+        title: "Applications and Comparative Analysis",
         order: 3,
         duration: "5 min",
-        content: `<p>**Why Encrypted Blockchain Messaging?**</p>
-<p>Traditional encrypted apps (Signal, WhatsApp) rely on central servers. They can:</p>
-<p>• Be pressured by governments</p>
-<p>• Go offline or shut down</p>
-<p>• Change privacy policies</p>
-<p>Kasia eliminates these risks through decentralization.</p>
-<p>**Real-World Use Cases**</p>
-<p>• Business Communications: Secure client discussions with payment capability</p>
-<p>• OTC Trading: Negotiate deals with built-in payment settlement</p>
-<p>• Support Channels: Provide private help without exposing user data</p>
-<p>• Personal Privacy: Chat without big tech surveillance</p>
-<p>• Escrow Services: Communicate and transact in one flow</p>
-<p>**In-Chat Payments Revolution**</p>
-<p>Imagine negotiating a freelance project and paying - all in one encrypted thread:</p>
-<p>1. Discuss scope and price</p>
-<p>2. Agree on terms</p>
-<p>3. Send KAS payment directly in chat</p>
-<p>4. Confirm receipt</p>
-<p>No switching apps. No exposing payment details. Everything encrypted.</p>
-<p>**Comparison to Alternatives**</p>
-<p>Signal: Great encryption, centralized servers, no payments</p>
-<p>Telegram: Not E2EE by default, centralized, no crypto native</p>
-<p>Kasia: E2EE, decentralized, native KAS payments, on-chain</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson examines practical applications of encrypted blockchain messaging and compares Kasia's architecture to traditional encrypted messaging platforms.</p>
+<p><strong>Limitations of Centralized Encryption</strong></p>
+<p>Traditional encrypted messaging applications such as Signal and WhatsApp rely on centralized server infrastructure. While they provide strong encryption, this architecture introduces vulnerabilities: servers can be pressured by governmental authorities, services can be discontinued or blocked, and privacy policies can change unilaterally. Kasia's decentralized architecture eliminates these single points of failure.</p>
+<p><strong>Practical Applications</strong></p>
+<p>Several use cases particularly benefit from Kasia's architecture. Business communications gain both encryption and integrated payment capability for client interactions. Over-the-counter trading benefits from combined negotiation and settlement in a single encrypted channel. Support services can provide private assistance without centralizing sensitive user data. Individual users gain communication privacy independent of corporate surveillance infrastructure. Escrow and intermediary services can manage both communication and fund transfer in unified workflows.</p>
+<p><strong>Integrated Payment Workflows</strong></p>
+<p>The combination of encrypted messaging and native payments enables streamlined transaction workflows. Consider a freelance engagement: parties can discuss project scope, negotiate terms, execute payment, and confirm receipt—all within a single encrypted conversation thread. This integration eliminates application switching and keeps all transaction context in one secure location.</p>
+<p><strong>Comparative Analysis</strong></p>
+<p>Signal provides robust encryption but operates through centralized servers without payment functionality. Telegram does not enable end-to-end encryption by default and maintains centralized infrastructure. Kasia uniquely combines end-to-end encryption, decentralized architecture, native KAS payments, and on-chain message storage.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Kasia represents a new category of communication infrastructure that unifies private messaging with cryptocurrency payments on decentralized infrastructure.</p>`,
       },
       {
         id: "lesson-18-4",
@@ -2022,28 +1961,20 @@ Kaspa can increase blocks per second by:
         title: "Kasia in Kaspa University",
         order: 4,
         duration: "5 min",
-        content: `<p>**How Kaspa University Uses Kasia**</p>
-<p>Kaspa University integrates Kasia Protocol for private, encrypted communications - showcasing real-world blockchain messaging.</p>
-<p>**Three Use Cases in KU**</p>
-<p>1. Admin Support: Message platform administrators privately for help</p>
-<p>2. Instructor Contact: Reach out to course creators with questions</p>
-<p>3. Student-to-Student: Connect with fellow learners for collaboration</p>
-<p>**How It Works in Practice**</p>
-<p>1. Navigate to Messages in your dashboard</p>
-<p>2. Start a new conversation (enter wallet address or .kas name)</p>
-<p>3. Your wallet initiates a Kasia handshake</p>
-<p>4. Once accepted, exchange encrypted messages</p>
-<p>5. All messages are stored on Kaspa blockchain</p>
-<p>**The Handshake Flow**</p>
-<p>• Pending: You've sent a handshake, waiting for acceptance</p>
-<p>• Active: Handshake accepted, messaging enabled</p>
-<p>• Background polling checks for handshake acceptance</p>
-<p>**Privacy Guarantees**</p>
-<p>• KU cannot read your private messages</p>
-<p>• Messages are encrypted end-to-end</p>
-<p>• Only your wallet's private key can decrypt</p>
-<p>**Why This Matters**</p>
-<p>By using Kasia, Kaspa University demonstrates that education platforms don't need to compromise on privacy. Your learning journey, your support requests, your connections - all protected by cryptography.</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson demonstrates Kasia Protocol integration within Kaspa University, explaining how encrypted messaging enhances the educational experience while maintaining student privacy.</p>
+<p><strong>Integration Overview</strong></p>
+<p>Kaspa University incorporates Kasia Protocol to provide private, encrypted communication channels. This integration serves as both a practical feature and a demonstration of real-world blockchain messaging capabilities.</p>
+<p><strong>Platform Use Cases</strong></p>
+<p>The integration supports three primary communication scenarios. Administrative support enables students to contact platform administrators privately for assistance. Instructor communication allows students to reach course creators with questions or feedback. Peer collaboration facilitates encrypted communication between students for study groups or discussion.</p>
+<p><strong>User Workflow</strong></p>
+<p>To initiate a conversation, students navigate to the Messages section of their dashboard and specify a recipient by wallet address or .kas name. The platform initiates a Kasia handshake on behalf of the student's wallet. Once the recipient accepts the handshake, encrypted messaging becomes available. All message content is stored on the Kaspa blockchain in encrypted form.</p>
+<p><strong>Conversation States</strong></p>
+<p>Conversations progress through defined states. A pending status indicates that a handshake has been sent but not yet accepted. An active status indicates successful handshake completion and enabled messaging. The platform polls in the background to detect handshake acceptance.</p>
+<p><strong>Privacy Architecture</strong></p>
+<p>Kaspa University cannot access the content of private messages. All communication is encrypted end-to-end using cryptographic keys derived from user wallets. Only the recipient's private key can decrypt received messages.</p>
+<p><strong>Broader Significance</strong></p>
+<p>This integration demonstrates that educational platforms need not compromise user privacy for functionality. Student communications, support requests, and peer interactions remain protected by cryptography throughout their educational journey.</p>`,
       },
 
       // Course 19: KU Protocol - 3 lessons
@@ -2053,88 +1984,54 @@ Kaspa can increase blocks per second by:
         title: "What is KU Protocol?",
         order: 1,
         duration: "5 min",
-        content: `<p>**On-Chain Achievement Records**</p>
-<p>Traditional education credentials are stored in databases. Universities can lose records. Certificates can be forged. Verification requires contacting institutions.</p>
-<p>**KU Protocol: Blockchain Credentials**</p>
-<p>KU Protocol creates immutable, verifiable quiz completion proofs on the Kaspa blockchain. When you pass a quiz, a cryptographic proof is recorded on-chain.</p>
-<p>**The Protocol Format**</p>
-<p>ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}</p>
-<p>This format includes:</p>
-<p>• Your wallet address (your identity)</p>
-<p>• What you completed (course and lesson IDs)</p>
-<p>• Your performance (score and max possible score)</p>
-<p>• When you completed it (timestamp)</p>
-<p>• Answer verification hash (proves specific answers given)</p>
-<p>**Why Blockchain Credentials Matter**</p>
-<p>• Permanent: Records exist as long as Kaspa exists</p>
-<p>• Verifiable: Anyone can check your achievements on-chain</p>
-<p>• Tamper-Proof: Cannot be altered or forged</p>
-<p>• Self-Sovereign: You control your credential data</p>
-<p>**Beyond Kaspa University**</p>
-<p>KU Protocol could become a standard for any learning platform on Kaspa - creating a universal, verifiable education record system.</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson introduces the KU Protocol specification, explaining how educational achievements are recorded on the Kaspa blockchain and the advantages of blockchain-based credentials.</p>
+<p><strong>The Challenge of Traditional Credentials</strong></p>
+<p>Traditional educational credentials face significant limitations. Institutional databases can suffer data loss. Paper and digital certificates can be forged. Verification requires contacting issuing institutions, which may be slow, costly, or impossible if the institution no longer exists.</p>
+<p><strong>KU Protocol Overview</strong></p>
+<p>KU Protocol establishes a standard for recording educational achievement proofs on the Kaspa blockchain. When a student passes a quiz, the system generates a cryptographic proof that is permanently recorded on-chain. This proof can be independently verified by anyone without requiring cooperation from the issuing platform.</p>
+<p><strong>Protocol Specification</strong></p>
+<p>Each achievement record follows a standardized format: <code>ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}</code>. This structure encodes the student's wallet address (serving as identity), the specific course and lesson completed, the score achieved relative to the maximum possible, the timestamp of completion, and a content hash that cryptographically binds the record to the specific answers submitted.</p>
+<p><strong>Properties of Blockchain Credentials</strong></p>
+<p>On-chain credentials possess several valuable properties. Permanence ensures records persist for the lifetime of the Kaspa network. Public verifiability allows anyone to confirm achievements without institutional intermediation. Immutability prevents retroactive alteration or forgery. Self-sovereignty places credential ownership with the student rather than the issuing institution.</p>
+<p><strong>Future Implications</strong></p>
+<p>While developed for Kaspa University, KU Protocol establishes a model that could be adopted by other educational platforms on Kaspa, potentially creating a unified, verifiable credential ecosystem.</p>`,
       },
       {
         id: "lesson-19-2",
         courseId: "ku-protocol",
-        title: "How KU Protocol Works",
+        title: "Technical Implementation",
         order: 2,
         duration: "5 min",
-        content: `<p>**The Quiz Flow**</p>
-<p>When you complete a quiz in Kaspa University, here's what happens:</p>
-<p>1. Quiz Submission: You answer questions on a lesson</p>
-<p>2. Server Validation: Answers are checked, score calculated</p>
-<p>3. Payload Generation: A deterministic achievement payload is created</p>
-<p>4. Wallet Signing: Your wallet signs the payload (proves it's you)</p>
-<p>5. On-Chain Recording: The signed proof is broadcast to Kaspa</p>
-<p>6. Reward Distribution: KAS rewards are sent to your wallet</p>
-<p>**Platform Security (Kaspa University Implementation)**</p>
-<p>Kaspa University adds security measures on top of the protocol:</p>
-<p>• Minimum completion times (can't speed-run)</p>
-<p>• Quiz attempt limits</p>
-<p>• Wallet trust scoring</p>
-<p>• IP session binding</p>
-<p>• Concurrent submission locking</p>
-<p>Note: These are platform-level protections, not part of the KU Protocol specification itself.</p>
-<p>**The Content Hash**</p>
-<p>Each quiz proof includes a content hash that:</p>
-<p>• Proves the specific answers you submitted</p>
-<p>• Allows verification that the score was calculated correctly</p>
-<p>• Creates a unique fingerprint for that quiz attempt</p>
-<p>**Verification**</p>
-<p>Anyone can verify your achievements by:</p>
-<p>1. Finding the KU Protocol transaction on-chain</p>
-<p>2. Parsing the payload to extract quiz data</p>
-<p>3. Confirming the wallet, course, lesson, and score</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson details the technical workflow for recording achievements on-chain, distinguishes between protocol-level and platform-level features, and explains the verification process.</p>
+<p><strong>Achievement Recording Workflow</strong></p>
+<p>The process of recording an achievement involves several coordinated steps. First, the student submits quiz answers through the platform interface. The server validates responses and calculates the resulting score. A deterministic achievement payload is generated containing all relevant completion data. The student's wallet signs this payload, cryptographically proving ownership. Finally, the signed proof is broadcast to the Kaspa network, and upon confirmation, KAS rewards are distributed to the student's wallet.</p>
+<p><strong>Platform Security Measures</strong></p>
+<p>Kaspa University implements additional security measures at the platform level to ensure credential integrity. These include minimum completion time requirements to prevent automated completion, quiz attempt limits, wallet trust scoring based on behavioral analysis, IP session binding to prevent session hijacking, and concurrent submission locking to prevent race condition exploits. It is important to note that these are platform-level protections implemented by Kaspa University, not part of the KU Protocol specification itself.</p>
+<p><strong>Content Hash Function</strong></p>
+<p>Each achievement record includes a content hash serving multiple purposes. The hash cryptographically binds the record to the specific answers submitted, enabling verification that the recorded score was calculated correctly. This creates a unique fingerprint for each quiz attempt, preventing duplicate submissions while maintaining answer privacy.</p>
+<p><strong>Verification Process</strong></p>
+<p>Third parties can independently verify achievements through a straightforward process: locate the KU Protocol transaction on the blockchain, parse the payload to extract achievement data, and confirm that the wallet address, course identifier, lesson identifier, and score match any claimed credentials.</p>`,
       },
       {
         id: "lesson-19-3",
         courseId: "ku-protocol",
-        title: "KU Protocol in Action",
+        title: "Practical Applications",
         order: 3,
         duration: "5 min",
-        content: `<p>**Your Learning Journey On-Chain**</p>
-<p>As you progress through Kaspa University, KU Protocol creates a permanent record of your achievements.</p>
-<p>**What Gets Recorded On-Chain**</p>
-<p>• Quiz completion proofs (when you pass a quiz)</p>
-<p>Note: Course completions, total rewards, and diploma progress are computed by Kaspa University from the on-chain quiz records - the protocol itself only stores individual quiz proofs.</p>
-<p>**The Reward System**</p>
-<p>KU Protocol powers our Learn-to-Earn model:</p>
-<p>• 0.1 KAS per course completion</p>
-<p>• Rewards are real KAS tokens</p>
-<p>• Sent directly to your connected wallet</p>
-<p>• No withdrawal needed - it's already yours</p>
-<p>**Building Your On-Chain Resume**</p>
-<p>Think of KU Protocol as building a blockchain-verified resume:</p>
-<p>• Employers can verify your Kaspa knowledge</p>
-<p>• No need to contact Kaspa University for verification</p>
-<p>• Credentials travel with your wallet forever</p>
-<p>**Future Possibilities**</p>
-<p>• Job boards that verify KU Protocol credentials</p>
-<p>• DAOs that require certain achievements for membership</p>
-<p>• Other platforms recognizing KU achievements</p>
-<p>• Skill-based access control using on-chain proofs</p>
-<p>**Continue Learning**</p>
-<p>Every course you complete adds to your on-chain credential record. Keep learning, keep earning, keep building your verified expertise!</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explores the practical applications of on-chain credentials within Kaspa University and examines future possibilities for blockchain-verified education.</p>
+<p><strong>On-Chain Data Architecture</strong></p>
+<p>As students progress through Kaspa University, KU Protocol creates permanent records of their quiz completions. It is important to understand what is recorded on-chain: individual quiz completion proofs only. Aggregate calculations such as course completions, total rewards earned, and diploma progress are computed by Kaspa University from these on-chain quiz records—the protocol itself stores only atomic quiz proofs.</p>
+<p><strong>Learn-to-Earn Integration</strong></p>
+<p>KU Protocol powers Kaspa University's Learn-to-Earn model. Upon completing a course (defined as passing all lesson quizzes), students receive 0.1 KAS as a reward. These are genuine blockchain tokens sent directly to the student's connected wallet. No withdrawal process is required—the tokens are immediately owned and spendable by the student.</p>
+<p><strong>Blockchain-Verified Credentials</strong></p>
+<p>On-chain achievement records function as a blockchain-verified credential portfolio. Potential employers or collaborators can verify Kaspa expertise by examining a student's KU Protocol transaction history. This verification requires no cooperation from Kaspa University—all data is publicly accessible on the blockchain. Credentials remain associated with the student's wallet address permanently.</p>
+<p><strong>Emerging Use Cases</strong></p>
+<p>On-chain credentials enable several forward-looking applications: job boards that filter candidates by verified blockchain achievements, DAOs that require specific educational credentials for membership, cross-platform credential recognition among Kaspa ecosystem projects, and skill-based access control systems using on-chain proofs as authorization tokens.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Each completed course contributes to a permanent, verifiable credential record that accompanies the student's wallet throughout the Kaspa ecosystem and beyond.</p>`,
       },
 
       // Course 20: KRC-721 NFT Standard - 4 lessons
@@ -2144,88 +2041,56 @@ Kaspa can increase blocks per second by:
         title: "Understanding NFTs on Kaspa",
         order: 1,
         duration: "5 min",
-        content: `<p>**What is an NFT?**</p>
-<p>NFT stands for Non-Fungible Token. Unlike KAS (where every coin is identical), each NFT is unique - like a specific piece of art vs. a dollar bill.</p>
-<p>**KRC-721: Kaspa's NFT Standard**</p>
-<p>KRC-721 is Kaspa's standard for creating and managing NFTs. It's similar to Ethereum's ERC-721 but optimized for Kaspa's BlockDAG architecture.</p>
-<p>**Key Features**</p>
-<p>• Unique Digital Assets: Each token has a distinct ID and properties</p>
-<p>• On-Chain Ownership: Ownership is recorded on Kaspa blockchain</p>
-<p>• IPFS Metadata: Images and details stored on decentralized IPFS</p>
-<p>• Royalty Support: Creators can earn on secondary sales</p>
-<p>• Commit-Reveal: Prevents front-running during minting</p>
-<p>**NFT Use Cases**</p>
-<p>• Digital Art: Collectible images and animations</p>
-<p>• Credentials: Certificates, diplomas, badges</p>
-<p>• Gaming: In-game items, characters, skins</p>
-<p>• Memberships: Access passes, club memberships</p>
-<p>• Real-World Assets: Tokenized property, tickets</p>
-<p>**Why Kaspa for NFTs?**</p>
-<p>• Fast minting (seconds, not minutes)</p>
-<p>• Low costs (predictable fees)</p>
-<p>• True decentralization (PoW security)</p>
-<p>• Growing ecosystem (marketplaces, wallets)</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson introduces the concept of non-fungible tokens, explains the KRC-721 standard's role in the Kaspa ecosystem, and surveys common NFT applications.</p>
+<p><strong>Non-Fungible Token Fundamentals</strong></p>
+<p>Non-Fungible Tokens (NFTs) represent unique digital assets on a blockchain. Unlike fungible tokens such as KAS, where each unit is interchangeable with any other, each NFT possesses distinct properties and cannot be substituted. This distinction mirrors the difference between a specific artwork and a unit of currency.</p>
+<p><strong>The KRC-721 Standard</strong></p>
+<p>KRC-721 establishes Kaspa's standard for creating and managing non-fungible tokens. The specification draws conceptual parallels to Ethereum's ERC-721 while implementing optimizations suited to Kaspa's BlockDAG architecture. The standard defines how collections are deployed, how individual tokens are minted, and how ownership is tracked.</p>
+<p><strong>Technical Capabilities</strong></p>
+<p>KRC-721 provides several key features. Each token maintains a distinct identifier and property set. Ownership records are stored directly on the Kaspa blockchain. Associated metadata and images utilize the InterPlanetary File System (IPFS) for decentralized storage. The standard supports royalty mechanisms enabling creators to receive compensation from secondary market sales. A commit-reveal minting process prevents front-running attacks during token creation.</p>
+<p><strong>Application Domains</strong></p>
+<p>NFTs serve diverse purposes across the digital economy. Digital art collections enable provable ownership of creative works. Credential systems issue verifiable certificates, diplomas, and achievement badges. Gaming platforms use NFTs for in-game items, characters, and cosmetics. Membership programs distribute access passes and club affiliations. Tokenization projects represent real-world assets such as property deeds or event tickets.</p>
+<p><strong>Kaspa's NFT Advantages</strong></p>
+<p>Kaspa's architecture provides meaningful benefits for NFT applications: minting completes in seconds rather than minutes, transaction costs remain predictable and reasonable, proof-of-work consensus ensures genuine decentralization, and a growing ecosystem of marketplaces and wallets supports the standard.</p>`,
       },
       {
         id: "lesson-20-2",
         courseId: "krc721-nft-standard",
-        title: "Technical Deep Dive",
+        title: "Technical Architecture",
         order: 2,
         duration: "5 min",
-        content: `<p>**The Commit-Reveal Mechanism**</p>
-<p>KRC-721 uses a two-phase minting process to prevent manipulation:</p>
-<p>1. Commit Phase: You create a hidden commitment transaction</p>
-<p>2. Wait: At least one block must pass</p>
-<p>3. Reveal Phase: You reveal your mint intention</p>
-<p>This prevents front-running and ensures fair minting.</p>
-<p>**Collection Deployment**</p>
-<p>To create an NFT collection, you deploy with:</p>
-<p>• Ticker: Unique collection identifier (e.g., KUDIPLOMA)</p>
-<p>• Max Supply: Total NFTs possible</p>
-<p>• Metadata: Name, description, image (IPFS)</p>
-<p>• Royalties: Optional creator fees</p>
-<p>• Premint: Optional reserved tokens</p>
-<p>**Cost Structure**</p>
-<p>• Deploy: 1,000 KAS (burned)</p>
-<p>• Premint: +10 KAS per pre-minted NFT</p>
-<p>• Public Mint: Gas fees + royalties</p>
-<p>**Metadata Format**</p>
-<p>NFT metadata must include:</p>
-<p>• name: The NFT's display name</p>
-<p>• description: What the NFT represents</p>
-<p>• image: IPFS URI (must use ipfs:// scheme)</p>
-<p>• attributes: Optional traits and properties</p>
-<p>**Indexer Infrastructure**</p>
-<p>The Kasplex indexer scans blocks for KRC-721 transactions, enabling wallets and marketplaces to display your NFTs.</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson examines the technical implementation of KRC-721, including the commit-reveal mechanism, collection deployment parameters, cost structures, and indexing infrastructure.</p>
+<p><strong>Commit-Reveal Minting</strong></p>
+<p>KRC-721 employs a two-phase minting process designed to prevent manipulation. During the commit phase, a user creates a hidden commitment transaction that does not reveal their minting intention. After at least one block confirmation, the reveal phase exposes the mint request. This separation prevents observers from front-running mint transactions, ensuring fair access to limited collections.</p>
+<p><strong>Collection Deployment</strong></p>
+<p>Creating an NFT collection requires specifying several parameters. The ticker serves as a unique collection identifier (such as KUDIPLOMA). Maximum supply defines the total number of tokens that can exist in the collection. Metadata includes the collection name, description, and cover image stored on IPFS. Royalty settings determine optional creator fees on secondary sales. Premint functionality allows reserving tokens for the deployer.</p>
+<p><strong>Economic Model</strong></p>
+<p>The cost structure involves several components. Collection deployment requires a 1,000 KAS payment that is permanently burned. Pre-minting reserved tokens incurs an additional cost per token. Public minting involves network fees plus any configured royalty payments.</p>
+<p><strong>Metadata Specification</strong></p>
+<p>Each NFT's metadata follows a defined structure. Required fields include the display name, a description explaining what the token represents, and an image URI using the IPFS protocol scheme. Optional attributes can specify traits and properties for collection filtering and rarity calculation.</p>
+<p><strong>Indexer Infrastructure</strong></p>
+<p>The Kasplex indexer continuously scans blocks for KRC-721 transactions, building a queryable database of collection deployments, token mints, transfers, and ownership records. This infrastructure enables wallets and marketplaces to display NFT portfolios and facilitate trading.</p>`,
       },
       {
         id: "lesson-20-3",
         courseId: "krc721-nft-standard",
-        title: "NFT Ecosystem & Tools",
+        title: "Ecosystem and Infrastructure",
         order: 3,
         duration: "5 min",
-        content: `<p>**Marketplaces**</p>
-<p>Where to trade KRC-721 NFTs:</p>
-<p>• Kaspa.com NFT Marketplace: Official trading platform</p>
-<p>• KaspaBOX (kaspabox.fyi): Lightning-fast KRC-721 trading</p>
-<p>• KSPR Bot: Telegram-based trading interface</p>
-<p>**Wallets with NFT Support**</p>
-<p>• KSPR Wallet Extension: Chrome/Firefox, full KRC-721 support</p>
-<p>• KasWare: Popular Kaspa wallet with NFT viewing</p>
-<p>**Developer Resources**</p>
-<p>• KRC-721 Docs: testnet-10.krc721.stream/docs</p>
-<p>• Kasplex Protocol: kaspa.org/kasplex-faq</p>
-<p>• Sample Code: github.com/coinchimp/kaspa-krc721-apps</p>
-<p>**IPFS for Storage**</p>
-<p>NFT images and metadata are stored on IPFS:</p>
-<p>• Decentralized: No single point of failure</p>
-<p>• Content-Addressed: URLs based on content hash</p>
-<p>• Pinning Services: Pinata, Filebase, etc.</p>
-<p>**Best Practices**</p>
-<p>• Always test on testnet first</p>
-<p>• Upload images to IPFS before deploying</p>
-<p>• Use proper metadata structure</p>
-<p>• Verify collection deployment via indexer</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson surveys the KRC-721 ecosystem, including marketplaces, wallet support, developer resources, and storage infrastructure.</p>
+<p><strong>Trading Platforms</strong></p>
+<p>Several marketplaces facilitate KRC-721 trading. The Kaspa.com NFT Marketplace provides an official trading platform for the ecosystem. KaspaBOX (kaspabox.fyi) offers high-performance KRC-721 trading capabilities. KSPR Bot provides a Telegram-based interface for users who prefer conversational trading.</p>
+<p><strong>Wallet Integration</strong></p>
+<p>Major Kaspa wallets support KRC-721 functionality. The KSPR Wallet Extension for Chrome and Firefox provides comprehensive KRC-721 support including viewing, minting, and transfers. KasWare, a popular Kaspa wallet, includes NFT viewing capabilities for portfolio management.</p>
+<p><strong>Developer Resources</strong></p>
+<p>Several resources support KRC-721 development. Technical documentation is available at testnet-10.krc721.stream/docs. The Kasplex Protocol FAQ at kaspa.org/kasplex-faq provides context on the broader token infrastructure. Sample application code demonstrating KRC-721 integration is available at github.com/coinchimp/kaspa-krc721-apps.</p>
+<p><strong>Decentralized Storage</strong></p>
+<p>NFT images and metadata utilize the InterPlanetary File System (IPFS) for persistent, decentralized storage. This architecture eliminates single points of failure that could result in lost media. Content addressing means each file's URI derives from its cryptographic hash, ensuring data integrity. Pinning services such as Pinata and Filebase provide reliable hosting for IPFS content.</p>
+<p><strong>Development Best Practices</strong></p>
+<p>Successful KRC-721 deployment follows several guidelines: conduct all testing on testnet before mainnet deployment, upload images to IPFS and confirm accessibility before collection deployment, adhere to the standard metadata structure for compatibility with indexers and marketplaces, and verify successful deployment through the indexer before announcing or selling tokens.</p>`,
       },
       {
         id: "lesson-20-4",
@@ -2233,195 +2098,121 @@ Kaspa can increase blocks per second by:
         title: "KRC-721 in Kaspa University",
         order: 4,
         duration: "5 min",
-        content: `<p>**The KUDIPLOMA NFT**</p>
-<p>Kaspa University uses KRC-721 to issue diploma NFTs to graduates. When you complete all 21 courses, you earn the right to mint your diploma.</p>
-<p>**Collection Details**</p>
-<p>• Ticker: KUDIPLOMA</p>
-<p>• Max Supply: 10,000 diplomas</p>
-<p>• Eligibility: Complete ALL courses</p>
-<p>• Minting: User-signed (you control the process)</p>
-<p>**The Whitelist Pricing Model**</p>
-<p>We use KRC-721's royalty system creatively:</p>
-<p>• Non-whitelisted: 20,000 KAS (deterrent price)</p>
-<p>• Graduates (whitelisted): 0 KAS (just network fees ~10 KAS)</p>
-<p>This ensures only verified graduates can affordably mint diplomas.</p>
-<p>**How Minting Works**</p>
-<p>1. Complete all courses (builds your eligibility)</p>
-<p>2. Visit the Diploma page when ready</p>
-<p>3. Your wallet is automatically whitelisted</p>
-<p>4. Sign the mint transaction with your wallet</p>
-<p>5. Your unique diploma NFT is created</p>
-<p>**What Your Diploma Proves**</p>
-<p>• You completed comprehensive Kaspa education</p>
-<p>• You understand protocols, consensus, and ecosystem</p>
-<p>• You engaged with real blockchain technology</p>
-<p>• Your credential is verifiable on-chain forever</p>
-<p>**The Journey Ahead**</p>
-<p>Your diploma isn't just a certificate - it's proof of expertise stored permanently on the world's fastest PoW blockchain. Continue learning and become a Kaspa graduate!</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains how Kaspa University implements KRC-721 for its diploma NFT system, demonstrating real-world application of the standard in an educational context.</p>
+<p><strong>The KUDIPLOMA Collection</strong></p>
+<p>Kaspa University leverages KRC-721 to issue diploma NFTs to graduates who complete the full curriculum. The KUDIPLOMA collection represents a tangible, on-chain credential that validates comprehensive Kaspa expertise.</p>
+<p><strong>Collection Specifications</strong></p>
+<p>The diploma collection operates with the following parameters: the ticker KUDIPLOMA serves as the unique collection identifier, maximum supply is set at 10,000 diplomas, eligibility requires completion of all courses in the curriculum, and minting is user-initiated through wallet signature.</p>
+<p><strong>Whitelist-Based Access Control</strong></p>
+<p>The collection implements a creative use of KRC-721's royalty mechanism to control access. Non-whitelisted addresses face a 20,000 KAS deterrent fee, while graduates who have completed all courses are automatically whitelisted with a 0 KAS discount, paying only network fees (approximately 10 KAS). This economic design ensures that only verified graduates can practically obtain diplomas.</p>
+<p><strong>Minting Process</strong></p>
+<p>The diploma minting workflow proceeds through defined stages. First, the student completes all courses in the curriculum, establishing eligibility. Upon navigating to the Diploma page, the platform automatically whitelists the student's wallet address. The student then signs the mint transaction with their wallet, and the unique diploma NFT is created and assigned to their address.</p>
+<p><strong>Credential Significance</strong></p>
+<p>A KUDIPLOMA NFT serves as verifiable proof of several accomplishments: completion of comprehensive Kaspa education, demonstrated understanding of protocols, consensus mechanisms, and ecosystem tools, practical engagement with blockchain technology, and a permanent, on-chain credential tied to the graduate's wallet address.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>The diploma represents more than a traditional certificate—it provides cryptographically verifiable proof of expertise permanently stored on the Kaspa blockchain.</p>`,
       },
 
       // Course 21: L2 on Kaspa - 5 lessons
       {
         id: "lesson-21-1",
         courseId: "l2-on-kaspa",
-        title: "Why Layer 2 on Kaspa?",
+        title: "Layer 2 Architecture on Kaspa",
         order: 1,
         duration: "5 min",
-        content: `<p>**The Evolution of Kaspa**</p>
-<p>Kaspa started as the fastest PoW blockchain for payments. But the community wanted more: smart contracts, DeFi, NFTs, gaming.</p>
-<p>**Layer 1 vs Layer 2**</p>
-<p>• Layer 1: The Kaspa blockchain itself (BlockDAG, GHOSTDAG, PoW)</p>
-<p>• Layer 2: Solutions built ON TOP of Kaspa that add new capabilities</p>
-<p>Think of L1 as the foundation, L2 as buildings on that foundation.</p>
-<p>**Why Not Just Add Smart Contracts to L1?**</p>
-<p>Kaspa's philosophy prioritizes:</p>
-<p>• Simplicity: Keep L1 lean and secure</p>
-<p>• Speed: Don't slow down the base layer</p>
-<p>• Decentralization: Avoid bloating node requirements</p>
-<p>Layer 2s add complexity WITHOUT compromising L1 properties.</p>
-<p>**The L2 Landscape**</p>
-<p>Two major L2 solutions are building on Kaspa:</p>
-<p>• Kasplex: zkEVM rollup for EVM-compatible smart contracts</p>
-<p>• Igra Labs: Based ZK-rollup for gaming and multi-VM support</p>
-<p>Both use Kaspa as their decentralized sequencer and data availability layer.</p>
-<p>**What L2s Enable**</p>
-<p>• DeFi: DEXs, lending, yield farming</p>
-<p>• Gaming: Real-time on-chain games</p>
-<p>• NFT Marketplaces: Complex trading logic</p>
-<p>• DAOs: Governance systems</p>
-<p>• Any EVM dApp: Port existing Ethereum apps</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains the distinction between Layer 1 and Layer 2 systems, articulates the rationale for building Layer 2 solutions on Kaspa, and introduces the major L2 projects in the ecosystem.</p>
+<p><strong>Kaspa's Evolution</strong></p>
+<p>Kaspa emerged as the fastest proof-of-work blockchain optimized for value transfer. As the ecosystem matured, demand grew for expanded capabilities including smart contracts, decentralized finance, NFT infrastructure, and gaming platforms. Layer 2 solutions address these requirements while preserving Kaspa's core strengths.</p>
+<p><strong>Architectural Layers Defined</strong></p>
+<p>Layer 1 refers to the Kaspa blockchain itself—the BlockDAG structure, GHOSTDAG consensus protocol, and proof-of-work security model. Layer 2 solutions are systems built atop this foundation that inherit its security properties while adding new capabilities. The relationship parallels that of a building's foundation (L1) to the structures erected upon it (L2).</p>
+<p><strong>Design Philosophy</strong></p>
+<p>Kaspa's architecture prioritizes specific properties at the base layer: simplicity maintains security and auditability, performance optimizations preserve rapid confirmation times, and minimal node requirements support decentralization. Rather than expanding L1 scope to include smart contracts directly, Layer 2 solutions add computational complexity without compromising these foundational properties.</p>
+<p><strong>Current L2 Ecosystem</strong></p>
+<p>Two major Layer 2 solutions are developing on Kaspa. Kasplex implements a zkEVM rollup enabling EVM-compatible smart contract deployment. Igra Labs builds a ZK-rollup optimized for gaming applications with planned multi-VM support. Both projects utilize Kaspa as a decentralized sequencer and data availability layer.</p>
+<p><strong>Enabled Applications</strong></p>
+<p>Layer 2 infrastructure unlocks numerous application categories: decentralized exchanges, lending protocols, and yield optimization (DeFi); real-time blockchain-integrated gaming; sophisticated NFT marketplaces with complex trading logic; decentralized autonomous organizations; and migration of existing Ethereum applications to the Kaspa ecosystem.</p>`,
       },
       {
         id: "lesson-21-2",
         courseId: "l2-on-kaspa",
-        title: "Kasplex L2: zkEVM on Kaspa",
+        title: "Kasplex: zkEVM Implementation",
         order: 2,
         duration: "5 min",
-        content: `<p>**What is Kasplex?**</p>
-<p>Kasplex is a Layer 2 zkEVM rollup that brings Ethereum-compatible smart contracts to Kaspa. Launched in late 2025, it represents Kaspa's first production smart contract platform.</p>
-<p>**Technical Architecture**</p>
-<p>• Type: Based rollup (uses Kaspa L1 as sequencer)</p>
-<p>• VM: EVM-compatible (Solidity works out of the box)</p>
-<p>• Gas Token: KAS (bridged from L1)</p>
-<p>• Chain ID: 202555</p>
-<p>**How It Works**</p>
-<p>1. User submits transaction to Kaspa L1</p>
-<p>2. Transaction data embedded in Kaspa block</p>
-<p>3. Kasplex indexer extracts and executes</p>
-<p>4. State updates stored off-chain</p>
-<p>5. Anyone can verify by re-running transactions</p>
-<p>**Developer Experience**</p>
-<p>If you know Ethereum development, you know Kasplex:</p>
-<p>• Deploy with Hardhat, Remix, or Truffle</p>
-<p>• Connect via MetaMask using RPC endpoint</p>
-<p>• Write contracts in Solidity</p>
-<p>• Use familiar EVM tools and libraries</p>
-<p>**Key Links**</p>
-<p>• RPC: evmrpc.kasplex.org</p>
-<p>• Explorer: explorer.kasplex.org</p>
-<p>• Docs: docs-kasplex.gitbook.io/l2-network</p>
-<p>• Bridge: kasbridge-evm.kaspafoundation.org</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson provides technical understanding of Kasplex's architecture, explains its transaction flow, and outlines the developer experience for building on the platform.</p>
+<p><strong>Platform Overview</strong></p>
+<p>Kasplex is a Layer 2 zkEVM rollup that brings Ethereum-compatible smart contract capabilities to Kaspa. Launched in late 2025, it represents the first production smart contract platform in the Kaspa ecosystem, enabling developers to deploy Solidity contracts with minimal adaptation.</p>
+<p><strong>Technical Architecture</strong></p>
+<p>Kasplex implements a based rollup architecture that utilizes Kaspa Layer 1 as its sequencer. The virtual machine maintains full EVM compatibility, allowing Solidity contracts to function without modification. The native gas token is KAS, bridged from Layer 1. The network operates under chain ID 202555 for MetaMask and wallet configuration.</p>
+<p><strong>Transaction Flow</strong></p>
+<p>Transaction processing follows a defined sequence. Users submit transactions to the Kaspa Layer 1 network. Transaction data is embedded within Kaspa blocks as payload data. The Kasplex indexer extracts these transactions and executes them against the EVM state. State updates are stored off-chain in an optimized format. Any observer can verify correctness by re-executing the transaction sequence from Layer 1 data.</p>
+<p><strong>Developer Experience</strong></p>
+<p>Developers familiar with Ethereum tooling can immediately work with Kasplex. Deployment uses standard frameworks including Hardhat, Remix, and Truffle. Wallet connectivity occurs through MetaMask configured with the Kasplex RPC endpoint. Smart contracts are written in Solidity using established patterns. The full ecosystem of EVM development tools and libraries remains compatible.</p>
+<p><strong>Resources</strong></p>
+<p>Essential endpoints and documentation: RPC access at evmrpc.kasplex.org, block explorer at explorer.kasplex.org, technical documentation at docs-kasplex.gitbook.io/l2-network, and the bridging interface at kasbridge-evm.kaspafoundation.org.</p>`,
       },
       {
         id: "lesson-21-3",
         courseId: "l2-on-kaspa",
-        title: "Igra Labs: Gaming-Ready L2",
+        title: "Igra Labs: Gaming-Optimized L2",
         order: 3,
         duration: "5 min",
-        content: `<p>**What is Igra?**</p>
-<p>Igra Labs is building a Layer 2 ZK-rollup optimized for gaming and high-performance applications. The name means "game" in Slavic languages.</p>
-<p>**Key Differentiators**</p>
-<p>• ZK Proofs: Cryptographic verification for canonical exits</p>
-<p>• Multi-VM Support: Plans for EVM, Move, WASM, Solana VM</p>
-<p>• 3,000+ TPS: Real-time gaming performance</p>
-<p>• Sub-second Finality: Instant feedback for games</p>
-<p>• MEV Resistance: Kaspa's leaderless DAG prevents front-running</p>
-<p>**Why Gaming Needs Igra**</p>
-<p>Traditional blockchains are too slow for games:</p>
-<p>• Ethereum: 12 second blocks (unplayable lag)</p>
-<p>• Bitcoin: 10 minute blocks (impossible for real-time)</p>
-<p>• Igra on Kaspa: Sub-second, 3,000+ TPS (game-ready)</p>
-<p>**The Vision**</p>
-<p>"Establish based ZK rollups as the standard for L2s and Kaspa as the leading decentralized sequencer."</p>
-<p>**Current Status**</p>
-<p>• Testnet: Live with public nodes (Oct 2025+)</p>
-<p>• Teams Building: 21+ projects as of mid-2025</p>
-<p>• Multi-VM: Planned for 2026</p>
-<p>**Resources**</p>
-<p>• Website: igralabs.com</p>
-<p>• Twitter: @Igra_Labs</p>
-<p>• Developer Discord: Active community</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson examines Igra Labs' technical approach to gaming-focused Layer 2 infrastructure, explains why blockchain gaming requires specialized solutions, and surveys the project's development status.</p>
+<p><strong>Platform Overview</strong></p>
+<p>Igra Labs develops a Layer 2 ZK-rollup optimized specifically for gaming and high-performance applications. The project name derives from the Slavic word for "game," reflecting its primary focus on interactive entertainment applications.</p>
+<p><strong>Technical Differentiation</strong></p>
+<p>Igra's architecture incorporates several distinctive features. Zero-knowledge proofs provide cryptographic verification for canonical exits, ensuring trustless asset withdrawal. The platform plans support for multiple virtual machines including EVM, Move, WASM, and Solana VM, enabling developers to work in their preferred environments. Performance targets exceed 3,000 transactions per second, suitable for real-time gaming requirements. Sub-second finality provides the instant feedback essential for interactive experiences. Kaspa's leaderless DAG architecture provides inherent MEV resistance, preventing the front-running attacks that plague other networks.</p>
+<p><strong>The Gaming Performance Challenge</strong></p>
+<p>Traditional blockchain architectures cannot support real-time gaming. Ethereum's 12-second block times create unacceptable latency for interactive applications. Bitcoin's 10-minute confirmation window makes real-time gaming structurally impossible. Igra on Kaspa achieves sub-second finality with thousands of transactions per second, meeting the performance requirements of modern gaming.</p>
+<p><strong>Project Vision</strong></p>
+<p>Igra Labs aims to establish based ZK-rollups as the industry standard for Layer 2 architecture while positioning Kaspa as the premier decentralized sequencer for high-performance applications.</p>
+<p><strong>Development Status</strong></p>
+<p>As of this writing, testnet operates with public nodes. Over 21 development teams were building on the platform by mid-2025. Multi-VM support is scheduled for 2026.</p>
+<p><strong>Resources</strong></p>
+<p>Project information is available at igralabs.com, with updates on Twitter at @Igra_Labs and community support through the developer Discord.</p>`,
       },
       {
         id: "lesson-21-4",
         courseId: "l2-on-kaspa",
-        title: "Bridging with Kurve & KSPR Bot",
+        title: "Cross-Layer Asset Bridging",
         order: 4,
         duration: "8 min",
-        content: `<p>**What is Bridging?**</p>
-<p>To use L2 smart contracts, you need to move your KAS from Layer 1 to Layer 2. Bridging is the process of transferring assets between layers.</p>
-<p>**Kurve Bridge: The Official Solution**</p>
-<p>Kurve is the KEF-funded bridge for Kasplex L2.</p>
-<p>URL: kasbridge-evm.kaspafoundation.org</p>
-<p>Docs: kaspafoundation.gitbook.io/kurve-docs</p>
-<p>**How Kurve Works**</p>
-<p>Deposit (L1 to L2):</p>
-<p>1. Connect your Kaspa wallet</p>
-<p>2. Specify amount to bridge</p>
-<p>3. Send KAS to Kurve's L1 pool address</p>
-<p>4. Receive equivalent L2 KAS (wrapped)</p>
-<p>5. Use for gas, DeFi, smart contracts</p>
-<p>Withdrawal (L2 to L1):</p>
-<p>1. Initiate withdrawal via Kurve interface</p>
-<p>2. L2 KAS sent to bridge contract</p>
-<p>3. Once confirmed, L1 KAS released</p>
-<p>4. Delivered to your Kaspa wallet</p>
-<p>**KSPR Bot: Telegram Trading**</p>
-<p>For a simpler experience, use KSPR Bot:</p>
-<p>1. Open Telegram, find @kspr_home_bot</p>
-<p>2. Create wallet (save private key!)</p>
-<p>3. Send KAS to your L1 address</p>
-<p>4. Type /bridge, select amount</p>
-<p>5. Confirm (leave 4-5 KAS for fees)</p>
-<p>**Pro Tips**</p>
-<p>• Always leave 4-5 KAS on L1 for transaction fees</p>
-<p>• Start with small amounts when learning</p>
-<p>• Verify addresses via official docs only</p>
-<p>• Bridge uses MPC multi-sig security</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson explains the bridging process for moving assets between Kaspa Layer 1 and Layer 2, details the Kurve bridge workflow, and introduces alternative bridging methods.</p>
+<p><strong>Bridging Fundamentals</strong></p>
+<p>Utilizing Layer 2 smart contracts requires moving assets from Layer 1 to Layer 2. Bridging is the process of securely transferring assets between these layers while maintaining proper accounting on both sides.</p>
+<p><strong>The Kurve Bridge</strong></p>
+<p>Kurve serves as the official bridge for Kasplex L2, funded by the Kaspa Ecosystem Fund. The interface is accessible at kasbridge-evm.kaspafoundation.org, with technical documentation at kaspafoundation.gitbook.io/kurve-docs.</p>
+<p><strong>Deposit Process (L1 to L2)</strong></p>
+<p>To move assets to Layer 2, users first connect their Kaspa wallet to the Kurve interface. After specifying the amount to bridge, the user sends KAS to Kurve's Layer 1 pool address. Upon confirmation, the equivalent amount of wrapped L2 KAS appears in the user's Layer 2 address, available for gas payments, DeFi interactions, and smart contract usage.</p>
+<p><strong>Withdrawal Process (L2 to L1)</strong></p>
+<p>Returning assets to Layer 1 follows the reverse flow. The user initiates withdrawal through the Kurve interface. The Layer 2 KAS is sent to the bridge contract and locked. Once the transaction confirms, the corresponding Layer 1 KAS is released and delivered to the user's Kaspa wallet.</p>
+<p><strong>KSPR Bot Integration</strong></p>
+<p>For users preferring a simplified interface, KSPR Bot on Telegram provides bridging functionality. Users access the bot at @kspr_home_bot, create a wallet (with careful backup of the private key), deposit KAS to their Layer 1 address, and use the /bridge command to initiate transfers.</p>
+<p><strong>Best Practices</strong></p>
+<p>Several guidelines ensure successful bridging: maintain 4-5 KAS on Layer 1 for transaction fees, begin with small amounts while learning the process, verify all addresses through official documentation only, and note that the bridge employs MPC multi-signature security for asset protection.</p>`,
       },
       {
         id: "lesson-21-5",
         courseId: "l2-on-kaspa",
-        title: "The Future of Kaspa L2",
+        title: "Ecosystem Development and Future Directions",
         order: 5,
         duration: "5 min",
-        content: `<p>**What's Already Live**</p>
-<p>• Kasplex zkEVM: Production mainnet</p>
-<p>• Zealous Swap: First DEX on Kasplex</p>
-<p>• Kurve Bridge: L1/L2 asset transfers</p>
-<p>• NFT Platforms: Marketplaces on L2</p>
-<p>**Coming Soon**</p>
-<p>• Igra Mainnet: Gaming-focused L2</p>
-<p>• Multi-chain Bridge: Connect to BNB Chain and 30+ networks</p>
-<p>• DagKnight: Native ZK bridge on L1</p>
-<p>• More DEXs and DeFi protocols</p>
-<p>**The Bigger Picture**</p>
-<p>Kaspa's L2 ecosystem transforms it from a payment network to a full-stack platform:</p>
-<p>• L1: Ultra-fast, secure PoW settlement</p>
-<p>• L2: Smart contracts, DeFi, gaming</p>
-<p>• Protocols: K, Kasia, KU, KRC-721</p>
-<p>**Why This Matters for Adoption**</p>
-<p>• Developers: Port existing EVM apps easily</p>
-<p>• Users: Access DeFi without learning new tools</p>
-<p>• Enterprises: Build complex applications</p>
-<p>• Gaming: Real-time blockchain games possible</p>
-<p>**Continue Your Journey**</p>
-<p>You've learned about Kaspa's L2 ecosystem. To dive deeper:</p>
-<p>• Explore Kasplex docs</p>
-<p>• Join Igra Labs Discord</p>
-<p>• Try bridging small amounts</p>
-<p>• Build your first smart contract</p>
-<p>For comprehensive Kaspa education beyond this platform, visit bmtuniversity.com - peer-reviewed courses covering BlockDAG fundamentals to advanced consensus mechanics.</p>`,
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson surveys the current state of Kaspa's Layer 2 ecosystem, examines upcoming developments, and contextualizes the platform's evolution within the broader blockchain landscape.</p>
+<p><strong>Current Production Infrastructure</strong></p>
+<p>Several components of the Layer 2 ecosystem have reached production status. Kasplex zkEVM operates on mainnet, providing EVM-compatible smart contract execution. Zealous Swap functions as the first decentralized exchange on Kasplex. The Kurve Bridge enables asset transfers between Layer 1 and Layer 2. NFT marketplaces operate on Layer 2 infrastructure, expanding the ecosystem's capabilities.</p>
+<p><strong>Development Roadmap</strong></p>
+<p>Near-term developments will further expand the ecosystem. Igra Labs mainnet will provide gaming-optimized Layer 2 infrastructure. Multi-chain bridge integration will connect Kaspa to BNB Chain and over 30 additional networks. DagKnight protocol development promises native ZK bridge functionality on Layer 1. Additional decentralized exchanges and DeFi protocols are in development.</p>
+<p><strong>Platform Architecture Vision</strong></p>
+<p>The Layer 2 ecosystem transforms Kaspa from a payment network into a comprehensive platform. Layer 1 provides ultra-fast, secure proof-of-work settlement. Layer 2 enables smart contracts, decentralized finance, and gaming applications. Native protocols (K, Kasia, KU, KRC-721) provide specialized functionality for social communication, private messaging, educational credentials, and non-fungible tokens.</p>
+<p><strong>Adoption Implications</strong></p>
+<p>This architecture serves diverse stakeholder needs. Developers can migrate existing EVM applications with minimal modification. Users access DeFi functionality through familiar tooling. Enterprises can build complex applications on production infrastructure. Gaming platforms can implement real-time blockchain integration previously impossible on slower networks.</p>
+<p><strong>Continued Learning</strong></p>
+<p>This course provides foundational understanding of Kaspa's Layer 2 ecosystem. Further exploration might include detailed study of Kasplex documentation, participation in the Igra Labs developer community, practical experience with small-amount bridging, and smart contract development on the platform. For comprehensive Kaspa education beyond this platform, bmtuniversity.com offers peer-reviewed courses covering BlockDAG fundamentals through advanced consensus mechanics.</p>`,
       },
     ];
 
