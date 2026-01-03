@@ -1,0 +1,136 @@
+-01-02 22:09:17.89
+29ba1e12
+User
+6:09:17 AM [express] POST /api/auth/verify 401 in 272ms :: {"error":"Invalid signature"}
+2026-01-02 22:09:17.89
+29ba1e12
+User
+[Auth] Message preview: Kaspa University Authentication
+2026-01-02 22:09:17.89
+29ba1e12
+User
+[Auth] Signature verification failed for kaspa:qzdy64knqn0e4r...
+2026-01-02 22:09:17.89
+29ba1e12
+User
+Wallet: kaspa:qzdy64knqn0e4rlzta5qju3k5cm64l2vm6nk0xxsp8vwzs97ewgr7...
+2026-01-02 22:09:21.01
+29ba1e12
+User
+6:09:21 AM [express] POST /api/conversations 401 in 130ms :: {"error":"Authentication required"}
+2026-01-02 22:09:22.93
+29ba1e12
+User
+6:09:22 AM [express] POST /api/conversations 401 in 132ms :: {"error":"Authentication required"}
+2026-01-02 22:11:15.48
+29ba1e12
+User
+6:11:15 AM [express] GET /api/conversations 401 in 316ms :: {"error":"Authentication required"}
+2026-01-02 22:11:16.88
+29ba1e12
+User
+6:11:16 AM [express] POST /api/auth/logout 200 in 1ms :: {"success":true}
+2026-01-02 22:11:16.97
+29ba1e12
+User
+6:11:16 AM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-02 22:11:19.32
+29ba1e12
+User
+6:11:19 AM [express] POST /api/auth/challenge 200 in 1ms :: {"success":true,"nonce":"70e801a5882e054ea1e52e03e62c4081062688fd0f3df66b72b139916c9e12a7","message":"Kaspa University Authentication\n\nWallet: kaspa:qzdy64knqn0e4rlzta5qju3k5cm64l2vm6nk0xxsp8vwzs97ewgr7z8c3un6p\nNonce: 70e801a5882e054ea1e52e03e62c4081062688fd0f3df66b72b139916c9e12a7\nTimestamp: 1767420679324\n\nSign this message to verify wallet ownership.","expiresAt":1767420979324}
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Signature is hex format, length: 64 bytes
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Attempting verification with:
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Public key: 029a4d56d304df9a...becb903f
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Signature hex length: 128 chars (64 bytes)
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Signature: 64 bytes, Public key: 33 bytes
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Address verified: kaspa:qzdy64knqn0e4rlzta5...
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Message length: 252 chars
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] First attempt failed, trying with full 96-byte signature
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] All verification methods failed - signature mismatch
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] WASM failed, trying secp256k1 with SHA-256 hash...
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Message preview: Kaspa University Authentication
+2026-01-02 22:11:21.20
+29ba1e12
+User
+Wallet: kaspa:qzdy64knqn0e4rlzta5qju3k5cm64l2vm6nk0xxsp8vwzs97ewgr7...
+2026-01-02 22:11:21.20
+29ba1e12
+User
+[Auth] Signature verification failed for kaspa:qzdy64knqn0e4r...
+2026-01-02 22:11:21.20
+29ba1e12
+User
+6:11:21 AM [express] POST /api/auth/verify 401 in 2ms :: {"error":"Invalid signature"}
+2026-01-02 22:11:24.73
+29ba1e12
+User
+6:11:24 AM [express] POST /api/auth/challenge 200 in 1ms :: {"success":true,"nonce":"7adc373dc1925a2ecba5c75f5842ccb2b87d857a90d1562cea46298d27c95d14","message":"Kaspa University Authentication\n\nWallet: kaspa:qzdy64knqn0e4rlzta5qju3k5cm64l2vm6nk0xxsp8vwzs97ewgr7z8c3un6p\nNonce: 7adc373dc1925a2ecba5c75f5842ccb2b87d857a90d1562cea46298d27c95d14\nTimestamp: 1767420684734\n\nSign this message to verify wallet ownership.","expiresAt":1767420984734}
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] Signature is hex format, length: 64 bytes
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] Attempting verification with:
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] Signature hex length: 128 chars (64 bytes)
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] Message length: 252 chars
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] First attempt failed, trying with full 96-byte signature
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] All verification methods failed - signature mismatch
+2026-01-02 22:11:27.05
+29ba1e12
+User
+[Auth] WASM failed, trying secp256k1 with SHA-256 hash...
+2026-01-02 22:11:27.05
+29ba1e12
+User
+Wallet: kaspa:qzdy64knqn0e4rlzta5qju3k5cm64l2vm6nk0xxsp8vwzs97ewgr7...
+2026-01-02 22:11:27.05
+29ba1e12
+User
+6:11:27 AM [express] POST /api/auth/verify 401 in 2ms :: {"error":"Invalid s
