@@ -4289,23 +4289,65 @@ export async function registerRoutes(
       // Auto-accept handshake for admin/support conversations so users can chat immediately
       const conversationStatus = isAdminConversation ? "active" : "pending";
       
+      // Track user's handshake and treasury's response separately
+      const userHandshakeTxHash = handshakeTxHash;
+      let treasuryHandshakeTxHash: string | undefined;
+      
+      // For admin/support conversations, ALWAYS broadcast treasury response handshake
+      // This is the support team's acceptance of the conversation (separate from user's handshake)
+      if (isAdminConversation) {
+        console.log(`[Kasia] Broadcasting treasury response handshake for support conversation ${conversationId}`);
+        
+        // Create response handshake payload for treasury broadcast
+        // Note: createHandshakeForSigning returns a hex-encoded string of the protocol payload
+        const handshakeData = kasiaBroadcast.createHandshakeForSigning({
+          senderAddress: supportAddress,
+          senderAlias: "Kaspa University Support",
+          recipientAddress: authenticatedWallet,
+          conversationId,
+          isResponse: true, // This is a RESPONSE handshake from support
+        });
+        
+        // Debug: Log payload info
+        console.log(`[Kasia] Treasury handshake payload hex length: ${handshakeData.payloadHex.length}`);
+        console.log(`[Kasia] Treasury handshake payload preview: ${handshakeData.payloadHex.slice(0, 64)}...`);
+        
+        // Broadcast from treasury to establish on-chain proof of support's acceptance
+        const broadcastResult = await kasiaBroadcast.broadcastHandshake(
+          handshakeData.payloadHex,
+          authenticatedWallet
+        );
+        
+        if (broadcastResult.success && broadcastResult.txHash) {
+          treasuryHandshakeTxHash = broadcastResult.txHash;
+          console.log(`[Kasia] Treasury response handshake SUCCESS: ${treasuryHandshakeTxHash}`);
+        } else {
+          console.warn(`[Kasia] Treasury response handshake failed: ${broadcastResult.error}`);
+          // Continue anyway - conversation still works, auto-accept remains in effect
+        }
+      }
+      
+      // Use treasury's handshake as the primary tx (for admin convos) since it's the acceptance
+      // For regular convos, use the user's handshake
+      const primaryHandshakeTxHash = isAdminConversation 
+        ? (treasuryHandshakeTxHash || userHandshakeTxHash) 
+        : userHandshakeTxHash;
+      
       // Create conversation in on-chain indexer (tracks on-chain references)
       const conversation = await kasiaIndexer.createConversation({
         id: conversationId,
         initiatorAddress: authenticatedWallet,
         recipientAddress,
         initiatorAlias,
-        handshakeTxHash,
+        handshakeTxHash: primaryHandshakeTxHash,
         isAdminConversation,
         status: conversationStatus,
       });
       
-      // If handshakeTxHash provided, record it in the indexer
-      // Skip immediate verification - tx was just broadcast and won't be indexed yet
-      // The periodic sync from public Kasia indexer will confirm it later
-      if (handshakeTxHash) {
+      // Record user's handshake if provided (user → recipient)
+      if (userHandshakeTxHash) {
         await kasiaIndexer.recordHandshake({
-          txHash: handshakeTxHash,
+          txHash: userHandshakeTxHash,
           conversationId,
           senderAddress: authenticatedWallet,
           recipientAddress,
@@ -4315,8 +4357,23 @@ export async function registerRoutes(
         }, true); // Skip verification for freshly broadcast transactions
       }
       
+      // Record treasury's response handshake if broadcast (support → user)
+      if (treasuryHandshakeTxHash) {
+        await kasiaIndexer.recordHandshake({
+          txHash: treasuryHandshakeTxHash,
+          conversationId,
+          senderAddress: supportAddress,
+          recipientAddress: authenticatedWallet,
+          senderAlias: "Kaspa University Support",
+          isResponse: true, // This is the response/acceptance
+          timestamp: new Date(),
+        }, true);
+      }
+      
       if (isAdminConversation) {
         console.log(`[Kasia] Auto-accepted support conversation ${conversationId}`);
+        console.log(`[Kasia] User handshake: ${userHandshakeTxHash || "none"}`);
+        console.log(`[Kasia] Treasury response: ${treasuryHandshakeTxHash || "pending"}`);
       }
       
       res.json({ success: true, conversation, existing: false });
