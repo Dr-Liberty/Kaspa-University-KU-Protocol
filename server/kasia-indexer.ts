@@ -669,43 +669,13 @@ class KasiaIndexer {
   }
 
   /**
-   * Get a conversation by ID (checks cache, then database)
+   * Get a conversation by ID (memory cache only - populated from on-chain sync)
+   * STRICT MODE: No database fallback - only on-chain verified data is returned
    */
   async getConversation(id: string): Promise<IndexedConversation | undefined> {
-    // Check memory cache first
-    let conv = this.conversations.get(id);
-    if (conv) return conv;
-    
-    // Try loading from database
-    if (this.storage) {
-      try {
-        const dbConv = await this.storage.getConversation(id);
-        if (dbConv) {
-          const indexed: IndexedConversation = {
-            id: dbConv.id,
-            initiatorAddress: dbConv.initiatorAddress,
-            recipientAddress: dbConv.recipientAddress,
-            initiatorAlias: dbConv.initiatorAlias,
-            recipientAlias: dbConv.recipientAlias,
-            alias: dbConv.id, // Kasia protocol uses conversation ID as alias
-            status: dbConv.status === "pending_handshake" || dbConv.status === "handshake_received" ? "pending" : 
-                    dbConv.status === "active" ? "active" : 
-                    dbConv.status === "archived" ? "archived" : "pending",
-            handshakeTxHash: dbConv.handshakeTxHash,
-            responseTxHash: dbConv.responseTxHash,
-            createdAt: new Date(dbConv.createdAt),
-            updatedAt: new Date(dbConv.updatedAt),
-            isAdminConversation: dbConv.isAdminConversation,
-          };
-          this.conversations.set(id, indexed);
-          return indexed;
-        }
-      } catch (error: any) {
-        console.error(`[Kasia Indexer] Database lookup error: ${error.message}`);
-      }
-    }
-    
-    return undefined;
+    // STRICT: Only return conversations that are in memory cache
+    // Memory cache is populated from on-chain sync - no database fallback
+    return this.conversations.get(id);
   }
 
   /**
@@ -749,7 +719,7 @@ class KasiaIndexer {
 
   /**
    * Get all conversations for a wallet by querying the public Kasia indexer
-   * This is the TRUE on-chain source of truth for conversations
+   * STRICT MODE: This is the ONLY source of truth - no local fallbacks
    */
   async getConversationsFromOnChain(walletAddress: string): Promise<IndexedConversation[]> {
     console.log(`[Kasia Indexer] Fetching on-chain conversations for ${walletAddress.slice(0, 20)}...`);
@@ -762,6 +732,7 @@ class KasiaIndexer {
         initiatorAddress: conv.initiatorAddress,
         recipientAddress: conv.recipientAddress,
         initiatorAlias: conv.initiatorAlias,
+        alias: conv.id, // Kasia protocol uses conversation ID as alias
         status: conv.status,
         handshakeTxHash: conv.handshakeTxHash,
         responseTxHash: conv.responseTxHash,
@@ -769,21 +740,13 @@ class KasiaIndexer {
         updatedAt: conv.createdAt,
       }));
       
-      const localConversations = this.getConversationsForWallet(walletAddress);
-      
-      const onChainIds = new Set(result.map(c => c.id));
-      for (const local of localConversations) {
-        if (!onChainIds.has(local.id)) {
-          result.push(local);
-        }
-      }
-      
-      console.log(`[Kasia Indexer] Found ${onChainConversations.length} on-chain + ${localConversations.length} local conversations`);
+      console.log(`[Kasia Indexer] Found ${onChainConversations.length} on-chain conversations (STRICT MODE - no local fallback)`);
       
       return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error: any) {
       console.error(`[Kasia Indexer] Error fetching on-chain conversations: ${error.message}`);
-      return this.getConversationsForWallet(walletAddress);
+      // STRICT MODE: Return empty array on error, don't fall back to local data
+      return [];
     }
   }
 
