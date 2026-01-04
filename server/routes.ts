@@ -4706,6 +4706,47 @@ export async function registerRoutes(
           return res.status(400).json({ error: "Transaction not verified on-chain. Please ensure the transaction is confirmed." });
         }
       } 
+      // Mode 1c: kasiaPayload only (user broadcast failed) - fallback to treasury
+      else if (kasiaPayload) {
+        console.log(`[Kasia] User broadcast failed, falling back to treasury for ${authenticatedWallet.slice(0, 20)}...`);
+        
+        // Get the other party's address for the broadcast
+        const recipientAddress = authenticatedWallet === conversation.initiatorAddress 
+          ? conversation.recipientAddress 
+          : conversation.initiatorAddress;
+        
+        // Broadcast the user's prepared payload via treasury
+        const broadcastResult = await kasiaBroadcast.broadcastMessage(kasiaPayload, recipientAddress);
+        
+        if (broadcastResult.success && broadcastResult.txHash) {
+          finalTxHash = broadcastResult.txHash;
+          console.log(`[Kasia] Treasury fallback broadcast on-chain: ${finalTxHash}`);
+          
+          recorded = await kasiaIndexer.recordMessage({
+            id: messageId,
+            txHash: finalTxHash,
+            conversationId,
+            senderAddress: authenticatedWallet,
+            senderAlias,
+            encryptedContent,
+            timestamp: new Date(),
+          }, true);
+        } else {
+          // Fallback to local storage if treasury also fails
+          console.warn(`[Kasia] Treasury fallback also failed: ${broadcastResult.error}, storing locally`);
+          finalTxHash = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          
+          recorded = await kasiaIndexer.recordMessage({
+            id: messageId,
+            txHash: finalTxHash,
+            conversationId,
+            senderAddress: authenticatedWallet,
+            senderAlias,
+            encryptedContent,
+            timestamp: new Date(),
+          }, true);
+        }
+      }
       // Mode 2: Signature-based with on-chain broadcast via treasury
       else if (signature && signedPayload && senderPubkey) {
         // SECURITY: Verify signedPayload binds to this message

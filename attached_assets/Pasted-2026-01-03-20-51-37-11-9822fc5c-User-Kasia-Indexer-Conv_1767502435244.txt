@@ -1,0 +1,128 @@
+2026-01-03 20:51:37.11
+9822fc5c
+User
+[Kasia Indexer] Conv 000000002bcfcf63: initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, initMatch=true, recipMatch=false
+2026-01-03 20:51:37.11
+9822fc5c
+User
+4:51:37 AM [express] GET /api/conversations 304 in 247ms :: {"conversations":[{"id":"000000002bcfcf63","initiatorAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":"Anonymous","alias":"000000002bcfcf63","status":"active","handshakeTxHash":"862f83a6d3957a452e7ccbc2e7978c75f96d7907442c66c28120d57fdeeea812","responseTxHash":"6efa5465d7f3b8d014198484b31319aad4123a097715cdc36be3d7abe7e572e7","createdAt":"2026-01-04T02:17:38.407Z","updatedAt":"2026-01-04T04:49:35.510Z","isAdminConversation":true}],"source":"onchain"}
+2026-01-03 20:51:37.53
+9822fc5c
+User
+4:51:37 AM [express] GET /api/conversations/000000002bcfcf63/messages 304 in 127ms :: {"messages":[],"conversation":{"id":"000000002bcfcf63","initiatorAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":"Anonymous","alias":"000000002bcfcf63","status":"active","handshakeTxHash":"862f83a6d3957a452e7ccbc2e7978c75f96d7907442c66c28120d57fdeeea812","responseTxHash":"6efa5465d7f3b8d014198484b31319aad4123a097715cdc36be3d7abe7e572e7","createdAt":"2026-01-04T02:17:38.407Z","updatedAt":"2026-01-04T04:49:35.510Z","isAdminConversation":true}}
+2026-01-03 20:52:03.80
+9d06d425
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:03.80
+9d06d425
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:03.80
+9d06d425
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:03.80
+9d06d425
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:04.21
+9d06d425
+User
+[Kasia Client] Found 2 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:04.38
+9d06d425
+User
+[Kasia Client] Found 2 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:04.38
+9d06d425
+User
+[Kasia Client] Found 1 conversations (1 active)
+2026-01-03 20:52:05.07
+9822fc5c
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:05.07
+9822fc5c
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:05.07
+9822fc5c
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:05.07
+9822fc5c
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:05.54
+9822fc5c
+User
+[Kasia Client] Found 2 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:05.94
+9822fc5c
+User
+[Kasia Client] Found 2 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:05.94
+9822fc5c
+User
+[Kasia Client] Found 1 conversations (1 active)
+2026-01-03 20:52:33.80
+9d06d425
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:33.80
+9d06d425
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:33.80
+9d06d425
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:33.80
+9d06d425
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:34.58
+9d06d425
+User
+[Kasia Client] Found 2 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:35.07
+9822fc5c
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:35.07
+9822fc5c
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:35.07
+9822fc5c
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:35.14
+9822fc5c
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 20:52:35.28
+9d06d425
+User
+[Kasia Client] Found 1 conversations (1 active)
+2026-01-03 20:52:35.28
+9d06d425
+User
+[Kasia Client] Found 2 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:35.94
+9822fc5c
+User
+[Kasia Client] Found 2 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:36.14
+9822fc5c
+User
+[Kasia Client] Found 2 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 20:52:36.34
+9822fc5c
+User
+[Kasia Client] Found 1 conversations (1 active)
+2026-01-03 20:53:03.81
+9d06d425
+User
+[Kasia Client] Getting conversations
