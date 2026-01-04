@@ -1,16 +1,18 @@
 /**
- * Kasia On-Chain Indexer
+ * Kasia On-Chain Indexer - PURE ON-CHAIN MODE
  * 
  * Indexes Kasia protocol messages from the Kaspa blockchain.
- * This is the source of truth for conversations and messages.
+ * The PUBLIC KASIA INDEXER (https://indexer.kasia.fyi/) is the SOURCE OF TRUTH.
  * 
- * ON-CHAIN VERIFICATION:
- * - All txHashes are verified on-chain before being accepted
- * - Records without valid on-chain proof are rejected
- * - The database is used as a cache for indexed on-chain data
+ * ARCHITECTURE:
+ * - READ: ONLY from on-chain indexer (never from database)
+ * - WRITE: Database is a write-only cache for performance
+ * - All conversation/message data comes from the public indexer
+ * - Database is NEVER used to retrieve message data
  * 
  * Protocol formats indexed:
- * - ciph_msg:1:handshake:{sealed_hex} - Conversation initiation
+ * - ciph_msg:1:hs:{convId}:{addr}:{alias}:{ts} - Handshake initiation
+ * - ciph_msg:1:hr:{convId}:{addr}:{alias}:{ts} - Handshake response
  * - ciph_msg:1:comm:{alias}:{sealed_hex} - Encrypted messages
  */
 
@@ -122,32 +124,28 @@ class KasiaIndexer {
   }
 
   /**
-   * Start the indexer with on-chain first approach
-   * HYBRID MODE: Load validated DB records, reject stale garbage
+   * Start the indexer with PURE ON-CHAIN approach
+   * NEVER loads from database - only syncs from public Kasia indexer
+   * Database is ONLY used for writing (caching), NEVER for reading
    */
   async start(): Promise<void> {
     if (this.isRunning) return;
     
-    console.log("[Kasia Indexer] Starting on-chain indexer (HYBRID MODE - validated cache)...");
+    console.log("[Kasia Indexer] Starting on-chain indexer (PURE ON-CHAIN MODE)...");
     this.isRunning = true;
     
-    // Clear caches first
+    // Clear all caches - we will populate ONLY from on-chain indexer
     this.conversations.clear();
     this.messages.clear();
     this.handshakes.clear();
     
-    // Load from DB but ONLY records with valid txHashes (not JSON garbage)
-    if (this.storage) {
-      try {
-        const validatedCount = await this.loadValidatedFromStorage();
-        console.log(`[Kasia Indexer] Loaded ${validatedCount} validated conversations from database`);
-      } catch (error: any) {
-        console.error(`[Kasia Indexer] Validated cache load error: ${error.message}`);
-      }
-    }
+    // DO NOT load from database - database is write-only cache
+    // All data comes from the public Kasia indexer (on-chain source of truth)
+    console.log("[Kasia Indexer] Database is write-only cache - not loading from DB");
     
     // Sync from on-chain indexer for support address (async, don't block startup)
     if (this.supportAddress) {
+      console.log(`[Kasia Indexer] Syncing from public indexer for support wallet...`);
       this.syncForWallet(this.supportAddress).catch(error => {
         console.error(`[Kasia Indexer] Background sync error: ${error.message}`);
       });
@@ -156,7 +154,7 @@ class KasiaIndexer {
     // Start periodic sync job (every 60 seconds)
     this.startPeriodicSync();
     
-    console.log("[Kasia Indexer] Ready to index Kasia protocol messages (HYBRID validated)");
+    console.log("[Kasia Indexer] Ready to index Kasia protocol messages (PURE ON-CHAIN)");
   }
 
   /**
