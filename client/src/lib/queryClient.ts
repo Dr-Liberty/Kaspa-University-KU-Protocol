@@ -5,6 +5,15 @@ let authToken: string | null = null;
 
 const AUTH_TOKEN_KEY = "kaspa-university-auth-token";
 
+// Session timeout event for UI to listen to
+export const SESSION_EXPIRED_EVENT = "kaspa-session-expired";
+
+export function dispatchSessionExpired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  }
+}
+
 // Restore auth token from storage on load
 if (typeof window !== "undefined") {
   authToken = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -35,6 +44,12 @@ export function getAuthToken(): string | null {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // Detect session timeout (401 Unauthorized)
+    if (res.status === 401 && authToken) {
+      console.log("[API] Session expired - dispatching timeout event");
+      dispatchSessionExpired();
+    }
+    
     let errorMessage = res.statusText;
     try {
       const data = await res.json();

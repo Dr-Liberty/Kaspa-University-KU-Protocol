@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { WalletProvider } from "@/lib/wallet-context";
 import { Header } from "@/components/header";
 import { BlockDAGBackground } from "@/components/blockdag-background";
+import { SessionTimeoutDialog } from "@/components/session-timeout-dialog";
 import Landing from "@/pages/landing";
 import Courses from "@/pages/courses";
 import CourseDetail from "@/pages/course-detail";
@@ -50,6 +51,7 @@ function App() {
             <Header />
             <Router />
           </div>
+          <SessionTimeoutDialog />
           <Toaster />
         </WalletProvider>
       </TooltipProvider>
