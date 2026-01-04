@@ -241,13 +241,25 @@ export async function getConversationsFromIndexer(
         existing.status = "active";
         existing.responseTxHash = hs.tx_id;
         existing.hasResponse = true;
+        
+        // IMPORTANT: If response has a recipient, THEY are the original initiator
+        // (we're sending response TO them, so they started the conversation)
+        if (parsed.recipient && parsed.recipient !== hs.sender) {
+          // The response is TO the initiator, so update initiatorAddress
+          if (existing.initiatorAddress === existing.recipientAddress) {
+            // Both were same (e.g., self-test), fix it
+            existing.initiatorAddress = parsed.recipient;
+          }
+        }
       }
     } else if (!conversationsMap.has(convId)) {
       // Initial handshake - create conversation
+      // Use recipient from payload (intended recipient) not hs.receiver (transaction output)
+      const recipientAddress = parsed.recipient || hs.receiver;
       conversationsMap.set(convId, {
         id: convId,
         initiatorAddress: hs.sender,
-        recipientAddress: hs.receiver,
+        recipientAddress: recipientAddress,
         status: "pending",
         initiatorAlias: parsed.alias,
         handshakeTxHash: hs.tx_id,
