@@ -62,8 +62,15 @@ function generateJazzicon(address: string): string {
   return `hsl(${hue}, 60%, 50%)`;
 }
 
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
+function formatTime(dateStr: string | number | undefined): string {
+  if (!dateStr) return "";
+  
+  // Handle both string dates and numeric timestamps
+  const d = typeof dateStr === "number" ? new Date(dateStr) : new Date(dateStr);
+  
+  // Check for invalid date
+  if (isNaN(d.getTime())) return "";
+  
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffMins = Math.floor(diffMs / 60000);
