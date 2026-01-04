@@ -1,0 +1,144 @@
+2026-01-03 18:16:56.63
+46f9e0e2
+User
+[Kaspa] Live mode enabled - RPC connected, treasury: kaspa:qrewk7s6gnzuzxvces8...
+2026-01-03 18:16:56.63
+46f9e0e2
+User
+[Kaspa] Network: kaspa-mainnet
+2026-01-03 18:16:56.63
+46f9e0e2
+User
+[Kaspa] RPC connected to seeder2.kaspad.net:16110! Block count: 26497264
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"amount": "2041470221",
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+}
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+[Kaspa] Transformed 1 entries for WASM createTransactions
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"index": 1
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"transactionId": "19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a",
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+},
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"utxoEntry": {
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+[Kaspa] Reserved entry sample structure: {
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+}
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"outpoint": {
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+},
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"version": 0,
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"blockDaaScore": "320711016",
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"scriptPublicKey": {
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+"isCoinbase": false
+2026-01-03 18:16:56.76
+46f9e0e2
+User
+[UTXO] Reserved 1 UTXOs (2041470221 sompi) for payload:636970685f6d7367
+2026-01-03 18:16:56.77
+46f9e0e2
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-03 18:16:56.77
+46f9e0e2
+User
+[Kaspa] Created 1 payload transaction(s) with 495 bytes
+2026-01-03 18:17:01.75
+9923591e
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:17:01.75
+9923591e
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 18:17:01.75
+9923591e
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:17:01.76
+9923591e
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-03 18:17:02.76
+9923591e
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:17:02.96
+9923591e
+User
+[Kasia Client] Found 0 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:17:02.96
+9923591e
+User
+[Kasia Client] Found 0 conversations (0 active)
+2026-01-03 18:17:07.81
+9923591e
+System
+system: received signal terminated
+2026-01-03 18:17:07.82
+9923591e
+System
+command finished with error [node ./dist/index.cjs]: signal: terminated
+2026-01-03 18:17:07.91
+9923591e
+System
+main done, exiting
+2026-01-03 18:17:10.88
+46f9e0e2
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3&limit=50
+2026-01-03 18:17:10.88
+46f9e0e2
+User
+[Kasia Client] Getting conversations for kaspa:qpysmev6qxpfhd...
+2026-01-03 18:17:10.88
+46f9e0e2
+User
+[Kas
