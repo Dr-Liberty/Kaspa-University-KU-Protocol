@@ -9,7 +9,7 @@ Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 b
   - Bitcoin vs Kaspa, Sound Money, Self-Custody (Fundamentals)
   - K Protocol, Kasia Protocol, KU Protocol, KRC-721, L2 on Kaspa (Protocols)
   - DAG Terminology, DAG and Kaspa, GHOSTDAG consensus, technical topics (16 BMT courses)
-- **Course Order**: Bitcoin vs Kaspa (#1), Sound Money (#2), Self-Custody (#3), K Protocol (#4), Kasia (#5), KU Protocol (#6), KRC-721 (#7), L2 on Kaspa (#8), DAG Terminology (#9), then BMT courses
+- **Course Order**: Bitcoin vs Kaspa (#1), Sound Money (#2), Self-Custody (#3), KU Protocol (#4), K Protocol (#5), Kasia (#6), KRC-721 (#7), L2 on Kaspa (#8), DAG Terminology (#9), then BMT courses
 - **Total Lessons**: 97 lessons
 - **Categories**: Fundamentals, Development, Consensus, Technical, Protocols
 - **Integration Showcase**: Each protocol course explains how it's used in Kaspa University
