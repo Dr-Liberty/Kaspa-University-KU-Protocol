@@ -102,10 +102,12 @@ class KasiaBroadcastService {
     messageToSign: string;
     protocol: string;
   } {
-    const { senderAlias, conversationId, encryptedContent } = params;
+    const { conversationId, encryptedContent } = params;
     
     // Create the Kasia protocol payload
-    const payloadHex = createCommPayload(senderAlias, encryptedContent);
+    // CRITICAL: Use conversationId as the alias, NOT senderAlias
+    // This ensures messages are indexed correctly by the Kasia indexer
+    const payloadHex = createCommPayload(conversationId, encryptedContent);
     
     // Create message for wallet signature
     const timestamp = Date.now();

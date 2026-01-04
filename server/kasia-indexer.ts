@@ -25,7 +25,7 @@ import {
   HandshakeData,
 } from "./kasia-encrypted";
 import { getKaspaService } from "./kaspa";
-import { getConversationsFromIndexer, isConversationActive } from "./kasia-client";
+import { getConversationsFromIndexer, isConversationActive, getMessagesForConversation } from "./kasia-client";
 
 export interface IndexedConversation {
   id: string;
@@ -274,6 +274,7 @@ class KasiaIndexer {
       let syncedCount = 0;
       
       for (const conv of onChainConversations) {
+        console.log(`[Kasia Indexer] Processing on-chain conversation: id=${conv.id}, initiator=${conv.initiatorAddress.slice(0, 20)}..., recipient=${conv.recipientAddress.slice(0, 20)}..., status=${conv.status}`);
         const isAdminConv = this.supportAddress ? 
           (conv.initiatorAddress === this.supportAddress || conv.recipientAddress === this.supportAddress) : false;
         
@@ -358,6 +359,72 @@ class KasiaIndexer {
       lastSync: this.lastSyncTime,
       isRunning: this.isRunning,
     };
+  }
+
+  /**
+   * Sync messages for a specific conversation from the public Kasia indexer
+   * This fetches contextual messages from both participants and updates the local cache
+   */
+  async syncMessagesForConversation(conversationId: string): Promise<number> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) {
+      console.log(`[Kasia Indexer] Cannot sync messages - conversation ${conversationId} not found`);
+      return 0;
+    }
+    
+    console.log(`[Kasia Indexer] Syncing messages from on-chain for conversation ${conversationId}`);
+    
+    try {
+      const onChainMessages = await getMessagesForConversation(
+        conversationId, // Use conversation ID as the alias
+        conversation.initiatorAddress,
+        conversation.recipientAddress
+      );
+      
+      let syncedCount = 0;
+      
+      for (const msg of onChainMessages) {
+        const messageKey = msg.txId;
+        if (!this.messages.has(messageKey)) {
+          const indexed: IndexedMessage = {
+            id: msg.txId,
+            txHash: msg.txId,
+            conversationId: conversationId,
+            senderAddress: msg.sender,
+            encryptedContent: msg.encryptedContent,
+            timestamp: new Date(msg.blockTime),
+          };
+          
+          this.messages.set(messageKey, indexed);
+          syncedCount++;
+          
+          // Persist to database cache
+          if (this.storage) {
+            try {
+              await this.storage.createPrivateMessage({
+                id: indexed.id,
+                conversationId: indexed.conversationId,
+                senderAddress: indexed.senderAddress,
+                encryptedContent: indexed.encryptedContent,
+                txHash: indexed.txHash,
+                txStatus: "confirmed",
+              });
+            } catch (error: any) {
+              // Ignore duplicate errors
+            }
+          }
+        }
+      }
+      
+      if (syncedCount > 0) {
+        console.log(`[Kasia Indexer] Synced ${syncedCount} messages from on-chain for conversation ${conversationId}`);
+      }
+      
+      return syncedCount;
+    } catch (error: any) {
+      console.error(`[Kasia Indexer] Message sync error: ${error.message}`);
+      return 0;
+    }
   }
 
   /**
@@ -943,10 +1010,21 @@ class KasiaIndexer {
    * Get messages for a conversation
    */
   getMessages(conversationId: string, limit = 50, offset = 0): IndexedMessage[] {
-    return Array.from(this.messages.values())
+    // Debug: Log all message conversation IDs
+    const allMsgs = Array.from(this.messages.values());
+    console.log(`[Kasia Indexer] getMessages for convId=${conversationId}: total messages in cache=${allMsgs.length}`);
+    if (allMsgs.length > 0) {
+      const uniqueConvIds = [...new Set(allMsgs.map(m => m.conversationId))];
+      console.log(`[Kasia Indexer]   Unique convIds in cache: ${uniqueConvIds.join(", ")}`);
+    }
+    
+    const filtered = allMsgs
       .filter(m => m.conversationId === conversationId)
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
       .slice(offset, offset + limit);
+    
+    console.log(`[Kasia Indexer]   Found ${filtered.length} messages matching convId=${conversationId}`);
+    return filtered;
   }
 
   /**

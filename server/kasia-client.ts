@@ -346,3 +346,133 @@ export async function isConversationActive(
   
   return initiatorSentToRecipient && recipientSentToInitiator;
 }
+
+/**
+ * Fetch contextual messages sent by an address for a specific conversation alias from the Kasia indexer
+ */
+export async function getContextualMessagesBySender(
+  address: string,
+  alias: string,
+  limit: number = 100
+): Promise<ContextualMessageResponse[]> {
+  const baseUrl = getIndexerUrl(address);
+  const url = `${baseUrl}/contextual-messages/by-sender?address=${encodeURIComponent(address)}&alias=${encodeURIComponent(alias)}&limit=${limit}`;
+  
+  console.log(`[Kasia Client] Fetching contextual messages from ${url}`);
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Kasia Client] Error fetching contextual messages: ${response.status} - ${errorText}`);
+      return [];
+    }
+    const data = await response.json();
+    console.log(`[Kasia Client] Found ${data.length} contextual messages sent by ${address.slice(0, 20)}... for alias ${alias}`);
+    return data;
+  } catch (error: any) {
+    console.error(`[Kasia Client] Fetch error: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Parse a contextual message payload to extract conversation alias and content
+ * Format: ciph_msg:1:comm:{alias}:{sealed_hex}
+ */
+export function parseContextualMessagePayload(payload: string): {
+  alias: string;
+  encryptedContent: string;
+} | null {
+  try {
+    // Decode hex if needed
+    let decoded = payload;
+    if (/^[0-9a-fA-F]+$/.test(payload) && payload.length >= 20) {
+      try {
+        decoded = Buffer.from(payload, "hex").toString("utf-8");
+      } catch {
+        decoded = payload;
+      }
+    }
+    
+    // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
+    const parts = decoded.split(":");
+    if (parts.length >= 5 && parts[0] === "ciph_msg" && parts[1] === "1" && parts[2] === "comm") {
+      return {
+        alias: parts[3],
+        encryptedContent: parts.slice(4).join(":"),
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.log(`[Kasia Parser] Error parsing contextual message: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Fetch all messages for a conversation from both participants
+ */
+export async function getMessagesForConversation(
+  conversationAlias: string,
+  initiatorAddress: string,
+  recipientAddress: string,
+  limit: number = 100
+): Promise<{
+  txId: string;
+  sender: string;
+  blockTime: number;
+  alias: string;
+  encryptedContent: string;
+}[]> {
+  console.log(`[Kasia Client] Fetching messages for conversation ${conversationAlias}`);
+  
+  // Fetch contextual messages from both participants for this specific conversation alias
+  const [initiatorMessages, recipientMessages] = await Promise.all([
+    getContextualMessagesBySender(initiatorAddress, conversationAlias, limit),
+    getContextualMessagesBySender(recipientAddress, conversationAlias, limit),
+  ]);
+  
+  const allMessages: {
+    txId: string;
+    sender: string;
+    blockTime: number;
+    alias: string;
+    encryptedContent: string;
+  }[] = [];
+  
+  // Process initiator messages
+  for (const msg of initiatorMessages) {
+    const parsed = parseContextualMessagePayload(msg.message_payload);
+    if (parsed) {
+      allMessages.push({
+        txId: msg.tx_id,
+        sender: initiatorAddress,
+        blockTime: msg.block_time,
+        alias: parsed.alias,
+        encryptedContent: parsed.encryptedContent,
+      });
+    }
+  }
+  
+  // Process recipient messages
+  for (const msg of recipientMessages) {
+    const parsed = parseContextualMessagePayload(msg.message_payload);
+    if (parsed) {
+      allMessages.push({
+        txId: msg.tx_id,
+        sender: recipientAddress,
+        blockTime: msg.block_time,
+        alias: parsed.alias,
+        encryptedContent: parsed.encryptedContent,
+      });
+    }
+  }
+  
+  // Sort by block time
+  allMessages.sort((a, b) => a.blockTime - b.blockTime);
+  
+  console.log(`[Kasia Client] Found ${allMessages.length} messages for conversation ${conversationAlias}`);
+  return allMessages;
+}

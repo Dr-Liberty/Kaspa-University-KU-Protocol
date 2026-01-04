@@ -4926,10 +4926,13 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized to view messages in this conversation" });
       }
       
-      const messages = kasiaIndexer.getMessages(conversationId, limit, offset);
-      console.log(`[Kasia] GET messages for ${conversationId}: found ${messages.length} messages`);
+      // ON-CHAIN FIRST: Sync messages from public Kasia indexer before returning
+      await kasiaIndexer.syncMessagesForConversation(conversationId);
       
-      res.json({ messages, conversation });
+      const messages = kasiaIndexer.getMessages(conversationId, limit, offset);
+      console.log(`[Kasia] GET messages for ${conversationId}: found ${messages.length} messages (on-chain synced)`);
+      
+      res.json({ messages, conversation, source: "onchain" });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
