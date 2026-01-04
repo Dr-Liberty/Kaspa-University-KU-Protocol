@@ -274,15 +274,43 @@ class KasiaIndexer {
       let syncedCount = 0;
       
       for (const conv of onChainConversations) {
-        console.log(`[Kasia Indexer] Processing on-chain conversation: id=${conv.id}, initiator=${conv.initiatorAddress.slice(0, 20)}..., recipient=${conv.recipientAddress.slice(0, 20)}..., status=${conv.status}`);
+        // Check existing data in DB first - database may have the TRUE initiator
+        // (when treasury broadcasts on behalf of a user, indexer sees treasury as sender)
+        let existingDb: any = null;
+        if (this.storage) {
+          try {
+            existingDb = await this.storage.getConversation(conv.id);
+          } catch (error: any) {
+            // Ignore errors
+          }
+        }
+        
+        // Determine the TRUE initiator: prefer database (set at creation time) over indexer
+        // The indexer may show treasury as initiator when it was actually relaying for a user
+        let trueInitiator = conv.initiatorAddress;
+        let trueRecipient = conv.recipientAddress;
+        let trueInitiatorAlias = conv.initiatorAlias;
+        
+        if (existingDb && existingDb.initiatorAddress !== conv.initiatorAddress) {
+          // Database has different initiator - trust the database
+          // This happens when treasury relays handshakes on behalf of users
+          if (existingDb.initiatorAddress !== this.supportAddress) {
+            // DB initiator is not treasury, so it's the real user
+            trueInitiator = existingDb.initiatorAddress;
+            trueRecipient = existingDb.recipientAddress;
+            trueInitiatorAlias = existingDb.initiatorAlias || conv.initiatorAlias;
+          }
+        }
+        
+        console.log(`[Kasia Indexer] Processing on-chain conversation: id=${conv.id}, initiator=${trueInitiator.slice(0, 20)}..., recipient=${trueRecipient.slice(0, 20)}..., status=${conv.status}`);
         const isAdminConv = this.supportAddress ? 
-          (conv.initiatorAddress === this.supportAddress || conv.recipientAddress === this.supportAddress) : false;
+          (trueInitiator === this.supportAddress || trueRecipient === this.supportAddress) : false;
         
         const indexed: IndexedConversation = {
           id: conv.id,
-          initiatorAddress: conv.initiatorAddress,
-          recipientAddress: conv.recipientAddress,
-          initiatorAlias: conv.initiatorAlias,
+          initiatorAddress: trueInitiator,
+          recipientAddress: trueRecipient,
+          initiatorAlias: trueInitiatorAlias,
           alias: conv.id, // Kasia protocol uses conversation ID as alias
           status: conv.status,
           handshakeTxHash: conv.handshakeTxHash,
@@ -303,6 +331,10 @@ class KasiaIndexer {
           // Preserve local data if it's newer (e.g., recipientAlias set locally)
           if (existing) {
             indexed.recipientAlias = existing.recipientAlias || indexed.recipientAlias;
+            // Also preserve initiator if existing has a non-treasury initiator
+            if (existing.initiatorAddress !== this.supportAddress) {
+              indexed.initiatorAddress = existing.initiatorAddress;
+            }
           }
           this.conversations.set(conv.id, indexed);
           syncedCount++;
@@ -310,7 +342,6 @@ class KasiaIndexer {
           // UPSERT to database cache
           if (this.storage) {
             try {
-              const existingDb = await this.storage.getConversation(conv.id);
               const dbStatus = indexed.status === "pending" ? "pending_handshake" : indexed.status;
               
               if (!existingDb) {
@@ -325,7 +356,7 @@ class KasiaIndexer {
                   isAdminConversation: indexed.isAdminConversation,
                 });
               } else if (existingDb.status !== dbStatus || existingDb.responseTxHash !== indexed.responseTxHash) {
-                // Update existing with on-chain state
+                // Update existing with on-chain state (but preserve initiator!)
                 await this.storage.updateConversationStatus(
                   conv.id, 
                   dbStatus, 

@@ -246,16 +246,38 @@ export async function getConversationsFromIndexer(
         // (we're sending response TO them, so they started the conversation)
         if (parsed.recipient && parsed.recipient !== hs.sender) {
           // The response is TO the initiator, so update initiatorAddress
-          if (existing.initiatorAddress === existing.recipientAddress) {
-            // Both were same (e.g., self-test), fix it
-            existing.initiatorAddress = parsed.recipient;
-          }
+          existing.initiatorAddress = parsed.recipient;
+        }
+      } else {
+        // Response exists but no initial handshake found yet
+        // Create placeholder conversation - the recipient of the response is the original initiator
+        if (parsed.recipient) {
+          conversationsMap.set(convId, {
+            id: convId,
+            initiatorAddress: parsed.recipient, // Recipient of response = original initiator
+            recipientAddress: walletAddress, // We (responder) are the recipient
+            status: "active",
+            initiatorAlias: undefined, // Will be filled from initial handshake
+            handshakeTxHash: undefined,
+            responseTxHash: hs.tx_id,
+            createdAt: new Date(hs.block_time),
+            hasResponse: true,
+          });
         }
       }
     } else if (!conversationsMap.has(convId)) {
-      // Initial handshake - create conversation
-      // Use recipient from payload (intended recipient) not hs.receiver (transaction output)
+      // Initial handshake - but check if this wallet is just relaying for someone else
+      // (treasury broadcasts user's handshake on their behalf)
       const recipientAddress = parsed.recipient || hs.receiver;
+      
+      // If recipient is this wallet, then the real initiator is whoever sent this TO us
+      // This happens when someone sends a handshake directly TO us
+      // But if we're sending a handshake TO someone else, we're the initiator
+      if (recipientAddress === walletAddress) {
+        // Skip - this will be handled in receivedHandshakes
+        continue;
+      }
+      
       conversationsMap.set(convId, {
         id: convId,
         initiatorAddress: hs.sender,
@@ -289,7 +311,14 @@ export async function getConversationsFromIndexer(
       // Initial handshake received - someone wants to start a conversation with us
       const existing = conversationsMap.get(convId);
       if (existing) {
-        // Already have this conversation, potentially update responseTxHash if we sent a response
+        // Already have this conversation (from response processing), update missing fields
+        // The sender of this initial handshake is the TRUE initiator
+        existing.initiatorAddress = hs.sender;
+        existing.initiatorAlias = parsed.alias;
+        existing.handshakeTxHash = hs.tx_id;
+        if (!existing.createdAt || new Date(hs.block_time) < existing.createdAt) {
+          existing.createdAt = new Date(hs.block_time);
+        }
       } else {
         conversationsMap.set(convId, {
           id: convId,
