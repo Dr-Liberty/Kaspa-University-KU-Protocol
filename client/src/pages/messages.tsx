@@ -660,12 +660,11 @@ export default function Messages() {
   const { wallet } = useWallet();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
-  const [useOnChain, setUseOnChain] = useState(false);
 
-  const { data: conversationsData, isLoading, refetch } = useQuery<{ conversations: Conversation[], source?: string }>({
-    queryKey: ["/api/conversations", useOnChain ? "onchain" : "local"],
+  const { data: conversationsData, isLoading, refetch, isFetching } = useQuery<{ conversations: Conversation[], source?: string }>({
+    queryKey: ["/api/conversations", "onchain"],
     queryFn: async () => {
-      const url = useOnChain ? "/api/conversations?source=onchain" : "/api/conversations";
+      const url = "/api/conversations?source=onchain";
       const headers: Record<string, string> = {};
       const authToken = getAuthToken();
       const walletAddress = getWalletAddress();
@@ -677,7 +676,7 @@ export default function Messages() {
       return res.json();
     },
     enabled: !!wallet,
-    refetchInterval: 10000, // Reduced from 15s to 10s for faster verification
+    refetchInterval: 10000,
   });
   
   const conversations = conversationsData?.conversations;
@@ -718,32 +717,18 @@ export default function Messages() {
               </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Button
-                variant={useOnChain ? "default" : "outline"}
-                size="sm"
-                onClick={() => setUseOnChain(!useOnChain)}
-                className="gap-2"
-                data-testid="button-toggle-source"
-              >
-                {useOnChain ? (
-                  <>
-                    <Globe className="h-4 w-4" />
-                    On-Chain
-                  </>
-                ) : (
-                  <>
-                    <Database className="h-4 w-4" />
-                    Local
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5">
+                <div className={`h-2 w-2 rounded-full ${isFetching ? "animate-pulse bg-yellow-500" : "bg-green-500"}`} />
+                <span className="text-xs font-medium text-primary">Mainnet</span>
+                <Globe className="h-3.5 w-3.5 text-primary" />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => refetch()}
                 data-testid="button-refresh-conversations"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
@@ -775,12 +760,6 @@ export default function Messages() {
             </CardContent>
           </Card>
           
-          {useOnChain && (
-            <Badge variant="secondary" className="mt-4 gap-1">
-              <Globe className="h-3 w-3" />
-              Fetching from Kasia Indexer (on-chain source of truth)
-            </Badge>
-          )}
         </div>
 
         <Card className="min-h-[500px] h-[calc(100vh-400px)] max-h-[700px] overflow-hidden border-border/50">
