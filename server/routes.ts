@@ -4678,6 +4678,7 @@ export async function registerRoutes(
         
         // Skip immediate on-chain verification since the tx was just broadcast
         // The periodic sync from public Kasia indexer will confirm it later
+        console.log(`[Kasia] Recording user broadcast message: txHash=${txHash}, convId=${conversationId}`);
         recorded = await kasiaIndexer.recordMessage({
           id: messageId,
           txHash,
@@ -4688,7 +4689,7 @@ export async function registerRoutes(
           timestamp: new Date(),
         }, true); // Skip verification for freshly broadcast user transactions
         
-        console.log(`[Kasia] User broadcast message recorded: ${txHash} (decentralized)`);
+        console.log(`[Kasia] User broadcast message recorded: ${recorded ? 'SUCCESS' : 'FAILED'} - ${txHash} (decentralized)`);
       }
       // Mode 1b: On-chain txHash only (legacy) - verify on blockchain
       else if (txHash) {
@@ -4926,6 +4927,7 @@ export async function registerRoutes(
       }
       
       const messages = kasiaIndexer.getMessages(conversationId, limit, offset);
+      console.log(`[Kasia] GET messages for ${conversationId}: found ${messages.length} messages`);
       
       res.json({ messages, conversation });
     } catch (error: any) {
