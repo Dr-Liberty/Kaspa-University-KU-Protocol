@@ -224,7 +224,7 @@ function ConversationView({
             // With 0.00001 KAS (1000 sompi): mass = 1,000,000,000 (WAY over limit)
             const MESSAGE_AMOUNT_SOMPI = 20_000_000; // 0.2 KAS for KIP-0009 compliance
             
-            txHash = await window.kasware.sendKaspa(
+            let rawTxHash = await window.kasware.sendKaspa(
               otherAddress, // Recipient of the conversation
               MESSAGE_AMOUNT_SOMPI, // 0.2 KAS to stay under storage mass limit
               { 
@@ -233,7 +233,27 @@ function ConversationView({
               }
             );
             
-            console.log("[Message] User broadcast on-chain tx:", txHash);
+            console.log("[Message] Raw txHash from KasWare:", rawTxHash, "type:", typeof rawTxHash);
+            
+            // Normalize txHash - handle object responses, 0x prefix, etc.
+            if (typeof rawTxHash === "object" && rawTxHash !== null) {
+              rawTxHash = (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || JSON.stringify(rawTxHash);
+              console.log("[Message] Extracted txHash from object:", rawTxHash);
+            }
+            
+            // Remove 0x prefix if present
+            if (typeof rawTxHash === "string" && rawTxHash.startsWith("0x")) {
+              rawTxHash = rawTxHash.slice(2);
+            }
+            
+            // Validate format before sending to backend
+            if (typeof rawTxHash === "string" && /^[a-fA-F0-9]{64}$/.test(rawTxHash)) {
+              txHash = rawTxHash;
+              console.log("[Message] User broadcast on-chain tx:", txHash);
+            } else {
+              console.error("[Message] Invalid txHash format from wallet:", rawTxHash);
+              throw new Error(`Wallet returned invalid transaction hash format: ${typeof rawTxHash === "string" ? rawTxHash.slice(0, 20) + "..." : typeof rawTxHash}`);
+            }
           } catch (txError: any) {
             console.error("[Message] On-chain broadcast failed:", txError);
             if (txError.message?.includes("cancel") || txError.message?.includes("reject")) {
