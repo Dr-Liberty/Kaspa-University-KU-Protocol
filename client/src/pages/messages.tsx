@@ -333,8 +333,8 @@ function ConversationView({
   };
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <div className="flex items-center gap-3 border-b border-border/50 p-4">
+    <div className="flex h-full w-full flex-col overflow-hidden min-h-0">
+      <div className="flex items-center gap-3 border-b border-border/50 p-4 shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -362,7 +362,7 @@ function ConversationView({
       </div>
 
       {conversation.status === "pending" && !isInitiator && (
-        <div className="border-b border-border/50 bg-muted/30 p-4">
+        <div className="border-b border-border/50 bg-muted/30 p-4 shrink-0">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Handshake Request</p>
@@ -383,7 +383,7 @@ function ConversationView({
       )}
 
       {conversation.status === "pending" && isInitiator && (
-        <div className="border-b border-border/50 bg-muted/30 p-4 text-center">
+        <div className="border-b border-border/50 bg-muted/30 p-4 text-center shrink-0">
           <Clock className="mx-auto h-6 w-6 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
             Waiting for {truncatedAddress} to accept your handshake request...
@@ -391,7 +391,7 @@ function ConversationView({
         </div>
       )}
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
         {conversation.status !== "active" ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -451,7 +451,7 @@ function ConversationView({
       </ScrollArea>
 
       {conversation.status === "active" && (
-        <div className="border-t border-border/50 p-4 w-full">
+        <div className="border-t border-border/50 p-4 w-full shrink-0">
           <div className="flex items-end gap-3 w-full">
             <div className="flex-1 min-w-0">
               <Textarea
@@ -860,7 +860,7 @@ export default function Messages() {
               </ScrollArea>
             </div>
 
-            <div className={`flex h-full w-full flex-1 ${!selectedConversation && !showNewConversation ? "hidden md:flex" : ""}`}>
+            <div className={`flex h-full w-full flex-1 overflow-hidden min-h-0 ${!selectedConversation && !showNewConversation ? "hidden md:flex" : ""}`}>
               {showNewConversation ? (
                 <NewConversationView onBack={() => setShowNewConversation(false)} />
               ) : selectedConversation ? (
