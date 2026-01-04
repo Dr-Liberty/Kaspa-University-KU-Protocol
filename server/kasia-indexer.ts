@@ -246,7 +246,7 @@ class KasiaIndexer {
   private startPeriodicSync(): void {
     if (this.syncInterval) return;
     
-    const SYNC_INTERVAL_MS = 60_000; // 60 seconds
+    const SYNC_INTERVAL_MS = 30_000; // 30 seconds (reduced from 60s for faster verification)
     
     this.syncInterval = setInterval(async () => {
       if (this.supportAddress) {
@@ -258,7 +258,7 @@ class KasiaIndexer {
       }
     }, SYNC_INTERVAL_MS);
     
-    console.log("[Kasia Indexer] Started periodic on-chain sync (every 60s)");
+    console.log("[Kasia Indexer] Started periodic on-chain sync (every 30s)");
   }
 
   /**

@@ -4467,6 +4467,26 @@ export async function registerRoutes(
     }
   });
 
+  // Manual sync trigger for conversations (polling retry after handshake)
+  app.post("/api/conversations/sync", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      console.log(`[Kasia] Manual sync triggered for ${authenticatedWallet.slice(0, 20)}...`);
+      
+      // Sync from public Kasia indexer
+      const synced = await kasiaIndexer.syncForWallet(authenticatedWallet);
+      
+      res.json({ success: true, synced });
+    } catch (error: any) {
+      console.error("[Kasia] Manual sync failed:", error);
+      res.status(500).json({ error: "Sync failed", message: error.message });
+    }
+  });
+
   // Get conversations for authenticated user
   // ON-CHAIN FIRST: Always sync from public Kasia indexer to ensure we have latest data
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {

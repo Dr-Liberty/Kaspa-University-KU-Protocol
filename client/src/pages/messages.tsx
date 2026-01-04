@@ -475,7 +475,8 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
   const { signKasiaHandshake } = useWallet();
   const [recipientAddress, setRecipientAddress] = useState("");
   const [isAdminConversation, setIsAdminConversation] = useState(false);
-  const [signingStep, setSigningStep] = useState<"idle" | "preparing" | "signing" | "confirming">("idle");
+  const [signingStep, setSigningStep] = useState<"idle" | "preparing" | "signing" | "confirming" | "verifying">("idle");
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
 
   // Fetch support address
   const { data: supportData, isLoading: supportLoading } = useQuery<{ address: string }>({
@@ -528,10 +529,36 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
         isAdminConversation,
         handshakeTxHash: txHash,
       });
-      return response.json();
+      const result = await response.json();
+      
+      // Step 4: Poll for on-chain verification (retry up to 6 times over 30 seconds)
+      setSigningStep("verifying");
+      setVerifyAttempts(0);
+      
+      const MAX_VERIFY_ATTEMPTS = 6;
+      const VERIFY_INTERVAL = 5000; // 5 seconds
+      
+      for (let attempt = 1; attempt <= MAX_VERIFY_ATTEMPTS; attempt++) {
+        setVerifyAttempts(attempt);
+        await new Promise(resolve => setTimeout(resolve, VERIFY_INTERVAL));
+        
+        // Trigger a refresh of conversations from the indexer
+        try {
+          const refreshRes = await apiRequest("POST", "/api/conversations/sync", {});
+          const refreshData = await refreshRes.json();
+          if (refreshData.success) {
+            console.log(`[Verify] Sync attempt ${attempt}: synced ${refreshData.synced} conversations`);
+          }
+        } catch (e) {
+          console.log(`[Verify] Sync attempt ${attempt} failed, continuing...`);
+        }
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       setSigningStep("idle");
+      setVerifyAttempts(0);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       
       if (data?.existing) {
@@ -542,13 +569,14 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
       } else {
         toast({
           title: "Conversation Started",
-          description: "Your handshake has been broadcast to the Kaspa blockchain.",
+          description: "Handshake broadcast! Verification syncing in background.",
         });
       }
       onBack();
     },
     onError: (error: Error) => {
       setSigningStep("idle");
+      setVerifyAttempts(0);
       toast({
         title: "Failed to start conversation",
         description: error.message || "Please try again.",
@@ -562,6 +590,7 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
       case "preparing": return "Preparing handshake...";
       case "signing": return "Approve 0.2 KAS in KasWare...";
       case "confirming": return "Confirming...";
+      case "verifying": return `Syncing with indexer (${verifyAttempts}/6)...`;
       default: return "Start Conversation (0.2 KAS)";
     }
   };
@@ -648,7 +677,7 @@ export default function Messages() {
       return res.json();
     },
     enabled: !!wallet,
-    refetchInterval: 15000,
+    refetchInterval: 10000, // Reduced from 15s to 10s for faster verification
   });
   
   const conversations = conversationsData?.conversations;
