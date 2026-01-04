@@ -4715,8 +4715,14 @@ export async function registerRoutes(
           ? conversation.recipientAddress 
           : conversation.initiatorAddress;
         
+        // Convert raw kasiaPayload string to hex for treasury broadcast
+        // The kasiaPayload from frontend is a raw string like "ciph_msg:1:comm:..."
+        // but sendQuizProof expects hex-encoded data for the transaction payload
+        const payloadHex = Buffer.from(kasiaPayload, "utf-8").toString("hex");
+        console.log(`[Kasia] Converted payload to hex: ${payloadHex.length} chars`);
+        
         // Broadcast the user's prepared payload via treasury
-        const broadcastResult = await kasiaBroadcast.broadcastMessage(kasiaPayload, recipientAddress);
+        const broadcastResult = await kasiaBroadcast.broadcastMessage(payloadHex, recipientAddress);
         
         if (broadcastResult.success && broadcastResult.txHash) {
           finalTxHash = broadcastResult.txHash;
