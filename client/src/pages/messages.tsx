@@ -188,11 +188,13 @@ function ConversationView({
   const otherAlias = isInitiator ? conversation.recipientAlias : conversation.initiatorAlias;
   const truncatedAddress = `${otherAddress.slice(0, 10)}...${otherAddress.slice(-4)}`;
 
-  const { data: messages, isLoading } = useQuery<PrivateMessage[]>({
+  const { data: messagesData, isLoading } = useQuery<{ messages: PrivateMessage[]; conversation: Conversation; source: string }>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
     enabled: conversation.status === "active",
     refetchInterval: 10000,
   });
+  
+  const messages = messagesData?.messages || [];
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
@@ -400,7 +402,7 @@ function ConversationView({
               </div>
             ))}
           </div>
-        ) : messages && messages.length > 0 ? (
+        ) : messages.length > 0 ? (
           <div className="space-y-4">
             {messages.map((msg) => {
               const isMine = msg.senderAddress === walletAddress;
