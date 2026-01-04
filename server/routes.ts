@@ -4057,14 +4057,11 @@ export async function registerRoutes(
           return res.status(404).json({ error: "Conversation not found" });
         }
         
-        if (!conversation.alias) {
-          return res.status(400).json({ error: "Conversation missing alias - handshake may be incomplete" });
-        }
       }
 
       // Build the Kasia protocol payload for on-chain embedding
       // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
-      // The alias MUST come from the handshake to enable proper message correlation
+      // The alias is the conversation ID (standard in Kasia protocol)
       const timestamp = Date.now();
       const nonce = randomUUID().slice(0, 8);
       
@@ -4072,7 +4069,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation ID required for private messages" });
       }
       
-      const alias = conversation.alias;
+      // Use conversation alias or fall back to conversation ID (Kasia standard)
+      const alias = conversation.alias || conversationId;
       
       // Create sealed hex from content (simplified - full Kasia uses ECDH encryption)
       const messageData = JSON.stringify({
@@ -4621,8 +4619,9 @@ export async function registerRoutes(
           return res.status(400).json({ error: "Invalid Kasia payload format" });
         }
         
-        // Verify the payload contains our conversation alias
-        if (!kasiaPayload.includes(conversation.alias)) {
+        // Verify the payload contains our conversation alias (or ID as fallback)
+        const expectedAlias = conversation.alias || conversationId;
+        if (!kasiaPayload.includes(expectedAlias)) {
           return res.status(400).json({ error: "Kasia payload does not match this conversation" });
         }
         

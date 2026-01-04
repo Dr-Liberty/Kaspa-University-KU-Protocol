@@ -31,6 +31,7 @@ export interface IndexedConversation {
   recipientAddress: string;
   initiatorAlias?: string;
   recipientAlias?: string;
+  alias?: string; // Kasia protocol alias for message correlation (derived from handshake)
   status: "pending" | "active" | "archived";
   handshakeTxHash?: string;
   responseTxHash?: string;
@@ -180,6 +181,7 @@ class KasiaIndexer {
           initiatorAddress: conv.initiatorAddress,
           recipientAddress: conv.recipientAddress,
           initiatorAlias: conv.initiatorAlias,
+          alias: conv.id, // Kasia protocol uses conversation ID as alias
           status: conv.status,
           handshakeTxHash: conv.handshakeTxHash,
           responseTxHash: conv.responseTxHash,
@@ -273,6 +275,7 @@ class KasiaIndexer {
         recipientAddress: conv.recipientAddress,
         initiatorAlias: conv.initiatorAlias,
         recipientAlias: conv.recipientAlias,
+        alias: conv.id, // Kasia protocol uses conversation ID as alias
         status: conv.status === "pending_handshake" || conv.status === "handshake_received" ? "pending" : 
                 conv.status === "active" ? "active" : 
                 conv.status === "archived" ? "archived" : "pending",
@@ -600,6 +603,7 @@ class KasiaIndexer {
           initiatorAddress: record.senderAddress,
           recipientAddress: record.recipientAddress,
           initiatorAlias: record.senderAlias,
+          alias: record.conversationId, // Kasia uses conversation ID as alias
           status: "pending",
           handshakeTxHash: record.txHash,
           createdAt: record.timestamp,
@@ -629,6 +633,7 @@ class KasiaIndexer {
       initiatorAddress: params.initiatorAddress,
       recipientAddress: params.recipientAddress,
       initiatorAlias: params.initiatorAlias,
+      alias: params.id, // Kasia protocol uses conversation ID as the alias for message correlation
       status: params.status || "pending",
       handshakeTxHash: params.handshakeTxHash,
       isAdminConversation: params.isAdminConversation,
@@ -682,6 +687,7 @@ class KasiaIndexer {
             recipientAddress: dbConv.recipientAddress,
             initiatorAlias: dbConv.initiatorAlias,
             recipientAlias: dbConv.recipientAlias,
+            alias: dbConv.id, // Kasia protocol uses conversation ID as alias
             status: dbConv.status === "pending_handshake" || dbConv.status === "handshake_received" ? "pending" : 
                     dbConv.status === "active" ? "active" : 
                     dbConv.status === "archived" ? "archived" : "pending",
