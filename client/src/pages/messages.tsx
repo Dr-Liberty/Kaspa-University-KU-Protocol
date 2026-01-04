@@ -301,7 +301,7 @@ function ConversationView({
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="flex items-center gap-3 border-b border-border/50 p-4">
         <Button
           variant="ghost"
@@ -419,14 +419,14 @@ function ConversationView({
       </ScrollArea>
 
       {conversation.status === "active" && (
-        <div className="border-t border-border/50 p-4">
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
+        <div className="border-t border-border/50 p-4 w-full">
+          <div className="flex items-end gap-3 w-full">
+            <div className="flex-1 min-w-0">
               <Textarea
                 placeholder="Type your message... (max 25 chars for on-chain)"
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value.slice(0, 25))}
-                className="min-h-[60px] max-h-[100px] resize-y text-sm"
+                className="min-h-[80px] max-h-[120px] resize-y text-sm w-full"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

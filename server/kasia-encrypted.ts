@@ -109,71 +109,100 @@ export interface PrivateMessage {
 }
 
 /**
- * Create a handshake payload for initiating a conversation
+ * Strip network prefix from Kaspa address to save bytes
+ * kaspa:qrewk7s6... → qrewk7s6...
+ * kaspatest:qrewk7s6... → qrewk7s6...
+ */
+function stripAddressPrefix(address: string): string {
+  return address.replace(/^kaspa(test)?:/, '');
+}
+
+/**
+ * Shorten conversation ID to fit payload budget
+ * Takes first 10 chars of the hex ID for compact representation
+ */
+function shortenConversationId(conversationId: string): string {
+  return conversationId.slice(0, 10);
+}
+
+/**
+ * Truncate alias to max 12 chars to fit payload budget
+ */
+function truncateAlias(alias: string): string {
+  return alias.slice(0, 12).replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
+/**
+ * KASPA OP_RETURN PAYLOAD BUDGET: ~80 bytes
  * 
- * Official Kasia protocol format (V2):
- * - Raw bytes: ciph_msg:1:handshake:{sealed_hex}
- * - sealed_hex contains: nonce (12b) + ephemeral_pk (33b) + ciphertext
+ * The Kasia handshake must fit within Kaspa's storage mass limit.
+ * Format: ciph_msg:1:hs:{shortConvId}:{shortAddr}:{alias}:{ts}
  * 
- * Since we don't have the cipher-wasm for ECDH encryption, we create a
- * "simplified sealed" format that the Kasia indexer can still parse:
- * - The sealed_hex contains our handshake JSON as hex
- * - This allows indexing even though Kasia app can't decrypt it
- * 
- * The indexer looks for raw bytes: ciph_msg:1:handshake:*
- * NOT hex-encoded. The payload is raw ASCII in the transaction script.
+ * Budget breakdown (target ≤78 bytes):
+ * - ciph_msg:1:hs: = 13 chars (using 'hs' instead of 'handshake')
+ * - shortConvId = 10 chars
+ * - : + shortAddr = 53 chars (address without prefix)
+ * - : + alias = 13 chars max
+ * - : + timestampBase36 = 8 chars
+ * Total: ~75 bytes ✓
  */
 export function createHandshakePayload(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  // Handshake data structure per Kasia spec
-  const handshakeData: HandshakeData = {
-    alias: senderAlias,
-    timestamp: Date.now().toString(),
-    conversationId: conversationId,
-    version: 1,
-    recipientAddress: recipientAddress,
-    sendToRecipient: true,
-    isResponse: false,
-  };
+  const timestampBase36 = Date.now().toString(36);
+  const shortAddr = stripAddressPrefix(recipientAddress);
+  const shortConvId = shortenConversationId(conversationId);
+  const safeAlias = truncateAlias(senderAlias);
   
-  // Create sealed_hex by hex-encoding the JSON handshake data
-  // Official Kasia would ECDH-encrypt this, but we use plaintext hex for now
-  const sealed = stringToHex(JSON.stringify(handshakeData));
+  // Compact format using 'hs' for handshake to save bytes
+  // Format: ciph_msg:1:hs:{shortConvId}:{shortAddr}:{alias}:{timestamp}
+  const rawPayload = [
+    KASIA_PREFIX,
+    KASIA_VERSION,
+    "hs",  // 'hs' = handshake initiation (compact)
+    shortConvId,
+    shortAddr,
+    safeAlias,
+    timestampBase36
+  ].join(KASIA_DELIM);
   
-  // Create the raw payload string that gets embedded in the transaction
-  // Format: ciph_msg:1:handshake:{sealed_hex}
-  // This raw string becomes the OP_RETURN data (not hex-encoded again)
-  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}handshake${KASIA_DELIM}${sealed}`;
+  console.log(`[Kasia] Handshake payload: ${rawPayload.length} bytes`);
   
-  // For Kaspa transaction embedding, we return the hex of the raw payload
-  // The transaction builder will decode this to get the raw bytes
+  if (rawPayload.length > 78) {
+    console.warn(`[Kasia] WARNING: Handshake payload exceeds 78 bytes (${rawPayload.length}), may be rejected`);
+  }
+  
   return stringToHex(rawPayload);
 }
 
 /**
- * Create a handshake response payload
- * Same format as initiation, but with isResponse: true
+ * Create handshake response (acceptance)
+ * Uses 'hr' for handshake_response to save bytes
  */
 export function createHandshakeResponse(
   senderAlias: string,
   recipientAddress: string,
   conversationId: string
 ): string {
-  const handshakeData: HandshakeData = {
-    alias: senderAlias,
-    timestamp: Date.now().toString(),
-    conversationId: conversationId,
-    version: 1,
-    recipientAddress: recipientAddress,
-    sendToRecipient: true,
-    isResponse: true,
-  };
+  const timestampBase36 = Date.now().toString(36);
+  const shortAddr = stripAddressPrefix(recipientAddress);
+  const shortConvId = shortenConversationId(conversationId);
+  const safeAlias = truncateAlias(senderAlias);
   
-  const sealed = stringToHex(JSON.stringify(handshakeData));
-  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}handshake${KASIA_DELIM}${sealed}`;
+  // Compact format using 'hr' for handshake_response
+  const rawPayload = [
+    KASIA_PREFIX,
+    KASIA_VERSION,
+    "hr",  // 'hr' = handshake response (compact)
+    shortConvId,
+    shortAddr,
+    safeAlias,
+    timestampBase36
+  ].join(KASIA_DELIM);
+  
+  console.log(`[Kasia] Handshake response payload: ${rawPayload.length} bytes`);
   
   return stringToHex(rawPayload);
 }

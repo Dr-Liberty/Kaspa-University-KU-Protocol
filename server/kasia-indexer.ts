@@ -108,35 +108,138 @@ class KasiaIndexer {
   }
 
   /**
+   * Validate if a txHash looks like a valid on-chain transaction hash
+   * Rejects JSON garbage, objects, and other invalid formats
+   */
+  private isValidTxHash(txHash: string | undefined | null): boolean {
+    if (!txHash) return false;
+    if (typeof txHash !== 'string') return false;
+    if (txHash.length < 60) return false; // Valid Kaspa txHashes are 64 chars
+    if (txHash.startsWith('{')) return false; // JSON garbage
+    if (txHash.includes(':')) return false; // Object stringification garbage
+    if (!/^[0-9a-f]+$/i.test(txHash)) return false; // Not valid hex
+    return true;
+  }
+
+  /**
    * Start the indexer with on-chain first approach
+   * HYBRID MODE: Load validated DB records, reject stale garbage
    */
   async start(): Promise<void> {
     if (this.isRunning) return;
     
-    console.log("[Kasia Indexer] Starting on-chain indexer (ON-CHAIN FIRST)...");
+    console.log("[Kasia Indexer] Starting on-chain indexer (HYBRID MODE - validated cache)...");
     this.isRunning = true;
     
-    // Step 1: Load from database cache (fast startup)
+    // Clear caches first
+    this.conversations.clear();
+    this.messages.clear();
+    this.handshakes.clear();
+    
+    // Load from DB but ONLY records with valid txHashes (not JSON garbage)
     if (this.storage) {
       try {
-        const cachedCount = await this.loadFromStorage();
-        console.log(`[Kasia Indexer] Loaded ${cachedCount} conversations from database cache`);
+        const validatedCount = await this.loadValidatedFromStorage();
+        console.log(`[Kasia Indexer] Loaded ${validatedCount} validated conversations from database`);
       } catch (error: any) {
-        console.error(`[Kasia Indexer] Cache load error: ${error.message}`);
+        console.error(`[Kasia Indexer] Validated cache load error: ${error.message}`);
       }
     }
     
-    // Step 2: Sync from on-chain indexer for support address (async, don't block startup)
+    // Sync from on-chain indexer for support address (async, don't block startup)
     if (this.supportAddress) {
       this.syncForWallet(this.supportAddress).catch(error => {
         console.error(`[Kasia Indexer] Background sync error: ${error.message}`);
       });
     }
     
-    // Step 3: Start periodic sync job (every 60 seconds)
+    // Start periodic sync job (every 60 seconds)
     this.startPeriodicSync();
     
-    console.log("[Kasia Indexer] Ready to index Kasia protocol messages (on-chain first)");
+    console.log("[Kasia Indexer] Ready to index Kasia protocol messages (HYBRID validated)");
+  }
+
+  /**
+   * Load only validated conversations from storage
+   * Rejects records with invalid/garbage txHashes
+   */
+  private async loadValidatedFromStorage(): Promise<number> {
+    if (!this.storage) return 0;
+    
+    try {
+      let validCount = 0;
+      
+      const convertConversation = (conv: any): IndexedConversation | null => {
+        // Skip conversations with garbage handshakeTxHash
+        // These are stale records from before proper on-chain integration
+        if (conv.handshakeTxHash && !this.isValidTxHash(conv.handshakeTxHash)) {
+          console.log(`[Kasia Indexer] Skipping conversation ${conv.id} with invalid txHash`);
+          return null;
+        }
+        
+        return {
+          id: conv.id,
+          initiatorAddress: conv.initiatorAddress,
+          recipientAddress: conv.recipientAddress,
+          initiatorAlias: conv.initiatorAlias,
+          recipientAlias: conv.recipientAlias,
+          alias: conv.id,
+          status: conv.status === "pending_handshake" || conv.status === "handshake_received" ? "pending" : 
+                  conv.status === "active" ? "active" : 
+                  conv.status === "archived" ? "archived" : "pending",
+          handshakeTxHash: conv.handshakeTxHash,
+          responseTxHash: conv.responseTxHash,
+          createdAt: new Date(conv.createdAt),
+          updatedAt: new Date(conv.updatedAt || conv.createdAt),
+          isAdminConversation: conv.isAdminConversation || false,
+        };
+      };
+      
+      // Load active conversations
+      const activeConvs = await this.storage.getActiveConversations?.() || [];
+      for (const conv of activeConvs) {
+        const indexed = convertConversation(conv);
+        if (indexed) {
+          this.conversations.set(indexed.id, indexed);
+          validCount++;
+          
+          // Also load messages for active conversations
+          try {
+            const messages = await this.storage.getPrivateMessages(indexed.id, 100);
+            for (const msg of messages) {
+              const indexedMsg: IndexedMessage = {
+                id: msg.id,
+                txHash: msg.txHash || "",
+                conversationId: msg.conversationId,
+                senderAddress: msg.senderAddress,
+                encryptedContent: msg.encryptedContent,
+                timestamp: new Date(msg.createdAt),
+              };
+              this.messages.set(msg.id, indexedMsg);
+            }
+          } catch (error) {
+            // Continue even if message loading fails
+          }
+        }
+      }
+      
+      // Load pending conversations
+      const pendingConvs = await this.storage.getPendingConversations?.() || [];
+      for (const conv of pendingConvs) {
+        const indexed = convertConversation(conv);
+        if (indexed) {
+          this.conversations.set(indexed.id, indexed);
+          validCount++;
+        }
+      }
+      
+      console.log(`[Kasia Indexer] Loaded ${this.messages.size} messages for validated conversations`);
+      
+      return validCount;
+    } catch (error: any) {
+      console.error(`[Kasia Indexer] Validated load error: ${error.message}`);
+      return 0;
+    }
   }
 
   /**
@@ -350,9 +453,9 @@ class KasiaIndexer {
       }
       
       const statusCounts = {
-        pending: allConversations.filter(c => c.status === "pending" || c.status === "pending_handshake").length,
-        active: allConversations.filter(c => c.status === "active").length,
-        archived: allConversations.filter(c => c.status === "archived").length,
+        pending: allConversations.filter((c: any) => c.status === "pending" || c.status === "pending_handshake").length,
+        active: allConversations.filter((c: any) => c.status === "active").length,
+        archived: allConversations.filter((c: any) => c.status === "archived").length,
       };
       console.log(`[Kasia Indexer] Loaded ${totalLoaded} conversations (pending: ${statusCounts.pending}, active: ${statusCounts.active}, archived: ${statusCounts.archived})`);
       console.log(`[Kasia Indexer] Rehydrated ${this.handshakes.size} handshakes, ${this.messages.size} messages`);

@@ -1,0 +1,72 @@
+026-01-03 17:38:51.13
+a198344e
+User
+}
+2026-01-03 17:38:51.13
+a198344e
+User
+"outpoint": {
+2026-01-03 17:38:51.13
+a198344e
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-03 17:38:51.13
+a198344e
+User
+},
+2026-01-03 17:38:51.13
+a198344e
+User
+"version": 0,
+2026-01-03 17:38:51.14
+a198344e
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-03 17:38:51.14
+a198344e
+User
+[Kaspa] Created 1 payload transaction(s) with 20.5 bytes
+2026-01-03 17:38:52.34
+a198344e
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-03 17:38:52.34
+a198344e
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-03 17:38:52.34
+a198344e
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-03 17:38:52.34
+a198344e
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-03 17:38:52.48
+a198344e
+User
+[Kaspa] Payload transaction 1 submitted: 19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a
+2026-01-03 17:38:52.48
+a198344e
+User
+[UTXO] Marked 1 UTXOs as spent in tx 19dea9b249ce05ea...
+2026-01-03 17:38:52.48
+a198344e
+User
+[Kasia Admin] Message broadcast: 19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a
+2026-01-03 17:38:52.48
+a198344e
+User
+[Kasia Broadcast] Message broadcast: 19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a
+2026-01-03 17:38:52.74
+a198344e
+User
+[Kasia Indexer] Recorded verified message: 19dea9b249ce05ea...
+2026-01-03 17:38:52.74
+a198344e
+User
+1:38:52 AM [express] POST /api/admin/kasia/conversations/000000002bcfcf63/messages 200 in 3111ms :: {"success":true,"txHash":"19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a","messageId":"685677c9-b670-4221-ad1f-9a2f74a60001"}
+2026-01-03 17:38:52.91
+a198344e
+User
+1:38:52 AM [express] GET /api/admin/kasia/conversations/000000002bcfcf63/messages 200 in 1ms :: {"conversation":{"id":"000000002bcfcf63","initiatorAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":null,"recipientAlias":null,"alias":"000000002bcfcf63","status":"active","handshakeTxHash":"{\"commitId\":\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\",\"revealId\":\"832b81dc96f2077fc8e259bbfa88e49f12203af74ad0ee66fcdf6bba3fb88282\",\"commitTxStr\":\"{\\\"id\\\":\\\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"f459206b23738b287ad6113623135388af49997375aed2ec90de0cc25f5d82b2\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41d18abe0b9c35bd37c903d9296b701d31f1f88a02f99b6323421b9a0dac9b913d4036921370ebba713cd70dded4ab12b03275ec8802ba4f37aebbcce1555d80b001\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3\\\",\\\"amount\\\":\\\"1799776518\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\",\\\"blockDaaScore\\\":\\\"320100210\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20eaff067e8adcaf85cec7181ad4d3391888aa2d222c0770999664a80ecf7ea39a87\\\"},{\\\"value\\\":\\\"1399773859\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"2659\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"832b81dc96f2077fc8e259bbfa88e49f12203af74ad0ee66fcdf6bba3fb88282\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"c920877483e24d331051a0bde30f6cbb9e66571e995a0055656da8a0fadca411\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"414bfbfede5e5ea8b9fbdb4fad310a7382e845896873ec48b0bf42709fc7a758168d40bf4935b6b87e34e2c6edd1e66cf63abdd2a8c646c84ca550155059ed9ff1014d540120490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac0063076b6173706c6578004d23017b2270223a22636970685f6d7367222c226f70223a2268616e647368616b65222c2264617461223a223633363937303638356636643733363733613331336136383631366536343733363836313662363533613330333033303330333033303330333033323632363336363633363633363333336136623631373337303631336137313732363537373662333737333336363736653761373537613738373636333635373333383734333737363336333633393662333237373334373033393634366136383664373537393336333233323339333436643664363737343661333336343330373936633735373536353731373737363332363537323361343136653666366537393664366637353733336136643661373933323631333737393638227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:pr407pn73tw2lpwwcuvp44xn8yvg323dygkqwuyejej2srk0063e5289kk3l3\\\",\\\"amount\\\":\\\"400000000\\\",\\\"scriptPublicKey\\\":\\\"0000aa20eaff067e8adcaf85cec7181ad4d3391888aa2d222c0770999664a80ecf7ea39a87\\\",\\\"blockDaaScore\\\":\\\"320105289\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020490de59a01829bb6b5d63e8e2c4cb214c912f600a7c4442e4b987c92317d9becac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","responseTxHash":null,"createdAt":"2026-01-03T08:49:26.568Z","updatedAt":"2026-01-04T01:38:52.483Z","isAdminConversation":true},"messages":[{"id":"e0d47f55-49d3-46d3-aa68-fd83aaf3c0bf","txHash":"bddd434d87695726eb51158431d8b501177c77b8517bd9a6f707258e4e555ff1","conversationId":"000000002bcfcf63","senderAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","encryptedContent":"hello","timestamp":"2026-01-03T11:23:47.560Z"},{"id":"685677c9-b670-4221-ad1f-9a2f74a60001","txHash":"19dea9b249ce05ea4dcf8c64f9882583a15d6b61b993bdd632d0f42daea7cc1a","conversationId":"000000002bcfcf63","senderAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","senderAlias":"KU Support","encryptedContent":"hellooo","timestamp":"2026-01-04T01:38:52.483Z"}]}
