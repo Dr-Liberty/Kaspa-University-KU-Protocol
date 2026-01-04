@@ -219,11 +219,14 @@ function ConversationView({
             // Convert Kasia payload to hex for transaction embedding
             const payloadHex = prepareData.kasiaPayload;
             
-            // Send minimal dust (1000 sompi = 0.00001 KAS) to other party with embedded payload
-            // The payload contains the Kasia protocol message
+            // KIP-0009 Storage Mass: mass = 10^12 / output_sompi
+            // With 0.2 KAS (20M sompi): mass = 50,000 (under 100k limit)
+            // With 0.00001 KAS (1000 sompi): mass = 1,000,000,000 (WAY over limit)
+            const MESSAGE_AMOUNT_SOMPI = 20_000_000; // 0.2 KAS for KIP-0009 compliance
+            
             txHash = await window.kasware.sendKaspa(
               otherAddress, // Recipient of the conversation
-              1000, // Minimal dust amount (1000 sompi)
+              MESSAGE_AMOUNT_SOMPI, // 0.2 KAS to stay under storage mass limit
               { 
                 payload: payloadHex,
                 priorityFee: 0 
