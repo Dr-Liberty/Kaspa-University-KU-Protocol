@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import kasiaLogo from "@assets/kasia_logo.png";
+const kasiaLogo = "/thumbnails/kasia_encrypted_messaging.png";
 import {
   Mail,
   Send,
@@ -148,11 +148,13 @@ function ConversationItem({
         <User className="h-5 w-5 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-mono text-sm">
+        <div className="flex items-center gap-2">
+          <span className="truncate font-mono text-sm flex-1 min-w-0">
             {otherAlias || truncatedAddress}
           </span>
-          {statusBadge()}
+          <div className="shrink-0">
+            {statusBadge()}
+          </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {conversation.isAdminConversation && (
@@ -674,7 +676,7 @@ export default function Messages() {
               <img 
                 src={kasiaLogo} 
                 alt="Kasia Protocol" 
-                className="h-16 w-16 rounded-lg"
+                className="h-14 w-14 rounded-lg object-cover"
                 data-testid="img-kasia-logo"
               />
               <div>
