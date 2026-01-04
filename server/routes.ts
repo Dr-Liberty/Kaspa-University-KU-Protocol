@@ -4086,7 +4086,11 @@ export async function registerRoutes(
       // Kasia protocol payload for on-chain embedding
       // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
       // This will be embedded in the transaction's payload field
-      const kasiaPayload = `ciph_msg:1:comm:${alias}:${sealedHex}`;
+      const rawPayload = `ciph_msg:1:comm:${alias}:${sealedHex}`;
+      
+      // IMPORTANT: Hex-encode the entire payload before sending to KasWare
+      // This matches how handshakes are sent (stringToHex in kasia-encrypted.ts)
+      const kasiaPayload = Buffer.from(rawPayload, "utf-8").toString("hex");
       
       // Also return messageToSign for signature-based fallback
       const messageToSign = `ku:msg:${messageType || "private"}:${timestamp}:${nonce}:${conversationId || "public"}:${content}`;
