@@ -4257,6 +4257,76 @@ export async function registerRoutes(
     }
   });
 
+  // Prepare response handshake payload for user-signed acceptance
+  // This enables fully decentralized P2P messaging - no treasury needed
+  app.post("/api/kasia/handshake/prepare-response", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { conversationId, recipientAlias } = req.body;
+      
+      if (!conversationId) {
+        return res.status(400).json({ error: "Conversation ID required" });
+      }
+      
+      // Get the conversation to find the initiator (we send response TO them)
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      // Only the recipient can prepare a response handshake
+      if (conversation.recipientAddress !== authenticatedWallet) {
+        return res.status(403).json({ error: "Only the recipient can accept the handshake" });
+      }
+      
+      if (conversation.status !== "pending") {
+        return res.status(400).json({ error: "Conversation is not pending" });
+      }
+      
+      // Create the response handshake payload for signing
+      const alias = recipientAlias || "Anonymous";
+      const handshakeData = kasiaBroadcast.createHandshakeForSigning({
+        senderAddress: authenticatedWallet,
+        senderAlias: alias,
+        recipientAddress: conversation.initiatorAddress,
+        conversationId,
+        isResponse: true,
+      });
+      
+      // Create inscription JSON for KasWare signKRC20Transaction
+      const inscriptionJson = JSON.stringify({
+        p: "ciph_msg",
+        op: "handshake_response",
+        data: handshakeData.payloadHex,
+      });
+      
+      console.log(`[Kasia] Prepared response handshake for ${conversationId}, recipient: ${authenticatedWallet.slice(0, 20)}...`);
+      
+      res.json({
+        success: true,
+        conversationId,
+        inscriptionJson,
+        payloadHex: handshakeData.payloadHex,
+        messageToSign: handshakeData.messageToSign,
+        protocol: handshakeData.protocol,
+        initiatorAddress: conversation.initiatorAddress,
+        metadata: {
+          senderAddress: authenticatedWallet,
+          recipientAddress: conversation.initiatorAddress,
+          senderAlias: alias,
+        }
+      });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to prepare response handshake:", error);
+      res.status(500).json({ error: "Failed to prepare response handshake" });
+    }
+  });
+
   // Start a new private conversation (initiate handshake)
   // User broadcasts handshake tx via KasWare, we track the on-chain reference
   app.post("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
@@ -4545,7 +4615,8 @@ export async function registerRoutes(
   });
 
   // Accept handshake (respond to conversation request)
-  // User broadcasts response handshake tx via KasWare
+  // User broadcasts response handshake tx via KasWare, then submits txHash here
+  // DECENTRALIZED: User signs and broadcasts their own transaction - no treasury needed
   app.post("/api/conversations/:conversationId/accept", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4555,6 +4626,18 @@ export async function registerRoutes(
 
       const { conversationId } = req.params;
       const { responseTxHash, recipientAlias } = req.body;
+      
+      // REQUIRE valid transaction hash for decentralized flow
+      // This must be a real on-chain transaction that the user broadcast
+      if (!responseTxHash || typeof responseTxHash !== "string") {
+        return res.status(400).json({ error: "Response transaction hash required. Please approve the transaction in your wallet." });
+      }
+      
+      // Validate txHash format (must be 64-char hex - valid Kaspa transaction hash)
+      if (!/^[a-fA-F0-9]{64}$/.test(responseTxHash)) {
+        console.log(`[Kasia] Invalid txHash format: ${responseTxHash.slice(0, 20)}...`);
+        return res.status(400).json({ error: "Invalid transaction hash format. Must be a valid Kaspa transaction." });
+      }
       
       const conversation = await kasiaIndexer.getConversation(conversationId);
       
@@ -4571,25 +4654,30 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Conversation is not pending" });
       }
       
+      console.log(`[Kasia] Accepting handshake for ${conversationId} with user-signed tx: ${responseTxHash.slice(0, 16)}...`);
+      
       // Record response handshake in indexer
       // Skip immediate verification - tx was just broadcast and won't be indexed yet
       // The periodic sync from public Kasia indexer will confirm it later
-      if (responseTxHash) {
-        await kasiaIndexer.recordHandshake({
-          txHash: responseTxHash,
-          conversationId,
-          senderAddress: authenticatedWallet,
-          recipientAddress: conversation.initiatorAddress,
-          senderAlias: recipientAlias || "User",
-          isResponse: true,
-          timestamp: new Date(),
-        }, true); // Skip verification for freshly broadcast transactions
-      }
+      // Note: The Kasia indexer is the ultimate source of truth - if this tx doesn't contain
+      // a valid Kasia handshake response, the indexer won't recognize it
+      await kasiaIndexer.recordHandshake({
+        txHash: responseTxHash,
+        conversationId,
+        senderAddress: authenticatedWallet,
+        recipientAddress: conversation.initiatorAddress,
+        senderAlias: recipientAlias || "Anonymous",
+        isResponse: true,
+        timestamp: new Date(),
+      }, true); // Skip verification for freshly broadcast transactions
       
       // Update conversation status to active
+      // The user has broadcast their response handshake on-chain - they control the funds
       await kasiaIndexer.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
       
-      res.json({ success: true });
+      console.log(`[Kasia] Conversation ${conversationId} marked active with on-chain response`);
+      
+      res.json({ success: true, txHash: responseTxHash });
     } catch (error: any) {
       console.error("[Kasia] Failed to accept handshake:", error);
       res.status(500).json({ error: "Failed to accept handshake" });

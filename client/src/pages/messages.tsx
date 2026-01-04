@@ -306,16 +306,72 @@ function ConversationView({
     },
   });
 
+  const [isAccepting, setIsAccepting] = useState(false);
+  
   const acceptHandshake = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/conversations/${conversation.id}/accept`, {});
-      return response.json();
+      setIsAccepting(true);
+      try {
+        // Step 1: Prepare the response handshake payload
+        const prepareResponse = await apiRequest("POST", "/api/kasia/handshake/prepare-response", {
+          conversationId: conversation.id,
+          recipientAlias: "Anonymous",
+        });
+        const prepareData = await prepareResponse.json();
+        
+        if (!prepareData.success) {
+          throw new Error(prepareData.error || "Failed to prepare response handshake");
+        }
+        
+        // Step 2: Send response handshake (0.2 KAS to initiator) WITH Kasia payload
+        // User signs and broadcasts their own transaction - fully decentralized!
+        // The payload is CRITICAL - without it, the Kasia indexer won't recognize this as a handshake response
+        if (!window.kasware || typeof window.kasware.sendKaspa !== "function") {
+          throw new Error("KasWare wallet not available");
+        }
+        
+        const HANDSHAKE_AMOUNT_SOMPI = 20000000; // 0.2 KAS
+        console.log(`[Handshake] Sending response to ${prepareData.initiatorAddress} with Kasia payload...`);
+        console.log(`[Handshake] Payload: ${prepareData.payloadHex?.slice(0, 40)}...`);
+        
+        let rawTxHash = await window.kasware.sendKaspa(
+          prepareData.initiatorAddress,
+          HANDSHAKE_AMOUNT_SOMPI,
+          { 
+            payload: prepareData.payloadHex, // CRITICAL: Embed Kasia handshake response payload
+            priorityFee: 0 
+          }
+        );
+        
+        // Normalize txHash
+        if (typeof rawTxHash === "object" && rawTxHash !== null) {
+          rawTxHash = (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || JSON.stringify(rawTxHash);
+        }
+        if (typeof rawTxHash === "string" && rawTxHash.startsWith("0x")) {
+          rawTxHash = rawTxHash.slice(2);
+        }
+        
+        if (typeof rawTxHash !== "string" || !/^[a-fA-F0-9]{64}$/.test(rawTxHash)) {
+          throw new Error("Invalid transaction hash from wallet");
+        }
+        
+        console.log(`[Handshake] Response broadcast on-chain: ${rawTxHash}`);
+        
+        // Step 3: Confirm acceptance with the backend (includes txHash)
+        const response = await apiRequest("POST", `/api/conversations/${conversation.id}/accept`, {
+          responseTxHash: rawTxHash,
+          recipientAlias: "Anonymous",
+        });
+        return response.json();
+      } finally {
+        setIsAccepting(false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       toast({
         title: "Handshake Accepted",
-        description: "You can now exchange encrypted messages.",
+        description: "Your response was broadcast on-chain. You can now exchange encrypted messages.",
       });
     },
     onError: (error: Error) => {
@@ -372,11 +428,11 @@ function ConversationView({
             </div>
             <Button
               onClick={() => acceptHandshake.mutate()}
-              disabled={acceptHandshake.isPending}
+              disabled={acceptHandshake.isPending || isAccepting}
               size="sm"
               data-testid="button-accept-handshake"
             >
-              {acceptHandshake.isPending ? "Accepting..." : "Accept"}
+              {acceptHandshake.isPending || isAccepting ? "Approve 0.2 KAS in wallet..." : "Accept (0.2 KAS)"}
             </Button>
           </div>
         </div>
