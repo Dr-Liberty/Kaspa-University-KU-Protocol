@@ -109,10 +109,12 @@ export async function getHandshakesByReceiver(
 /**
  * Parse a handshake payload to extract conversation metadata
  * 
- * OFFICIAL format (V1): ciph_msg:{hex_encoded_json}
- * Where JSON has: { alias, timestamp, conversation_id, version, recipient_address, send_to_recipient, is_response }
+ * Kasia indexer returns the payload in hex format. It may be:
+ * 1. Raw hex-encoded JSON (indexer strips ciph_msg: prefix)
+ * 2. Double hex-encoded (hex-encoded "hex-encoded JSON")
+ * 3. Full format with prefix: ciph_msg:{hex_encoded_json}
  * 
- * Legacy compact format: ciph_msg:1:handshake[_r]:convId:recipient:alias:timestamp
+ * JSON has: { alias, timestamp, conversation_id, version, recipient_address, send_to_recipient, is_response }
  */
 export function parseHandshakePayload(hexPayload: string): {
   conversationId?: string;
@@ -122,25 +124,19 @@ export function parseHandshakePayload(hexPayload: string): {
   isResponse: boolean;
 } | null {
   try {
-    const payload = Buffer.from(hexPayload, "hex").toString("utf-8");
+    // First decode from hex
+    let payload = Buffer.from(hexPayload, "hex").toString("utf-8");
     
-    // Must start with ciph_msg prefix
-    if (!payload.startsWith("ciph_msg:")) {
-      return null;
+    // Check if it's double-encoded (starts with hex chars that decode to JSON)
+    // If the result looks like hex (all hex chars), decode again
+    if (/^[0-9a-fA-F]+$/.test(payload)) {
+      payload = Buffer.from(payload, "hex").toString("utf-8");
     }
     
-    const parts = payload.split(":");
-    
-    // OFFICIAL Kasia format: ciph_msg:{hex_encoded_json}
-    // Parts: ["ciph_msg", "{hex_string}"]
-    if (parts.length === 2 && parts[1]) {
+    // Try to parse as direct JSON (indexer may strip ciph_msg: prefix)
+    if (payload.startsWith("{")) {
       try {
-        // Decode the hex-encoded JSON
-        const jsonHex = parts[1];
-        const jsonString = Buffer.from(jsonHex, "hex").toString("utf-8");
-        const jsonData = JSON.parse(jsonString);
-        
-        // Official Kasia handshake fields
+        const jsonData = JSON.parse(payload);
         return {
           conversationId: jsonData.conversation_id,
           recipient: jsonData.recipient_address,
@@ -149,48 +145,49 @@ export function parseHandshakePayload(hexPayload: string): {
           isResponse: jsonData.is_response === true,
         };
       } catch (e) {
-        // Not valid JSON in hex format - fall through to other formats
-        console.log(`[Kasia Parser] Failed to parse official format, trying legacy...`);
+        console.log(`[Kasia Parser] JSON parse failed: ${e}`);
       }
     }
     
-    // Legacy compact format: ciph_msg:1:handshake[_r]:convId:recipient:alias:timestamp
-    if (parts.length >= 6 && (parts[2] === "handshake" || parts[2] === "handshake_r")) {
-      const isResponse = parts[2] === "handshake_r";
-      const convId = parts[3];
-      const recipient = parts[4];
-      const alias = parts[5];
-      const timestamp = parts[6] ? parseInt(parts[6], 36) : undefined;
+    // Check if it has ciph_msg prefix
+    if (payload.startsWith("ciph_msg:")) {
+      const parts = payload.split(":");
       
-      return {
-        conversationId: convId,
-        recipient,
-        alias,
-        timestamp,
-        isResponse,
-      };
-    }
-    
-    // Legacy JSON format: ciph_msg:1:handshake:{json}
-    if (parts.length === 4 && parts[3] && parts[3].startsWith("{")) {
-      try {
-        const jsonData = JSON.parse(parts[3]);
+      // OFFICIAL Kasia format: ciph_msg:{hex_encoded_json}
+      if (parts.length === 2 && parts[1]) {
+        try {
+          const jsonHex = parts[1];
+          const jsonString = Buffer.from(jsonHex, "hex").toString("utf-8");
+          const jsonData = JSON.parse(jsonString);
+          
+          return {
+            conversationId: jsonData.conversation_id,
+            recipient: jsonData.recipient_address,
+            alias: jsonData.alias,
+            timestamp: jsonData.timestamp ? new Date(jsonData.timestamp).getTime() : undefined,
+            isResponse: jsonData.is_response === true,
+          };
+        } catch (e) {
+          console.log(`[Kasia Parser] Official format parse failed: ${e}`);
+        }
+      }
+      
+      // Legacy compact format: ciph_msg:1:handshake[_r]:convId:recipient:alias:timestamp
+      if (parts.length >= 6 && (parts[2] === "handshake" || parts[2] === "handshake_r")) {
+        const isResponse = parts[2] === "handshake_r";
         return {
-          conversationId: jsonData.conversationId,
-          recipient: jsonData.to,
-          alias: jsonData.alias,
-          timestamp: jsonData.timestamp,
-          isResponse: jsonData.isResponse || false,
+          conversationId: parts[3],
+          recipient: parts[4],
+          alias: parts[5],
+          timestamp: parts[6] ? parseInt(parts[6], 36) : undefined,
+          isResponse,
         };
-      } catch {
-        return null;
       }
     }
     
-    // Fallback for minimal payloads
-    const isResponse = parts[2] === "handshake_r";
-    return { isResponse };
+    return null;
   } catch (error) {
+    console.log(`[Kasia Parser] Error: ${error}`);
     return null;
   }
 }
