@@ -178,27 +178,36 @@ export function createHandshakeResponse(
   return stringToHex(rawPayload);
 }
 
+// Maximum message length in bytes (Kaspa storage mass limit ~80 bytes for OP_RETURN)
+// After hex encoding + protocol overhead, limit raw message to ~100 chars
+export const MAX_MESSAGE_LENGTH = 100;
+
 /**
  * Create a contextual message payload
  * 
  * Official Kasia protocol format (V1):
  * - Raw bytes: ciph_msg:1:comm:{alias}:{sealed_hex}
- * - sealed_hex contains encrypted message content
+ * - sealed_hex contains encrypted message content (hex-encoded once)
  * 
- * We use the same simplified format - hex-encoded content for indexing
+ * IMPORTANT: We return the raw payload string, NOT hex-encoded.
+ * The caller (frontend) passes this directly to KasWare's payload field.
+ * KasWare handles the transaction encoding internally.
  */
 export function createCommPayload(
-  senderAlias: string,
+  conversationAlias: string,
   messageContent: string
 ): string {
-  // In official Kasia, content is ECDH-encrypted with shared secret
-  // We hex-encode the content for simplified format
-  const sealedContent = stringToHex(messageContent);
+  // Truncate message if too long to avoid storage mass errors
+  const truncatedContent = messageContent.slice(0, MAX_MESSAGE_LENGTH);
   
-  // Create the raw payload
-  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}comm${KASIA_DELIM}${senderAlias}${KASIA_DELIM}${sealedContent}`;
+  // Hex-encode only the message content (single encoding)
+  const sealedContent = stringToHex(truncatedContent);
   
-  return stringToHex(rawPayload);
+  // Create the raw payload string (NOT hex-encoded again)
+  // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
+  const rawPayload = `${KASIA_PREFIX}${KASIA_DELIM}${KASIA_VERSION}${KASIA_DELIM}comm${KASIA_DELIM}${conversationAlias}${KASIA_DELIM}${sealedContent}`;
+  
+  return rawPayload;
 }
 
 /**

@@ -4038,8 +4038,14 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message content required" });
       }
 
-      if (content.length > 1000) {
-        return res.status(400).json({ error: "Message too long (max 1000 characters)" });
+      // Kaspa storage mass limit is ~80 bytes for OP_RETURN
+      // After hex encoding (2x) + protocol overhead (~30 chars), limit to 25 chars
+      const MAX_ON_CHAIN_MESSAGE_LENGTH = 25;
+      
+      if (content.length > MAX_ON_CHAIN_MESSAGE_LENGTH) {
+        return res.status(400).json({ 
+          error: `Message too long for on-chain (max ${MAX_ON_CHAIN_MESSAGE_LENGTH} characters). Kaspa has storage mass limits.` 
+        });
       }
 
       // Get conversation to find the alias for Kasia protocol
@@ -4072,16 +4078,13 @@ export async function registerRoutes(
       // Use conversation alias or fall back to conversation ID (Kasia standard)
       const alias = conversation.alias || conversationId;
       
-      // Create sealed hex from content (simplified - full Kasia uses ECDH encryption)
-      const messageData = JSON.stringify({
-        content,
-        timestamp,
-        nonce,
-        sender: authenticatedWallet,
-      });
-      const sealedHex = Buffer.from(messageData, "utf-8").toString("hex");
+      // Create minimal sealed hex - just the content, not full JSON
+      // This minimizes storage mass on-chain
+      // The sender is implicit from the transaction itself
+      const sealedHex = Buffer.from(content, "utf-8").toString("hex");
       
       // Kasia protocol payload for on-chain embedding
+      // Format: ciph_msg:1:comm:{alias}:{sealed_hex}
       // This will be embedded in the transaction's payload field
       const kasiaPayload = `ciph_msg:1:comm:${alias}:${sealedHex}`;
       

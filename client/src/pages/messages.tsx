@@ -421,10 +421,10 @@ function ConversationView({
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <Textarea
-                placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+                placeholder="Type your message... (max 25 chars for on-chain)"
                 value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
-                className="min-h-[80px] max-h-[200px] resize-y text-sm"
+                onChange={(e) => setMessageContent(e.target.value.slice(0, 25))}
+                className="min-h-[60px] max-h-[100px] resize-y text-sm"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -433,10 +433,18 @@ function ConversationView({
                 }}
                 data-testid="input-message-content"
               />
+              <div className="flex justify-between mt-1">
+                <span className={`text-xs ${messageContent.length > 20 ? "text-amber-500" : "text-muted-foreground"}`}>
+                  {messageContent.length}/25 characters
+                </span>
+                {messageContent.length > 20 && (
+                  <span className="text-xs text-amber-500">Near limit</span>
+                )}
+              </div>
             </div>
             <Button
               onClick={handleSend}
-              disabled={!messageContent.trim() || sendMessage.isPending || isSigning}
+              disabled={!messageContent.trim() || sendMessage.isPending || isSigning || messageContent.length > 25}
               size="default"
               className="shrink-0"
               data-testid="button-send-message"
@@ -452,7 +460,7 @@ function ConversationView({
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Messages are wallet-signed and stored on-chain via Kasia Protocol
+            On-chain messages via Kasia Protocol (Kaspa storage limit: 25 chars)
           </p>
         </div>
       )}

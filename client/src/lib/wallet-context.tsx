@@ -12,7 +12,7 @@ declare global {
       switchNetwork: (network: string) => Promise<void>;
       disconnect: (origin: string) => Promise<void>;
       getVersion: () => Promise<string>;
-      sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number }) => Promise<string>;
+      sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number; payload?: string }) => Promise<string>;
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
       signKRC20Transaction: (inscribeJsonString: string, type: number) => Promise<string>;
