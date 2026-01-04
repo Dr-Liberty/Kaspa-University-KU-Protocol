@@ -195,13 +195,39 @@ function ConversationView({
   const otherAlias = isInitiator ? conversation.recipientAlias : conversation.initiatorAlias;
   const truncatedAddress = `${otherAddress.slice(0, 10)}...${otherAddress.slice(-4)}`;
 
-  const { data: messagesData, isLoading } = useQuery<{ messages: PrivateMessage[]; conversation: Conversation; source: string }>({
+  const { data: messagesData, isLoading, refetch } = useQuery<{ messages: PrivateMessage[]; conversation: Conversation; source: string }>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
     enabled: conversation.status === "active",
     refetchInterval: 10000,
   });
   
   const messages = messagesData?.messages || [];
+
+  // Retrieve messages from on-chain indexer
+  const retrieveMessages = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/conversations/${conversation.id}/sync`);
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      // Invalidate and immediately refetch for instant UI update
+      await queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversation.id, "messages"] });
+      await refetch();
+      toast({
+        title: "Messages Retrieved",
+        description: data.syncedCount > 0 
+          ? `Found ${data.syncedCount} new message${data.syncedCount > 1 ? "s" : ""} from the Kasia indexer. Total: ${data.totalMessages}`
+          : `No new messages found on-chain. Total: ${data.totalMessages}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Could not retrieve messages from the indexer.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
@@ -415,6 +441,18 @@ function ConversationView({
             <span className="text-xs text-muted-foreground">End-to-end encrypted</span>
           </div>
         </div>
+        {conversation.status === "active" && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => retrieveMessages.mutate()}
+            disabled={retrieveMessages.isPending}
+            title="Retrieve messages from Kasia indexer"
+            data-testid="button-retrieve-messages"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrieveMessages.isPending ? "animate-spin" : ""}`} />
+          </Button>
+        )}
       </div>
 
       {conversation.status === "pending" && !isInitiator && (

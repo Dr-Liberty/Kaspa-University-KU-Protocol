@@ -4991,6 +4991,47 @@ export async function registerRoutes(
     }
   });
 
+  // Force sync messages from on-chain Kasia indexer (user-triggered retrieve)
+  app.post("/api/conversations/:conversationId/sync", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { conversationId } = req.params;
+      
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Verify user is a participant
+      if (conversation.initiatorAddress !== authenticatedWallet && conversation.recipientAddress !== authenticatedWallet) {
+        return res.status(403).json({ error: "Not authorized to sync this conversation" });
+      }
+      
+      // Force sync from public Kasia indexer
+      console.log(`[Kasia] User-triggered sync for conversation ${conversationId}`);
+      const syncedCount = await kasiaIndexer.syncMessagesForConversation(conversationId);
+      
+      // Return updated messages
+      const messages = kasiaIndexer.getMessages(conversationId, 100, 0);
+      
+      res.json({ 
+        success: true, 
+        syncedCount, 
+        totalMessages: messages.length,
+        messages,
+        source: "onchain_sync"
+      });
+    } catch (error: any) {
+      console.error("[Kasia] Failed to sync messages:", error);
+      res.status(500).json({ error: "Failed to sync messages from indexer" });
+    }
+  });
+
   // Get messages in a conversation (from on-chain indexer)
   app.get("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {
