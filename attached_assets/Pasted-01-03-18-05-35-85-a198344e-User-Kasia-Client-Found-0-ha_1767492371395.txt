@@ -1,0 +1,62 @@
+01-03 18:05:35.85
+a198344e
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:05:35.85
+a198344e
+User
+[Kasia Client] Found 0 conversations (0 active)
+2026-01-03 18:05:35.85
+a198344e
+User
+[Kasia Client] Found 0 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-03 18:05:35.95
+9923591e
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qpysmev6qxpfhd...
+2026-01-03 18:05:35.95
+9923591e
+User
+[Kasia Client] Found 0 conversations (0 active)
+2026-01-03 18:05:35.95
+9923591e
+User
+[Kasia] WARNING: Handshake payload exceeds 78 bytes (105), may be rejected
+2026-01-03 18:05:35.95
+9923591e
+User
+[Kasia Client] Found 0 handshakes received by kaspa:qpysmev6qxpfhd...
+2026-01-03 18:05:35.95
+9923591e
+User
+[Kasia] Handshake payload: 105 bytes
+2026-01-03 18:05:35.95
+9923591e
+User
+2:05:35 AM [express] POST /api/kasia/handshake/prepare 200 in 485ms :: {"success":true,"existing":false,"conversationId":"000000002bcfcf63","inscriptionJson":"{\"p\":\"ciph_msg\",\"op\":\"handshake\",\"data\":\"636970685f6d73673a313a68733a303030303030303032623a717265776b377336676e7a757a7876636573387437763636396b3277347039646a686d757936323239346d6d67746a336430796c7575657177763265723a416e6f6e796d6f75733a6d6a7a3361757336\"}","payloadHex":"636970685f6d73673a313a68733a303030303030303032623a717265776b377336676e7a757a7876636573387437763636396b3277347039646a686d757936323239346d6d67746a336430796c7575657177763265723a416e6f6e796d6f75733a6d6a7a3361757336","messageToSign":"kasia:handshake:000000002bcfcf63:kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er:1767492335958","protocol":"ciph_msg:1:handshake","metadata":{"senderAddress":"kaspa:qpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","senderAlias":"Anonymous"}}
+2026-01-03 18:05:41.22
+9923591e
+User
+[Kasia] GET /api/conversations for wallet: kaspa:qpysmev6qxpfhd...
+2026-01-03 18:05:41.22
+9923591e
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqpysmev6qxpfhd446clgutzvkg2vjyhkqznug3pwfwv8ey330kd7caayjfgg3&limit=50
+2026-01-03 18:05:41.22
+9923591e
+User
+[Kasia] Total conversations in indexer: 0, active: 0
+2026-01-03 18:05:41.57
+9923591e
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qpysmev6qxpfhd...
+2026-01-03 18:05:41.57
+9923591e
+User
+[Kasia] Returning 0 conversations for wallet (on-chain synced)
+2026-01-03 18:05:41.57
+9923591e
+User
+[Kasia Indexer] getConversationsForWallet: checking 0 conversations for wallet kaspa:qpysmev6qxpfhd...
+Wrap
+Colors

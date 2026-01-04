@@ -109,42 +109,43 @@ export interface PrivateMessage {
 }
 
 /**
- * Strip network prefix from Kaspa address to save bytes
- * kaspa:qrewk7s6... → qrewk7s6...
- * kaspatest:qrewk7s6... → qrewk7s6...
+ * Shorten Kaspa address to fit payload budget
+ * Takes first 20 chars of address (after stripping prefix)
+ * This is enough for unique identification within a conversation context
  */
-function stripAddressPrefix(address: string): string {
-  return address.replace(/^kaspa(test)?:/, '');
+function shortenAddress(address: string): string {
+  const withoutPrefix = address.replace(/^kaspa(test)?:/, '');
+  return withoutPrefix.slice(0, 20);
 }
 
 /**
  * Shorten conversation ID to fit payload budget
- * Takes first 10 chars of the hex ID for compact representation
+ * Takes first 8 chars of the hex ID for compact representation
  */
 function shortenConversationId(conversationId: string): string {
-  return conversationId.slice(0, 10);
+  return conversationId.slice(0, 8);
 }
 
 /**
- * Truncate alias to max 12 chars to fit payload budget
+ * Truncate alias to max 6 chars to fit payload budget
  */
 function truncateAlias(alias: string): string {
-  return alias.slice(0, 12).replace(/[^a-zA-Z0-9_-]/g, '');
+  return alias.slice(0, 6).replace(/[^a-zA-Z0-9_-]/g, '');
 }
 
 /**
- * KASPA OP_RETURN PAYLOAD BUDGET: ~80 bytes
+ * KASPA OP_RETURN PAYLOAD BUDGET: ~80 bytes (HARD LIMIT)
  * 
  * The Kasia handshake must fit within Kaspa's storage mass limit.
  * Format: ciph_msg:1:hs:{shortConvId}:{shortAddr}:{alias}:{ts}
  * 
- * Budget breakdown (target ≤78 bytes):
- * - ciph_msg:1:hs: = 13 chars (using 'hs' instead of 'handshake')
- * - shortConvId = 10 chars
- * - : + shortAddr = 53 chars (address without prefix)
- * - : + alias = 13 chars max
- * - : + timestampBase36 = 8 chars
- * Total: ~75 bytes ✓
+ * Budget breakdown (target ≤75 bytes):
+ * - ciph_msg:1:hs: = 13 chars
+ * - shortConvId = 8 chars
+ * - : + shortAddr = 21 chars (20 char truncated address)
+ * - : + alias = 7 chars max (6 char alias)
+ * - : + timestampBase36 = 9 chars
+ * Total: ~58 bytes ✓ (well under limit)
  */
 export function createHandshakePayload(
   senderAlias: string,
@@ -152,16 +153,16 @@ export function createHandshakePayload(
   conversationId: string
 ): string {
   const timestampBase36 = Date.now().toString(36);
-  const shortAddr = stripAddressPrefix(recipientAddress);
+  const shortAddr = shortenAddress(recipientAddress);
   const shortConvId = shortenConversationId(conversationId);
   const safeAlias = truncateAlias(senderAlias);
   
   // Compact format using 'hs' for handshake to save bytes
-  // Format: ciph_msg:1:hs:{shortConvId}:{shortAddr}:{alias}:{timestamp}
+  // Format: ciph_msg:1:hs:{shortConvId}:{shortAddr}:{alias}:{ts}
   const rawPayload = [
     KASIA_PREFIX,
     KASIA_VERSION,
-    "hs",  // 'hs' = handshake initiation (compact)
+    "hs",
     shortConvId,
     shortAddr,
     safeAlias,
@@ -187,7 +188,7 @@ export function createHandshakeResponse(
   conversationId: string
 ): string {
   const timestampBase36 = Date.now().toString(36);
-  const shortAddr = stripAddressPrefix(recipientAddress);
+  const shortAddr = shortenAddress(recipientAddress);
   const shortConvId = shortenConversationId(conversationId);
   const safeAlias = truncateAlias(senderAlias);
   
@@ -195,7 +196,7 @@ export function createHandshakeResponse(
   const rawPayload = [
     KASIA_PREFIX,
     KASIA_VERSION,
-    "hr",  // 'hr' = handshake response (compact)
+    "hr",
     shortConvId,
     shortAddr,
     safeAlias,
