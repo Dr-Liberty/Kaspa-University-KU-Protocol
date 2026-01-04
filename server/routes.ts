@@ -4189,11 +4189,16 @@ export async function registerRoutes(
       // Generate deterministic conversation ID
       const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
       
-      // Check if conversation already exists
+      // ON-CHAIN FIRST: Sync with public Kasia indexer BEFORE checking local cache
+      // This ensures we verify against the blockchain, not stale local data
+      console.log(`[Kasia] Syncing with on-chain indexer for wallet: ${authenticatedWallet.slice(0, 25)}...`);
+      await kasiaIndexer.syncForWallet(authenticatedWallet);
+      
+      // Now check if conversation already exists (cache is now updated from on-chain)
       const existing = await kasiaIndexer.getConversation(conversationId);
       if (existing) {
         // ON-CHAIN FIRST: Only consider existing if it has confirmed on-chain handshake
-        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length > 10;
+        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length === 64;
         
         if (hasOnChainProof) {
           // If the current user initiated the existing conversation, they already signed
@@ -4209,8 +4214,8 @@ export async function registerRoutes(
               : "This user has already initiated a conversation with you. Check your inbox.",
           });
         } else {
-          // No on-chain proof - delete stale record and allow fresh start
-          console.log(`[Kasia] Removing stale conversation ${conversationId} (no on-chain proof)`);
+          // No valid on-chain proof - delete stale record and allow fresh start
+          console.log(`[Kasia] Removing stale conversation ${conversationId} (invalid/missing on-chain proof)`);
           await kasiaIndexer.deleteConversation(conversationId);
         }
       }
@@ -4296,14 +4301,18 @@ export async function registerRoutes(
       // Generate deterministic conversation ID
       const conversationId = generateConversationId(authenticatedWallet, recipientAddress);
       
-      // Check if conversation already exists in indexer
+      // ON-CHAIN FIRST: Sync with public Kasia indexer BEFORE checking local cache
+      console.log(`[Kasia] Creating conversation - syncing with on-chain indexer first`);
+      await kasiaIndexer.syncForWallet(authenticatedWallet);
+      
+      // Check if conversation already exists in indexer (cache now updated from on-chain)
       const existing = await kasiaIndexer.getConversation(conversationId);
       const supportAddress = process.env.SUPPORT_ADDRESS || "";
       
       if (existing) {
         // ON-CHAIN FIRST: Only consider existing if it has confirmed on-chain handshake
         // Stale database records without on-chain proof should be ignored
-        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length > 10;
+        const hasOnChainProof = existing.handshakeTxHash && existing.handshakeTxHash.length === 64;
         
         if (hasOnChainProof) {
           // Check if this is an admin conversation that should be auto-activated
