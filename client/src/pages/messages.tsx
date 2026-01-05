@@ -254,10 +254,17 @@ function ConversationView({
             // Convert Kasia payload to hex for transaction embedding
             const payloadHex = prepareData.kasiaPayload;
             
+            // Validate recipient address before sending
+            if (!otherAddress || !otherAddress.startsWith("kaspa:")) {
+              throw new Error(`Invalid recipient address: ${otherAddress}`);
+            }
+            
             // KIP-0009 Storage Mass: mass = 10^12 / output_sompi
             // With 0.1 KAS (10M sompi): mass = 100,000 grams
             // Plus transient mass for payload = fits under 500k block limit
             const MESSAGE_AMOUNT_SOMPI = 10_000_000; // 0.1 KAS for KIP-0009 compliance
+            
+            console.log(`[Message] Sending ${MESSAGE_AMOUNT_SOMPI} sompi (0.1 KAS) to ${otherAddress} with payload`);
             
             let rawTxHash = await window.kasware.sendKaspa(
               otherAddress, // Recipient of the conversation
