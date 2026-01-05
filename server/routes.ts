@@ -4038,8 +4038,9 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message content required" });
       }
 
-      // Kaspa storage mass limit is ~80 bytes for OP_RETURN
-      // After hex encoding (2x) + protocol overhead (~30 chars), limit to 25 chars
+      // KIP-0009 Storage Mass + KIP-0013 Transient Storage Mass
+      // At 0.05 KAS: storage mass = 200k grams, 500-char payload transient = ~16k grams
+      // Total ~216k grams, well under 500k block limit
       const MAX_ON_CHAIN_MESSAGE_LENGTH = 500;
       
       if (content.length > MAX_ON_CHAIN_MESSAGE_LENGTH) {

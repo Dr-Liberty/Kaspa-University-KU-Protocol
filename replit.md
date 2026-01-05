@@ -64,7 +64,8 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
     - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia).
         - **FULLY DECENTRALIZED ARCHITECTURE (V3)**: Users broadcast their own on-chain transactions - no treasury/single-point-of-failure dependency.
             - **User-Signed Transactions**: Frontend uses `kasware.sendKaspa(address, amount, { payload: kasiaPayload })` to embed Kasia protocol data directly in user transactions.
-            - **Message Cost**: ~0.00002 KAS per message (dust + network fee, paid by sender).
+            - **Message Cost**: 0.05 KAS per message (optimized for KIP-0009 storage mass compliance, max 500 characters).
+            - **Handshake Cost**: 0.2 KAS (required for establishing conversation).
             - **No Treasury Dependency**: Messages broadcast directly from user's wallet - fully censorship resistant.
         - **Protocol Format Alignment (V2)**: Payloads match official Kasia indexer format:
             - Handshake: `ciph_msg:1:handshake:{sealed_hex}` (embedded in tx payload)
@@ -80,7 +81,7 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
             4. Users can message ANY wallet, not just platform wallets - true P2P messaging
         - **Message Flow (Decentralized)**:
             1. Frontend calls `/api/messages/prepare` to get Kasia protocol payload
-            2. User broadcasts their own tx: `kasware.sendKaspa(recipient, 20000000, { payload: kasiaPayload })` (0.2 KAS)
+            2. User broadcasts their own tx: `kasware.sendKaspa(recipient, 5000000, { payload: kasiaPayload })` (0.05 KAS)
             3. User's wallet signs and broadcasts transaction directly
             4. Frontend reports txHash to backend for local caching/display
             5. Public Kasia indexer indexes the message for cross-app discovery
