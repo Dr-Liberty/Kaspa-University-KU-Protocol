@@ -4040,7 +4040,7 @@ export async function registerRoutes(
 
       // Kaspa storage mass limit is ~80 bytes for OP_RETURN
       // After hex encoding (2x) + protocol overhead (~30 chars), limit to 25 chars
-      const MAX_ON_CHAIN_MESSAGE_LENGTH = 25;
+      const MAX_ON_CHAIN_MESSAGE_LENGTH = 500;
       
       if (content.length > MAX_ON_CHAIN_MESSAGE_LENGTH) {
         return res.status(400).json({ 
