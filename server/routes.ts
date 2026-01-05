@@ -4039,8 +4039,8 @@ export async function registerRoutes(
       }
 
       // KIP-0009 Storage Mass + KIP-0013 Transient Storage Mass
-      // At 0.05 KAS: storage mass = 200k grams, 500-char payload transient = ~16k grams
-      // Total ~216k grams, well under 500k block limit
+      // At 0.08 KAS: storage mass = 125k grams, 500-char payload transient = ~16k grams
+      // Total ~141k grams, well under 500k block limit
       const MAX_ON_CHAIN_MESSAGE_LENGTH = 500;
       
       if (content.length > MAX_ON_CHAIN_MESSAGE_LENGTH) {

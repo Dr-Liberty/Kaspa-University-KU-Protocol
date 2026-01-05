@@ -255,13 +255,13 @@ function ConversationView({
             const payloadHex = prepareData.kasiaPayload;
             
             // KIP-0009 Storage Mass: mass = 10^12 / output_sompi
-            // With 0.05 KAS (5M sompi): mass = 200,000 (under 500k block limit)
-            // Plus ~16k transient mass for 500-char payload = 216k total (safe)
-            const MESSAGE_AMOUNT_SOMPI = 5_000_000; // 0.05 KAS for KIP-0009 compliance
+            // With 0.08 KAS (8M sompi): mass = 125,000 (safe margin under 500k block limit)
+            // Plus ~16k transient mass for 500-char payload = 141k total (well under limit)
+            const MESSAGE_AMOUNT_SOMPI = 8_000_000; // 0.08 KAS for KIP-0009 compliance
             
             let rawTxHash = await window.kasware.sendKaspa(
               otherAddress, // Recipient of the conversation
-              MESSAGE_AMOUNT_SOMPI, // 0.05 KAS - optimized for messages
+              MESSAGE_AMOUNT_SOMPI, // 0.08 KAS - user-tested for 500-char messages
               { 
                 payload: payloadHex,
                 priorityFee: 0 
