@@ -1613,6 +1613,7 @@ const courses: Course[] = [
         duration: "5 min",
         content: `<p><strong>Learning Objectives</strong></p>
 <p>By the end of this lesson, you will understand the fundamental architecture of K Protocol, its role in decentralized social communication, and the technical format used for on-chain messaging.</p>
+<div class="video-container" style="margin: 1.5rem 0;"><video controls style="width: 100%; max-width: 640px; border-radius: 8px;" poster="/thumbnails/k_protocol_social.png"><source src="/videos/k-protocol-demo.mp4" type="video/mp4">Your browser does not support the video tag.</video><p style="font-size: 0.875rem; color: #888; margin-top: 0.5rem;">K Protocol Demo: See decentralized social messaging in action</p></div>
 <p><strong>Introduction</strong></p>
 <p>Traditional social media platforms operate under centralized control, where a single entity manages user accounts, content moderation, and platform access. This architecture creates inherent vulnerabilities: accounts can be suspended without recourse, content can be removed or shadow-banned, and user data remains subject to corporate policies that may change without notice.</p>
 <p>K Protocol addresses these limitations by implementing social communication directly on the Kaspa blockchain. Rather than storing messages on corporate servers, K Protocol embeds every post, reply, and interaction into Kaspa transactions, creating a permanent, publicly verifiable record that exists independently of any central authority.</p>
