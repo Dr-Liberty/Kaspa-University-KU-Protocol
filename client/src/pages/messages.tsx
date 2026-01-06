@@ -259,39 +259,17 @@ function ConversationView({
               throw new Error(`Invalid recipient address: ${otherAddress}`);
             }
             
-            // KIP-0009 Storage Mass: mass = 10^12 / output_sompi
-            // With 0.1 KAS (10M sompi): mass = 100,000 grams
-            // Plus transient mass for payload = fits under 500k block limit
-            const MESSAGE_AMOUNT_SOMPI = 10000000; // 0.1 KAS for KIP-0009 compliance
+            // 0.2 KAS per message - this amount works with KasWare wallet
+            const MESSAGE_AMOUNT_SOMPI = 20000000; // 0.2 KAS
             
-            console.log(`[Message] Sending ${MESSAGE_AMOUNT_SOMPI} sompi (0.1 KAS) to ${otherAddress}`);
-            console.log(`[Message] Payload hex length: ${payloadHex?.length}, first 40 chars: ${payloadHex?.slice(0, 40)}`);
-            
-            // KasWare sendKaspa with embedded Kasia payload
-            // Note: Some KasWare versions may have issues with the options parameter
-            // Try using sendKaspaWithData if available, otherwise fall back to sendKaspa with options
-            let rawTxHash: string;
-            
-            if (typeof (window.kasware as any).sendKaspaWithData === "function") {
-              // Newer KasWare API with explicit data field
-              console.log("[Message] Using sendKaspaWithData API");
-              rawTxHash = await (window.kasware as any).sendKaspaWithData(
-                otherAddress,
-                MESSAGE_AMOUNT_SOMPI,
-                payloadHex
-              );
-            } else {
-              // Standard sendKaspa with options object
-              console.log("[Message] Using standard sendKaspa API with options");
-              rawTxHash = await window.kasware.sendKaspa(
-                otherAddress,
-                MESSAGE_AMOUNT_SOMPI,
-                { 
-                  payload: payloadHex,
-                  priorityFee: 0 
-                }
-              );
-            }
+            let rawTxHash = await window.kasware.sendKaspa(
+              otherAddress,
+              MESSAGE_AMOUNT_SOMPI,
+              { 
+                payload: payloadHex,
+                priorityFee: 0 
+              }
+            );
             
             console.log("[Message] Raw txHash from KasWare:", rawTxHash, "type:", typeof rawTxHash);
             
