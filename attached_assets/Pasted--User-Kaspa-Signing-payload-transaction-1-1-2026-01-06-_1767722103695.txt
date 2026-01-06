@@ -1,0 +1,127 @@
+
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-06 09:54:24.97
+c38ec7a7
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-06 09:54:24.97
+c38ec7a7
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-06 09:54:25.25
+c38ec7a7
+User
+[Kaspa] Payload transaction 1 submitted: 8c3419de5a20ab3fbfc6bdea332d7706f678490eed05a91b0e7ffa144e171e11
+2026-01-06 09:54:25.27
+c38ec7a7
+User
+[Kasia Broadcast] Message broadcast: 8c3419de5a20ab3fbfc6bdea332d7706f678490eed05a91b0e7ffa144e171e11
+2026-01-06 09:54:25.27
+c38ec7a7
+User
+[UTXO] Marked 1 UTXOs as spent in tx 8c3419de5a20ab3f...
+2026-01-06 09:54:25.27
+c38ec7a7
+User
+[Kasia] Treasury fallback broadcast on-chain: 8c3419de5a20ab3fbfc6bdea332d7706f678490eed05a91b0e7ffa144e171e11
+2026-01-06 09:54:25.40
+c38ec7a7
+User
+[Kasia Indexer] Recorded verified message: 8c3419de5a20ab3f...
+2026-01-06 09:54:25.40
+c38ec7a7
+User
+5:54:25 PM [express] POST /api/conversations/000000004d5e12fc/messages 200 in 3931ms :: {"success":true,"message":{"id":"f817ef38-883e-4e64-9f16-48cee191da07","txHash":"8c3419de5a20ab3fbfc6bdea332d7706f678490eed05a91b0e7ffa144e171e11","conversationId":"000000004d5e12fc","senderAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}}
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Indexer] Alias for query: 000000004d5e12fc
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Indexer] Initiator: kaspa:qrmzgsh8chv72q...
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Indexer] Recipient: kaspa:qrewk7s6gnzuzx...
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Indexer] Syncing messages for conversation 000000004d5e12fc
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Client] Fetching messages for conversation 000000004d5e12fc
+2026-01-06 09:54:25.68
+c38ec7a7
+User
+[Kasia Client] Fetching contextual messages from https://indexer.kasia.fyi/contextual-messages/by-sender?address=kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel&alias=000000004d5e12fc&limit=100
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+[Kasia Client] Found 0 contextual messages sent by kaspa:qrmzgsh8chv72q... for alias 000000004d5e12fc
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+[Kasia Indexer] Found 1 messages matching convId=000000004d5e12fc
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+[Kasia Indexer] Unique convIds in cache: 000000004d5e12fc
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+[Kasia Client] Found 0 contextual messages sent by kaspa:qrewk7s6gnzuzx... for alias 000000004d5e12fc
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+[Kasia Indexer] Indexer returned 0 messages for alias 000000004d5e12fc
+2026-01-06 09:54:25.80
+c38ec7a7
+User
+5:54:25 PM [express] GET /api/conversations/000000004d5e12fc/messages 200 in 253ms :: {"messages":[{"id":"f817ef38-883e-4e64-9f16-48cee191da07","txHash":"8c3419de5a20ab3fbfc6bdea332d7706f678490eed05a91b0e7ffa144e171e11","conversationId":"000000004d5e12fc","senderAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","encryptedContent":"hello","timestamp":"2026-01-06T17:54:25.277Z"}],"conversation":{"id":"000000004d5e12fc","initiatorAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","recipientAddress":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","initiatorAlias":"User","alias":"000000004d5e12fc","status":"active","handshakeTxHash":"47675ed7803aeb690a9c72d782812c3b3419950f42f7d1a87631d1e6e2910af1","responseTxHash":"2babd7df0e913959c075e79874c57ea5a40b25b5080d8018f2933016c5c3b8a0","createdAt":"2026-01-04T20:36:15.878Z","updatedAt":"2026-01-06T17:54:25.277Z","isAdminConversation":true},"source":"onchain"}
+2026-01-06 09:54:30.12
+c38ec7a7
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-06 09:54:30.12
+c38ec7a7
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-06 09:54:30.12
+c38ec7a7
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 09:54:30.20
+c38ec7a7
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 09:54:31.00
+c38ec7a7
+User
+[Kasia Client] Found 6 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-06 09:54:31.30
+c38ec7a7
+User
+[Kasia Client] Found 6 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-06 09:54:31.30
+c38ec7a7
+User
+[Kasia Client] Found 3 conversations (3 active)
+2026-01-06 09:54:31.50
+c38ec7a7
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 09:54:31.70
+c38ec7a7
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-06 09:54:31.80
+c38ec7a7
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrmzgsh8chv72q..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 09:54:31.80
+c38ec7a7
+User
+[Kasia Indexer] Synced 3 conversations from on-chain
