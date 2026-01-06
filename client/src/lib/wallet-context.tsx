@@ -166,9 +166,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           const networkId = await window.kasware.getNetwork();
           const networkName = getNetworkName(networkId);
           
-          // Step 1: Request a challenge from the server
-          console.log(`[Wallet] Requesting auth challenge for ${walletAddr.slice(0, 15)}...`);
-          const challengeRes = await fetch("/api/auth/challenge", {
+          // SIWK (Sign-In with Kaspa) Authentication Flow
+          // Using standardized @kluster/kaspa-auth protocol
+          
+          // Step 1: Request SIWK challenge from server
+          console.log(`[SIWK] Requesting challenge for ${walletAddr.slice(0, 15)}...`);
+          const challengeRes = await fetch("/api/auth/siwk/challenge", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ walletAddress: walletAddr }),
@@ -176,41 +179,31 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           
           if (!challengeRes.ok) {
             const err = await challengeRes.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to get authentication challenge");
+            throw new Error(err.error || "Failed to get SIWK challenge");
           }
           
-          const { nonce, message } = await challengeRes.json();
+          const { fields, message } = await challengeRes.json();
           
-          // Step 2: Get public key for cryptographic verification
-          console.log("[Wallet] Getting public key...");
-          const publicKey = await window.kasware.getPublicKey();
-          
-          // Step 3: Sign the challenge message with the wallet (ECDSA)
-          console.log("[Wallet] Signing auth challenge...");
+          // Step 2: Sign the SIWK message with the wallet
+          console.log("[SIWK] Signing challenge message...");
           const signature = await window.kasware.signMessage(message, { type: "ecdsa" });
           
-          // Step 4: Verify the signature with the server
-          console.log("[Wallet] Verifying signature...");
-          const verifyRes = await fetch("/api/auth/verify", {
+          // Step 3: Verify signature with server
+          console.log("[SIWK] Verifying signature...");
+          const verifyRes = await fetch("/api/auth/siwk/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              walletAddress: walletAddr,
-              message,
-              signature,
-              publicKey,
-              nonce,
-            }),
+            body: JSON.stringify({ fields, signature }),
           });
           
           if (!verifyRes.ok) {
             const err = await verifyRes.json().catch(() => ({}));
-            throw new Error(err.error || "Signature verification failed");
+            throw new Error(err.error || "SIWK verification failed");
           }
           
           const { token } = await verifyRes.json();
           
-          // Step 4: Store the auth token and complete connection
+          // Step 4: Store auth token and complete connection
           setAuthToken(token);
           
           const newWallet: WalletConnection = {
@@ -224,7 +217,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setWalletType("kasware");
           queryClient.invalidateQueries();
           
-          console.log(`[Wallet] Connected and authenticated via KasWare: ${walletAddr.slice(0, 15)}... (${networkName})`);
+          console.log(`[SIWK] Authenticated via Sign-In with Kaspa: ${walletAddr.slice(0, 15)}... (${networkName})`);
         } else {
           throw new Error("No accounts returned from wallet");
         }
@@ -233,7 +226,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         console.log("[Wallet] KasWare not detected, prompting user to install");
       }
     } catch (error: any) {
-      console.error("[Wallet] Connection failed:", error);
+      console.error("[SIWK] Connection failed:", error);
       
       if (error.message?.includes("User rejected")) {
         setConnectionError("Connection rejected. Please approve the request in your wallet.");

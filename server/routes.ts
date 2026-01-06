@@ -52,6 +52,13 @@ import {
   invalidateSession,
   getSessionByToken 
 } from "./wallet-auth";
+import {
+  generateSiwkChallenge,
+  verifySiwkSignature,
+  validateSiwkSession,
+  invalidateSiwkSession,
+  getSiwkSessionWallet
+} from "./siwk-auth";
 import { getDiscountService } from "./discount-service";
 import { kasiaIndexer } from "./kasia-indexer";
 import { kasiaBroadcast } from "./kasia-broadcast";
@@ -139,10 +146,11 @@ export async function registerRoutes(
     }
   });
 
-  // Logout / invalidate session
+  // Logout / invalidate session (handles both SIWK and legacy sessions)
   app.post("/api/auth/logout", async (req: Request, res: Response) => {
     const token = req.headers["x-auth-token"] as string;
     if (token) {
+      invalidateSiwkSession(token);
       invalidateSession(token);
     }
     res.json({ success: true });
@@ -157,14 +165,85 @@ export async function registerRoutes(
       return res.json({ authenticated: false });
     }
     
-    const result = validateSession(token, walletAddress);
+    // Try SIWK session first, then fall back to legacy
+    const clientIP = getClientIP(req);
+    let result = validateSiwkSession(token, walletAddress, clientIP);
+    if (!result.valid) {
+      result = validateSession(token, walletAddress, clientIP);
+    }
+    
     res.json({ 
       authenticated: result.valid,
       error: result.error 
     });
   });
 
+  // ============================================
+  // SIWK (Sign-In with Kaspa) ENDPOINTS
+  // Standardized authentication using @kluster/kaspa-auth
+  // ============================================
+
+  // Get SIWK challenge for wallet authentication
+  app.post("/api/auth/siwk/challenge", authRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress || typeof walletAddress !== "string") {
+        return res.status(400).json({ error: "Wallet address required" });
+      }
+      
+      if (!walletAddress.startsWith("kaspa:") || walletAddress.length < 60) {
+        return res.status(400).json({ error: "Invalid Kaspa address format" });
+      }
+      
+      const { fields, message } = generateSiwkChallenge(walletAddress);
+      
+      res.json({
+        success: true,
+        fields,
+        message,
+        nonce: fields.nonce,
+        expiresAt: fields.expirationTime,
+      });
+    } catch (error: any) {
+      console.error("[SIWK] Challenge generation failed:", error.message);
+      res.status(500).json({ error: "Failed to generate challenge" });
+    }
+  });
+
+  // Verify SIWK signature and create session
+  app.post("/api/auth/siwk/verify", authRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const { fields, signature } = req.body;
+      
+      if (!fields || !signature) {
+        return res.status(400).json({ error: "Missing fields or signature" });
+      }
+      
+      if (!fields.address || !fields.nonce || !fields.domain) {
+        return res.status(400).json({ error: "Invalid SIWK fields" });
+      }
+      
+      const clientIP = getClientIP(req);
+      const result = await verifySiwkSignature(fields, signature, clientIP);
+      
+      if (!result.valid) {
+        return res.status(401).json({ error: result.error || "SIWK verification failed" });
+      }
+      
+      res.json({
+        success: true,
+        token: result.token,
+        expiresAt: result.expiresAt,
+      });
+    } catch (error: any) {
+      console.error("[SIWK] Verification failed:", error.message);
+      res.status(500).json({ error: "SIWK verification failed" });
+    }
+  });
+
   // Middleware to require verified session for protected routes
+  // Supports both SIWK and legacy sessions for backward compatibility
   const requireVerifiedSession = (req: Request, res: Response, next: Function) => {
     const token = req.headers["x-auth-token"] as string;
     const walletAddress = req.headers["x-wallet-address"] as string;
@@ -182,8 +261,13 @@ export async function registerRoutes(
     }
     
     // Pass client IP for IP binding enforcement
+    // Try SIWK session first, then fall back to legacy
     const clientIP = getClientIP(req);
-    const result = validateSession(token, walletAddress, clientIP);
+    let result = validateSiwkSession(token, walletAddress, clientIP);
+    if (!result.valid) {
+      result = validateSession(token, walletAddress, clientIP);
+    }
+    
     if (!result.valid) {
       return res.status(401).json({ 
         error: result.error || "Invalid session",
