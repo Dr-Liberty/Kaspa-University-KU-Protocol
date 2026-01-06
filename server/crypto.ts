@@ -1,25 +1,51 @@
 /**
  * Cryptographic utilities for Kaspa University
  * 
+ * Uses @kluster/kaspa-signature for Schnorr verification and rusty-kaspa WASM for address derivation
  * Handles:
- * - Wallet signature verification
- * - Challenge generation and validation
- * - Session token management
+ * - Wallet signature verification (Schnorr + ECDSA)
+ * - Address derivation from public keys
+ * - Quiz session management
+ * 
+ * NOTE: Main authentication now uses SIWK (server/siwk-auth.ts)
+ * This module handles quiz sessions and Kasia message verification
  */
 
 import { createHash, randomBytes } from "crypto";
+import { verifySignature as verifyKlusterSignature } from "@kluster/kaspa-signature";
+import { KaspaAddress } from "@kluster/kaspa-address";
 
-interface AuthChallenge {
-  challenge: string;
-  timestamp: number;
-  expiresAt: number;
-  walletAddress: string;
-}
+// Lazy-loaded kaspa WASM module for address derivation
+let kaspaWasmModule: any = null;
 
-interface SignatureVerification {
-  valid: boolean;
-  walletAddress?: string;
-  error?: string;
+async function loadKaspaWasm(): Promise<any> {
+  if (kaspaWasmModule) return kaspaWasmModule;
+  
+  try {
+    const path = await import("path");
+    const fs = await import("fs");
+    
+    const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
+    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
+    
+    let wasmPath: string | null = null;
+    if (fs.existsSync(prodWasmPath)) {
+      wasmPath = prodWasmPath;
+    } else if (fs.existsSync(devWasmPath)) {
+      wasmPath = devWasmPath;
+    }
+    
+    if (!wasmPath) {
+      console.warn("[Crypto] Kaspa WASM not found");
+      return null;
+    }
+    
+    kaspaWasmModule = require(wasmPath);
+    return kaspaWasmModule;
+  } catch (error: any) {
+    console.error("[Crypto] Failed to load Kaspa WASM:", error.message);
+    return null;
+  }
 }
 
 interface QuizSession {
@@ -31,156 +57,17 @@ interface QuizSession {
   expiresAt: number;
 }
 
-const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
 const QUIZ_SESSION_EXPIRY_MS = 30 * 60 * 1000;
-
-const pendingChallenges: Map<string, AuthChallenge> = new Map();
-const verifiedSessions: Map<string, { walletAddress: string; verifiedAt: number; expiresAt: number }> = new Map();
 const quizSessions: Map<string, QuizSession> = new Map();
-
-export function generateAuthChallenge(walletAddress: string): { challenge: string; message: string } {
-  const challengeBytes = randomBytes(32);
-  const challenge = challengeBytes.toString("hex");
-  const timestamp = Date.now();
-  
-  const normalizedAddress = walletAddress.toLowerCase();
-  
-  pendingChallenges.set(challenge, {
-    challenge,
-    timestamp,
-    expiresAt: timestamp + CHALLENGE_EXPIRY_MS,
-    walletAddress: normalizedAddress,
-  });
-  
-  const message = `Kaspa University Authentication\n\nWallet: ${walletAddress}\nChallenge: ${challenge}\nTimestamp: ${timestamp}\n\nSign this message to verify wallet ownership.`;
-  
-  return { challenge, message };
-}
-
-export async function verifySignature(
-  challenge: string,
-  signature: string,
-  publicKey: string,
-  walletAddress: string
-): Promise<SignatureVerification> {
-  try {
-    const pendingChallenge = pendingChallenges.get(challenge);
-    
-    if (!pendingChallenge) {
-      return { valid: false, error: "Challenge not found or expired" };
-    }
-    
-    if (Date.now() > pendingChallenge.expiresAt) {
-      pendingChallenges.delete(challenge);
-      return { valid: false, error: "Challenge expired" };
-    }
-    
-    const normalizedAddress = walletAddress.toLowerCase();
-    if (pendingChallenge.walletAddress !== normalizedAddress) {
-      return { valid: false, error: "Wallet address mismatch" };
-    }
-    
-    const derivedAddress = deriveAddressFromPublicKey(publicKey);
-    if (!derivedAddress || derivedAddress.toLowerCase() !== normalizedAddress) {
-      return { valid: false, error: "Public key does not match wallet address" };
-    }
-    
-    const message = `Kaspa University Authentication\n\nWallet: ${walletAddress}\nChallenge: ${challenge}\nTimestamp: ${pendingChallenge.timestamp}\n\nSign this message to verify wallet ownership.`;
-    
-    const isValid = await verifyKaspaSignature(message, signature, publicKey);
-    
-    if (!isValid) {
-      return { valid: false, error: "Invalid signature" };
-    }
-    
-    pendingChallenges.delete(challenge);
-    
-    const sessionToken = randomBytes(32).toString("hex");
-    const now = Date.now();
-    verifiedSessions.set(sessionToken, {
-      walletAddress: normalizedAddress,
-      verifiedAt: now,
-      expiresAt: now + 24 * 60 * 60 * 1000,
-    });
-    
-    return { 
-      valid: true, 
-      walletAddress: normalizedAddress,
-    };
-  } catch (error: any) {
-    console.error("[Crypto] Signature verification error:", error.message);
-    return { valid: false, error: "Verification failed" };
-  }
-}
-
-export function verifySessionToken(token: string): { valid: boolean; walletAddress?: string } {
-  const session = verifiedSessions.get(token);
-  
-  if (!session) {
-    return { valid: false };
-  }
-  
-  if (Date.now() > session.expiresAt) {
-    verifiedSessions.delete(token);
-    return { valid: false };
-  }
-  
-  return { valid: true, walletAddress: session.walletAddress };
-}
-
-function deriveAddressFromPublicKey(publicKeyHex: string): string | null {
-  try {
-    const pubKeyBuffer = Buffer.from(publicKeyHex, "hex");
-    
-    if (pubKeyBuffer.length === 33 || pubKeyBuffer.length === 65) {
-      const hash = createHash("sha256").update(pubKeyBuffer).digest();
-      const ripemd = createHash("ripemd160").update(hash).digest();
-      return `kaspa:q${ripemd.toString("hex")}`;
-    }
-    
-    if (pubKeyBuffer.length === 32) {
-      return `kaspa:q${pubKeyBuffer.toString("hex")}`;
-    }
-    
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function verifyKaspaSignature(
-  message: string,
-  signatureHex: string,
-  publicKeyHex: string
-): Promise<boolean> {
-  try {
-    const secp256k1 = await import("secp256k1");
-    const secp = secp256k1.default || secp256k1;
-    
-    const messageHash = createHash("sha256").update(message).digest();
-    const signature = Buffer.from(signatureHex, "hex");
-    const publicKey = Buffer.from(publicKeyHex, "hex");
-    
-    if (signature.length === 64) {
-      return secp.ecdsaVerify(signature, messageHash, publicKey);
-    }
-    
-    if (signature.length === 65) {
-      const sig = signature.slice(0, 64);
-      return secp.ecdsaVerify(sig, messageHash, publicKey);
-    }
-    
-    return false;
-  } catch (error: any) {
-    console.error("[Crypto] Secp256k1 verification failed:", error.message);
-    return false;
-  }
-}
 
 /**
  * Verify a wallet signature for Kasia message authorization
- * This is a simpler verification that doesn't require a challenge/nonce
+ * Uses @kluster/kaspa-signature for Schnorr verification with ECDSA fallback for KasWare
  * Used for authorizing treasury broadcasts
+ * 
+ * Security: 
+ * - Verifies public key's x-coordinate matches address payload
+ * - Cryptographic signature verification validates signer identity
  */
 export async function verifyMessageSignature(
   walletAddress: string,
@@ -201,44 +88,115 @@ export async function verifyMessageSignature(
       return { valid: false, error: "Invalid public key format" };
     }
     
-    // Verify pubkey derives to the expected wallet address
-    const derivedAddress = deriveAddressFromPublicKey(normalizedPubKey);
-    if (!derivedAddress) {
-      return { valid: false, error: "Could not derive address from public key" };
+    // Validate wallet address format using @kluster/kaspa-address
+    let kaspaAddress: KaspaAddress;
+    try {
+      kaspaAddress = KaspaAddress.fromString(walletAddress);
+    } catch {
+      return { valid: false, error: "Invalid wallet address format" };
     }
     
-    // Compare addresses (handle both mainnet and testnet)
-    const normalizedWallet = walletAddress.toLowerCase().trim();
-    const normalizedDerived = derivedAddress.toLowerCase().trim();
-    
-    // Check if derived address matches (strip network prefix for comparison)
-    const walletBase = normalizedWallet.replace(/^kaspa(test)?:/, "");
-    const derivedBase = normalizedDerived.replace(/^kaspa(test)?:/, "");
-    
-    if (walletBase !== derivedBase) {
-      console.warn(`[Crypto] Address mismatch: wallet=${walletBase.slice(0, 20)}, derived=${derivedBase.slice(0, 20)}`);
-      return { valid: false, error: "Public key does not match wallet address" };
+    // SECURITY: Verify public key derives to claimed wallet address
+    // Uses rusty-kaspa WASM PublicKey.toAddress for canonical Bech32 derivation
+    const kaspa = await loadKaspaWasm();
+    if (kaspa && typeof kaspa.PublicKey === "function") {
+      try {
+        const pubKey = new kaspa.PublicKey(normalizedPubKey);
+        const derivedAddress = pubKey.toAddress("mainnet").toString();
+        
+        if (derivedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+          console.warn(`[Crypto] Address mismatch: derived=${derivedAddress.slice(0, 25)}..., claimed=${walletAddress.slice(0, 25)}...`);
+          return { valid: false, error: "Public key does not match wallet address" };
+        }
+      } catch (addressError: any) {
+        console.error(`[Crypto] Address derivation failed: ${addressError.message}`);
+        return { valid: false, error: "Address verification failed" };
+      }
+    } else {
+      // Fallback: compare x-coordinate with address payload (works for Schnorr addresses)
+      const pubKeyBuffer = Buffer.from(normalizedPubKey, "hex");
+      const xCoordinate = pubKeyBuffer.slice(1);
+      const addressPayload = Buffer.from(kaspaAddress.payload);
+      
+      if (addressPayload.length === 32) {
+        if (!xCoordinate.equals(addressPayload)) {
+          console.warn(`[Crypto] Public key x-coordinate does not match address`);
+          return { valid: false, error: "Public key does not match wallet address" };
+        }
+      } else {
+        console.warn(`[Crypto] WASM unavailable and non-Schnorr address - cannot verify`);
+        return { valid: false, error: "Address verification unavailable" };
+      }
     }
     
     // Decode base64 signature to hex for verification
-    // KasWare returns base64-encoded signatures
+    // KasWare returns base64-encoded ECDSA signatures
     let signatureHex: string;
     try {
       const sigBuffer = Buffer.from(signatureBase64, "base64");
-      signatureHex = sigBuffer.toString("hex");
+      // KasWare ECDSA signatures are 65 bytes (recovery byte + 64-byte signature)
+      // Strip recovery byte if present for verification
+      if (sigBuffer.length === 65) {
+        signatureHex = sigBuffer.slice(1).toString("hex");
+      } else {
+        signatureHex = sigBuffer.toString("hex");
+      }
     } catch {
       // Try treating as hex directly
       signatureHex = signatureBase64.replace(/^0x/, "");
     }
     
-    // Verify the actual signature
-    const isValid = await verifyKaspaSignature(message, signatureHex, normalizedPubKey);
-    
-    if (!isValid) {
-      return { valid: false, error: "Invalid signature" };
+    // Try @kluster/kaspa-signature for Schnorr verification first
+    try {
+      const isValid = await verifyKlusterSignature(message, signatureHex, kaspaAddress);
+      if (isValid) {
+        console.log(`[Crypto] Schnorr signature verified for ${walletAddress.slice(0, 25)}...`);
+        return { valid: true };
+      }
+    } catch {
+      // Schnorr verification failed, try ECDSA fallback
     }
     
-    return { valid: true };
+    // Fallback: ECDSA verification with secp256k1 using the provided public key
+    // This handles KasWare's ECDSA signature format (raw 64/65 bytes or DER-encoded 70-72 bytes)
+    try {
+      const secp256k1 = await import("secp256k1");
+      const secp = secp256k1.default || secp256k1;
+      
+      const messageHash = createHash("sha256").update(message).digest();
+      let signature = Buffer.from(signatureHex, "hex");
+      const publicKey = Buffer.from(normalizedPubKey, "hex");
+      
+      // Handle different signature formats:
+      // - 64 bytes: raw compact signature
+      // - 65 bytes: raw compact signature with recovery byte (strip first byte)
+      // - 70-72 bytes: DER-encoded signature (needs conversion)
+      
+      if (signature.length === 65) {
+        // Strip recovery byte
+        signature = signature.slice(1);
+      } else if (signature.length >= 70 && signature.length <= 72) {
+        // DER-encoded signature - convert to compact format
+        try {
+          signature = Buffer.from(secp.signatureImport(signature));
+          console.log(`[Crypto] Converted DER signature to compact (${signature.length} bytes)`);
+        } catch (derError) {
+          console.warn("[Crypto] DER signature import failed, trying as raw");
+        }
+      }
+      
+      if (signature.length === 64) {
+        const isValid = secp.ecdsaVerify(signature, messageHash, publicKey);
+        if (isValid) {
+          console.log(`[Crypto] ECDSA signature verified for ${walletAddress.slice(0, 25)}...`);
+          return { valid: true };
+        }
+      }
+    } catch (ecdsaError: any) {
+      console.error("[Crypto] ECDSA verification error:", ecdsaError.message);
+    }
+    
+    return { valid: false, error: "Invalid signature" };
   } catch (error: any) {
     console.error("[Crypto] Message signature verification error:", error.message);
     return { valid: false, error: "Verification failed" };
@@ -312,20 +270,9 @@ export function hashAnswers(answers: number[]): string {
   return createHash("sha256").update(JSON.stringify(answers)).digest("hex");
 }
 
+// Cleanup expired quiz sessions every minute
 setInterval(() => {
   const now = Date.now();
-  
-  for (const [key, challenge] of Array.from(pendingChallenges.entries())) {
-    if (now > challenge.expiresAt) {
-      pendingChallenges.delete(key);
-    }
-  }
-  
-  for (const [token, session] of Array.from(verifiedSessions.entries())) {
-    if (now > session.expiresAt) {
-      verifiedSessions.delete(token);
-    }
-  }
   
   for (const [key, session] of Array.from(quizSessions.entries())) {
     if (now > session.expiresAt) {

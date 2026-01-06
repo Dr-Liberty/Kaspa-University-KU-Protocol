@@ -1,126 +1,54 @@
 # Kaspa University
 
 ## Overview
-Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It allows users to connect their Kaspa wallets, complete courses and quizzes, and earn KAS token rewards (0.1 KAS per course). The platform issues verifiable NFT certificates for course completions and facilitates decentralized P2P Q&A discussions using Kasia Protocol for ecosystem compatibility. The core vision is "blockchain-powered education that feels effortless," aiming to hide complexity while showcasing innovation.
-
-## Course Content
-- **Source**: 16 peer-reviewed courses from BMT University (bmtuniversity.com) + 2 fundamentals + 5 protocol/ecosystem courses
-- **Total Courses**: 18 courses covering:
-  - Bitcoin vs Kaspa, Sound Money, Self-Custody (Fundamentals)
-  - K Protocol, Kasia Protocol, KU Protocol, KRC-721, L2 on Kaspa (Protocols)
-  - DAG Terminology, DAG and Kaspa, GHOSTDAG consensus, technical topics (16 BMT courses)
-- **Course Order**: Bitcoin vs Kaspa (#1), Sound Money (#2), Self-Custody (#3), KU Protocol (#4), K Protocol (#5), Kasia (#6), KRC-721 (#7), L2 on Kaspa (#8), DAG Terminology (#9), then BMT courses
-- **Total Lessons**: 97 lessons
-- **Categories**: Fundamentals, Development, Consensus, Technical, Protocols
-- **Integration Showcase**: Each protocol course explains how it's used in Kaspa University
-- **Reward**: 0.1 KAS per course completion (storage mass optimized for KIP-0009 compliance)
-- **Data File**: `server/seed-data.ts` contains all course content, lessons, and quiz questions
+Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 blockchain. It enables users to connect Kaspa wallets, complete courses and quizzes, and earn KAS token rewards. The platform issues verifiable KRC-721 NFT certificates for course completions and facilitates decentralized P2P Q&A discussions using Kasia Protocol. Its core vision is "blockchain-powered education that feels effortless," aiming to simplify complex blockchain interactions while showcasing innovation.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind CSS and shadcn/ui, and a Node.js with Express backend. The system is designed for wallet-based authentication via KasWare, integrating directly with the Kaspa blockchain for KAS token rewards, on-chain Q&A (KU Protocol), and KRC-721 NFT certificates. Data is managed with Drizzle ORM for PostgreSQL (currently in-memory with future migration path), and schema validation is Zod-based. A robust security layer includes anti-Sybil protection, rate limiting, VPN detection, and UTXO management to prevent race conditions. Asynchronous blockchain operations are handled via a job queue, and performance is optimized with various TTL caches.
+Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui) and a Node.js with Express backend. It features wallet-based authentication via KasWare, direct Kaspa blockchain integration for KAS rewards, on-chain Q&A (KU Protocol), and KRC-721 NFT certificates. Data is managed with Drizzle ORM for PostgreSQL (currently in-memory), with Zod for schema validation. Security includes anti-Sybil protection, rate limiting, VPN detection, and UTXO management. Asynchronous blockchain operations are handled by a job queue, and performance is optimized with TTL caches.
 
 ### UI/UX Decisions
-- **Frontend Framework**: React with TypeScript, using Vite.
-- **UI Components**: shadcn/ui built on Radix UI primitives.
-- **Styling**: Tailwind CSS with a custom Kaspa-themed color system (teal primary, dark mode support).
+- **Frontend**: React with TypeScript (Vite).
+- **UI Components**: shadcn/ui on Radix UI primitives.
+- **Styling**: Tailwind CSS with a Kaspa-themed color system, dark mode.
 - **Routing**: Wouter for client-side routing.
 - **State Management**: TanStack React Query for server state and caching.
+- **BlockDAG Progress Visualization**: Gamified dashboard showing a visual BlockDAG with courses as blocks, reflecting learning progress.
 
 ### Technical Implementations
-- **Backend Runtime**: Node.js with Express, serving a RESTful JSON API.
-- **Data Layer**: Drizzle ORM configured for PostgreSQL (in-memory currently).
-- **Authentication**: Purely wallet-based using KasWare browser extension, no traditional login.
-- **Blockchain Integration**: Utilizes Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations. RPC connections use **PNN Resolver** for load balancing, automatic failover, and DDoS protection across contributor-run nodes.
-- **KRC-721 Diploma NFT (SINGLE COLLECTION ARCHITECTURE)**: 
-    - **Collection Ticker**: KUDIPLOMA (testnet & mainnet)
-    - **Max Supply**: 1,000 diplomas (one per student who completes all 16 courses)
-    - **Deploy Cost**: 1,000 KAS budget
-    - **Diploma Eligibility**: Must complete ALL 16 courses before minting
-    - **Diploma Model**: Single diploma NFT rewarded after 100% course completion. Creates a gamified learning journey with clear progression toward a single achievement.
-    - **BlockDAG Progress Visualization**: Gamified progress tracker on the Dashboard showing a visual BlockDAG with 72px cubes. Each course is represented as a block with its thumbnail. Blue blocks are DAG set, red blocks are anticone. Bold blue main chain connects courses. Diploma cube at bottom.
-    - **On-Chain First Philosophy**: The blockchain indexer is ALWAYS the source of truth. Database is only used as a cache.
-    - **Whitelist-Based Pricing Model**: Collection deployed with 20,000 KAS royaltyFee to deter external minting. Users who complete all courses are automatically whitelisted via the "discount" operation. Fee structure:
-        - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (~10 KAS) = ~20,010 KAS total
-        - Whitelisted (diploma eligible): discountFee (0 KAS) + PoW fee (~10 KAS) = ~10 KAS total
-    - **Discount Service** (`server/discount-service.ts`): Automatic whitelisting after course completion. Treasury signs discount inscription: `{p:"krc-721",op:"discount",tick:"KUDIPLOMA",to:walletAddress}`.
-    - **User-Signed Minting**: Users sign the mint inscription: `{p:"krc-721",op:"mint",tick:"KUDIPLOMA",to:walletAddress}`. Token IDs assigned randomly by indexer.
-    - **Key Files**: `server/mint-service.ts` (diploma reservation logic), `server/nft-metadata-manager.ts` (IPFS uploads), `server/pinata.ts` (Pinata API).
-    - **Diploma Designs**: 3 pre-generated cypherpunk-styled designs in `attached_assets/generated_images/`.
-    - **Deployment Guide**: See `MAINNET_DEPLOYMENT_RUNBOOK.md` for complete testnet/mainnet deployment instructions.
-    - **Legacy Endpoint**: `/api/certificates/:id/claim` is **DISABLED** (returns 410 Gone).
-    - **Reservation Lifecycle**:
-        1. **Reserve** (`POST /api/diploma/reserve`): Checks eligibility (all 16 courses), creates reservation with 10-minute TTL.
-        2. **Signing** (`POST /api/nft/signing/:reservationId`): Updates reservation status to "signing".
-        3. **Confirm** (`POST /api/nft/confirm/:reservationId`): Atomically updates reservation to "minted".
-        4. **Cancel** (`POST /api/nft/cancel/:reservationId`): Cancels reservation and recycles slot.
-        5. **Expire** (automatic cleanup job): Runs every minute, expires old reservations.
-    - **Supply Tracking**: Single collection with 1,000 max supply. Counter tracks minted count.
-    - **Indexer Info**: KaspacomDAGs has 12-24 hour delay for new collections (spam prevention).
-- **Dual-Protocol Messaging System (ON-CHAIN ARCHITECTURE)**:
-    - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A. Format: `k:1:post:{content}` and `k:1:reply:{parentTxId}:{content}`. Indexed by ecosystem K-indexers for cross-platform discovery. Implementation: `server/k-protocol.ts`.
-    - **Kasia Protocol (Private Encrypted P2P)**: End-to-end encrypted messaging with handshake-based key exchange. Indexed by Kasia indexers (https://github.com/K-Kluster/Kasia).
-        - **FULLY DECENTRALIZED ARCHITECTURE (V3)**: Users broadcast their own on-chain transactions - no treasury/single-point-of-failure dependency.
-            - **User-Signed Transactions**: Frontend uses `kasware.sendKaspa(address, amount, { payload: kasiaPayload })` to embed Kasia protocol data directly in user transactions.
-            - **Message Cost**: 0.1 KAS per message (optimized for KIP-0009 storage mass compliance, max 200 characters).
-            - **Handshake Cost**: 0.2 KAS (required for establishing conversation).
-            - **No Treasury Dependency**: Messages broadcast directly from user's wallet - fully censorship resistant.
-        - **Protocol Format Alignment (V2)**: Payloads match official Kasia indexer format:
-            - Handshake: `ciph_msg:1:handshake:{sealed_hex}` (embedded in tx payload)
-            - Message: `ciph_msg:1:comm:{alias}:{sealed_hex}` (embedded in tx payload)
-            - sealed_hex contains message data as hex-encoded JSON (simplified format; official Kasia uses ECDH-encrypted ciphertext)
-            - Reference: https://github.com/K-Kluster/kasia-indexer/blob/main/protocol/src/operation.rs
-        - **On-Chain First Architecture**: The public Kasia indexer (https://indexer.kasia.fyi/) is the SOURCE OF TRUTH. PostgreSQL database is ONLY a performance cache. On startup and every 60 seconds, the system syncs from the public indexer to populate/refresh the local cache. This maintains full decentralization - blockchain is always authoritative.
-        - **Kasia Client** (`server/kasia-client.ts`): Queries public Kasia indexer API endpoints (`/handshakes/by-sender`, `/handshakes/by-receiver`, `/messages/by-conversation-alias`).
-        - **Handshake Flow (Fully Decentralized P2P)**:
-            1. **Initiate**: User A calls `/api/kasia/handshake/prepare`, broadcasts `kasware.sendKaspa(userB, 20000000, { payload: handshakePayload })` (0.2 KAS)
-            2. **Accept**: User B calls `/api/kasia/handshake/prepare-response`, broadcasts `kasware.sendKaspa(userA, 20000000, { payload: responsePayload })` (0.2 KAS)
-            3. Both handshakes are indexed by public Kasia indexer - no treasury/centralized party involved
-            4. Users can message ANY wallet, not just platform wallets - true P2P messaging
-        - **Message Flow (Decentralized)**:
-            1. Frontend calls `/api/messages/prepare` to get Kasia protocol payload
-            2. User broadcasts their own tx: `kasware.sendKaspa(recipient, 10000000, { payload: kasiaPayload })` (0.1 KAS)
-            3. User's wallet signs and broadcasts transaction directly
-            4. Frontend reports txHash to backend for local caching/display
-            5. Public Kasia indexer indexes the message for cross-app discovery
-        - **Legacy Treasury Broadcast**: Available only for admin conversations as fallback.
-        - **On-Chain Indexer** (`server/kasia-indexer.ts`): Syncs from public Kasia indexer on startup. Tracks conversations and messages with txHash references as proof of on-chain existence.
-        - **Payload Encryption** (`server/kasia-encrypted.ts`): Creates Kasia protocol payloads (handshakes and comm messages).
-        - **Security Model**: Users sign their own transactions - full ownership and control. No funds can be spent without user signing in KasWare.
-        - **Future Enhancement**: Full ECDH encryption requires cipher-wasm module from Kasia repo (ChaCha20-Poly1305 with k256 ECDH). Current simplified format is indexable but not cross-compatible with official Kasia app decryption.
-    - **Conversation Status Flow**: `pending` → `active` (after handshake accepted) → messaging enabled.
-    - **Admin Handshake Management**: Admin dashboard "Messages" tab allows manual handshake acceptance if auto-accept fails. Treasury broadcasts response handshakes.
-    - **UI Components**: QASection tabs for public/private messaging (`client/src/components/qa-section.tsx`), Messages inbox page (`client/src/pages/messages.tsx`).
-    - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.
+- **Backend**: Node.js with Express, RESTful JSON API.
+- **Data Layer**: Drizzle ORM for PostgreSQL (in-memory, with future migration path).
+- **Authentication**: Wallet-based using KasWare via Sign-In with Kaspa (SIWK) standard (`@kluster/kaspa-auth`).
+- **Blockchain Integration**: Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations, utilizing PNN Resolver for RPC connections.
+- **KRC-721 Diploma NFT**:
+    - **Architecture**: Single collection (KUDIPLOMA, 1,000 max supply).
+    - **Eligibility**: Requires completion of all 16 courses for minting.
+    - **Minting**: User-signed minting via whitelisting mechanism (0 KAS discount fee for eligible users + PoW fee) managed by a `discount-service`.
+    - **Lifecycle**: Reservation, signing, confirmation, cancellation, and expiration of diploma mints.
+    - **Source of Truth**: Blockchain indexer is authoritative, database acts as a cache.
+- **Dual-Protocol Messaging System**:
+    - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A (`k:1:post`, `k:1:reply`).
+    - **Kasia Protocol (Private Encrypted P2P)**: Fully decentralized, end-to-end encrypted messaging.
+        - **Mechanism**: User-signed transactions embed Kasia protocol data directly (`kasware.sendKaspa`).
+        - **Cost**: 0.1 KAS per message, 0.2 KAS per handshake.
+        - **Decentralization**: No treasury dependency; messages broadcast directly from user wallets.
+        - **Source of Truth**: Public Kasia indexer is authoritative; local database is a cache synced periodically.
+        - **Handshake/Message Flow**: Prepare payload, user signs and broadcasts transaction.
+- **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`).
 - **Security**:
-    - **Wallet Authentication (SIWK - Sign-In with Kaspa)**: Standardized authentication using `@kluster/kaspa-auth` package. Implementation in `server/siwk-auth.ts`.
-        - **SIWK Flow**: Challenge-response authentication following the Sign-In with Kaspa standard.
-            1. Frontend requests challenge from `/api/auth/siwk/challenge`
-            2. Server generates SiwkFields with nonce, domain, statement, expiration
-            3. User signs the SIWK message in KasWare wallet
-            4. Frontend submits fields + signature to `/api/auth/siwk/verify`
-            5. Server verifies using `verifySiwk()` from @kluster/kaspa-auth
-            6. Session token issued on success
-        - **Security Features**: Nonce replay attack prevention, 5-minute challenge expiry, wallet address validation against session store, optional IP binding.
-        - **Packages**: @kluster/kaspa-auth, @kluster/kaspa-signature, @kluster/kaspa-address (removes 5MB WASM dependency).
-        - **Legacy Compatibility**: Legacy endpoints (`/api/auth/challenge`, `/api/auth/verify`) still available for backward compatibility. Session validation checks SIWK sessions first, then falls back to legacy.
-        - **Key Files**: `server/siwk-auth.ts` (SIWK auth service), `client/src/lib/wallet-context.tsx` (frontend SIWK flow).
-    - **IP Session Binding**: Sessions track original login IP with optional strict enforcement via `STRICT_IP_BINDING=true` env var (default: permissive for mobile compatibility).
-    - **Anti-Sybil**: Quiz cooldowns, minimum completion times, daily reward caps, attempt limits, wallet trust scoring, concurrent quiz submission locking.
-    - **Rate Limiting**: All endpoints protected with dedicated rate limiters (auth: 10/min, NFT: 10/min, certificates: 20/min, stats: 30/min, quiz: 20/min).
-    - **Threat Detection**: IP tracking, multi-wallet/IP detection, VPN detection (GetIPIntel, IP-API.com).
-    - **UTXO Management**: Mutex-based locking and transaction tracking to prevent double-spending.
-    - **Address Validation**: Mainnet-only Kaspa address validation.
-    - **Security Documentation**: See `SECURITY_REMEDIATION.md` for audit findings and remediation plan.
-- **Performance**: Job queue system for async blockchain operations, in-memory TTL caching (VPN, stats, security flags, UTXO).
-- **Session Management**: Abstracted session store (in-memory/Redis) for horizontal scaling.
-- **Cryptography**: ECDSA signature verification for wallet auth, signed tokens for quiz integrity, SHA-256 for answer hashing.
+    - **SIWK**: Challenge-response authentication, nonce replay prevention, challenge expiry.
+    - **Anti-Sybil**: Quiz cooldowns, min completion times, daily reward caps, concurrent quiz submission locking.
+    - **Rate Limiting**: Endpoint-specific rate limits.
+    - **Threat Detection**: IP tracking, multi-wallet/IP detection, VPN detection.
+    - **UTXO Management**: Mutex-based locking to prevent double-spending.
+- **Performance**: Job queue for async ops, in-memory TTL caching.
+- **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## External Dependencies
-- **Database**: PostgreSQL (configured via `DATABASE_URL`).
-- **Kaspa Blockchain**: Mainnet integration, `kaspa-rpc-client`, rusty-kaspa WASM module (v1.0.1).
-- **IPFS Storage**: Pinata (requires `PINATA_API_KEY`, `PINATA_SECRET_KEY`) for NFT metadata and images.
-- **VPN Detection**: GetIPIntel API (requires `GETIPINTEL_CONTACT` for free tier), IP-API.com.
-- **Redis**: Optional, for session store (`REDIS_URL`).
+- **Database**: PostgreSQL.
+- **Kaspa Blockchain**: Mainnet, `kaspa-rpc-client`, rusty-kaspa WASM module.
+- **IPFS Storage**: Pinata (for NFT metadata and images).
+- **VPN Detection**: GetIPIntel API, IP-API.com.
+- **Redis**: Optional, for session store.
