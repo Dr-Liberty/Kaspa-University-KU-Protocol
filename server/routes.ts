@@ -2005,36 +2005,12 @@ export async function registerRoutes(
       return res.status(400).json({ error: "NFT already minted", nftTxHash: certificate.nftTxHash });
     }
 
-    try {
-      const { mintService } = await import("./mint-service");
-      
-      // Reserve and build inscription per KRC-721 spec
-      // Note: Token metadata comes from collection's buri, not per-token inscription
-      const result = await mintService.reserveMint(
-        certificateId, 
-        certificate.courseId, 
-        walletAddress
-      );
-
-      if ("error" in result) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      console.log(`[Reserve] TokenId ${result.reservation.tokenId} reserved for ${walletAddress.slice(0, 20)}...`);
-      
-      return res.json({
-        success: true,
-        reservationId: result.reservation.id,
-        tokenId: result.reservation.tokenId,
-        inscriptionJson: result.inscriptionJson,
-        expiresAt: result.reservation.expiresAt.getTime(),
-        courseId: certificate.courseId,
-        courseName: certificate.courseName,
-      });
-    } catch (error: any) {
-      console.error("[Reserve] Error:", error.message);
-      return res.status(500).json({ error: "Failed to reserve token", message: sanitizeError(error) });
-    }
+    // DEPRECATED: Per-course NFT minting is disabled
+    // Use /api/diploma/reserve for diploma NFT minting after completing all courses
+    return res.status(410).json({ 
+      error: "Per-course NFT minting has been deprecated. Complete all 16 courses to earn your diploma NFT.",
+      redirectTo: "/api/diploma/reserve"
+    });
   });
 
   // Update reservation status when user starts signing
@@ -2144,14 +2120,17 @@ export async function registerRoutes(
     }
   });
 
-  // Get mint stats for a course
+  // Get mint stats (diploma-based, not per-course)
   app.get("/api/nft/stats/:courseId", async (req: Request, res: Response) => {
-    const { courseId } = req.params;
-
+    // DEPRECATED: Per-course stats no longer available
+    // Redirect to diploma stats
     try {
       const { mintService } = await import("./mint-service");
-      const stats = await mintService.getMintStats(courseId);
-      return res.json(stats);
+      const stats = await mintService.getDiplomaStats();
+      return res.json({
+        ...stats,
+        note: "Stats are for diploma NFT collection (KUDIPLOMA), not per-course"
+      });
     } catch (error: any) {
       console.error("[MintStats] Error:", error.message);
       return res.status(500).json({ error: "Failed to get mint stats" });

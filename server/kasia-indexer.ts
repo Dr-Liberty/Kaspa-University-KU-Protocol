@@ -403,7 +403,10 @@ class KasiaIndexer {
       return 0;
     }
     
-    console.log(`[Kasia Indexer] Syncing messages from on-chain for conversation ${conversationId}`);
+    console.log(`[Kasia Indexer] Syncing messages for conversation ${conversationId}`);
+    console.log(`[Kasia Indexer] Initiator: ${conversation.initiatorAddress.slice(0, 20)}...`);
+    console.log(`[Kasia Indexer] Recipient: ${conversation.recipientAddress.slice(0, 20)}...`);
+    console.log(`[Kasia Indexer] Alias for query: ${conversationId}`);
     
     try {
       const onChainMessages = await getMessagesForConversation(
@@ -411,6 +414,8 @@ class KasiaIndexer {
         conversation.initiatorAddress,
         conversation.recipientAddress
       );
+      
+      console.log(`[Kasia Indexer] Indexer returned ${onChainMessages.length} messages for alias ${conversationId}`);
       
       let syncedCount = 0;
       
@@ -1045,7 +1050,7 @@ class KasiaIndexer {
     const allMsgs = Array.from(this.messages.values());
     console.log(`[Kasia Indexer] getMessages for convId=${conversationId}: total messages in cache=${allMsgs.length}`);
     if (allMsgs.length > 0) {
-      const uniqueConvIds = [...new Set(allMsgs.map(m => m.conversationId))];
+      const uniqueConvIds = Array.from(new Set(allMsgs.map(m => m.conversationId)));
       console.log(`[Kasia Indexer]   Unique convIds in cache: ${uniqueConvIds.join(", ")}`);
     }
     
