@@ -95,7 +95,18 @@ Kaspa University utilizes a React with TypeScript frontend, styled with Tailwind
     - **UI Components**: QASection tabs for public/private messaging (`client/src/components/qa-section.tsx`), Messages inbox page (`client/src/pages/messages.tsx`).
     - **KU Protocol**: Kaspa University-specific format for quiz completion proofs. Format: `ku:1:quiz:{data}`. Used for reward verification and certificate records. Implementation: `server/ku-protocol.ts`.
 - **Security**:
-    - **Wallet Authentication**: Challenge-response with cryptographic signature verification using Kaspa WASM. Uses PublicKey.toAddress() to verify public key ownership and verifyMessage() for ECDSA signature validation. KasWare returns base64-encoded ECDSA signatures which are decoded to raw hex (128 chars, no 0x prefix) for WASM verification.
+    - **Wallet Authentication (SIWK - Sign-In with Kaspa)**: Standardized authentication using `@kluster/kaspa-auth` package. Implementation in `server/siwk-auth.ts`.
+        - **SIWK Flow**: Challenge-response authentication following the Sign-In with Kaspa standard.
+            1. Frontend requests challenge from `/api/auth/siwk/challenge`
+            2. Server generates SiwkFields with nonce, domain, statement, expiration
+            3. User signs the SIWK message in KasWare wallet
+            4. Frontend submits fields + signature to `/api/auth/siwk/verify`
+            5. Server verifies using `verifySiwk()` from @kluster/kaspa-auth
+            6. Session token issued on success
+        - **Security Features**: Nonce replay attack prevention, 5-minute challenge expiry, wallet address validation against session store, optional IP binding.
+        - **Packages**: @kluster/kaspa-auth, @kluster/kaspa-signature, @kluster/kaspa-address (removes 5MB WASM dependency).
+        - **Legacy Compatibility**: Legacy endpoints (`/api/auth/challenge`, `/api/auth/verify`) still available for backward compatibility. Session validation checks SIWK sessions first, then falls back to legacy.
+        - **Key Files**: `server/siwk-auth.ts` (SIWK auth service), `client/src/lib/wallet-context.tsx` (frontend SIWK flow).
     - **IP Session Binding**: Sessions track original login IP with optional strict enforcement via `STRICT_IP_BINDING=true` env var (default: permissive for mobile compatibility).
     - **Anti-Sybil**: Quiz cooldowns, minimum completion times, daily reward caps, attempt limits, wallet trust scoring, concurrent quiz submission locking.
     - **Rate Limiting**: All endpoints protected with dedicated rate limiters (auth: 10/min, NFT: 10/min, certificates: 20/min, stats: 30/min, quiz: 20/min).
