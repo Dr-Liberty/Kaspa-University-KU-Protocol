@@ -217,7 +217,7 @@ function QuizSection({
           {/* Show questions with correct/incorrect indicators */}
           <div className="space-y-4 border-t pt-4">
             <h4 className="font-semibold text-muted-foreground">Answer Review</h4>
-            {questions?.map((question, qIndex) => {
+            {((result as any)?.questions || questions)?.map((question: QuizQuestion, qIndex: number) => {
               const userAnswer = answers[question.id];
               const isCorrect = userAnswer === question.correctIndex;
               return (

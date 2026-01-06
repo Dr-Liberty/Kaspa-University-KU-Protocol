@@ -858,8 +858,13 @@ export async function registerRoutes(
     }
 
     let correct = 0;
+    console.log(`[Quiz Debug] Checking ${questions.length} questions for lesson ${lessonId}:`);
     questions.forEach((q, i) => {
-      if (answers[i] === q.correctIndex) correct++;
+      const userAnswer = answers[i];
+      const correctAnswer = q.correctIndex;
+      const isCorrect = userAnswer === correctAnswer;
+      console.log(`[Quiz Debug] Q${i}: "${q.question.slice(0, 50)}..." | User: ${userAnswer} | Correct: ${correctAnswer} | Match: ${isCorrect}`);
+      if (isCorrect) correct++;
     });
 
     const score = Math.round((correct / questions.length) * 100);
@@ -1035,6 +1040,14 @@ export async function registerRoutes(
       res.json({
         ...result,
         courseCompleted: passed ? (await storage.checkCourseCompletion(user.id, lesson.courseId)).completed : false,
+        questions: questions.map((q) => ({
+          id: q.id,
+          lessonId: q.lessonId,
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+        })),
       });
     } catch (error: any) {
       console.error(`[Quiz] Submission error for ${walletAddress.slice(0, 20)}:`, error.message);
