@@ -10,7 +10,7 @@
 import { verifySiwk, buildMessage } from "@kluster/kaspa-auth";
 import type { SiwkFields } from "@kluster/kaspa-auth/types";
 import crypto, { createHash } from "crypto";
-import { blake2b } from "@noble/hashes/blake2b";
+import { blake2b } from "@noble/hashes/blake2.js";
 
 const personalKey = new TextEncoder().encode("PersonalMessageSigningHash");
 
