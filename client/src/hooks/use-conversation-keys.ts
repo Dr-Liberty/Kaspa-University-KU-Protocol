@@ -78,35 +78,23 @@ export function useConversationKeys(walletAddress: string | null) {
     };
   }, []);
 
-  const deriveSharedKey = useCallback((
+  const deriveSharedKeyFromSignatures = useCallback((
     conversationId: string,
-    myAddress: string,
-    otherAddress: string,
-    mySignature: string,
-    otherSignature?: string
+    initiatorAddress: string,
+    recipientAddress: string,
+    initiatorSignature: string,
+    recipientSignature: string
   ): Uint8Array => {
-    const [addr1, addr2] = [myAddress, otherAddress].sort();
+    const sig1Bytes = new TextEncoder().encode(initiatorSignature);
+    const sig2Bytes = new TextEncoder().encode(recipientSignature);
+    const addressBytes = new TextEncoder().encode(`${initiatorAddress}:${recipientAddress}`);
     
-    let combinedInput: Uint8Array;
+    const combinedInput = new Uint8Array(sig1Bytes.length + sig2Bytes.length + addressBytes.length);
+    combinedInput.set(sig1Bytes, 0);
+    combinedInput.set(sig2Bytes, sig1Bytes.length);
+    combinedInput.set(addressBytes, sig1Bytes.length + sig2Bytes.length);
     
-    if (otherSignature) {
-      const sig1Bytes = new TextEncoder().encode(myAddress < otherAddress ? mySignature : otherSignature);
-      const sig2Bytes = new TextEncoder().encode(myAddress < otherAddress ? otherSignature : mySignature);
-      const addressBytes = new TextEncoder().encode(`${addr1}:${addr2}`);
-      
-      combinedInput = new Uint8Array(sig1Bytes.length + sig2Bytes.length + addressBytes.length);
-      combinedInput.set(sig1Bytes, 0);
-      combinedInput.set(sig2Bytes, sig1Bytes.length);
-      combinedInput.set(addressBytes, sig1Bytes.length + sig2Bytes.length);
-    } else {
-      const sigBytes = new TextEncoder().encode(mySignature);
-      const addressBytes = new TextEncoder().encode(`${addr1}:${addr2}`);
-      combinedInput = new Uint8Array(sigBytes.length + addressBytes.length);
-      combinedInput.set(sigBytes, 0);
-      combinedInput.set(addressBytes, sigBytes.length);
-    }
-    
-    const salt = new TextEncoder().encode(`kasia:shared:v2:${conversationId}`);
+    const salt = new TextEncoder().encode(`kasia:shared:v3:${conversationId}`);
     const info = new TextEncoder().encode("kasia-e2ee-shared");
     
     return hkdf(sha256, combinedInput, salt, info, KEY_LENGTH);
@@ -184,8 +172,9 @@ export function useConversationKeys(walletAddress: string | null) {
     const existing = keysCache.current.get(conversationId);
     if (existing) return existing;
 
-    const [addr1, addr2] = [myAddress, otherAddress].sort();
-    const messageToSign = `kasia:e2ee:${addr1}:${addr2}:${conversationId}`;
+    const initiatorAddress = isInitiator ? myAddress : otherAddress;
+    const recipientAddress = isInitiator ? otherAddress : myAddress;
+    const messageToSign = `kasia:e2ee:${initiatorAddress}:${recipientAddress}:${conversationId}`;
     const mySignature = await signMessage(messageToSign);
     
     const result = await submitE2eSignature(conversationId, mySignature);
@@ -197,12 +186,12 @@ export function useConversationKeys(walletAddress: string | null) {
     if (result.keyExchangeComplete) {
       const initiatorSig = result.e2eInitiatorSig!;
       const recipientSig = result.e2eRecipientSig!;
-      const derivedKey = deriveSharedKey(
+      const derivedKey = deriveSharedKeyFromSignatures(
         conversationId,
-        myAddress,
-        otherAddress,
-        isInitiator ? initiatorSig : recipientSig,
-        isInitiator ? recipientSig : initiatorSig
+        initiatorAddress,
+        recipientAddress,
+        initiatorSig,
+        recipientSig
       );
       await storeKey(conversationId, derivedKey);
       return derivedKey;
@@ -210,7 +199,7 @@ export function useConversationKeys(walletAddress: string | null) {
     
     console.log("[ConversationKeys] Waiting for other party to complete key exchange");
     return null;
-  }, [deriveSharedKey, storeKey, submitE2eSignature]);
+  }, [deriveSharedKeyFromSignatures, storeKey, submitE2eSignature]);
 
   const tryLoadKeyFromServer = useCallback(async (
     conversationId: string,
@@ -226,18 +215,20 @@ export function useConversationKeys(walletAddress: string | null) {
       return null;
     }
 
+    const initiatorAddress = isInitiator ? myAddress : otherAddress;
+    const recipientAddress = isInitiator ? otherAddress : myAddress;
     const initiatorSig = result.e2eInitiatorSig!;
     const recipientSig = result.e2eRecipientSig!;
-    const derivedKey = deriveSharedKey(
+    const derivedKey = deriveSharedKeyFromSignatures(
       conversationId,
-      myAddress,
-      otherAddress,
-      isInitiator ? initiatorSig : recipientSig,
-      isInitiator ? recipientSig : initiatorSig
+      initiatorAddress,
+      recipientAddress,
+      initiatorSig,
+      recipientSig
     );
     await storeKey(conversationId, derivedKey);
     return derivedKey;
-  }, [deriveSharedKey, storeKey, fetchE2eKeys]);
+  }, [deriveSharedKeyFromSignatures, storeKey, fetchE2eKeys]);
 
   const encryptContent = useCallback((conversationId: string, plaintext: string): string | null => {
     const key = keysCache.current.get(conversationId);

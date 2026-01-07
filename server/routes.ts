@@ -393,13 +393,15 @@ export async function registerRoutes(
         { name: "Advanced", value: courses.filter(c => c.difficulty === "advanced").length },
       ];
 
-      // Build top learners from real user data
+      // Build top learners from real user data with profile info
       const topLearners = await Promise.all(topLearnersData.map(async (user) => {
         const certs = await storage.getCertificatesByUser(user.id);
         return {
           address: user.walletAddress,
           totalKas: Math.round(user.totalKasEarned * 100) / 100,
           certificates: certs.length,
+          displayName: user.displayName || null,
+          avatarUrl: user.avatarUrl || null,
         };
       }));
 

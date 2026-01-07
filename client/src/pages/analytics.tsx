@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users,
   BookOpen,
@@ -63,6 +64,8 @@ interface AnalyticsData {
     address: string;
     totalKas: number;
     certificates: number;
+    displayName?: string | null;
+    avatarUrl?: string | null;
   }>;
   recentActivity: Array<{
     type: string;
@@ -413,31 +416,43 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {analytics.topLearners.map((learner, index) => (
-                <div
-                  key={learner.address}
-                  className="flex items-center justify-between p-3 rounded-md bg-muted/50"
-                  data-testid={`row-learner-${index}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                      {index + 1}
+              {analytics.topLearners.map((learner, index) => {
+                const displayName = learner.displayName || `${learner.address.slice(0, 10)}...${learner.address.slice(-4)}`;
+                const initials = learner.displayName 
+                  ? learner.displayName.substring(0, 2).toUpperCase()
+                  : learner.address.slice(-2).toUpperCase();
+                return (
+                  <div
+                    key={learner.address}
+                    className="flex items-center justify-between p-3 rounded-md bg-muted/50"
+                    data-testid={`row-learner-${index}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute -top-1 -left-1 flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-xs z-10">
+                          {index + 1}
+                        </div>
+                        <Avatar className="h-10 w-10">
+                          {learner.avatarUrl && <AvatarImage src={learner.avatarUrl} alt={displayName} />}
+                          <AvatarFallback className="text-sm">{initials}</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="ml-1">
+                        <p className="font-medium text-sm" data-testid={`text-learner-name-${index}`}>
+                          {displayName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {learner.certificates} certificates
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-mono text-sm">
-                        {learner.address.slice(0, 12)}...{learner.address.slice(-6)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {learner.certificates} certificates
-                      </p>
-                    </div>
+                    <Badge variant="secondary" className="gap-1">
+                      <Coins className="h-3 w-3" />
+                      {learner.totalKas.toFixed(2)} KAS
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="gap-1">
-                    <Coins className="h-3 w-3" />
-                    {learner.totalKas.toFixed(2)} KAS
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
