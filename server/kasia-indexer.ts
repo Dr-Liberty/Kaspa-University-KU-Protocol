@@ -311,7 +311,7 @@ class KasiaIndexer {
           initiatorAddress: trueInitiator,
           recipientAddress: trueRecipient,
           initiatorAlias: trueInitiatorAlias,
-          alias: conv.id, // Kasia protocol uses conversation ID as alias
+          alias: trueInitiatorAlias || conv.id, // Use handshake alias for message correlation, fallback to convId
           status: conv.status,
           handshakeTxHash: conv.handshakeTxHash,
           responseTxHash: conv.responseTxHash,
@@ -403,23 +403,48 @@ class KasiaIndexer {
       return 0;
     }
     
+    // Kasia protocol uses alias for message correlation, fall back to conversationId
+    // The alias is set during handshake and must match what was used when sending messages
+    const messageAlias = conversation.alias || conversation.initiatorAlias || conversationId;
+    
     console.log(`[Kasia Indexer] Syncing messages for conversation ${conversationId}`);
     console.log(`[Kasia Indexer] Initiator: ${conversation.initiatorAddress.slice(0, 20)}...`);
     console.log(`[Kasia Indexer] Recipient: ${conversation.recipientAddress.slice(0, 20)}...`);
-    console.log(`[Kasia Indexer] Alias for query: ${conversationId}`);
+    console.log(`[Kasia Indexer] Alias for query: ${messageAlias}`);
     
     try {
+      // Try querying with both the alias and conversationId to find all messages
       const onChainMessages = await getMessagesForConversation(
-        conversationId, // Use conversation ID as the alias
+        messageAlias,
         conversation.initiatorAddress,
         conversation.recipientAddress
       );
       
-      console.log(`[Kasia Indexer] Indexer returned ${onChainMessages.length} messages for alias ${conversationId}`);
+      // Also try with conversationId if different from alias
+      let additionalMessages: typeof onChainMessages = [];
+      if (messageAlias !== conversationId) {
+        additionalMessages = await getMessagesForConversation(
+          conversationId,
+          conversation.initiatorAddress,
+          conversation.recipientAddress
+        );
+      }
+      
+      // Merge results, avoiding duplicates by txId
+      const allMessages = [...onChainMessages];
+      const seenTxIds = new Set(onChainMessages.map(m => m.txId));
+      for (const msg of additionalMessages) {
+        if (!seenTxIds.has(msg.txId)) {
+          allMessages.push(msg);
+          seenTxIds.add(msg.txId);
+        }
+      }
+      
+      console.log(`[Kasia Indexer] Indexer returned ${allMessages.length} messages (alias: ${messageAlias}, convId: ${conversationId})`);
       
       let syncedCount = 0;
       
-      for (const msg of onChainMessages) {
+      for (const msg of allMessages) {
         const messageKey = msg.txId;
         if (!this.messages.has(messageKey)) {
           const indexed: IndexedMessage = {
@@ -479,7 +504,7 @@ class KasiaIndexer {
         recipientAddress: conv.recipientAddress,
         initiatorAlias: conv.initiatorAlias,
         recipientAlias: conv.recipientAlias,
-        alias: conv.id, // Kasia protocol uses conversation ID as alias
+        alias: conv.initiatorAlias || conv.id, // Use handshake alias for message correlation
         status: conv.status === "pending_handshake" || conv.status === "handshake_received" ? "pending" : 
                 conv.status === "active" ? "active" : 
                 conv.status === "archived" ? "archived" : "pending",
