@@ -18,9 +18,23 @@ import { chacha20poly1305 } from "@noble/ciphers/chacha.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { randomBytes } from "@noble/hashes/utils.js";
+import { bech32 } from "bech32";
 
 const NONCE_LENGTH = 12;
 const EPHEMERAL_KEY_LENGTH = 33;
+
+/**
+ * Securely zero out a Uint8Array to prevent key material from lingering in memory
+ * Uses crypto.getRandomValues to overwrite, then zeros, to defeat optimization
+ */
+function zeroize(buffer: Uint8Array): void {
+  if (!buffer || buffer.length === 0) return;
+  
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buffer);
+  }
+  buffer.fill(0);
+}
 
 export interface EncryptedMessage {
   nonce: Uint8Array;
@@ -30,62 +44,82 @@ export interface EncryptedMessage {
 
 /**
  * Convert a Kaspa address to its public key bytes
+ * Uses canonical bech32 decoder with checksum validation
  * Kaspa addresses contain the x-coordinate of the public key in their payload
+ * 
+ * Note: Kaspa uses ':' as separator (e.g., kaspa:qr...) but bech32 library
+ * expects '1' as separator (e.g., kaspa1qr...). We normalize before decoding.
  */
 export function addressToPublicKey(kaspaAddress: string): Uint8Array {
-  const prefix = kaspaAddress.startsWith("kaspatest:") ? "kaspatest:" : "kaspa:";
-  const addressWithoutPrefix = kaspaAddress.slice(prefix.length);
+  const address = kaspaAddress.toLowerCase();
   
-  const CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-  const values: number[] = [];
-  for (const char of addressWithoutPrefix) {
-    const idx = CHARSET.indexOf(char);
-    if (idx === -1) throw new Error(`Invalid bech32 character: ${char}`);
-    values.push(idx);
+  const validPrefixes = ["kaspa:", "kaspatest:", "kaspadev:", "kaspasim:"];
+  const matchedPrefix = validPrefixes.find(p => address.startsWith(p));
+  
+  if (!matchedPrefix) {
+    throw new Error(`Invalid Kaspa address prefix. Expected one of: ${validPrefixes.join(", ")}`);
   }
   
-  const data = values.slice(0, -8);
+  const hrp = matchedPrefix.slice(0, -1);
+  const bech32Address = hrp + "1" + address.slice(matchedPrefix.length);
   
-  const bits: number[] = [];
-  for (const value of data) {
-    for (let i = 4; i >= 0; i--) {
-      bits.push((value >> i) & 1);
-    }
+  let decoded;
+  try {
+    decoded = bech32.decode(bech32Address, 150);
+  } catch (error) {
+    throw new Error(`Invalid Kaspa address: bech32 decode failed - ${error}`);
   }
   
-  const bytes: number[] = [];
-  for (let i = 0; i < Math.floor(bits.length / 8); i++) {
-    let byte = 0;
-    for (let j = 0; j < 8; j++) {
-      byte = (byte << 1) | bits[i * 8 + j];
-    }
-    bytes.push(byte);
+  const data = bech32.fromWords(decoded.words);
+  if (data.length < 2) {
+    throw new Error("Invalid Kaspa address: payload too short");
   }
   
-  const xCoord = new Uint8Array(bytes.slice(1, 33));
-  const fullPubKey = new Uint8Array(33);
-  fullPubKey[0] = 0x02;
-  fullPubKey.set(xCoord, 1);
+  const addressType = data[0];
+  const payloadBytes = new Uint8Array(data.slice(1));
+  
+  if (addressType !== 0 && addressType !== 1) {
+    throw new Error(`Unsupported address type: ${addressType} (expected 0=Schnorr or 1=ECDSA)`);
+  }
+  
+  if (payloadBytes.length !== 32 && payloadBytes.length !== 33) {
+    throw new Error(`Invalid public key payload length: ${payloadBytes.length}`);
+  }
+  
+  let fullPubKey: Uint8Array;
+  if (payloadBytes.length === 33) {
+    fullPubKey = payloadBytes;
+  } else {
+    fullPubKey = new Uint8Array(33);
+    fullPubKey[0] = 0x02;
+    fullPubKey.set(payloadBytes, 1);
+  }
   
   return fullPubKey;
 }
 
 /**
  * Perform ECDH key exchange and derive a symmetric key
+ * Note: Caller is responsible for zeroizing privateKey if needed
  */
 function deriveSharedKey(
   privateKey: Uint8Array,
   publicKey: Uint8Array
 ): Uint8Array {
   const sharedPoint = secp256k1.getSharedSecret(privateKey, publicKey, true);
-  const sharedSecret = sharedPoint.slice(1);
-  const derivedKey = hkdf(sha256, sharedSecret, undefined, new Uint8Array(0), 32);
+  const sharedSecret = new Uint8Array(sharedPoint.slice(1));
   
-  return derivedKey;
+  try {
+    const derivedKey = hkdf(sha256, sharedSecret, undefined, new Uint8Array(0), 32);
+    return derivedKey;
+  } finally {
+    zeroize(sharedSecret);
+  }
 }
 
 /**
  * Encrypt a message for a recipient using Kasia E2EE protocol
+ * Implements key zeroization for ephemeral private key and shared key
  * 
  * @param recipientAddress - The recipient's Kaspa address
  * @param message - The plaintext message to encrypt
@@ -107,23 +141,32 @@ export function encryptMessage(
     }
   }
   
-  const ephemeralPrivKey = secp256k1.utils.randomSecretKey();
-  const ephemeralPubKey = secp256k1.getPublicKey(ephemeralPrivKey, true);
-  const sharedKey = deriveSharedKey(ephemeralPrivKey, recipientPubKey);
-  const nonce = randomBytes(NONCE_LENGTH);
-  const messageBytes = new TextEncoder().encode(message);
-  const cipher = chacha20poly1305(sharedKey, nonce);
-  const ciphertext = cipher.encrypt(messageBytes);
+  const ephemeralPrivKey = new Uint8Array(secp256k1.utils.randomSecretKey());
+  let sharedKey: Uint8Array | null = null;
   
-  return {
-    nonce,
-    ephemeralPublicKey: ephemeralPubKey,
-    ciphertext,
-  };
+  try {
+    const ephemeralPubKey = secp256k1.getPublicKey(ephemeralPrivKey, true);
+    sharedKey = deriveSharedKey(ephemeralPrivKey, recipientPubKey);
+    const nonce = randomBytes(NONCE_LENGTH);
+    const messageBytes = new TextEncoder().encode(message);
+    const cipher = chacha20poly1305(sharedKey, nonce);
+    const ciphertext = cipher.encrypt(messageBytes);
+    
+    return {
+      nonce,
+      ephemeralPublicKey: ephemeralPubKey,
+      ciphertext,
+    };
+  } finally {
+    zeroize(ephemeralPrivKey);
+    if (sharedKey) zeroize(sharedKey);
+  }
 }
 
 /**
  * Decrypt a message using the recipient's private key
+ * Implements key zeroization for shared key after decryption
+ * Note: Caller is responsible for zeroizing privateKey if needed
  * 
  * @param encrypted - The encrypted message object
  * @param privateKey - The recipient's private key (32 bytes)
@@ -146,10 +189,14 @@ export function decryptMessage(
   }
   
   const sharedKey = deriveSharedKey(privateKey, ephemeralPubKey);
-  const cipher = chacha20poly1305(sharedKey, encrypted.nonce);
-  const plaintext = cipher.decrypt(encrypted.ciphertext);
   
-  return new TextDecoder().decode(plaintext);
+  try {
+    const cipher = chacha20poly1305(sharedKey, encrypted.nonce);
+    const plaintext = cipher.decrypt(encrypted.ciphertext);
+    return new TextDecoder().decode(plaintext);
+  } finally {
+    zeroize(sharedKey);
+  }
 }
 
 /**
