@@ -19,6 +19,7 @@ import VerifyExplorerPage from "@/pages/verify-explorer";
 import AdminPage from "@/pages/admin";
 import CertificatePreview from "@/pages/certificate-preview";
 import Messages from "@/pages/messages";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/preview-certificates" component={CertificatePreview} />
       <Route path="/messages" component={Messages} />
+      <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );

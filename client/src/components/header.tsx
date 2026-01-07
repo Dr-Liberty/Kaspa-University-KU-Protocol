@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/lib/wallet-context";
-import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play, ExternalLink, AlertCircle, BarChart3, Shield, Mail } from "lucide-react";
+import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play, ExternalLink, AlertCircle, BarChart3, Shield, Mail, User } from "lucide-react";
 import { useState } from "react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import {
@@ -92,6 +92,15 @@ export function Header() {
                   <p className="text-xs text-muted-foreground">Network: {wallet.network}</p>
                 </TooltipContent>
               </Tooltip>
+              <Link href="/profile">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-testid="button-profile"
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+              </Link>
               <Button
                 variant="ghost"
                 size="icon"
