@@ -226,14 +226,30 @@ export async function getConversationsFromIndexer(
     hasResponse: boolean;
   }>();
   
+  // Helper function to generate a deterministic conversation ID from two addresses
+  // This allows matching handshakes even when payload can't be parsed
+  const generateConversationId = (addr1: string, addr2: string): string => {
+    // Sort addresses alphabetically so same pair always generates same ID
+    const sorted = [addr1, addr2].sort();
+    const combined = sorted.join(":");
+    // Create a short hash from the addresses
+    let hash = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const char = combined.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16).padStart(16, '0').slice(0, 16);
+  };
+
   // Process sent handshakes - add initial handshakes and track response handshakes
   for (const hs of sentHandshakes) {
     const parsed = parseHandshakePayload(hs.message_payload);
-    if (!parsed) continue;
     
-    const convId = parsed.conversationId || hs.tx_id.slice(0, 16);
+    // For encrypted payloads (parsed = null), generate a conversation ID from addresses
+    const convId = parsed?.conversationId || generateConversationId(hs.sender, hs.receiver);
     
-    if (parsed.isResponse) {
+    if (parsed?.isResponse) {
       // This is a response handshake sent by this wallet
       // Update the conversation to active if it exists
       const existing = conversationsMap.get(convId);
@@ -251,24 +267,23 @@ export async function getConversationsFromIndexer(
       } else {
         // Response exists but no initial handshake found yet
         // Create placeholder conversation - the recipient of the response is the original initiator
-        if (parsed.recipient) {
-          conversationsMap.set(convId, {
-            id: convId,
-            initiatorAddress: parsed.recipient, // Recipient of response = original initiator
-            recipientAddress: walletAddress, // We (responder) are the recipient
-            status: "active",
-            initiatorAlias: undefined, // Will be filled from initial handshake
-            handshakeTxHash: undefined,
-            responseTxHash: hs.tx_id,
-            createdAt: new Date(hs.block_time),
-            hasResponse: true,
-          });
-        }
+        const initiatorAddr = parsed?.recipient || hs.receiver;
+        conversationsMap.set(convId, {
+          id: convId,
+          initiatorAddress: initiatorAddr, // Recipient of response = original initiator
+          recipientAddress: walletAddress, // We (responder) are the recipient
+          status: "active",
+          initiatorAlias: undefined, // Will be filled from initial handshake
+          handshakeTxHash: undefined,
+          responseTxHash: hs.tx_id,
+          createdAt: new Date(hs.block_time),
+          hasResponse: true,
+        });
       }
     } else if (!conversationsMap.has(convId)) {
       // Initial handshake - but check if this wallet is just relaying for someone else
       // (treasury broadcasts user's handshake on their behalf)
-      const recipientAddress = parsed.recipient || hs.receiver;
+      const recipientAddress = parsed?.recipient || hs.receiver;
       
       // If recipient is this wallet, then the real initiator is whoever sent this TO us
       // This happens when someone sends a handshake directly TO us
@@ -283,7 +298,7 @@ export async function getConversationsFromIndexer(
         initiatorAddress: hs.sender,
         recipientAddress: recipientAddress,
         status: "pending",
-        initiatorAlias: parsed.alias,
+        initiatorAlias: parsed?.alias,
         handshakeTxHash: hs.tx_id,
         createdAt: new Date(hs.block_time),
         hasResponse: false,
@@ -294,11 +309,11 @@ export async function getConversationsFromIndexer(
   // Process received handshakes - add incoming handshakes and track responses to our handshakes
   for (const hs of receivedHandshakes) {
     const parsed = parseHandshakePayload(hs.message_payload);
-    if (!parsed) continue;
     
-    const convId = parsed.conversationId || hs.tx_id.slice(0, 16);
+    // For encrypted payloads (parsed = null), generate a conversation ID from addresses
+    const convId = parsed?.conversationId || generateConversationId(hs.sender, hs.receiver);
     
-    if (parsed.isResponse) {
+    if (parsed?.isResponse) {
       // This is a response handshake sent TO this wallet
       // The sender of this response is accepting our handshake
       const existing = conversationsMap.get(convId);
@@ -309,23 +324,27 @@ export async function getConversationsFromIndexer(
       }
     } else {
       // Initial handshake received - someone wants to start a conversation with us
+      // This handles BOTH parsed and encrypted (unparsed) handshakes from external Kasia platforms
       const existing = conversationsMap.get(convId);
       if (existing) {
         // Already have this conversation (from response processing), update missing fields
         // The sender of this initial handshake is the TRUE initiator
         existing.initiatorAddress = hs.sender;
-        existing.initiatorAlias = parsed.alias;
+        existing.initiatorAlias = parsed?.alias;
         existing.handshakeTxHash = hs.tx_id;
         if (!existing.createdAt || new Date(hs.block_time) < existing.createdAt) {
           existing.createdAt = new Date(hs.block_time);
         }
       } else {
+        // Create new pending conversation from this incoming handshake
+        // Works for both parsed and encrypted payloads - we use indexer metadata
+        console.log(`[Kasia Client] Adding incoming handshake as pending conversation: ${convId} from ${hs.sender.slice(0, 20)}...`);
         conversationsMap.set(convId, {
           id: convId,
           initiatorAddress: hs.sender,
           recipientAddress: walletAddress,
           status: "pending",
-          initiatorAlias: parsed.alias,
+          initiatorAlias: parsed?.alias || `User ${hs.sender.slice(-8)}`, // Fallback alias for external platforms
           handshakeTxHash: hs.tx_id,
           createdAt: new Date(hs.block_time),
           hasResponse: false,
