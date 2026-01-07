@@ -358,8 +358,18 @@ class KasiaIndexer {
           isAdminConversation: isAdminConv,
         };
         
-        // UPSERT: Always update in-memory cache with on-chain data (blockchain is source of truth)
+        // UPSERT: Update in-memory cache with on-chain data (blockchain is source of truth)
+        // BUT: Don't let stale on-chain "pending" overwrite local "active" status
+        // This prevents race condition when user accepts and on-chain indexer hasn't caught up
         const existing = this.conversations.get(conv.id);
+        
+        // Skip update if local is "active" but on-chain is still "pending"
+        // Trust local state until on-chain confirms (prevents reversion after accept)
+        if (existing?.status === "active" && conv.status === "pending") {
+          console.log(`[Kasia Indexer] Skipping on-chain update for ${conv.id}: local is active, on-chain is pending (tx not indexed yet)`);
+          continue;
+        }
+        
         const isNewOrUpdated = !existing || 
           existing.status !== conv.status ||
           existing.responseTxHash !== conv.responseTxHash ||

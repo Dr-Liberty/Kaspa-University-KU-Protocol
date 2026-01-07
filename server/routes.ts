@@ -5280,7 +5280,8 @@ export async function registerRoutes(
       }
       
       const supportAddress = process.env.SUPPORT_ADDRESS || "";
-      const treasuryAddress = treasury?.getAddress?.() || "";
+      const kaspaService = await getKaspaService();
+      const treasuryAddress = kaspaService.getTreasuryAddress() || "";
       
       // REQUIRE at least one address to be configured for security
       // This prevents admin from accidentally seeing all user P2P conversations
