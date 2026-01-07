@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 const kasiaLogo = "/thumbnails/kasia_encrypted_messaging.png";
+
+interface UserProfile {
+  displayName: string | null;
+  avatarUrl: string | null;
+}
 import {
   Mail,
   Send,
@@ -88,18 +94,22 @@ function ConversationItem({
   conversation, 
   walletAddress, 
   isActive, 
-  onClick 
+  onClick,
+  profiles,
 }: { 
   conversation: Conversation; 
   walletAddress: string;
   isActive: boolean;
   onClick: () => void;
+  profiles: Record<string, UserProfile>;
 }) {
   const isInitiator = conversation.initiatorAddress === walletAddress;
   const otherAddress = isInitiator ? conversation.recipientAddress : conversation.initiatorAddress;
   const otherAlias = isInitiator ? conversation.recipientAlias : conversation.initiatorAlias;
+  const otherProfile = profiles[otherAddress];
   const avatarColor = generateJazzicon(otherAddress);
   const truncatedAddress = `${otherAddress.slice(0, 8)}...${otherAddress.slice(-4)}`;
+  const displayName = otherProfile?.displayName || otherAlias || truncatedAddress;
 
   const statusBadge = () => {
     switch (conversation.status) {
