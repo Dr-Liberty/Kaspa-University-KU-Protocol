@@ -57,32 +57,9 @@ function getNetworkName(networkId: number): KaspaNetwork {
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  // SECURITY: Force re-authentication on every page load/refresh
-  // This ensures wallet signatures are fresh and prevents stale sessions
   const [wallet, setWallet] = useState<WalletConnection | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  
-  // Clear any stale session data on mount
-  useEffect(() => {
-    // Clear localStorage wallet data
-    localStorage.removeItem(WALLET_STORAGE_KEY);
-    localStorage.removeItem(DEMO_MODE_KEY);
-    
-    // Clear backend session
-    fetch("/api/auth/logout", { 
-      method: "POST",
-      credentials: "include"
-    }).catch(() => {
-      // Ignore errors - just ensuring clean state
-    });
-    
-    // Clear query client wallet address
-    setWalletAddress(null);
-    setAuthToken(null);
-    
-    console.log("[Wallet] Session cleared - fresh authentication required");
-  }, []);
   const [walletType, setWalletType] = useState<"kasware" | "mock" | null>(null);
   const [isWalletInstalled, setIsWalletInstalled] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);

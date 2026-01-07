@@ -1,0 +1,88 @@
+1-06 19:03:06.14
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:03:06.34
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-06 19:03:06.44
+d37e4ba4
+User
+[Kasia Indexer] Synced 3 conversations from on-chain
+2026-01-06 19:03:06.44
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrmzgsh8chv72q..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:03:06.58
+d37e4ba4
+User
+3:03:06 AM [express] GET /api/support/address 304 in 123ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:03:10.28
+d37e4ba4
+User
+3:03:10 AM [express] POST /api/kasia/handshake/prepare 401 in 122ms :: {"error":"Authentication required"}
+2026-01-06 19:03:11.76
+d37e4ba4
+User
+3:03:11 AM [express] GET /api/conversations 401 in 125ms :: {"error":"Authentication required"}
+2026-01-06 19:03:14.23
+d37e4ba4
+User
+3:03:14 AM [express] POST /api/auth/logout 200 in 0ms :: {"success":true}
+2026-01-06 19:03:14.33
+d37e4ba4
+User
+3:03:14 AM [express] GET /api/support/address 304 in 1ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:03:14.33
+d37e4ba4
+User
+3:03:14 AM [express] GET /api/conversations 401 in 1ms :: {"error":"Authentication required"}
+2026-01-06 19:03:14.42
+d37e4ba4
+User
+3:03:14 AM [express] GET /api/support/address 304 in 1ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:03:16.35
+d37e4ba4
+User
+[SIWK] Challenge generated for kaspa:qrmzgsh8chv72qdtryp...
+2026-01-06 19:03:16.35
+d37e4ba4
+User
+3:03:16 AM [express] POST /api/auth/siwk/challenge 200 in 2ms :: {"success":true,"fields":{"domain":"kaspa-university.replit.app","address":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","statement":"Sign in to Kaspa University to access courses and earn rewards.","uri":"https://kaspa-university.replit.app","version":"1","chainId":"kaspa:mainnet","nonce":"5cd2d24b23aedda9fc6ea711f9242f66","issuedAt":"2026-01-07T03:03:16.356Z","expirationTime":"2026-01-07T03:08:16.356Z"},"message":"kaspa-university.replit.app wants you to sign in with your Kaspa address:\nkaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\n\nSign in to Kaspa University to access courses and earn rewards.\n\nURI: https://kaspa-university.replit.app\nVersion: 1\nChain ID: kaspa:mainnet\nNonce: 5cd2d24b23aedda9fc6ea711f9242f66\nIssued At: 2026-01-07T03:03:16.356Z\nExpiration Time: 2026-01-07T03:08:16.356Z","nonce":"5cd2d24b23aedda9fc6ea711f9242f66","expiresAt":"2026-01-07T03:08:16.356Z"}
+2026-01-06 19:03:16.47
+d37e4ba4
+User
+3:03:16 AM [express] GET /api/support/address 304 in 122ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:03:16.67
+d37e4ba4
+User
+3:03:16 AM [express] GET /api/conversations 401 in 313ms :: {"error":"Authentication required"}
+2026-01-06 19:03:18.29
+d37e4ba4
+User
+[SIWK] Signature: 64 bytes, format: hex
+2026-01-06 19:03:18.30
+d37e4ba4
+User
+[SIWK] Schnorr verification succeeded for kaspa:qrmzgsh8chv72qdtryp...
+2026-01-06 19:03:18.30
+d37e4ba4
+User
+[SIWK] Session created for kaspa:qrmzgsh8chv72qdtryp...
+2026-01-06 19:03:18.30
+d37e4ba4
+User
+3:03:18 AM [express] POST /api/auth/siwk/verify 200 in 10ms :: {"success":true,"token":"3ffba500de7d148bed2e5af114b0f728abc7a32ed0988b80022db5eefe003a08","expiresAt":1767841398302}
+2026-01-06 19:03:18.51
+d37e4ba4
+User
+3:03:18 AM [express] GET /api/support/address 304 in 124ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:03:18.98
+d37e4ba4
+User
+3:03:18 AM [express] GET /api/conversations 401 in 123ms :: {"error":"Authentication required"}
+2026-01-06 19:03:21.33
+d37e4ba4
+User
+3:03:21 AM [express] POST /api/kasia/handshake/prepare 401 in 125ms :: {"error":"Authentication required"}
