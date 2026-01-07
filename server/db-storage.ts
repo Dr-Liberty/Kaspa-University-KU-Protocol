@@ -1051,6 +1051,16 @@ export class DbStorage implements IStorage {
       .where(eq(schema.conversations.id, id));
   }
 
+  async updateConversationE2eKey(id: string, field: "e2eInitiatorSig" | "e2eRecipientSig", signature: string): Promise<void> {
+    const updates: Record<string, any> = {
+      [field]: signature,
+      updatedAt: new Date(),
+    };
+    await db.update(schema.conversations)
+      .set(updates)
+      .where(eq(schema.conversations.id, id));
+  }
+
   async deleteConversation(id: string): Promise<void> {
     await db.delete(schema.conversations)
       .where(eq(schema.conversations.id, id));

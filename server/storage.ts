@@ -147,6 +147,7 @@ export interface IStorage {
   getPendingConversations(): Promise<any[]>;
   getAllConversations(): Promise<any[]>;
   updateConversation(id: string, updates: Record<string, any>): Promise<void>;
+  updateConversationE2eKey(id: string, field: "e2eInitiatorSig" | "e2eRecipientSig", signature: string): Promise<void>;
   deleteConversation(id: string): Promise<void>;
 }
 
@@ -875,6 +876,15 @@ export class MemStorage implements IStorage {
     const conv = this.conversations.get(id);
     if (conv) {
       Object.assign(conv, updates, { updatedAt: new Date() });
+      this.conversations.set(id, conv);
+    }
+  }
+
+  async updateConversationE2eKey(id: string, field: "e2eInitiatorSig" | "e2eRecipientSig", signature: string): Promise<void> {
+    const conv = this.conversations.get(id);
+    if (conv) {
+      (conv as any)[field] = signature;
+      conv.updatedAt = new Date();
       this.conversations.set(id, conv);
     }
   }

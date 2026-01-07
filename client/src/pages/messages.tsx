@@ -12,6 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useConversationKeys } from "@/hooks/use-conversation-keys";
 const kasiaLogo = "/thumbnails/kasia_encrypted_messaging.png";
 
 interface UserProfile {
@@ -158,16 +159,18 @@ function ConversationItem({
       }`}
       data-testid={`conversation-${conversation.id}`}
     >
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarColor }}
-      >
-        <User className="h-5 w-5 text-white" />
-      </div>
+      <Avatar className="h-10 w-10 shrink-0">
+        {otherProfile?.avatarUrl ? (
+          <AvatarImage src={otherProfile.avatarUrl} alt={displayName} />
+        ) : null}
+        <AvatarFallback style={{ backgroundColor: avatarColor }}>
+          <User className="h-5 w-5 text-white" />
+        </AvatarFallback>
+      </Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate font-mono text-sm flex-1 min-w-0">
-            {otherAlias || truncatedAddress}
+          <span className="truncate text-sm flex-1 min-w-0">
+            {displayName}
           </span>
           <div className="shrink-0">
             {statusBadge()}
@@ -199,11 +202,48 @@ function ConversationView({
   const { toast } = useToast();
   const [messageContent, setMessageContent] = useState("");
   const [isSigning, setIsSigning] = useState(false);
+  const [keyInitialized, setKeyInitialized] = useState(false);
+  
+  const { hasKey, initializeKey, tryLoadKeyFromServer, encryptContent, tryDecryptMessage } = useConversationKeys(walletAddress);
 
   const isInitiator = conversation.initiatorAddress === walletAddress;
   const otherAddress = isInitiator ? conversation.recipientAddress : conversation.initiatorAddress;
   const otherAlias = isInitiator ? conversation.recipientAlias : conversation.initiatorAlias;
   const truncatedAddress = `${otherAddress.slice(0, 10)}...${otherAddress.slice(-4)}`;
+
+  useEffect(() => {
+    const initKey = async () => {
+      if (conversation.status === "active" && !hasKey(conversation.id)) {
+        const loadedKey = await tryLoadKeyFromServer(conversation.id, walletAddress, otherAddress, isInitiator);
+        if (loadedKey) {
+          setKeyInitialized(true);
+          return;
+        }
+        
+        if (window.kasware) {
+          try {
+            const key = await initializeKey(
+              conversation.id, 
+              walletAddress, 
+              otherAddress,
+              async (msg) => {
+                return await window.kasware!.signMessage(msg, { type: "schnorr" });
+              },
+              isInitiator
+            );
+            if (key) {
+              setKeyInitialized(true);
+            }
+          } catch (error) {
+            console.error("[E2EE] Failed to initialize conversation key:", error);
+          }
+        }
+      } else if (hasKey(conversation.id)) {
+        setKeyInitialized(true);
+      }
+    };
+    initKey();
+  }, [conversation.id, conversation.status, hasKey, initializeKey, tryLoadKeyFromServer, walletAddress, otherAddress, isInitiator]);
 
   const { data: messagesData, isLoading, refetch } = useQuery<{ messages: PrivateMessage[]; conversation: Conversation; source: string }>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
@@ -243,9 +283,17 @@ function ConversationView({
     mutationFn: async (content: string) => {
       setIsSigning(true);
       try {
-        // Step 1: Prepare the Kasia protocol payload for on-chain broadcast
+        if (!keyInitialized || !hasKey(conversation.id)) {
+          throw new Error("E2EE key not initialized. Please sign the encryption key request first.");
+        }
+        
+        const encryptedContent = encryptContent(conversation.id, content);
+        if (!encryptedContent) {
+          throw new Error("Failed to encrypt message. Cannot send unencrypted content.");
+        }
+        
         const prepareRes = await apiRequest("POST", "/api/messages/prepare", {
-          content,
+          content: encryptedContent,
           conversationId: conversation.id,
           messageType: "private",
         });
@@ -312,10 +360,9 @@ function ConversationView({
           }
         }
 
-        // Step 3: Report the transaction to backend for indexing
         const response = await apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
-          encryptedContent: content,
-          txHash, // User's own on-chain transaction hash
+          encryptedContent: encryptedContent,
+          txHash,
           kasiaPayload: prepareData.kasiaPayload,
         });
         return response.json();
@@ -562,6 +609,10 @@ function ConversationView({
           <div className="space-y-4">
             {messages.map((msg) => {
               const isMine = msg.senderAddress === walletAddress;
+              const { decrypted, content: displayContent } = tryDecryptMessage(
+                conversation.id,
+                msg.encryptedContent
+              );
               return (
                 <div
                   key={msg.id}
@@ -575,10 +626,11 @@ function ConversationView({
                     }`}
                     data-testid={`message-${msg.id}`}
                   >
-                    <p className="text-sm">{msg.encryptedContent}</p>
-                    <p className="mt-1 text-[10px] opacity-70">
-                      {formatTime(msg.createdAt)}
-                    </p>
+                    <p className="text-sm">{displayContent}</p>
+                    <div className="mt-1 flex items-center gap-2 text-[10px] opacity-70">
+                      <span>{formatTime(msg.createdAt)}</span>
+                      {decrypted && <Lock className="h-2.5 w-2.5" />}
+                    </div>
                   </div>
                 </div>
               );
@@ -601,15 +653,57 @@ function ConversationView({
 
       {conversation.status === "active" && (
         <div className="border-t border-border/50 p-4 w-full shrink-0">
+          {!keyInitialized && (
+            <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Lock className="h-4 w-4" />
+                <span className="text-sm font-medium">E2EE Key Required</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Sign a message to initialize end-to-end encryption for this conversation.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                onClick={async () => {
+                  if (window.kasware) {
+                    try {
+                      const key = await initializeKey(
+                        conversation.id,
+                        walletAddress,
+                        otherAddress,
+                        async (msg) => window.kasware!.signMessage(msg, { type: "schnorr" }),
+                        isInitiator
+                      );
+                      if (key) {
+                        setKeyInitialized(true);
+                        toast({ title: "E2EE Enabled", description: "Your messages are now end-to-end encrypted." });
+                      } else {
+                        toast({ title: "Waiting for other party", description: "Both parties need to initialize E2EE. Please wait for the other user.", variant: "default" });
+                      }
+                    } catch (error) {
+                      toast({ title: "Key Initialization Failed", description: "Please try again.", variant: "destructive" });
+                    }
+                  }
+                }}
+                data-testid="button-init-e2ee"
+              >
+                <Lock className="h-3 w-3 mr-2" />
+                Initialize E2EE
+              </Button>
+            </div>
+          )}
           <div className="flex items-end gap-3 w-full">
             <div className="flex-1 min-w-0">
               <Textarea
-                placeholder="Type your message... (max 25 chars for on-chain)"
+                placeholder={keyInitialized ? "Type your encrypted message..." : "Initialize E2EE first..."}
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value.slice(0, 25))}
                 className="min-h-[80px] max-h-[120px] resize-y text-sm w-full"
+                disabled={!keyInitialized}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && keyInitialized) {
                     e.preventDefault();
                     handleSend();
                   }
@@ -620,14 +714,17 @@ function ConversationView({
                 <span className={`text-xs ${messageContent.length > 20 ? "text-amber-500" : "text-muted-foreground"}`}>
                   {messageContent.length}/25 characters
                 </span>
-                {messageContent.length > 20 && (
-                  <span className="text-xs text-amber-500">Near limit</span>
+                {keyInitialized && (
+                  <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <Lock className="h-2.5 w-2.5" />
+                    E2EE Active
+                  </span>
                 )}
               </div>
             </div>
             <Button
               onClick={handleSend}
-              disabled={!messageContent.trim() || sendMessage.isPending || isSigning || messageContent.length > 25}
+              disabled={!keyInitialized || !messageContent.trim() || sendMessage.isPending || isSigning || messageContent.length > 25}
               size="default"
               className="shrink-0"
               data-testid="button-send-message"
@@ -643,7 +740,7 @@ function ConversationView({
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            On-chain messages via Kasia Protocol (Kaspa storage limit: 25 chars)
+            {keyInitialized ? "End-to-end encrypted via ChaCha20-Poly1305" : "Sign to enable E2EE messaging"}
           </p>
         </div>
       )}
@@ -841,6 +938,7 @@ export default function Messages() {
   const { wallet, isAuthenticated } = useWallet();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
+  const [profiles, setProfiles] = useState<Record<string, UserProfile>>({});
   
   const { data: conversationsData, isLoading, refetch, isFetching } = useQuery<{ conversations: Conversation[], source?: string }>({
     queryKey: ["/api/conversations", "onchain", isAuthenticated ? "auth" : "noauth"],
@@ -861,6 +959,29 @@ export default function Messages() {
   });
   
   const conversations = conversationsData?.conversations;
+  
+  // Fetch profiles for all addresses in conversations
+  useEffect(() => {
+    if (!conversations || conversations.length === 0) return;
+    
+    const addresses = new Set<string>();
+    conversations.forEach(conv => {
+      addresses.add(conv.initiatorAddress);
+      addresses.add(conv.recipientAddress);
+    });
+    
+    const addressList = Array.from(addresses).filter(a => !profiles[a]);
+    if (addressList.length === 0) return;
+    
+    apiRequest("POST", "/api/profiles/batch", { walletAddresses: addressList.slice(0, 50) })
+      .then(res => res.json())
+      .then(data => {
+        if (data.profiles) {
+          setProfiles(prev => ({ ...prev, ...data.profiles }));
+        }
+      })
+      .catch(err => console.error("[Messages] Failed to fetch profiles:", err));
+  }, [conversations]);
   
   // Sync selectedConversation with latest data from the list
   // This ensures status updates (e.g., pending -> active) are reflected
@@ -996,6 +1117,7 @@ export default function Messages() {
                             setSelectedConversation(conv);
                             setShowNewConversation(false);
                           }}
+                          profiles={profiles}
                         />
                       ))}
                     </div>

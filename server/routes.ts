@@ -4882,6 +4882,84 @@ export async function registerRoutes(
     }
   });
 
+  // E2EE Key Exchange: Submit signature for shared key derivation
+  app.post("/api/conversations/:conversationId/e2e-key", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { conversationId } = req.params;
+      const { signature, signedMessage } = req.body;
+      
+      if (!signature) {
+        return res.status(400).json({ error: "Signature required" });
+      }
+      
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      // Verify user is part of conversation
+      const isInitiator = authenticatedWallet === conversation.initiatorAddress;
+      const isRecipient = authenticatedWallet === conversation.recipientAddress;
+      if (!isInitiator && !isRecipient) {
+        return res.status(403).json({ error: "Not authorized for this conversation" });
+      }
+      
+      // Store the signature in the appropriate field
+      const updateField = isInitiator ? "e2eInitiatorSig" : "e2eRecipientSig";
+      await storage.updateConversationE2eKey(conversationId, updateField, signature);
+      
+      console.log(`[E2EE] Stored ${isInitiator ? "initiator" : "recipient"} signature for conversation ${conversationId}`);
+      
+      // Return both signatures if available
+      const updatedConversation = await kasiaIndexer.getConversation(conversationId);
+      res.json({
+        success: true,
+        e2eInitiatorSig: updatedConversation?.e2eInitiatorSig || null,
+        e2eRecipientSig: updatedConversation?.e2eRecipientSig || null,
+        keyExchangeComplete: !!(updatedConversation?.e2eInitiatorSig && updatedConversation?.e2eRecipientSig),
+      });
+    } catch (error: any) {
+      console.error("[E2EE] Failed to store key:", error);
+      res.status(500).json({ error: "Failed to store E2EE key" });
+    }
+  });
+
+  // E2EE Key Exchange: Get signatures for shared key derivation
+  app.get("/api/conversations/:conversationId/e2e-key", generalRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const authenticatedWallet = getAuthenticatedWallet(req);
+      if (!authenticatedWallet) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { conversationId } = req.params;
+      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      // Verify user is part of conversation
+      if (authenticatedWallet !== conversation.initiatorAddress && authenticatedWallet !== conversation.recipientAddress) {
+        return res.status(403).json({ error: "Not authorized for this conversation" });
+      }
+      
+      res.json({
+        e2eInitiatorSig: conversation.e2eInitiatorSig || null,
+        e2eRecipientSig: conversation.e2eRecipientSig || null,
+        keyExchangeComplete: !!(conversation.e2eInitiatorSig && conversation.e2eRecipientSig),
+      });
+    } catch (error: any) {
+      console.error("[E2EE] Failed to get keys:", error);
+      res.status(500).json({ error: "Failed to get E2EE keys" });
+    }
+  });
+
   // Record a message (supports both on-chain txHash and signature-based MVP)
   app.post("/api/conversations/:conversationId/messages", generalRateLimiter, async (req: Request, res: Response) => {
     try {

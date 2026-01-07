@@ -241,6 +241,8 @@ export const conversations = pgTable("conversations", {
   initiatorAlias: text("initiator_alias"),
   recipientAlias: text("recipient_alias"),
   isAdminConversation: boolean("is_admin_conversation").default(false).notNull(),
+  e2eInitiatorSig: text("e2e_initiator_sig"), // E2EE key exchange: initiator's signature
+  e2eRecipientSig: text("e2e_recipient_sig"), // E2EE key exchange: recipient's signature
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
