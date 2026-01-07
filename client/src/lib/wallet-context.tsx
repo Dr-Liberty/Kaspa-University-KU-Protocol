@@ -184,9 +184,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           
           const { fields, message } = await challengeRes.json();
           
-          // Step 2: Sign the SIWK message with the wallet
-          console.log("[SIWK] Signing challenge message...");
-          const signature = await window.kasware.signMessage(message, { type: "ecdsa" });
+          // Step 2: Sign the SIWK message with the wallet using Schnorr
+          // @kluster/kaspa-auth expects Schnorr signatures (64-byte)
+          console.log("[SIWK] Signing challenge message with Schnorr...");
+          const signature = await window.kasware.signMessage(message, { type: "schnorr" });
           
           // Step 3: Verify signature with server
           console.log("[SIWK] Verifying signature...");

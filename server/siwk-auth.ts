@@ -171,6 +171,21 @@ export function generateSiwkChallenge(walletAddress: string): { fields: SiwkFiel
   return { fields, message };
 }
 
+function normalizeSignatureToHex(signature: string): string {
+  if (/^[0-9a-fA-F]+$/.test(signature)) {
+    return signature.toLowerCase();
+  }
+  
+  try {
+    const decoded = Buffer.from(signature, "base64");
+    if (decoded.length >= 64 && decoded.length <= 65) {
+      return decoded.toString("hex");
+    }
+  } catch {}
+  
+  return signature;
+}
+
 export async function verifySiwkSignature(
   fields: SiwkFields,
   signature: string,
@@ -192,10 +207,14 @@ export async function verifySiwkSignature(
       return { valid: false, error: "Nonce already used (replay attack prevented)" };
     }
     
+    const normalizedSig = normalizeSignatureToHex(signature);
+    const sigBytes = Buffer.from(normalizedSig, "hex");
+    console.log(`[SIWK] Signature: ${sigBytes.length} bytes, format: ${signature === normalizedSig ? 'hex' : 'base64->hex'}`);
+    
     let isValid = false;
     let verifyError = "";
     
-    const result = await verifySiwk(fields, signature, {
+    const result = await verifySiwk(fields, normalizedSig, {
       domain: getDomain(),
       checkNonce: async (nonce: string) => {
         return true;
@@ -209,14 +228,19 @@ export async function verifySiwkSignature(
       verifyError = result.reason || "Schnorr verification failed";
       console.log(`[SIWK] Schnorr failed (${verifyError}), trying ECDSA fallback...`);
       
-      const { message } = buildMessage(fields);
-      const ecdsaValid = await verifyEcdsaSignature(message, signature, fields.address);
-      
-      if (ecdsaValid) {
-        isValid = true;
-        console.log(`[SIWK] ECDSA verification succeeded for ${fields.address.slice(0, 25)}...`);
+      if (sigBytes.length === 65) {
+        const { message } = buildMessage(fields);
+        const ecdsaValid = await verifyEcdsaSignature(message, normalizedSig, fields.address);
+        
+        if (ecdsaValid) {
+          isValid = true;
+          console.log(`[SIWK] ECDSA verification succeeded for ${fields.address.slice(0, 25)}...`);
+        } else {
+          verifyError = "signature/address mismatch (both Schnorr and ECDSA failed)";
+        }
       } else {
-        verifyError = "signature/address mismatch (both Schnorr and ECDSA failed)";
+        console.log(`[SIWK] Skipping ECDSA fallback: ${sigBytes.length}-byte sig is not ECDSA format (need 65)`);
+        verifyError = "Schnorr signature verification failed";
       }
     }
     

@@ -158,7 +158,7 @@ function PublicCommentsTab({ lessonId }: { lessonId: string }) {
           if (prepareData.success && prepareData.messageToSign) {
             signedPayload = prepareData.messageToSign;
             authorPubkey = await window.kasware.getPublicKey();
-            signature = await window.kasware.signMessage(prepareData.messageToSign, { type: "ecdsa" });
+            signature = await window.kasware.signMessage(prepareData.messageToSign, { type: "schnorr" });
           }
         } catch (signError: any) {
           console.error("[K Protocol] Wallet signing failed:", signError);
