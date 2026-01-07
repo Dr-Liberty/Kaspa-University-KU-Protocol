@@ -4650,7 +4650,7 @@ export async function registerRoutes(
   });
 
   // Get conversations for authenticated user
-  // ON-CHAIN FIRST: Always sync from public Kasia indexer to ensure we have latest data
+  // Uses getConversationsForWallet which returns only conversations where user is participant
   app.get("/api/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4658,26 +4658,18 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
       
-      // Debug logging
-      const allStats = kasiaIndexer.getStats();
       console.log(`[Kasia] GET /api/conversations for wallet: ${authenticatedWallet.slice(0, 20)}...`);
-      console.log(`[Kasia] Total conversations in indexer: ${allStats.conversations}, active: ${allStats.activeConversations}`);
       
-      // ON-CHAIN FIRST: Always sync from public Kasia indexer for this wallet
-      // This ensures blockchain is the source of truth, not the local database
+      // Sync from on-chain to update cache for this wallet
       await kasiaIndexer.syncForWallet(authenticatedWallet);
       
-      // After sync, return from local cache (which is now updated from on-chain)
-      const conversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
+      // getConversationsForWallet already filters by participant - use it directly
+      // This method uses full address matching, not partial string comparison
+      const userConversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
       
-      console.log(`[Kasia] Returning ${conversations.length} conversations for wallet (on-chain synced)`);
+      console.log(`[Kasia] Returning ${userConversations.length} conversations for wallet`);
       
-      // Debug: log each conversation's status to trace the issue
-      for (const conv of conversations) {
-        console.log(`[Kasia API] Conv ${conv.id}: status=${conv.status}, initiator=${conv.initiatorAddress.slice(0, 25)}..., recipient=${conv.recipientAddress.slice(0, 25)}...`);
-      }
-      
-      res.json({ conversations, source: "onchain" });
+      res.json({ conversations: userConversations, source: "cache_filtered" });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversations:", error);
       res.status(500).json({ error: "Failed to fetch conversations" });
@@ -4685,6 +4677,7 @@ export async function registerRoutes(
   });
 
   // Get a specific conversation (only if participant)
+  // Uses getConversationsForWallet to ensure proper participant filtering
   app.get("/api/conversations/:conversationId", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -4693,15 +4686,13 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const conversation = await kasiaIndexer.getConversation(conversationId);
+      
+      // Get user's conversations (already filtered by participant)
+      const userConversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
+      const conversation = userConversations.find(c => c.id === conversationId);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
-      }
-
-      // Verify user is a participant
-      if (conversation.initiatorAddress !== authenticatedWallet && conversation.recipientAddress !== authenticatedWallet) {
-        return res.status(403).json({ error: "Not authorized to view this conversation" });
       }
       
       res.json({ conversation });
@@ -4736,14 +4727,18 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid transaction hash format. Must be a valid Kaspa transaction." });
       }
       
-      const conversation = await kasiaIndexer.getConversation(conversationId);
+      // Get user's conversations using proper participant filtering
+      const userConversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
+      const conversation = userConversations.find(c => c.id === conversationId);
       
       if (!conversation) {
+        console.log(`[Kasia] Conversation ${conversationId} not found for wallet ${authenticatedWallet.slice(0, 20)}...`);
         return res.status(404).json({ error: "Conversation not found" });
       }
-
-      // Only the recipient can accept the handshake
-      if (conversation.recipientAddress !== authenticatedWallet) {
+      
+      // User must be the recipient (person who received the handshake) - use full address match
+      if (conversation.recipientAddress.toLowerCase().trim() !== authenticatedWallet.toLowerCase().trim()) {
+        console.log(`[Kasia] Accept denied: recipient=${conversation.recipientAddress.slice(0, 25)}... !== auth=${authenticatedWallet.slice(0, 25)}...`);
         return res.status(403).json({ error: "Only the recipient can accept the handshake" });
       }
       
@@ -4756,8 +4751,6 @@ export async function registerRoutes(
       // Record response handshake in indexer
       // Skip immediate verification - tx was just broadcast and won't be indexed yet
       // The periodic sync from public Kasia indexer will confirm it later
-      // Note: The Kasia indexer is the ultimate source of truth - if this tx doesn't contain
-      // a valid Kasia handshake response, the indexer won't recognize it
       await kasiaIndexer.recordHandshake({
         txHash: responseTxHash,
         conversationId,
@@ -4769,7 +4762,6 @@ export async function registerRoutes(
       }, true); // Skip verification for freshly broadcast transactions
       
       // Update conversation status to active
-      // The user has broadcast their response handshake on-chain - they control the funds
       await kasiaIndexer.updateConversationStatus(conversationId, "active", responseTxHash, recipientAlias);
       
       console.log(`[Kasia] Conversation ${conversationId} marked active with on-chain response`);
@@ -5266,6 +5258,8 @@ export async function registerRoutes(
   });
 
   // Get all active conversations for admin messaging
+  // FILTERED: Only show conversations where treasury/support is a participant
+  // This prevents admin from seeing user P2P conversations
   app.get("/api/admin/kasia/conversations", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const adminPassword = req.headers["x-admin-password"] as string;
@@ -5273,13 +5267,36 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Unauthorized" });
       }
       
-      const activeConversations = kasiaIndexer.getActiveConversations();
-      const allConversations = kasiaIndexer.getAllConversations();
+      const supportAddress = process.env.SUPPORT_ADDRESS || "";
+      const treasuryAddress = treasury?.getAddress?.() || "";
+      
+      // REQUIRE at least one address to be configured for security
+      // This prevents admin from accidentally seeing all user P2P conversations
+      if (!supportAddress && !treasuryAddress) {
+        console.error("[Kasia Admin] No SUPPORT_ADDRESS or treasury configured - cannot filter support conversations");
+        return res.json({ 
+          active: [],
+          all: [],
+          stats: kasiaIndexer.getStats(),
+          warning: "No support address configured. Set SUPPORT_ADDRESS environment variable."
+        });
+      }
+      
+      // Get conversations for the support/treasury wallet using proper filtering
+      // This uses the same filtering logic as user endpoints
+      const supportConversations = kasiaIndexer.getConversationsForWallet(supportAddress || treasuryAddress);
+      const activeSupport = supportConversations.filter(c => c.status === "active");
+      
+      console.log(`[Kasia Admin] Returning ${supportConversations.length} support conversations (${activeSupport.length} active)`);
       
       res.json({ 
-        active: activeConversations,
-        all: allConversations,
-        stats: kasiaIndexer.getStats()
+        active: activeSupport,
+        all: supportConversations,
+        stats: {
+          ...kasiaIndexer.getStats(),
+          supportConversations: supportConversations.length,
+          activeSupportConversations: activeSupport.length
+        }
       });
     } catch (error: any) {
       console.error("[Kasia Admin] Failed to fetch conversations:", error);

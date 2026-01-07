@@ -84,6 +84,8 @@ class KasiaIndexer {
   private handshakes: Map<string, HandshakeRecord> = new Map();
   private messages: Map<string, IndexedMessage> = new Map();
   private conversations: Map<string, IndexedConversation> = new Map();
+  // Per-wallet conversation cache to prevent cross-wallet leakage
+  private walletConversations: Map<string, Map<string, IndexedConversation>> = new Map();
   private isRunning = false;
   private storage: any = null;
   private lastSyncTime: Date | null = null;
@@ -92,6 +94,39 @@ class KasiaIndexer {
 
   constructor() {
     console.log("[Kasia Indexer] Initialized on-chain message indexer (ON-CHAIN FIRST)");
+  }
+
+  /**
+   * Normalize a Kaspa address to a canonical form for consistent cache keying
+   * Strips network prefix and converts to lowercase for consistent comparison
+   */
+  private normalizeAddress(address: string): string {
+    if (!address) return "";
+    // Remove network prefix (kaspa: or kaspatest:) and lowercase
+    return address.replace(/^kaspatest:/, "").replace(/^kaspa:/, "").toLowerCase().trim();
+  }
+
+  /**
+   * Add a conversation to a wallet's per-wallet cache
+   */
+  private addToWalletCache(walletAddress: string, conversation: IndexedConversation): void {
+    const normalizedWallet = this.normalizeAddress(walletAddress);
+    if (!normalizedWallet) return;
+    
+    let walletCache = this.walletConversations.get(normalizedWallet);
+    if (!walletCache) {
+      walletCache = new Map();
+      this.walletConversations.set(normalizedWallet, walletCache);
+    }
+    walletCache.set(conversation.id, conversation);
+  }
+
+  /**
+   * Add a conversation to both participants' wallet caches
+   */
+  private addToBothWalletCaches(conversation: IndexedConversation): void {
+    this.addToWalletCache(conversation.initiatorAddress, conversation);
+    this.addToWalletCache(conversation.recipientAddress, conversation);
   }
 
   /**
@@ -138,6 +173,7 @@ class KasiaIndexer {
     this.conversations.clear();
     this.messages.clear();
     this.handshakes.clear();
+    this.walletConversations.clear(); // Clear per-wallet caches to prevent stale data
     
     // DO NOT load from database - database is write-only cache
     // All data comes from the public Kasia indexer (on-chain source of truth)
@@ -199,6 +235,7 @@ class KasiaIndexer {
         const indexed = convertConversation(conv);
         if (indexed) {
           this.conversations.set(indexed.id, indexed);
+          this.addToBothWalletCaches(indexed);
           validCount++;
           
           // Also load messages for active conversations
@@ -227,6 +264,7 @@ class KasiaIndexer {
         const indexed = convertConversation(conv);
         if (indexed) {
           this.conversations.set(indexed.id, indexed);
+          this.addToBothWalletCaches(indexed);
           validCount++;
         }
       }
@@ -337,6 +375,10 @@ class KasiaIndexer {
             }
           }
           this.conversations.set(conv.id, indexed);
+          
+          // Add to per-wallet caches for both participants
+          this.addToBothWalletCaches(indexed);
+          
           syncedCount++;
           
           // UPSERT to database cache
@@ -871,6 +913,9 @@ class KasiaIndexer {
     };
     this.conversations.set(params.id, conversation);
     
+    // Add to per-wallet caches for both participants
+    this.addToBothWalletCaches(conversation);
+    
     // Persist to database - critical for durability across restarts
     if (this.storage) {
       try {
@@ -915,35 +960,27 @@ class KasiaIndexer {
   }
 
   /**
-   * Get all conversations for a wallet address (from local cache)
-   * Uses cross-network comparison to support both mainnet (kaspa:) and testnet (kaspatest:)
+   * Get all conversations for a wallet address (from per-wallet cache)
+   * Uses normalized address lookup to prevent cross-wallet cache pollution
    */
   getConversationsForWallet(walletAddress: string): IndexedConversation[] {
-    const allConvs = Array.from(this.conversations.values());
-    console.log(`[Kasia Indexer] getConversationsForWallet: checking ${allConvs.length} conversations for wallet ${walletAddress.slice(0, 20)}...`);
-    
-    // Cross-network address comparison helper
-    const getAddressBase = (addr: string): string => {
-      const withoutPrefix = addr.replace(/^kaspatest:/, "").replace(/^kaspa:/, "");
-      return withoutPrefix.slice(0, 50).toLowerCase();
-    };
-    
-    const isSameAddress = (addr1: string, addr2: string): boolean => {
-      if (!addr1 || !addr2) return false;
-      if (addr1.toLowerCase().trim() === addr2.toLowerCase().trim()) return true;
-      return getAddressBase(addr1) === getAddressBase(addr2);
-    };
-    
-    // Debug: log all conversation addresses
-    for (const c of allConvs) {
-      const isInitiatorMatch = isSameAddress(c.initiatorAddress, walletAddress);
-      const isRecipientMatch = isSameAddress(c.recipientAddress, walletAddress);
-      console.log(`[Kasia Indexer]   Conv ${c.id}: initiator=${c.initiatorAddress.slice(0, 20)}..., recipient=${c.recipientAddress.slice(0, 20)}..., status=${c.status}, initMatch=${isInitiatorMatch}, recipMatch=${isRecipientMatch}`);
+    const normalizedWallet = this.normalizeAddress(walletAddress);
+    if (!normalizedWallet) {
+      console.log(`[Kasia Indexer] getConversationsForWallet: invalid wallet address`);
+      return [];
     }
     
-    return allConvs
-      .filter(c => isSameAddress(c.initiatorAddress, walletAddress) || isSameAddress(c.recipientAddress, walletAddress))
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    // Get from per-wallet cache (isolated from other wallets)
+    const walletCache = this.walletConversations.get(normalizedWallet);
+    if (!walletCache || walletCache.size === 0) {
+      console.log(`[Kasia Indexer] getConversationsForWallet: no cached conversations for ${walletAddress.slice(0, 20)}...`);
+      return [];
+    }
+    
+    const conversations = Array.from(walletCache.values());
+    console.log(`[Kasia Indexer] getConversationsForWallet: returning ${conversations.length} conversations for ${walletAddress.slice(0, 20)}... (per-wallet cache)`);
+    
+    return conversations.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
   /**
@@ -1036,6 +1073,9 @@ class KasiaIndexer {
       conv.updatedAt = new Date();
       this.conversations.set(id, conv);
       
+      // Update per-wallet caches for both participants
+      this.addToBothWalletCaches(conv);
+      
       // Persist to database
       if (this.storage) {
         try {
@@ -1052,8 +1092,23 @@ class KasiaIndexer {
    * Delete a conversation (for cleaning up stale records without on-chain proof)
    */
   async deleteConversation(id: string): Promise<void> {
+    // Get conversation before deleting to know which wallet caches to update
+    const conv = this.conversations.get(id);
+    
     // Remove from in-memory cache
     this.conversations.delete(id);
+    
+    // Remove from per-wallet caches
+    if (conv) {
+      const initiatorNorm = this.normalizeAddress(conv.initiatorAddress);
+      const recipientNorm = this.normalizeAddress(conv.recipientAddress);
+      
+      const initiatorCache = this.walletConversations.get(initiatorNorm);
+      if (initiatorCache) initiatorCache.delete(id);
+      
+      const recipientCache = this.walletConversations.get(recipientNorm);
+      if (recipientCache) recipientCache.delete(id);
+    }
     
     // Remove from database
     if (this.storage) {
