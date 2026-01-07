@@ -973,12 +973,16 @@ class KasiaIndexer {
     // Get from per-wallet cache (isolated from other wallets)
     const walletCache = this.walletConversations.get(normalizedWallet);
     if (!walletCache || walletCache.size === 0) {
-      console.log(`[Kasia Indexer] getConversationsForWallet: no cached conversations for ${walletAddress.slice(0, 20)}...`);
+      console.log(`[Kasia Indexer] getConversationsForWallet: no cached conversations for ${walletAddress.slice(0, 20)}... (normalized: ${normalizedWallet.slice(0,15)}...)`);
       return [];
     }
     
     const conversations = Array.from(walletCache.values());
-    console.log(`[Kasia Indexer] getConversationsForWallet: returning ${conversations.length} conversations for ${walletAddress.slice(0, 20)}... (per-wallet cache)`);
+    console.log(`[Kasia Indexer] getConversationsForWallet: returning ${conversations.length} conversations for ${walletAddress.slice(0, 20)}...`);
+    // Log each conversation's status for debugging
+    for (const conv of conversations) {
+      console.log(`[Kasia Indexer]   - ${conv.id}: status=${conv.status}, initiator=${conv.initiatorAddress.slice(0,15)}..., recipient=${conv.recipientAddress.slice(0,15)}...`);
+    }
     
     return conversations.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
@@ -1067,11 +1071,15 @@ class KasiaIndexer {
   ): Promise<void> {
     const conv = this.conversations.get(id);
     if (conv) {
+      const oldStatus = conv.status;
       conv.status = status;
       if (responseTxHash) conv.responseTxHash = responseTxHash;
       if (recipientAlias) conv.recipientAlias = recipientAlias;
       conv.updatedAt = new Date();
       this.conversations.set(id, conv);
+      
+      console.log(`[Kasia Indexer] updateConversationStatus: ${id} status ${oldStatus} -> ${status}`);
+      console.log(`[Kasia Indexer] Updating wallet caches for initiator=${conv.initiatorAddress.slice(0,20)}..., recipient=${conv.recipientAddress.slice(0,20)}...`);
       
       // Update per-wallet caches for both participants
       this.addToBothWalletCaches(conv);
@@ -1085,6 +1093,8 @@ class KasiaIndexer {
           console.error(`[Kasia Indexer] Storage update error: ${error.message}`);
         }
       }
+    } else {
+      console.error(`[Kasia Indexer] updateConversationStatus: conversation ${id} NOT FOUND in global Map`);
     }
   }
 

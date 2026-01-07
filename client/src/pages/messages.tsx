@@ -477,21 +477,34 @@ function ConversationView({
 
       {conversation.status === "pending" && !isInitiator && (
         <div className="border-b border-border/50 bg-muted/30 p-4 shrink-0">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-sm font-medium">Handshake Request</p>
               <p className="text-xs text-muted-foreground">
                 {truncatedAddress} wants to start an encrypted conversation with you.
               </p>
             </div>
-            <Button
-              onClick={() => acceptHandshake.mutate()}
-              disabled={acceptHandshake.isPending || isAccepting}
-              size="sm"
-              data-testid="button-accept-handshake"
-            >
-              {acceptHandshake.isPending || isAccepting ? "Approve 0.2 KAS in wallet..." : "Accept (0.2 KAS)"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+                }}
+                data-testid="button-sync-pending-recipient"
+              >
+                <RefreshCw className="h-3 w-3 mr-2" />
+                Sync
+              </Button>
+              <Button
+                onClick={() => acceptHandshake.mutate()}
+                disabled={acceptHandshake.isPending || isAccepting}
+                size="sm"
+                data-testid="button-accept-handshake"
+              >
+                {acceptHandshake.isPending || isAccepting ? "Approve 0.2 KAS in wallet..." : "Accept (0.2 KAS)"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -502,6 +515,18 @@ function ConversationView({
           <p className="mt-2 text-sm text-muted-foreground">
             Waiting for {truncatedAddress} to accept your handshake request...
           </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+            }}
+            data-testid="button-sync-pending-initiator"
+          >
+            <RefreshCw className="h-3 w-3 mr-2" />
+            Check status
+          </Button>
         </div>
       )}
 
@@ -826,6 +851,18 @@ export default function Messages() {
   });
   
   const conversations = conversationsData?.conversations;
+  
+  // Sync selectedConversation with latest data from the list
+  // This ensures status updates (e.g., pending -> active) are reflected
+  useEffect(() => {
+    if (selectedConversation && conversations) {
+      const updated = conversations.find(c => c.id === selectedConversation.id);
+      if (updated && updated.status !== selectedConversation.status) {
+        console.log(`[Messages] Syncing conversation ${updated.id}: status ${selectedConversation.status} -> ${updated.status}`);
+        setSelectedConversation(updated);
+      }
+    }
+  }, [conversations, selectedConversation]);
 
   if (!wallet) {
     return (
