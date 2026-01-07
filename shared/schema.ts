@@ -5,6 +5,7 @@ export const userSchema = z.object({
   id: z.string(),
   walletAddress: z.string(),
   displayName: z.string().optional(),
+  avatarUrl: z.string().optional(),
   totalKasEarned: z.number().default(0),
   createdAt: z.date(),
   whitelistedAt: z.date().optional(), // When wallet was whitelisted for discounted minting

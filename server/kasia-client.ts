@@ -214,6 +214,14 @@ export async function getConversationsFromIndexer(
     getHandshakesByReceiver(walletAddress),
   ]);
   
+  console.log(`[Kasia Client] Found ${sentHandshakes.length} handshakes sent by ${walletAddress.slice(0, 20)}...`);
+  console.log(`[Kasia Client] Found ${receivedHandshakes.length} handshakes received by ${walletAddress.slice(0, 20)}...`);
+  
+  // DEBUG: Log each received handshake for debugging incoming conversations
+  for (const hs of receivedHandshakes) {
+    console.log(`[Kasia Client] Received handshake: from=${hs.sender.slice(0, 20)}..., tx=${hs.tx_id.slice(0, 16)}...`);
+  }
+  
   const conversationsMap = new Map<string, {
     id: string;
     initiatorAddress: string;

@@ -89,6 +89,7 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(),
   walletAddress: text("wallet_address").notNull().unique(),
   displayName: text("display_name"),
+  avatarUrl: text("avatar_url"),
   totalKasEarned: real("total_kas_earned").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   whitelistedAt: timestamp("whitelisted_at"), // When wallet was whitelisted for discounted minting

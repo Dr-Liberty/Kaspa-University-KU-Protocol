@@ -1172,6 +1172,103 @@ export async function registerRoutes(
     });
   });
 
+  // Get user profile
+  app.get("/api/profile", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      id: user.id,
+      walletAddress: user.walletAddress,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      totalKasEarned: user.totalKasEarned,
+      createdAt: user.createdAt,
+    });
+  });
+
+  // Update user profile
+  app.patch("/api/profile", async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    const user = await storage.getUserByWalletAddress(walletAddress);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { displayName, avatarUrl } = req.body;
+
+    // Validate display name
+    if (displayName !== undefined) {
+      if (typeof displayName !== "string" || displayName.length > 50) {
+        return res.status(400).json({ error: "Display name must be 50 characters or less" });
+      }
+    }
+
+    // Validate avatar URL
+    if (avatarUrl !== undefined) {
+      if (typeof avatarUrl !== "string" || avatarUrl.length > 500) {
+        return res.status(400).json({ error: "Avatar URL must be 500 characters or less" });
+      }
+      // Basic URL validation
+      if (avatarUrl && !avatarUrl.match(/^https?:\/\/.+/)) {
+        return res.status(400).json({ error: "Avatar URL must be a valid HTTP/HTTPS URL" });
+      }
+    }
+
+    const updates: { displayName?: string; avatarUrl?: string } = {};
+    if (displayName !== undefined) updates.displayName = displayName;
+    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
+
+    const updatedUser = await storage.updateUserProfile(user.id, updates);
+    if (!updatedUser) {
+      return res.status(500).json({ error: "Failed to update profile" });
+    }
+
+    res.json({
+      id: updatedUser.id,
+      walletAddress: updatedUser.walletAddress,
+      displayName: updatedUser.displayName,
+      avatarUrl: updatedUser.avatarUrl,
+      totalKasEarned: updatedUser.totalKasEarned,
+      createdAt: updatedUser.createdAt,
+    });
+  });
+
+  // Get profiles by wallet addresses (for displaying in messages/leaderboards)
+  app.post("/api/profiles/batch", async (req: Request, res: Response) => {
+    const { walletAddresses } = req.body;
+    if (!Array.isArray(walletAddresses) || walletAddresses.length === 0) {
+      return res.status(400).json({ error: "walletAddresses array required" });
+    }
+    if (walletAddresses.length > 50) {
+      return res.status(400).json({ error: "Maximum 50 addresses per request" });
+    }
+
+    const profiles: Record<string, { displayName: string | null; avatarUrl: string | null }> = {};
+    for (const addr of walletAddresses) {
+      const user = await storage.getUserByWalletAddress(addr);
+      if (user) {
+        profiles[addr] = {
+          displayName: user.displayName || null,
+          avatarUrl: user.avatarUrl || null,
+        };
+      }
+    }
+
+    res.json({ profiles });
+  });
+
   // Get whitelist status for NFT minting discount
   app.get("/api/whitelist/status", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;

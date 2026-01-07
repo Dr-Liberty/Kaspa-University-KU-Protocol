@@ -23,6 +23,7 @@ export interface IStorage {
   getUserByWalletAddress(address: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserKas(userId: string, amount: number): Promise<void>;
+  updateUserProfile(userId: string, updates: { displayName?: string; avatarUrl?: string }): Promise<User | undefined>;
 
   getCourses(): Promise<Course[]>;
   getCourse(id: string): Promise<Course | undefined>;
@@ -200,6 +201,20 @@ export class MemStorage implements IStorage {
     if (user) {
       user.totalKasEarned += amount;
     }
+  }
+
+  async updateUserProfile(userId: string, updates: { displayName?: string; avatarUrl?: string }): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (user) {
+      if (updates.displayName !== undefined) {
+        user.displayName = updates.displayName;
+      }
+      if (updates.avatarUrl !== undefined) {
+        user.avatarUrl = updates.avatarUrl;
+      }
+      return user;
+    }
+    return undefined;
   }
 
   async getCourses(): Promise<Course[]> {

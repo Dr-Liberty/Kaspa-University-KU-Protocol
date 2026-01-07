@@ -64,6 +64,24 @@ export class DbStorage implements IStorage {
       .where(eq(schema.users.id, userId));
   }
 
+  async updateUserProfile(userId: string, updates: { displayName?: string; avatarUrl?: string }): Promise<User | undefined> {
+    const updateData: any = {};
+    if (updates.displayName !== undefined) {
+      updateData.displayName = updates.displayName;
+    }
+    if (updates.avatarUrl !== undefined) {
+      updateData.avatarUrl = updates.avatarUrl;
+    }
+    if (Object.keys(updateData).length === 0) {
+      return this.getUser(userId);
+    }
+    const result = await db.update(schema.users)
+      .set(updateData)
+      .where(eq(schema.users.id, userId))
+      .returning();
+    return result[0] as User | undefined;
+  }
+
   async getCourses(): Promise<Course[]> {
     return Array.from(this.courses.values());
   }
