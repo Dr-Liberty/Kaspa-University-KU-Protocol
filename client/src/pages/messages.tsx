@@ -375,9 +375,19 @@ function ConversationView({
         console.log("[Handshake] Raw response from KasWare:", rawTxHash, "type:", typeof rawTxHash);
         
         // Normalize txHash - handle various return formats from KasWare
+        // First, try parsing if it's a JSON string
+        if (typeof rawTxHash === "string" && rawTxHash.startsWith("{")) {
+          try {
+            rawTxHash = JSON.parse(rawTxHash);
+            console.log("[Handshake] Parsed JSON string:", rawTxHash);
+          } catch (e) {
+            console.log("[Handshake] Failed to parse as JSON");
+          }
+        }
+        
         if (typeof rawTxHash === "object" && rawTxHash !== null) {
-          // Extract txid from object response
-          const objHash = (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || (rawTxHash as any).id;
+          // Extract txid from object response - check all possible field names
+          const objHash = (rawTxHash as any).id || (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || (rawTxHash as any).transactionId;
           console.log("[Handshake] Extracted from object:", objHash);
           rawTxHash = objHash || JSON.stringify(rawTxHash);
         }
