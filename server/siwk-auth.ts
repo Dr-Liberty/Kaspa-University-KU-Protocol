@@ -3,11 +3,91 @@
  * 
  * Uses @kluster/kaspa-auth for standardized, secure wallet authentication.
  * Implements EIP-4361 style authentication for Kaspa.
+ * 
+ * Supports both Schnorr (native @kluster) and ECDSA (KasWare) signatures.
  */
 
 import { verifySiwk, buildMessage } from "@kluster/kaspa-auth";
 import type { SiwkFields } from "@kluster/kaspa-auth/types";
-import crypto from "crypto";
+import crypto, { createHash } from "crypto";
+import { blake2b } from "@noble/hashes/blake2b";
+
+const personalKey = new TextEncoder().encode("PersonalMessageSigningHash");
+
+function getPersonalMessageDigest(msg: string): Uint8Array {
+  return blake2b(new TextEncoder().encode(msg), {
+    key: personalKey,
+    dkLen: 32,
+  });
+}
+
+async function verifyEcdsaSignature(
+  message: string,
+  signatureHex: string,
+  walletAddress: string
+): Promise<boolean> {
+  try {
+    const secp256k1 = await import("secp256k1");
+    const secp = (secp256k1 as any).default || secp256k1;
+    
+    const messageDigest = getPersonalMessageDigest(message);
+    
+    let signature = Buffer.from(signatureHex, "hex");
+    
+    if (signature.length === 65) {
+      const recoveryByte = signature[0];
+      const sig = signature.slice(1);
+      
+      try {
+        const recoveredPubKey = secp.ecdsaRecover(sig, recoveryByte - 27, messageDigest, true);
+        
+        const addressPayload = walletAddress.split(":")[1];
+        if (!addressPayload) return false;
+        
+        const { bech32m } = await import("bech32");
+        const decoded = bech32m.decode(walletAddress);
+        const data = bech32m.fromWords(decoded.words);
+        
+        if (data.length > 1) {
+          const payloadBytes = Uint8Array.from(data.slice(1));
+          
+          if (payloadBytes.length === 33) {
+            const pubKeyMatch = Buffer.from(recoveredPubKey).equals(Buffer.from(payloadBytes));
+            if (pubKeyMatch) {
+              return secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
+            }
+          }
+          
+          if (payloadBytes.length === 32) {
+            const recoveredX = Buffer.from(recoveredPubKey).slice(1);
+            if (recoveredX.equals(Buffer.from(payloadBytes))) {
+              return secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
+            }
+          }
+        }
+      } catch (e) {
+      }
+    }
+    
+    if (signature.length === 64) {
+      const { bech32m } = await import("bech32");
+      const decoded = bech32m.decode(walletAddress);
+      const data = bech32m.fromWords(decoded.words);
+      
+      if (data.length > 1) {
+        const payloadBytes = Uint8Array.from(data.slice(1));
+        if (payloadBytes.length === 33) {
+          return secp.ecdsaVerify(signature, messageDigest, payloadBytes);
+        }
+      }
+    }
+    
+    return false;
+  } catch (error: any) {
+    console.error("[SIWK] ECDSA verification error:", error.message);
+    return false;
+  }
+}
 
 interface AuthSession {
   walletAddress: string;
@@ -93,22 +173,41 @@ export async function verifySiwkSignature(
       return { valid: false, error: "Nonce already used (replay attack prevented)" };
     }
     
+    let isValid = false;
+    let verifyError = "";
+    
     const result = await verifySiwk(fields, signature, {
       domain: getDomain(),
       checkNonce: async (nonce: string) => {
-        if (usedNonces.has(nonce)) {
-          return false;
-        }
-        usedNonces.add(nonce);
-        setTimeout(() => usedNonces.delete(nonce), CHALLENGE_EXPIRY_MS * 2);
         return true;
       },
     });
     
-    if (!result.valid) {
-      console.warn(`[SIWK] Verification failed: ${result.reason}`);
-      return { valid: false, error: result.reason || "Signature verification failed" };
+    if (result.valid) {
+      isValid = true;
+      console.log(`[SIWK] Schnorr verification succeeded for ${fields.address.slice(0, 25)}...`);
+    } else {
+      verifyError = result.reason || "Schnorr verification failed";
+      console.log(`[SIWK] Schnorr failed (${verifyError}), trying ECDSA fallback...`);
+      
+      const { message } = buildMessage(fields);
+      const ecdsaValid = await verifyEcdsaSignature(message, signature, fields.address);
+      
+      if (ecdsaValid) {
+        isValid = true;
+        console.log(`[SIWK] ECDSA verification succeeded for ${fields.address.slice(0, 25)}...`);
+      } else {
+        verifyError = "signature/address mismatch (both Schnorr and ECDSA failed)";
+      }
     }
+    
+    if (!isValid) {
+      console.warn(`[SIWK] Verification failed: ${verifyError}`);
+      return { valid: false, error: verifyError };
+    }
+    
+    usedNonces.add(fields.nonce);
+    setTimeout(() => usedNonces.delete(fields.nonce), CHALLENGE_EXPIRY_MS * 2);
     
     pendingChallenges.delete(fields.nonce);
     

@@ -73,6 +73,7 @@ interface AnalyticsData {
     txStatus?: string;
     score?: number;
     courseTitle?: string;
+    walletAddress?: string;
     verified?: boolean;
     reconciled?: boolean;
   }>;
@@ -497,6 +498,11 @@ export default function Analytics() {
                           </Badge>
                         )}
                       </div>
+                      {activity.walletAddress && (
+                        <p className="text-xs font-mono text-muted-foreground mt-1">
+                          {activity.walletAddress.slice(0, 18)}...{activity.walletAddress.slice(-8)}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {activity.fullTimestamp}
                       </p>

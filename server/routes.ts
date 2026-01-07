@@ -405,6 +405,7 @@ export async function registerRoutes(
         txStatus?: string,
         score?: number,
         courseTitle?: string,
+        walletAddress?: string,
         verified?: boolean,
         reconciled?: boolean
       }> = [];
@@ -458,6 +459,7 @@ export async function registerRoutes(
           txStatus: actualStatus,
           score: result.score,
           courseTitle: course?.title,
+          walletAddress: result.walletAddress || undefined,
           verified: actualStatus === "confirmed",
           reconciled: wasReconciled,
         });
@@ -970,6 +972,7 @@ export async function registerRoutes(
       userId: user.id,
       score,
       passed,
+      walletAddress,
       txStatus: "pending",
     });
 
