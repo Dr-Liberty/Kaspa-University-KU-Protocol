@@ -4090,13 +4090,21 @@ export async function registerRoutes(
   // ============================================
 
   // Helper to get authenticated wallet from bearer token
+  // Checks both SIWK sessions (new) and legacy sessions
   const getAuthenticatedWallet = (req: Request): string | null => {
     const token = req.headers["x-auth-token"] as string;
     const walletAddress = req.headers["x-wallet-address"] as string;
     
     if (!token || !walletAddress) return null;
     
-    const result = validateSession(token, walletAddress);
+    const clientIP = getClientIP(req);
+    
+    // Try SIWK session first (new auth method), then fall back to legacy
+    let result = validateSiwkSession(token, walletAddress, clientIP);
+    if (!result.valid) {
+      result = validateSession(token, walletAddress, clientIP);
+    }
+    
     if (!result.valid) return null;
     
     return walletAddress;
