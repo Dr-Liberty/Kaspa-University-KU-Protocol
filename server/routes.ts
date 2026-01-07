@@ -4672,6 +4672,11 @@ export async function registerRoutes(
       
       console.log(`[Kasia] Returning ${conversations.length} conversations for wallet (on-chain synced)`);
       
+      // Debug: log each conversation's status to trace the issue
+      for (const conv of conversations) {
+        console.log(`[Kasia API] Conv ${conv.id}: status=${conv.status}, initiator=${conv.initiatorAddress.slice(0, 25)}..., recipient=${conv.recipientAddress.slice(0, 25)}...`);
+      }
+      
       res.json({ conversations, source: "onchain" });
     } catch (error: any) {
       console.error("[Kasia] Failed to fetch conversations:", error);

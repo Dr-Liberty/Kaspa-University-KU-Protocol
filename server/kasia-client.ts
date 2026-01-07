@@ -370,6 +370,38 @@ export async function getConversationsFromIndexer(
     }
   }
   
+  // CRITICAL FIX: Detect bidirectional handshakes for encrypted external Kasia payloads
+  // If both parties have sent handshakes to each other, the conversation is active
+  // This handles cases where we can't parse the isResponse flag from encrypted payloads
+  const sentToAddresses = new Set(sentHandshakes.map(hs => hs.receiver.toLowerCase()));
+  const receivedFromAddresses = new Set(receivedHandshakes.map(hs => hs.sender.toLowerCase()));
+  
+  for (const [convId, conv] of conversationsMap.entries()) {
+    if (conv.status === "pending" && !conv.hasResponse) {
+      const otherParty = conv.initiatorAddress === walletAddress 
+        ? conv.recipientAddress.toLowerCase()
+        : conv.initiatorAddress.toLowerCase();
+      
+      // Check if this wallet sent a handshake to the other party AND received one from them
+      // This means both parties completed the handshake (bidirectional = active)
+      if (sentToAddresses.has(otherParty) && receivedFromAddresses.has(otherParty)) {
+        console.log(`[Kasia Client] Detected bidirectional handshake for conv ${convId} - marking as active`);
+        conv.status = "active";
+        conv.hasResponse = true;
+        
+        // Try to find the response tx hash from the handshakes
+        const responseHs = sentHandshakes.find(hs => 
+          hs.receiver.toLowerCase() === otherParty && conv.initiatorAddress !== walletAddress
+        ) || receivedHandshakes.find(hs => 
+          hs.sender.toLowerCase() === otherParty && conv.initiatorAddress === walletAddress
+        );
+        if (responseHs) {
+          conv.responseTxHash = responseHs.tx_id;
+        }
+      }
+    }
+  }
+  
   const result = Array.from(conversationsMap.values()).map(({ hasResponse, ...conv }) => conv);
   
   console.log(`[Kasia Client] Found ${result.length} conversations (${result.filter(c => c.status === "active").length} active)`);
