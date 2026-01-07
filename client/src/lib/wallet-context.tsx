@@ -26,6 +26,7 @@ interface WalletContextType {
   wallet: WalletConnection | null;
   isConnecting: boolean;
   isDemoMode: boolean;
+  isAuthenticated: boolean;
   walletType: "kasware" | "mock" | null;
   isWalletInstalled: boolean;
   connect: () => Promise<void>;
@@ -60,6 +61,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [wallet, setWallet] = useState<WalletConnection | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!localStorage.getItem("kaspa-university-auth-token");
+    }
+    return false;
+  });
   const [walletType, setWalletType] = useState<"kasware" | "mock" | null>(null);
   const [isWalletInstalled, setIsWalletInstalled] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -183,6 +190,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           
           // Step 4: Store auth token and complete connection
           setAuthToken(token);
+          setIsAuthenticated(true);
           
           const newWallet: WalletConnection = {
             address: walletAddr,
@@ -236,6 +244,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWallet(null);
     setWalletAddress(null);
     setAuthToken(null);
+    setIsAuthenticated(false);
     setWalletType(null);
     setIsDemoMode(false);
     setConnectionError(null);
@@ -350,6 +359,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         wallet, 
         isConnecting, 
         isDemoMode, 
+        isAuthenticated,
         walletType,
         isWalletInstalled,
         connect, 

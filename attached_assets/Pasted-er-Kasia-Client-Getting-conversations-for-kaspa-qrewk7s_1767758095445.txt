@@ -1,0 +1,166 @@
+er
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:53:36.84
+d37e4ba4
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:53:36.84
+d37e4ba4
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:53:36.84
+d37e4ba4
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:53:37.34
+d37e4ba4
+User
+[Kasia Client] Found 6 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:53:37.41
+7424b21d
+User
+[SIWK] Signature: 64 bytes, format: hex
+2026-01-06 19:53:37.42
+7424b21d
+User
+[SIWK] Session created for kaspa:qrmzgsh8chv72qdtryp...
+2026-01-06 19:53:37.42
+7424b21d
+User
+[SIWK] Schnorr verification succeeded for kaspa:qrmzgsh8chv72qdtryp...
+2026-01-06 19:53:37.42
+7424b21d
+User
+3:53:37 AM [express] POST /api/auth/siwk/verify 200 in 7ms :: {"success":true,"token":"6225a61bbc73aafe1511479cf7527dc270b84a4875b2f07054c2652f3a03162b","expiresAt":1767844417420}
+2026-01-06 19:53:37.66
+7424b21d
+User
+3:53:37 AM [express] GET /api/support/address 304 in 128ms :: {"address":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"}
+2026-01-06 19:53:37.67
+7424b21d
+User
+3:53:37 AM [express] GET /api/conversations 401 in 126ms :: {"error":"Authentication required"}
+2026-01-06 19:53:37.94
+d37e4ba4
+User
+[Kasia Client] Found 3 conversations (3 active)
+2026-01-06 19:53:37.94
+d37e4ba4
+User
+[Kasia Client] Found 6 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:53:38.24
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:53:38.44
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-06 19:53:38.64
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrmzgsh8chv72q..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:53:38.64
+d37e4ba4
+User
+[Kasia Indexer] Synced 3 conversations from on-chain
+2026-01-06 19:53:40.65
+7424b21d
+User
+3:53:40 AM [express] POST /api/kasia/handshake/prepare 401 in 129ms :: {"error":"Authentication required"}
+2026-01-06 19:53:47.89
+7424b21d
+User
+3:53:47 AM [express] GET /api/conversations 401 in 126ms :: {"error":"Authentication required"}
+2026-01-06 19:53:58.32
+7424b21d
+User
+3:53:58 AM [express] GET /api/conversations 401 in 325ms :: {"error":"Authentication required"}
+2026-01-06 19:54:03.25
+7424b21d
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:03.25
+7424b21d
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:54:03.25
+7424b21d
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:03.25
+7424b21d
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:54:04.20
+7424b21d
+User
+[Kasia Client] Found 6 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:04.40
+7424b21d
+User
+[Kasia Client] Found 3 conversations (3 active)
+2026-01-06 19:54:04.40
+7424b21d
+User
+[Kasia Client] Found 6 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:05.00
+7424b21d
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:54:05.33
+7424b21d
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-06 19:54:05.50
+7424b21d
+User
+[Kasia Indexer] Synced 3 conversations from on-chain
+2026-01-06 19:54:05.50
+7424b21d
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrmzgsh8chv72q..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:54:06.84
+d37e4ba4
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:54:06.84
+d37e4ba4
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:06.84
+d37e4ba4
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:06.84
+d37e4ba4
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-06 19:54:07.46
+d37e4ba4
+User
+[Kasia Client] Found 3 conversations (3 active)
+2026-01-06 19:54:07.46
+d37e4ba4
+User
+[Kasia Client] Found 6 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:07.46
+d37e4ba4
+User
+[Kasia Client] Found 6 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-06 19:54:08.87
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:54:09.04
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qpysmev6qxpfhd..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-06 19:54:09.14
+d37e4ba4
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrmzgsh8chv72q..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-06 19:54:09.14
+d37e4ba4
+User
+[Kasia Indexer] Synced 3 conversations from on-chain

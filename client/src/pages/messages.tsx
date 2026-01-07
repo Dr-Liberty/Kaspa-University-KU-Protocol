@@ -786,25 +786,25 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
 }
 
 export default function Messages() {
-  const { wallet } = useWallet();
+  const { wallet, isAuthenticated } = useWallet();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
-
+  
   const { data: conversationsData, isLoading, refetch, isFetching } = useQuery<{ conversations: Conversation[], source?: string }>({
-    queryKey: ["/api/conversations", "onchain"],
+    queryKey: ["/api/conversations", "onchain", isAuthenticated ? "auth" : "noauth"],
     queryFn: async () => {
       const url = "/api/conversations?source=onchain";
       const headers: Record<string, string> = {};
-      const authToken = getAuthToken();
+      const token = getAuthToken();
       const walletAddress = getWalletAddress();
-      if (authToken) headers["x-auth-token"] = authToken;
+      if (token) headers["x-auth-token"] = token;
       if (walletAddress) headers["x-wallet-address"] = walletAddress;
       
       const res = await fetch(url, { credentials: "include", headers });
       if (!res.ok) throw new Error("Failed to fetch conversations");
       return res.json();
     },
-    enabled: !!wallet,
+    enabled: !!wallet && isAuthenticated,
     refetchInterval: 10000,
   });
   
