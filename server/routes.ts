@@ -66,6 +66,15 @@ import { createHandshakePayload, createHandshakeResponse } from "./kasia-encrypt
 import { kuIndexer } from "./ku-indexer";
 import { verifyMessageSignature } from "./crypto";
 
+/**
+ * Normalize Kaspa address for comparison
+ * Removes network prefix (kaspa:/kaspatest:) and lowercases
+ */
+function normalizeKaspaAddress(address: string): string {
+  if (!address) return "";
+  return address.replace(/^kaspatest:/, "").replace(/^kaspa:/, "").toLowerCase().trim();
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -4372,7 +4381,9 @@ export async function registerRoutes(
       }
       
       // Only the recipient can prepare a response handshake
-      if (conversation.recipientAddress !== authenticatedWallet) {
+      // Normalize addresses for comparison (handles kaspa:/kaspatest: prefix differences)
+      if (normalizeKaspaAddress(conversation.recipientAddress) !== normalizeKaspaAddress(authenticatedWallet)) {
+        console.log(`[Kasia] Prepare response denied: recipient=${conversation.recipientAddress.slice(0, 25)}... !== auth=${authenticatedWallet.slice(0, 25)}...`);
         return res.status(403).json({ error: "Only the recipient can accept the handshake" });
       }
       
@@ -4736,8 +4747,9 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Conversation not found" });
       }
       
-      // User must be the recipient (person who received the handshake) - use full address match
-      if (conversation.recipientAddress.toLowerCase().trim() !== authenticatedWallet.toLowerCase().trim()) {
+      // User must be the recipient (person who received the handshake)
+      // Normalize addresses for comparison (handles kaspa:/kaspatest: prefix differences)
+      if (normalizeKaspaAddress(conversation.recipientAddress) !== normalizeKaspaAddress(authenticatedWallet)) {
         console.log(`[Kasia] Accept denied: recipient=${conversation.recipientAddress.slice(0, 25)}... !== auth=${authenticatedWallet.slice(0, 25)}...`);
         return res.status(403).json({ error: "Only the recipient can accept the handshake" });
       }
