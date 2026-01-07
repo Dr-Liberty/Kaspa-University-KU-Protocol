@@ -31,57 +31,76 @@ async function verifyEcdsaSignature(
     const secp = (secp256k1 as any).default || secp256k1;
     
     const messageDigest = getPersonalMessageDigest(message);
-    
     let signature = Buffer.from(signatureHex, "hex");
     
-    if (signature.length === 65) {
-      const recoveryByte = signature[0];
-      const sig = signature.slice(1);
-      
-      try {
-        const recoveredPubKey = secp.ecdsaRecover(sig, recoveryByte - 27, messageDigest, true);
-        
-        const addressPayload = walletAddress.split(":")[1];
-        if (!addressPayload) return false;
-        
-        const { bech32m } = await import("bech32");
-        const decoded = bech32m.decode(walletAddress);
-        const data = bech32m.fromWords(decoded.words);
-        
-        if (data.length > 1) {
-          const payloadBytes = Uint8Array.from(data.slice(1));
-          
-          if (payloadBytes.length === 33) {
-            const pubKeyMatch = Buffer.from(recoveredPubKey).equals(Buffer.from(payloadBytes));
-            if (pubKeyMatch) {
-              return secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
-            }
-          }
-          
-          if (payloadBytes.length === 32) {
-            const recoveredX = Buffer.from(recoveredPubKey).slice(1);
-            if (recoveredX.equals(Buffer.from(payloadBytes))) {
-              return secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
-            }
-          }
-        }
-      } catch (e) {
+    if (signature.length !== 65) {
+      console.log("[SIWK] ECDSA: Expected 65-byte signature, got", signature.length);
+      return false;
+    }
+    
+    const recoveryByte = signature[0];
+    const sig = signature.slice(1);
+    
+    let recoveryId: number;
+    if (recoveryByte >= 27 && recoveryByte <= 30) {
+      recoveryId = recoveryByte - 27;
+    } else if (recoveryByte >= 0 && recoveryByte <= 3) {
+      recoveryId = recoveryByte;
+    } else {
+      console.log("[SIWK] ECDSA: Invalid recovery byte:", recoveryByte);
+      return false;
+    }
+    
+    let recoveredPubKey: Uint8Array;
+    try {
+      recoveredPubKey = secp.ecdsaRecover(sig, recoveryId, messageDigest, true);
+    } catch (e: any) {
+      console.log("[SIWK] ECDSA recovery failed:", e.message);
+      return false;
+    }
+    
+    const { bech32 } = await import("bech32");
+    let decoded;
+    try {
+      decoded = bech32.decode(walletAddress, 150);
+    } catch {
+      console.log("[SIWK] ECDSA: bech32 decode failed for", walletAddress.slice(0, 25));
+      return false;
+    }
+    
+    const data = bech32.fromWords(decoded.words);
+    if (data.length < 2) {
+      console.log("[SIWK] ECDSA: Address payload too short");
+      return false;
+    }
+    
+    const addressType = data[0];
+    const payloadBytes = Uint8Array.from(data.slice(1));
+    
+    const isEcdsaAddress = addressType === 1;
+    if (!isEcdsaAddress) {
+      console.log("[SIWK] ECDSA: Address is not ECDSA type (type=" + addressType + ")");
+      return false;
+    }
+    
+    if (payloadBytes.length === 33) {
+      if (Buffer.from(recoveredPubKey).equals(Buffer.from(payloadBytes))) {
+        const valid = secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
+        console.log("[SIWK] ECDSA: 33-byte pubkey match, verify=" + valid);
+        return valid;
       }
     }
     
-    if (signature.length === 64) {
-      const { bech32m } = await import("bech32");
-      const decoded = bech32m.decode(walletAddress);
-      const data = bech32m.fromWords(decoded.words);
-      
-      if (data.length > 1) {
-        const payloadBytes = Uint8Array.from(data.slice(1));
-        if (payloadBytes.length === 33) {
-          return secp.ecdsaVerify(signature, messageDigest, payloadBytes);
-        }
+    if (payloadBytes.length === 32) {
+      const recoveredX = Buffer.from(recoveredPubKey).slice(1);
+      if (recoveredX.equals(Buffer.from(payloadBytes))) {
+        const valid = secp.ecdsaVerify(sig, messageDigest, recoveredPubKey);
+        console.log("[SIWK] ECDSA: 32-byte x-coord match, verify=" + valid);
+        return valid;
       }
     }
     
+    console.log("[SIWK] ECDSA: Recovered pubkey does not match address payload");
     return false;
   } catch (error: any) {
     console.error("[SIWK] ECDSA verification error:", error.message);
