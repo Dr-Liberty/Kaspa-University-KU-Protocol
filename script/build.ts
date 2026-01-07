@@ -8,6 +8,9 @@ import path from "path";
 // which helps cold start times
 const allowlist = [
   "@google/generative-ai",
+  "@kluster/kaspa-address",
+  "@kluster/kaspa-auth",
+  "@kluster/kaspa-signature",
   "axios",
   "connect-pg-simple",
   "cors",
