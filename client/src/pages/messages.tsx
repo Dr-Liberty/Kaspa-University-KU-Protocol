@@ -372,16 +372,23 @@ function ConversationView({
           }
         );
         
-        // Normalize txHash
+        console.log("[Handshake] Raw response from KasWare:", rawTxHash, "type:", typeof rawTxHash);
+        
+        // Normalize txHash - handle various return formats from KasWare
         if (typeof rawTxHash === "object" && rawTxHash !== null) {
-          rawTxHash = (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || JSON.stringify(rawTxHash);
+          // Extract txid from object response
+          const objHash = (rawTxHash as any).txid || (rawTxHash as any).txHash || (rawTxHash as any).hash || (rawTxHash as any).id;
+          console.log("[Handshake] Extracted from object:", objHash);
+          rawTxHash = objHash || JSON.stringify(rawTxHash);
         }
         if (typeof rawTxHash === "string" && rawTxHash.startsWith("0x")) {
           rawTxHash = rawTxHash.slice(2);
         }
         
+        // Validate format
         if (typeof rawTxHash !== "string" || !/^[a-fA-F0-9]{64}$/.test(rawTxHash)) {
-          throw new Error("Invalid transaction hash from wallet");
+          console.error("[Handshake] Invalid txHash format:", rawTxHash);
+          throw new Error(`Wallet returned invalid transaction format: ${typeof rawTxHash === 'string' ? rawTxHash.slice(0,30) + '...' : typeof rawTxHash}`);
         }
         
         console.log(`[Handshake] Response broadcast on-chain: ${rawTxHash}`);
