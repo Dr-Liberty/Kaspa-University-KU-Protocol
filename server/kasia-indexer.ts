@@ -40,6 +40,8 @@ export interface IndexedConversation {
   createdAt: Date;
   updatedAt: Date;
   isAdminConversation?: boolean;
+  e2eInitiatorSig?: string | null;
+  e2eRecipientSig?: string | null;
 }
 
 export interface IndexedMessage {

@@ -113,6 +113,52 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [isWalletInstalled]);
 
   useEffect(() => {
+    if (!isWalletInstalled || !window.kasware) return;
+    
+    const storedWallet = localStorage.getItem(WALLET_STORAGE_KEY);
+    const storedToken = localStorage.getItem("kaspa-university-auth-token");
+    
+    if (!storedWallet || !storedToken) return;
+    
+    const tryAutoReconnect = async () => {
+      try {
+        const parsedWallet = JSON.parse(storedWallet) as WalletConnection;
+        
+        const accounts = await window.kasware!.getAccounts();
+        
+        if (accounts && accounts.length > 0 && accounts[0] === parsedWallet.address) {
+          const networkId = await window.kasware!.getNetwork();
+          const networkName = getNetworkName(networkId);
+          
+          const restoredWallet: WalletConnection = {
+            address: accounts[0],
+            connected: true,
+            network: networkName,
+          };
+          
+          setWallet(restoredWallet);
+          setWalletAddress(accounts[0]);
+          setWalletType("kasware");
+          setIsAuthenticated(true);
+          
+          console.log(`[Wallet] Auto-restored connection: ${accounts[0].slice(0, 15)}...`);
+          queryClient.invalidateQueries();
+        } else {
+          console.log("[Wallet] Stored wallet address doesn't match current accounts, clearing session");
+          localStorage.removeItem(WALLET_STORAGE_KEY);
+          localStorage.removeItem("kaspa-university-auth-token");
+          localStorage.removeItem("kaspa-university-wallet-address");
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error("[Wallet] Auto-reconnect failed:", error);
+      }
+    };
+    
+    tryAutoReconnect();
+  }, [isWalletInstalled]);
+
+  useEffect(() => {
     if (wallet) {
       localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(wallet));
       setWalletAddress(wallet.address);
