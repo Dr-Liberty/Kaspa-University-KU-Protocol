@@ -197,7 +197,7 @@ function QuizSection({
                 </p>
                 {isDemoMode && (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Connect a wallet to earn real KAS rewards and NFT certificates
+                    Connect a wallet to earn real KAS rewards and quiz proofs
                   </p>
                 )}
               </>
@@ -341,7 +341,7 @@ function QuizSection({
 
         {isDemoMode && (
           <div className="rounded-md bg-muted/50 p-3 text-center text-sm text-muted-foreground">
-            Demo Mode: No KAS rewards or certificates will be issued
+            Demo Mode: No KAS rewards or quiz proofs will be issued
           </div>
         )}
 
@@ -597,7 +597,7 @@ export default function CourseDetail() {
                         <Link href="/certificates">
                           <Button className="gap-1" data-testid="button-view-certificate">
                             <Award className="h-4 w-4" />
-                            View Certificate
+                            View Quiz Proof
                           </Button>
                         </Link>
                       ) : null}

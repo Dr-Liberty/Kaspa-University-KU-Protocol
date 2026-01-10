@@ -32,7 +32,7 @@ export function StatsBar() {
       suffix: " KAS",
     },
     {
-      label: "Certificates Minted",
+      label: "Quiz Proofs",
       value: stats?.certificatesMinted?.toLocaleString() ?? "0",
       icon: Award,
       suffix: "",

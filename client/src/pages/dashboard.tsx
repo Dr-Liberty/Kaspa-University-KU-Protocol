@@ -318,7 +318,7 @@ export default function Dashboard() {
                 <Award className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Certificates</p>
+                <p className="text-sm text-muted-foreground">Quiz Proofs</p>
                 <p className="text-2xl font-bold" data-testid="stat-certificates">
                   {completedCount}
                 </p>

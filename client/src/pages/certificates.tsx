@@ -74,7 +74,7 @@ export default function Certificates() {
             </TabsTrigger>
             <TabsTrigger value="certificates" className="gap-2" data-testid="tab-certificates">
               <ScrollText className="h-4 w-4" />
-              Certificates
+              Quiz Proofs
             </TabsTrigger>
           </TabsList>
 
@@ -123,9 +123,9 @@ export default function Certificates() {
             ) : (
               <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
                 <Award className="mx-auto h-16 w-16 text-muted-foreground/30" />
-                <h3 className="mt-4 text-xl font-semibold">No Certificates Yet</h3>
+                <h3 className="mt-4 text-xl font-semibold">No Quiz Proofs Yet</h3>
                 <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-                  Complete course quizzes to earn certificates. Each certificate counts toward your diploma.
+                  Complete course quizzes to earn quiz proofs. Each proof counts toward your diploma.
                 </p>
                 <Link href="/courses">
                   <Button className="mt-6 gap-2" data-testid="button-browse-courses">

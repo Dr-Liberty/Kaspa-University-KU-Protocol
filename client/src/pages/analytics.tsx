@@ -228,7 +228,7 @@ export default function Analytics() {
           description="Across all categories"
         />
         <StatCard
-          title="Certificates Issued"
+          title="Quiz Proofs Issued"
           value={analytics.overview.totalCertificates}
           icon={Award}
           description="Verifiable on-chain"
@@ -442,7 +442,7 @@ export default function Analytics() {
                           {displayName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {learner.certificates} certificates
+                          {learner.certificates} quiz proofs
                         </p>
                       </div>
                     </div>
