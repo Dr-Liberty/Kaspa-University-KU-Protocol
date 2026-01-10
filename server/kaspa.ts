@@ -697,6 +697,50 @@ class KaspaService {
   }
 
   /**
+   * Attempt to reconnect RPC if it was previously disconnected
+   * Used for on-demand reconnection when transactions fail
+   */
+  private async tryRpcReconnection(): Promise<boolean> {
+    console.log("[Kaspa] Attempting RPC reconnection...");
+    
+    // Clean up old client
+    if (this.rpcClient) {
+      try {
+        // Some RPC clients have disconnect methods
+        if (typeof (this.rpcClient as any).disconnect === 'function') {
+          (this.rpcClient as any).disconnect();
+        }
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      this.rpcClient = null;
+    }
+    
+    this.rpcConnected = false;
+    
+    // Try kaspa-rpc-client first (most reliable for mainnet)
+    await this.tryRpcClientConnection();
+    
+    // Fallback to WASM RPC if pure client failed
+    if (!this.rpcConnected) {
+      await this.tryWasmRpcConnection();
+    }
+    
+    // Fallback to REST API
+    if (!this.rpcConnected) {
+      await this.tryRestApiConnection();
+    }
+    
+    if (this.rpcConnected) {
+      console.log("[Kaspa] RPC reconnection successful!");
+      return true;
+    } else {
+      console.error("[Kaspa] RPC reconnection failed - all methods exhausted");
+      return false;
+    }
+  }
+
+  /**
    * Get connection type
    */
   getConnectionType(): string {
@@ -1000,15 +1044,34 @@ class KaspaService {
       if (!this.treasuryAddress) reasons.push("Treasury wallet not configured");
       if (!this.treasuryPrivateKey) reasons.push("Treasury private key missing");
       
-      console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
-      return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
+      // Try to reconnect if only RPC is the issue
+      if (!this.rpcConnected && this.treasuryAddress && this.treasuryPrivateKey) {
+        console.log("[Kaspa] Attempting RPC reconnection before reward...");
+        await this.tryRpcReconnection();
+        
+        if (this.rpcConnected) {
+          this.isLiveMode = true;
+          console.log("[Kaspa] RPC reconnected successfully!");
+        } else {
+          console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
+          return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
+        }
+      } else {
+        console.error(`[Kaspa] Cannot send reward - not live: ${reasons.join(", ")}`);
+        return { success: false, error: `Treasury offline: ${reasons.join(", ")}` };
+      }
     }
 
     // Runtime health check before attempting transaction
     const health = await this.checkRpcHealth();
     if (!health.healthy) {
-      console.error(`[Kaspa] RPC health check failed before transaction: ${health.error}`);
-      return { success: false, error: `Treasury offline: ${health.error}` };
+      console.log(`[Kaspa] RPC health check failed, attempting reconnection...`);
+      const reconnected = await this.tryRpcReconnection();
+      if (!reconnected) {
+        console.error(`[Kaspa] RPC health check failed and reconnection failed: ${health.error}`);
+        return { success: false, error: `Treasury offline: ${health.error}` };
+      }
+      this.isLiveMode = true;
     }
 
     // Two-step approach for KIP-0009 storage mass compliance:
