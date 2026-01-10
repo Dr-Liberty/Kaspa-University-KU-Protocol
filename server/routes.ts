@@ -3512,6 +3512,63 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Recover stuck deploy funds (from failed reveal)
+  // The original deploy data must match EXACTLY to reconstruct the P2SH script
+  app.post("/api/admin/recover-deploy-funds", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const { p2shAddress } = req.body;
+      
+      if (!p2shAddress) {
+        return res.status(400).json({ 
+          error: "Required: p2shAddress" 
+        });
+      }
+
+      console.log(`[Admin Recovery] Attempting deploy funds recovery from: ${p2shAddress}`);
+      
+      const krc721Service = await getKRC721Service();
+      
+      // The EXACT deploy data that was used for the failed deployment
+      // This was the OLD long description that caused the 531 byte payload
+      // Treasury address: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+      const originalDeployData = {
+        p: "krc-721",
+        op: "deploy",
+        tick: "KUDIPLOMA",
+        max: "10000",
+        metadata: {
+          name: "Kaspa University Diploma",
+          description: "Kaspa University Diploma NFT. Awarded for completing all courses. Mint only at Kaspa.University - external mints invalid.",
+          image: "ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4"
+        },
+        royaltyFee: "2000000000000",
+        royaltyTo: "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+        buri: "ipfs://QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A"
+      };
+      
+      const result = await krc721Service.recoverDeployFunds(p2shAddress, originalDeployData);
+      
+      if (result.success) {
+        console.log(`[Admin Recovery] Successfully recovered ${result.recovered} KAS! Tx: ${result.txHash}`);
+        return res.json({
+          success: true,
+          message: `Recovered ${result.recovered} KAS`,
+          txHash: result.txHash,
+          recovered: result.recovered,
+        });
+      } else {
+        console.log(`[Admin Recovery] Failed to recover deploy funds: ${result.error}`);
+        return res.json({
+          success: false,
+          error: result.error,
+        });
+      }
+    } catch (error: any) {
+      console.error(`[Admin Recovery] Deploy recovery error:`, error);
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Admin: Recover orphaned P2SH (no reservation in database)
   // This tries to reconstruct the script by matching the P2SH address
   app.post("/api/admin/recover-orphan-p2sh", adminAuth, async (req: Request, res: Response) => {

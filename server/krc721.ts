@@ -275,7 +275,7 @@ function getDefaultConfig(): KRC721Config {
       ? (process.env.KRC721_TESTNET_TICKER || "KUDIPLOMA") 
       : (process.env.KRC721_TICKER || "KUDIPLOMA"),
     collectionName: "Kaspa University Diploma",
-    collectionDescription: "KU Diploma NFT. Mint at Kaspa.University only.",
+    collectionDescription: "Kaspa University Diploma- Free after completion- Mint only at Kaspa.university",
     maxSupply: 10000, // Single diploma per student who completes all courses
     royaltyFee: 20000, // 20,000 KAS deterrent price (actual deploy uses DETERRENT_PRICE_SOMPI)
     royaltyOwner: "", // Set to treasury address in deployCollection
@@ -745,6 +745,148 @@ class KRC721Service {
       console.log(`[KRC721] Deploy P2SH address saved for recovery: ${p2shAddress}`);
     } catch (error: any) {
       console.error(`[KRC721] Could not save deploy P2SH address: ${error.message}`);
+    }
+  }
+
+  /**
+   * Recover stuck funds from a failed deploy P2SH address
+   * Requires the EXACT original deploy data that was used to create the P2SH
+   */
+  async recoverDeployFunds(
+    p2shAddress: string,
+    originalDeployData: any
+  ): Promise<{ success: boolean; txHash?: string; recovered?: string; error?: string }> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+    
+    if (!this.kaspaModule || !this.privateKey || !this.address) {
+      return { success: false, error: "KRC721 service not properly initialized" };
+    }
+
+    try {
+      const { ScriptBuilder, Opcodes, addressFromScriptPublicKey, createTransactions, kaspaToSompi } = this.kaspaModule;
+
+      console.log(`[KRC721 Recovery] Attempting to recover funds from: ${p2shAddress}`);
+      console.log(`[KRC721 Recovery] Using deploy data: ${JSON.stringify(originalDeployData).slice(0, 100)}...`);
+
+      // Rebuild the EXACT same script that was used for the original deploy
+      const script = new ScriptBuilder()
+        .addData(this.publicKey.toXOnlyPublicKey().toString())
+        .addOp(Opcodes.OpCheckSig)
+        .addOp(Opcodes.OpFalse)
+        .addOp(Opcodes.OpIf)
+        .addData(Buffer.from("kspr"))
+        .addI64(BigInt(0))
+        .addData(Buffer.from(JSON.stringify(originalDeployData, null, 0)))
+        .addOp(Opcodes.OpEndIf);
+
+      // Verify the script matches the P2SH address
+      const reconstructedP2sh = addressFromScriptPublicKey(
+        script.createPayToScriptHashScript(),
+        this.config.network
+      )!.toString();
+
+      if (reconstructedP2sh !== p2shAddress) {
+        console.error(`[KRC721 Recovery] P2SH mismatch! Target: ${p2shAddress}, Rebuilt: ${reconstructedP2sh}`);
+        return { 
+          success: false, 
+          error: `Script reconstruction failed - P2SH mismatch. Expected ${p2shAddress.slice(0, 30)}, got ${reconstructedP2sh.slice(0, 30)}` 
+        };
+      }
+
+      console.log(`[KRC721 Recovery] Script verified - P2SH matches!`);
+
+      // Check balance at P2SH
+      const { entries: p2shEntries } = await this.wasmRpcClient.getUtxosByAddresses([p2shAddress]);
+      if (p2shEntries.length === 0) {
+        return { success: false, error: "No funds found at P2SH address" };
+      }
+
+      const p2shUtxo = p2shEntries[0];
+      const receivedAmount = BigInt(p2shUtxo.amount ?? p2shUtxo.utxoEntry?.amount ?? 0);
+      console.log(`[KRC721 Recovery] Found ${Number(receivedAmount) / 1e8} KAS at P2SH`);
+
+      // Get treasury UTXOs for transaction fees
+      const { entries: treasuryEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.address!]);
+      console.log(`[KRC721 Recovery] Got ${treasuryEntries.length} treasury UTXOs for fees`);
+
+      // Create transaction to sweep funds back to treasury
+      // Use minimal fee since we're just recovering, not inscribing
+      console.log(`[KRC721 Recovery] Creating sweep transaction...`);
+      let sweepTxs: any[];
+      try {
+        const result = await createTransactions({
+          priorityEntries: [p2shUtxo],
+          entries: treasuryEntries,
+          outputs: [],
+          changeAddress: this.address!,
+          priorityFee: kaspaToSompi("0.1")!, // Minimal fee
+          networkId: this.config.network,
+        });
+        sweepTxs = result.transactions;
+        console.log(`[KRC721 Recovery] Created ${sweepTxs.length} transactions`);
+      } catch (txError: any) {
+        console.error(`[KRC721 Recovery] createTransactions failed:`, txError);
+        return { success: false, error: `Transaction creation failed: ${txError?.message || String(txError)}` };
+      }
+
+      let txHash: string | undefined;
+      for (let i = 0; i < sweepTxs.length; i++) {
+        const tx = sweepTxs[i];
+        console.log(`[KRC721 Recovery] Signing tx ${i + 1}/${sweepTxs.length}...`);
+        
+        try {
+          tx.sign([this.privateKey], false);
+        } catch (signError: any) {
+          console.error(`[KRC721 Recovery] Signing failed:`, signError);
+          return { success: false, error: `Signing failed: ${signError?.message || String(signError)}` };
+        }
+
+        // Find P2SH input and fill with script signature
+        const p2shInputIndex = tx.transaction.inputs.findIndex(
+          (input: any) => input.signatureScript === ""
+        );
+
+        if (p2shInputIndex !== -1) {
+          console.log(`[KRC721 Recovery] Found P2SH input at index ${p2shInputIndex}, creating script signature...`);
+          try {
+            const signature = await tx.createInputSignature(p2shInputIndex, this.privateKey);
+            tx.fillInput(
+              p2shInputIndex,
+              script.encodePayToScriptHashSignatureScript(signature)
+            );
+            console.log(`[KRC721 Recovery] P2SH input filled successfully`);
+          } catch (sigError: any) {
+            console.error(`[KRC721 Recovery] P2SH signature failed:`, sigError);
+            return { success: false, error: `P2SH signature failed: ${sigError?.message || String(sigError)}` };
+          }
+        }
+
+        try {
+          txHash = await tx.submit(this.wasmRpcClient);
+          console.log(`[KRC721 Recovery] Sweep tx submitted: ${txHash}`);
+        } catch (submitError: any) {
+          console.error(`[KRC721 Recovery] Submit failed:`, submitError);
+          return { success: false, error: `Submit failed: ${submitError?.message || String(submitError)}` };
+        }
+      }
+
+      if (txHash) {
+        await this.waitForConfirmation(txHash, 60000);
+      }
+
+      const recoveredKas = (Number(receivedAmount) / 1e8).toFixed(2);
+      console.log(`[KRC721 Recovery] Successfully recovered ${recoveredKas} KAS!`);
+
+      return {
+        success: true,
+        txHash,
+        recovered: recoveredKas,
+      };
+    } catch (error: any) {
+      console.error(`[KRC721 Recovery] Failed:`, error);
+      return { success: false, error: error?.message || String(error) || "Unknown error" };
     }
   }
 
