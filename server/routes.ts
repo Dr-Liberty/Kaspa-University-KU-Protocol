@@ -1444,6 +1444,36 @@ export async function registerRoutes(
     }
   });
 
+  // Reserve a diploma NFT mint slot
+  app.post("/api/diploma/reserve", nftRateLimiter, requireVerifiedSession, async (req: Request, res: Response) => {
+    const walletAddress = req.headers["x-wallet-address"] as string;
+    if (!walletAddress) {
+      return res.status(401).json({ error: "Wallet not connected" });
+    }
+
+    try {
+      const { mintService } = await import("./mint-service");
+      const result = await mintService.reserveDiplomaMint(walletAddress);
+      
+      if ("error" in result) {
+        return res.status(400).json({ success: false, error: result.error });
+      }
+
+      res.json({
+        success: true,
+        reservationId: result.reservation.id,
+        tokenId: result.reservation.tokenId,
+        inscriptionJson: result.inscriptionJson,
+        expiresAt: new Date(result.reservation.expiresAt).getTime(),
+        courseId: "diploma",
+        courseName: "Kaspa University Diploma",
+      });
+    } catch (error: any) {
+      console.error("[Diploma] Reserve failed:", error.message);
+      res.status(500).json({ error: "Failed to reserve diploma", message: sanitizeError(error) });
+    }
+  });
+
   app.get("/api/progress", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
     if (!walletAddress) {

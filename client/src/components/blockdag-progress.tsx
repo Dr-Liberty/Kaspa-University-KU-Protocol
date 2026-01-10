@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { Course, Certificate } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { GraduationCap, CheckCircle2, Sparkles, Wallet, Loader2 } from "lucide-react";
+import { GraduationCap, CheckCircle2, Sparkles, Wallet, Loader2, Clock, ExternalLink, AlertCircle } from "lucide-react";
 import { useWhitelistStatus } from "@/hooks/use-whitelist";
 import { useDiplomaStatus } from "@/hooks/use-diploma";
 import { useWallet } from "@/lib/wallet-context";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BlockDAGProgressProps {
   courses: Course[];
@@ -162,12 +164,56 @@ function CourseBlock({
   );
 }
 
+type DiplomaMintStep = "idle" | "reserving" | "signing" | "confirming" | "success" | "error";
+
+interface DiplomaReservation {
+  reservationId: string;
+  tokenId: number;
+  inscriptionJson: string;
+  expiresAt: number;
+}
+
+function getExplorerTxUrl(txHash: string): string {
+  const isTestnet = import.meta.env.VITE_KASPA_NETWORK === "testnet-10";
+  return isTestnet
+    ? `https://explorer-tn10.kaspa.org/txs/${txHash}`
+    : `https://explorer.kaspa.org/txs/${txHash}`;
+}
+
 export function BlockDAGProgress({ courses, certificates, walletConnected }: BlockDAGProgressProps) {
   const { toast } = useToast();
-  const { wallet, isDemoMode } = useWallet();
+  const { wallet, isDemoMode, signKRC721Mint } = useWallet();
   const { data: whitelistStatus } = useWhitelistStatus();
   const { data: diplomaStatus } = useDiplomaStatus();
+  const queryClient = useQueryClient();
   const [showMintDialog, setShowMintDialog] = useState(false);
+  
+  const [mintStep, setMintStep] = useState<DiplomaMintStep>("idle");
+  const [reservation, setReservation] = useState<DiplomaReservation | null>(null);
+  const [mintError, setMintError] = useState<string | null>(null);
+  const [mintTxHash, setMintTxHash] = useState<string | null>(null);
+  const [expiryCountdown, setExpiryCountdown] = useState<number>(0);
+
+  useEffect(() => {
+    if (!reservation?.expiresAt) return;
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.floor((reservation.expiresAt - Date.now()) / 1000));
+      setExpiryCountdown(remaining);
+      if (remaining <= 0 && mintStep !== "success") {
+        setMintError("Reservation expired. Please try again.");
+        setMintStep("error");
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [reservation?.expiresAt, mintStep]);
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const { completedCourseIds, progressPercent, completedCount } = useMemo(() => {
     if (courses.length === 0) {
@@ -182,7 +228,69 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   const isComplete = diplomaStatus?.isEligible ?? (courses.length > 0 && completedCount >= courses.length);
   const isWhitelisted = whitelistStatus?.isWhitelisted;
   const mintPrice = isWhitelisted ? "~10 KAS" : "~20,000 KAS";
-  const DIPLOMA_MINT_ENABLED = false;
+  const DIPLOMA_MINT_ENABLED = true;
+
+  const reserveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/diploma/reserve");
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reserve diploma");
+      }
+      return data as DiplomaReservation & { success: true };
+    },
+    onSuccess: async (data) => {
+      setReservation({
+        reservationId: data.reservationId,
+        tokenId: data.tokenId,
+        inscriptionJson: data.inscriptionJson,
+        expiresAt: data.expiresAt,
+      });
+      setMintStep("signing");
+      try {
+        await apiRequest("POST", `/api/nft/signing/${data.reservationId}`);
+        const txHash = await signKRC721Mint(data.inscriptionJson);
+        setMintTxHash(txHash);
+        setMintStep("confirming");
+        confirmMutation.mutate({ reservationId: data.reservationId, mintTxHash: txHash });
+      } catch (err: any) {
+        console.error("[DiplomaMint] Signing failed:", err);
+        try {
+          await apiRequest("POST", `/api/nft/cancel/${data.reservationId}`);
+        } catch {}
+        setMintError(err.message || "Failed to sign transaction");
+        setMintStep("error");
+      }
+    },
+    onError: (err: any) => {
+      setMintError(err.message || "Failed to reserve diploma");
+      setMintStep("error");
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: async ({ reservationId, mintTxHash }: { reservationId: string; mintTxHash: string }) => {
+      const response = await apiRequest("POST", `/api/nft/confirm/${reservationId}`, { mintTxHash });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to confirm mint");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      setMintStep("success");
+      queryClient.invalidateQueries({ queryKey: ["/api/diploma/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/whitelist/status"] });
+      toast({
+        title: "Diploma Minted!",
+        description: "Your KUDIPLOMA NFT has been successfully minted.",
+      });
+    },
+    onError: (err: any) => {
+      setMintError(err.message || "Failed to confirm mint");
+      setMintStep("error");
+    },
+  });
 
   const handleMintDiploma = () => {
     if (!DIPLOMA_MINT_ENABLED) {
@@ -203,10 +311,17 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       return;
     }
 
-    toast({
-      title: "Minting Not Available",
-      description: "Diploma NFT minting is not yet implemented.",
-    });
+    setMintStep("reserving");
+    setMintError(null);
+    setMintTxHash(null);
+    reserveMutation.mutate();
+  };
+
+  const resetMintState = () => {
+    setMintStep("idle");
+    setReservation(null);
+    setMintError(null);
+    setMintTxHash(null);
     setShowMintDialog(false);
   };
 
@@ -631,70 +746,173 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
           </motion.div>
         </div>
 
-      <Dialog open={showMintDialog} onOpenChange={setShowMintDialog}>
+      <Dialog open={showMintDialog} onOpenChange={(open) => {
+        if (!open && mintStep !== "reserving" && mintStep !== "signing" && mintStep !== "confirming") {
+          resetMintState();
+        } else {
+          setShowMintDialog(open);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-sky-500" />
-              Mint Your Diploma NFT
+              {mintStep === "success" ? "Diploma Minted!" : "Mint Your Diploma NFT"}
             </DialogTitle>
             <DialogDescription>
-              You've completed all {courses.length} courses! Mint your diploma as a KRC-721 NFT on the Kaspa blockchain.
+              {mintStep === "idle" && `You've completed all ${courses.length} courses! Mint your diploma as a KRC-721 NFT on the Kaspa blockchain.`}
+              {mintStep === "reserving" && "Reserving your token..."}
+              {mintStep === "signing" && "Please sign the transaction in your wallet."}
+              {mintStep === "confirming" && "Confirming your mint on the blockchain..."}
+              {mintStep === "success" && "Your KUDIPLOMA NFT has been successfully minted!"}
+              {mintStep === "error" && "Something went wrong during the minting process."}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Courses Completed</span>
-                <span className="font-medium">{completedCount} / {courses.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Mint Price</span>
-                <span className="font-medium">{mintPrice}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Whitelist Status</span>
-                <Badge variant={isWhitelisted ? "default" : "secondary"} className="gap-1">
-                  {isWhitelisted ? (
+            {mintStep === "idle" && (
+              <>
+                <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Courses Completed</span>
+                    <span className="font-medium">{completedCount} / {courses.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Mint Price</span>
+                    <span className="font-medium">{mintPrice}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Whitelist Status</span>
+                    <Badge variant={isWhitelisted ? "default" : "secondary"} className="gap-1">
+                      {isWhitelisted ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3" />
+                          Whitelisted
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Pending
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                </div>
+
+                {!isWhitelisted && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    You'll be whitelisted automatically after course completion. This may take a few minutes.
+                  </p>
+                )}
+
+                <Button 
+                  onClick={handleMintDiploma}
+                  disabled={!DIPLOMA_MINT_ENABLED || !isWhitelisted || isDemoMode}
+                  className="w-full gap-2"
+                  data-testid="button-confirm-mint-diploma"
+                >
+                  {DIPLOMA_MINT_ENABLED ? (
                     <>
-                      <CheckCircle2 className="w-3 h-3" />
-                      Whitelisted
+                      <Wallet className="w-4 h-4" />
+                      Mint Diploma ({mintPrice})
                     </>
                   ) : (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Pending
+                      <Sparkles className="w-4 h-4" />
+                      Coming Soon
                     </>
                   )}
-                </Badge>
-              </div>
-            </div>
-
-            {!isWhitelisted && (
-              <p className="text-xs text-center text-muted-foreground">
-                You'll be whitelisted automatically after course completion. This may take a few minutes.
-              </p>
+                </Button>
+              </>
             )}
 
-            <Button 
-              onClick={handleMintDiploma}
-              disabled={!DIPLOMA_MINT_ENABLED || !isWhitelisted || isDemoMode}
-              className="w-full gap-2"
-              data-testid="button-confirm-mint-diploma"
-            >
-              {DIPLOMA_MINT_ENABLED ? (
-                <>
-                  <Wallet className="w-4 h-4" />
-                  Mint Diploma ({mintPrice})
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Coming Soon
-                </>
-              )}
-            </Button>
+            {(mintStep === "reserving" || mintStep === "signing" || mintStep === "confirming") && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full bg-sky-500/20 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">
+                      {mintStep === "reserving" && "Reserving Token..."}
+                      {mintStep === "signing" && "Awaiting Wallet Signature"}
+                      {mintStep === "confirming" && "Confirming Transaction..."}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {mintStep === "reserving" && "Preparing your diploma NFT slot."}
+                      {mintStep === "signing" && `Token #${reservation?.tokenId ?? "..."}`}
+                      {mintStep === "confirming" && "Please wait while we confirm your transaction."}
+                    </p>
+                  </div>
+                </div>
+                
+                {reservation && (mintStep === "signing" || mintStep === "confirming") && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Reservation expires in {formatTime(expiryCountdown)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {mintStep === "success" && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">KUDIPLOMA #{reservation?.tokenId}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your diploma has been permanently recorded on the Kaspa blockchain.
+                    </p>
+                  </div>
+                </div>
+                
+                {mintTxHash && (
+                  <a
+                    href={getExplorerTxUrl(mintTxHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-sm text-sky-500 hover:underline"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Transaction
+                  </a>
+                )}
+
+                <Button onClick={resetMintState} className="w-full" data-testid="button-close-mint-success">
+                  Close
+                </Button>
+              </div>
+            )}
+
+            {mintStep === "error" && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <AlertCircle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">Minting Failed</p>
+                    <p className="text-sm text-muted-foreground">
+                      {mintError || "An unexpected error occurred."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={resetMintState} className="flex-1" data-testid="button-cancel-mint">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleMintDiploma} className="flex-1" data-testid="button-retry-mint">
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
