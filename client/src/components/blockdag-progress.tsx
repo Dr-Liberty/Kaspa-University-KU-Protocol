@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import type { Course, Certificate } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -121,46 +122,48 @@ function CourseBlock({
   const isMainChain = node.isMainChain;
   
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.3 }}
-      className="relative group"
-    >
-      <div 
-        className={`
-          relative w-[72px] h-[72px] rounded-lg overflow-hidden transition-all
-          ${isMainChain 
-            ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/40' 
-            : 'border-2 border-sky-500/60'
-          }
-        `}
+    <Link href={`/courses/${course.id}`} data-testid={`blockdag-course-${course.id}`}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay, duration: 0.3 }}
+        className="relative group cursor-pointer"
       >
-        {course.thumbnail ? (
-          <img 
-            src={course.thumbnail} 
-            alt={course.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-sky-400 flex items-center justify-center">
-            <span className="text-lg font-bold text-white">
-              {course.title.charAt(0)}
-            </span>
-          </div>
-        )}
+        <div 
+          className={`
+            relative w-[72px] h-[72px] rounded-lg overflow-hidden transition-all hover:scale-105
+            ${isMainChain 
+              ? 'border-[3px] border-blue-600 shadow-lg shadow-blue-500/40' 
+              : 'border-2 border-sky-500/60'
+            }
+          `}
+        >
+          {course.thumbnail ? (
+            <img 
+              src={course.thumbnail} 
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-sky-400 flex items-center justify-center">
+              <span className="text-lg font-bold text-white">
+                {course.title.charAt(0)}
+              </span>
+            </div>
+          )}
+          
+          {isCompleted && (
+            <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
+            </div>
+          )}
+        </div>
         
-        {isCompleted && (
-          <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
-          </div>
-        )}
-      </div>
-      
-      <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-10 z-20 bg-popover border rounded-md px-2 py-1 shadow-lg whitespace-nowrap max-w-48">
-        <p className="text-xs font-medium truncate">{course.title}</p>
-      </div>
-    </motion.div>
+        <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 -bottom-10 z-20 bg-popover border rounded-md px-2 py-1 shadow-lg whitespace-nowrap max-w-48">
+          <p className="text-xs font-medium truncate">{course.title}</p>
+        </div>
+      </motion.div>
+    </Link>
   );
 }
 
