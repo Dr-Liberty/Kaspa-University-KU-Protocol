@@ -338,8 +338,10 @@ class DiscountService {
       
       return result;
     } catch (error: any) {
-      console.error(`[DiscountService] Failed to apply discount: ${error.message}`);
-      return { success: false, error: error.message };
+      const errorMsg = error?.message || error?.toString() || "Unknown error during discount operation";
+      console.error(`[DiscountService] Failed to apply discount: ${errorMsg}`);
+      console.error(`[DiscountService] Full error:`, error);
+      return { success: false, error: errorMsg };
     }
   }
 

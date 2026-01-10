@@ -1309,8 +1309,24 @@ export async function registerRoutes(
         });
       }
 
-      const isWhitelisted = await storage.isUserWhitelisted(user.id);
+      let isWhitelisted = await storage.isUserWhitelisted(user.id);
       const discountService = getDiscountService();
+      
+      // If not whitelisted but diploma-eligible, treat as whitelisted for minting
+      // This handles cases where the automatic whitelist transaction failed
+      if (!isWhitelisted) {
+        const courses = await storage.getCourses();
+        const certificates = await storage.getCertificatesByUser(user.id);
+        const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
+        const totalCoursesRequired = Math.max(courses.length, 16);
+        const isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
+        
+        if (isDiplomaEligible) {
+          console.log(`[Whitelist] User ${walletAddress} is diploma-eligible, auto-whitelisting`);
+          await storage.setUserWhitelisted(user.id, "diploma-eligible-auto");
+          isWhitelisted = true;
+        }
+      }
       
       res.json({
         isWhitelisted,
