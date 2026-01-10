@@ -14,7 +14,7 @@ import {
   TX_STATUS,
   TX_FLAGS,
 } from "./ku-protocol.js";
-import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation, isTestnetMode, setTestnetMode } from "./krc721";
+import { getKRC721Service, getAndClearExpiredCertificateIds, hasActiveReservation, isTestnetMode, setTestnetMode, getMainnetMintedCount } from "./krc721";
 import { getPinataService, type QuizProof } from "./pinata";
 import { createContentHash } from "./ku-protocol.js";
 import { getAntiSybilService } from "./anti-sybil";
@@ -292,7 +292,19 @@ export async function registerRoutes(
     if (cached) {
       return res.json(cached);
     }
+    
+    // Get base stats from storage
     const stats = await storage.getStats();
+    
+    // Override certificatesMinted with mainnet-only count from KRC-721 indexer
+    // This is the SOURCE OF TRUTH (not the database which may include testnet mints)
+    const mainnetCount = await getMainnetMintedCount();
+    stats.certificatesMinted = mainnetCount.count;
+    
+    // Add quiz proofs on-chain count from KU indexer
+    const kuStats = kuIndexer.getStats();
+    stats.quizProofsOnChain = kuStats.totalQuizProofs;
+    
     statsCache.set("platform_stats", stats);
     res.json(stats);
   });
@@ -349,6 +361,15 @@ export async function registerRoutes(
       }
 
       const stats = await storage.getStats();
+      
+      // Override certificatesMinted with mainnet-only count from KRC-721 indexer
+      const mainnetCount = await getMainnetMintedCount();
+      stats.certificatesMinted = mainnetCount.count;
+      
+      // Add quiz proofs on-chain count
+      const kuStats = kuIndexer.getStats();
+      stats.quizProofsOnChain = kuStats.totalQuizProofs;
+      
       const courses = await storage.getCourses();
       const topLearnersData = await storage.getTopLearners(5);
       const totalQuizzes = await storage.getTotalQuizResults();
@@ -517,6 +538,7 @@ export async function registerRoutes(
           totalKasDistributed: stats.totalKasDistributed,
           totalQuizzes,
           avgScore,
+          quizProofsOnChain: stats.quizProofsOnChain || 0,
         },
         activityData,
         coursePopularity,

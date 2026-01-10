@@ -155,6 +155,7 @@ export const statsSchema = z.object({
   certificatesMinted: z.number(),
   activeLearners: z.number(),
   coursesAvailable: z.number(),
+  quizProofsOnChain: z.number().optional(),
 });
 
 export type Stats = z.infer<typeof statsSchema>;

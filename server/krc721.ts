@@ -2053,4 +2053,48 @@ export async function getKRC721Service(): Promise<KRC721Service> {
 // Export verification functions for admin routes
 export { verifyCollectionIndexed, verifyTokenIndexed };
 
+/**
+ * Get the number of NFTs minted on mainnet from the KRC-721 indexer
+ * This is the SOURCE OF TRUTH for certificate counts (not the database)
+ * 
+ * Always queries mainnet indexer regardless of testnet mode
+ */
+export async function getMainnetMintedCount(): Promise<{ count: number; error?: string }> {
+  try {
+    // Always use mainnet indexer and ticker
+    const indexerUrl = "https://kaspa-krc721d.kaspa.com";
+    const ticker = process.env.KRC721_TICKER || "KUDIPLOMA";
+    const apiUrl = `${indexerUrl}/api/v1/krc721/mainnet/nfts/${ticker}`;
+    
+    console.log(`[KRC721] Fetching mainnet minted count from: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Response format: { message: "success", result: { tick, buri, max, minted, ... } }
+      if (data && data.message === "success" && data.result) {
+        const minted = data.result.minted || data.result.supply || 0;
+        console.log(`[KRC721] Mainnet ${ticker} minted count: ${minted}`);
+        return { count: Number(minted) };
+      }
+    }
+    
+    if (response.status === 400 || response.status === 404) {
+      // Collection not deployed yet on mainnet
+      console.log(`[KRC721] Collection ${ticker} not found on mainnet indexer`);
+      return { count: 0 };
+    }
+    
+    return { count: 0, error: `Indexer returned status ${response.status}` };
+  } catch (error: any) {
+    console.log(`[KRC721] Failed to fetch mainnet minted count: ${error.message}`);
+    return { count: 0, error: error.message };
+  }
+}
+
 export { KRC721Service, KRC721Config, DeployResult, MintResult, CertificateMetadata };
