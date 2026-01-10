@@ -1,0 +1,60 @@
+45.72
+f0aa95fe
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 15:48:46.43
+31ddbfe1
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 15:48:50.66
+f0aa95fe
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 15:48:50.96
+f0aa95fe
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 15:48:50.96
+f0aa95fe
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 15:48:51.16
+f0aa95fe
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-10 15:48:51.16
+f0aa95fe
+User
+11:48:51 PM [express] GET /api/whitelist/status 304 in 659ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 15:48:56.46
+f0aa95fe
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 15:48:56.64
+f0aa95fe
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 15:48:56.64
+f0aa95fe
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 15:48:56.82
+f0aa95fe
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-10 15:48:56.82
+f0aa95fe
+User
+11:48:56 PM [express] GET /api/whitelist/status 304 in 511ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 15:49:01.02
+31ddbfe1
+System
+system: received signal terminated
+2026-01-10 15:49:01.02
+31ddbfe1
+System
+command finished with error [node ./dist/index.cjs]: signal: terminated
+2026-01-10 15:49:01.04
+31ddbfe1
+System
+main done, exiting

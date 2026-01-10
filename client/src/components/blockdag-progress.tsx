@@ -790,24 +790,44 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                 </p>
               </div>
               {isComplete && (
-                <Button 
-                  onClick={() => setShowMintDialog(true)}
-                  className="shrink-0 gap-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-50"
-                  disabled={isDemoMode || !isWhitelisted}
-                  data-testid="button-mint-diploma"
-                >
-                  {isWhitelisted ? (
-                    <>
-                      <Wallet className="w-4 h-4" />
-                      Mint Diploma
-                    </>
-                  ) : (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Awaiting Whitelist...
-                    </>
-                  )}
-                </Button>
+                isWhitelisted ? (
+                  <Button 
+                    onClick={() => setShowMintDialog(true)}
+                    className="shrink-0 gap-2 bg-sky-500 hover:bg-sky-600"
+                    data-testid="button-mint-diploma"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Mint Diploma (~10 KAS)
+                  </Button>
+                ) : whitelistStatus?.needsWhitelist ? (
+                  <Button 
+                    onClick={handleGetWhitelisted}
+                    className="shrink-0 gap-2 bg-emerald-500 hover:bg-emerald-600"
+                    disabled={isDemoMode || whitelistInProgress || applyWhitelistMutation.isPending}
+                    data-testid="button-get-whitelisted"
+                  >
+                    {whitelistInProgress || applyWhitelistMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Whitelisting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Get Whitelisted (Free)
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button 
+                    className="shrink-0 gap-2"
+                    disabled
+                    data-testid="button-checking-whitelist"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Checking Status...
+                  </Button>
+                )
               )}
             </div>
           </motion.div>
