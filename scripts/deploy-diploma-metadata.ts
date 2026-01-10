@@ -13,8 +13,9 @@ import * as fs from 'fs';
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_SECRET_KEY = process.env.PINATA_SECRET_KEY;
 
-// The diploma image we already uploaded
-const DIPLOMA_IMAGE_CID = 'QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4';
+// The generic diploma image CID (must be updated after uploading new image)
+// TODO: Update this after uploading the new generic diploma image
+const DIPLOMA_IMAGE_CID = 'REPLACE_WITH_NEW_CID';
 const MAX_SUPPLY = 10000;
 
 interface TokenMetadata {
@@ -43,7 +44,6 @@ async function uploadMetadataFolder(): Promise<string> {
       attributes: [
         { traitType: "Platform", value: "Kaspa University" },
         { traitType: "Type", value: "Completion Diploma" },
-        { traitType: "Courses Completed", value: 16 },
         { traitType: "Network", value: "Kaspa" }
       ]
     };
