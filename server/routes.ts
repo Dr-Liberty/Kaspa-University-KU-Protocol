@@ -1311,12 +1311,16 @@ export async function registerRoutes(
 
       const discountService = getDiscountService();
       
-      // Check INDEXER first (source of truth for whitelist status)
+      // Check INDEXER first (preferred source of truth)
       const indexerWhitelisted = await discountService.isWalletWhitelisted(walletAddress);
       const dbWhitelisted = await storage.isUserWhitelisted(user.id);
       
-      // Determine actual whitelist status from indexer
-      const isWhitelisted = indexerWhitelisted;
+      // Check if DB has a REAL transaction hash (not demo-*)
+      const hasRealTxHash = user.whitelistTxHash && !user.whitelistTxHash.startsWith("demo-");
+      
+      // Trust database if it has a real tx hash, even if indexer is slow/unavailable
+      // This allows users to proceed with minting while indexer catches up
+      const isWhitelisted = indexerWhitelisted || (dbWhitelisted && hasRealTxHash);
       
       // Check diploma eligibility for informational purposes
       let isDiplomaEligible = false;
@@ -1328,10 +1332,19 @@ export async function registerRoutes(
       const totalCoursesRequired = Math.max(courses.length, 16);
       isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
       
-      // If DB says whitelisted but indexer doesn't, OR user is eligible but not whitelisted
-      if ((dbWhitelisted && !indexerWhitelisted) || (isDiplomaEligible && !indexerWhitelisted)) {
-        // User is eligible but whitelist transaction failed - retry it
-        console.log(`[Whitelist] User ${walletAddress} needs whitelist (db=${dbWhitelisted}, indexer=${indexerWhitelisted}, eligible=${isDiplomaEligible})`);
+      // Determine source for logging
+      let source = "none";
+      if (indexerWhitelisted) {
+        source = "indexer";
+      } else if (dbWhitelisted && hasRealTxHash) {
+        source = "database";
+      } else if (whitelistPending) {
+        source = "pending";
+      }
+      
+      // If user is eligible but not whitelisted anywhere, attempt whitelist
+      if (isDiplomaEligible && !isWhitelisted && !dbWhitelisted) {
+        console.log(`[Whitelist] User ${walletAddress} needs whitelist (eligible=${isDiplomaEligible})`);
         whitelistPending = true;
         
         // Attempt whitelist in background
@@ -1356,6 +1369,8 @@ export async function registerRoutes(
         await storage.setUserWhitelisted(user.id, "indexer-synced");
       }
       
+      console.log(`[Whitelist] Status for ${walletAddress}: isWhitelisted=${isWhitelisted}, source=${source}, indexer=${indexerWhitelisted}, db=${dbWhitelisted}, realTx=${hasRealTxHash}`);
+      
       res.json({
         isWhitelisted,
         isDiplomaEligible,
@@ -1367,7 +1382,7 @@ export async function registerRoutes(
         discountFeeKas: "10",
         powFeeKas: "10",
         totalMintCostKas: "20", // discountFee + PoW fee
-        source: indexerWhitelisted ? "indexer" : "pending",
+        source,
       });
     } catch (error: any) {
       console.error("[Whitelist] Status check failed:", error.message);
