@@ -43,12 +43,13 @@ interface DiscountResult {
 
 // KRC-721 Discount inscription format per official spec
 // discountFee sets the amount whitelisted users pay instead of royaltyFee
+// Reference: https://mainnet.krc721.stream/docs (KRC-721 Specifications)
 interface DiscountInscription {
   p: "krc-721";
   op: "discount";
   tick: string;
   to: string; // recipient address to whitelist
-  discount: string; // amount in SOMPI that whitelisted user pays - must be "discount" per KRC-721 spec
+  discountFee: string; // amount in SOMPI that whitelisted user pays - MUST be "discountFee" per KRC-721 spec
 }
 
 class DiscountService {
@@ -249,7 +250,7 @@ class DiscountService {
       op: "discount",
       tick: getCollectionTicker(),
       to: walletAddress,
-      discount: DISCOUNT_FEE_SOMPI.toString(), // 10 KAS in sompi - must be "discount" per KRC-721 spec
+      discountFee: DISCOUNT_FEE_SOMPI.toString(), // 10 KAS in sompi - MUST be "discountFee" per KRC-721 spec
     };
   }
 

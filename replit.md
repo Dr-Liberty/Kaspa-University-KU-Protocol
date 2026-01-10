@@ -47,9 +47,14 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Performance**: Job queue for async ops, in-memory TTL caching.
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
+## Recent Changes
+- **2026-01-10**: Fixed critical KRC-721 discount inscription field name from `discount` to `discountFee` per official spec (https://mainnet.krc721.stream/docs). This was causing the indexer to reject whitelist transactions, showing full 2000 KAS royalty instead of 10 KAS discount fee.
+- **KIP-0009 Compliance**: Reward transactions bump 0.1 KAS outputs to 0.101 KAS (storage mass < 100,000 grams requirement).
+
 ## External Dependencies
 - **Database**: PostgreSQL.
 - **Kaspa Blockchain**: Mainnet, `kaspa-rpc-client`, rusty-kaspa WASM module.
 - **IPFS Storage**: Pinata (for NFT metadata and images).
 - **VPN Detection**: GetIPIntel API, IP-API.com.
 - **Redis**: Optional, for session store.
+- **KRC-721 Indexer**: KSPR KRC-721 indexer at mainnet.krc721.stream for NFT operations (discount/whitelist, minting).

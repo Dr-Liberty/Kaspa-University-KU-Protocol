@@ -1,0 +1,134 @@
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qqqe2rv73847tyk4w7w86nmyqn46w80dm0saudayzlc09rz45xlm5l3jhn3t8/KUDIPLOMA
+2026-01-10 14:40:13.85
+e536e27c
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 14:40:13.85
+e536e27c
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 14:40:13.97
+e536e27c
+User
+[Whitelist] Status for kaspa:qqqe2rv73847tyk4w7w86nmyqn46w80dm0saudayzlc09rz45xlm5l3jhn3t8: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-10 14:40:13.97
+e536e27c
+User
+10:40:13 PM [express] GET /api/whitelist/status 304 in 454ms :: {"isWhitelisted":false,"isDiplomaEligible":false,"whitelistPending":false,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 14:40:17.34
+e536e27c
+User
+[Kaspa] Address bech32 decode info: Invalid checksum for kaspa1qqqe2rv73847tyk4w7w86nmyqn46w80dm0saudayzlc09rz45xlm5l3jhn3t8 (structural checks passed)
+2026-01-10 14:40:17.34
+e536e27c
+User
+[Kaspa] Quiz proof payload created: 146 bytes
+2026-01-10 14:40:17.46
+e536e27c
+User
+[Kaspa] Step 1: Sending quiz proof to self (0.2 KAS with 146 byte payload)
+2026-01-10 14:40:17.58
+e536e27c
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 14:40:17.58
+e536e27c
+User
+"isCoinbase": false
+2026-01-10 14:40:17.58
+e536e27c
+User
+"version": 0,
+2026-01-10 14:40:17.58
+e536e27c
+User
+"outpoint": {
+2026-01-10 14:40:17.58
+e536e27c
+User
+[Kaspa] Reserved entry sample structure: {
+2026-01-10 14:40:17.58
+e536e27c
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-10 14:40:17.58
+e536e27c
+User
+"index": 1
+2026-01-10 14:40:17.58
+e536e27c
+User
+},
+2026-01-10 14:40:17.58
+e536e27c
+User
+"scriptPublicKey": {
+2026-01-10 14:40:17.58
+e536e27c
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 14:40:17.58
+e536e27c
+User
+[Kaspa] Transformed 1 entries for WASM createTransactions
+2026-01-10 14:40:17.58
+e536e27c
+User
+"blockDaaScore": "326652550",
+2026-01-10 14:40:17.58
+e536e27c
+User
+}
+2026-01-10 14:40:17.58
+e536e27c
+User
+},
+2026-01-10 14:40:17.58
+e536e27c
+User
+"transactionId": "194dc5c1eb08d777718d974b564b8b8bee18f67e65cd92c4ade395a32ee284cb",
+2026-01-10 14:40:17.58
+e536e27c
+User
+[Kaspa] Created 1 payload transaction(s) with 146 bytes
+2026-01-10 14:40:17.58
+e536e27c
+User
+[UTXO] Reserved 1 UTXOs (18830688948 sompi) for payload:6b753a313a717569
+2026-01-10 14:40:17.58
+e536e27c
+User
+"utxoEntry": {
+2026-01-10 14:40:17.58
+e536e27c
+User
+}
+2026-01-10 14:40:17.58
+e536e27c
+User
+"amount": "18830688948",
+2026-01-10 14:40:17.89
+e536e27c
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-10 14:40:17.89
+e536e27c
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-10 14:40:17.89
+e536e27c
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-10 14:40:17.89
+e536e27c
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-10 14:40:17.92
+e536e27c
+User
+[UTXO] Marked 1 UTXOs as spent in tx b91d7e4f77d7feb9...
+2026-01-10 14:40:17.92
+e536e27c
+User
+[Kaspa] Quiz proof tx: b91d7e4f77d7feb987b56828b7530cfeeb8cd78216b6c89f9a8bd01e7b1bc812
