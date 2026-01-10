@@ -48,7 +48,7 @@ interface DiscountInscription {
   op: "discount";
   tick: string;
   to: string; // recipient address to whitelist
-  discountFee: string; // amount in SOMPI that whitelisted user pays
+  discount: string; // amount in SOMPI that whitelisted user pays - must be "discount" per KRC-721 spec
 }
 
 class DiscountService {
@@ -249,7 +249,7 @@ class DiscountService {
       op: "discount",
       tick: getCollectionTicker(),
       to: walletAddress,
-      discountFee: DISCOUNT_FEE_SOMPI.toString(), // 10 KAS in sompi
+      discount: DISCOUNT_FEE_SOMPI.toString(), // 10 KAS in sompi - must be "discount" per KRC-721 spec
     };
   }
 
