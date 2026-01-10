@@ -107,12 +107,13 @@ class KaspaService {
     if (this.initialized) return true;
 
     try {
-      // Get treasury private key from environment
+      // Get treasury credentials from environment (supports mnemonic or raw private key)
+      const mnemonic = process.env.KASPA_TREASURY_MNEMONIC;
       const privateKeyHex = process.env.KASPA_TREASURY_PRIVATEKEY || process.env.KASPA_TREASURY_PRIVATE_KEY;
       
-      if (!privateKeyHex) {
-        console.log("[Kaspa] No treasury private key configured - running in demo mode");
-        console.log("[Kaspa] Set KASPA_TREASURY_PRIVATEKEY secret to enable real rewards");
+      if (!mnemonic && !privateKeyHex) {
+        console.log("[Kaspa] No treasury credentials configured - running in demo mode");
+        console.log("[Kaspa] Set KASPA_TREASURY_MNEMONIC or KASPA_TREASURY_PRIVATEKEY secret to enable real rewards");
         this.initialized = true;
         return true;
       }
@@ -120,8 +121,8 @@ class KaspaService {
       // Load kaspa module with K-Kluster approach
       await this.loadKaspaModule();
 
-      // Derive treasury address from private key hex
-      await this.deriveKeysFromPrivateKey(privateKeyHex);
+      // Derive treasury address from mnemonic or private key
+      await this.deriveKeys(mnemonic || privateKeyHex!);
 
       // Try kaspa-rpc-client first (pure TypeScript, most reliable in Node.js)
       await this.tryRpcClientConnection();
@@ -229,28 +230,43 @@ class KaspaService {
   }
 
   /**
-   * Derive keys from private key hex
-   * Uses raw 64-character hex private key directly
+   * Derive keys from mnemonic or private key hex
+   * Supports both BIP39 mnemonic phrases and raw 64-character hex private keys
    */
-  private async deriveKeysFromPrivateKey(privateKeyHex: string): Promise<void> {
+  private async deriveKeys(input: string): Promise<void> {
     try {
       // Clean up input - trim whitespace
-      const cleanInput = privateKeyHex.trim();
+      const cleanInput = input.trim();
       
       // Validate that this is a raw private key (64 hex characters)
       const isRawPrivateKey = /^[0-9a-fA-F]{64}$/.test(cleanInput);
       
-      if (!isRawPrivateKey) {
-        throw new Error("Invalid private key format. Expected 64 hex characters.");
+      let privateKeyHex: string;
+      
+      if (isRawPrivateKey) {
+        console.log("[Kaspa] Using raw private key (64 hex chars)");
+        privateKeyHex = cleanInput;
+      } else {
+        // Assume it's a mnemonic phrase - derive private key using BIP44 path
+        console.log("[Kaspa] Using mnemonic phrase - deriving key via BIP44...");
+        const seed = await bip39.mnemonicToSeed(cleanInput);
+        const hdkey = HDKey.fromMasterSeed(seed);
+        const derivedKey = hdkey.derive("m/44'/111111'/0'/0/0"); // Kaspa BIP44 path
+        
+        if (!derivedKey.privateKey) {
+          throw new Error("Failed to derive private key from mnemonic");
+        }
+        
+        privateKeyHex = derivedKey.privateKey.toString("hex");
+        console.log("[Kaspa] Derived private key from mnemonic successfully");
       }
       
-      console.log("[Kaspa] Using raw private key (64 hex chars)");
-      await this.useRawPrivateKey(cleanInput);
+      await this.useRawPrivateKey(privateKeyHex);
 
     } catch (error: any) {
-      console.error("[Kaspa] Failed to derive keys from private key:", error.message);
+      console.error("[Kaspa] Failed to derive keys:", error.message);
       this.treasuryPrivateKey = null;
-      console.log(`[Kaspa] WARNING: No signing capability - check your KASPA_TREASURY_PRIVATEKEY`);
+      console.log(`[Kaspa] WARNING: No signing capability - check your KASPA_TREASURY_MNEMONIC or KASPA_TREASURY_PRIVATEKEY`);
     }
   }
 

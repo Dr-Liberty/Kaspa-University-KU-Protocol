@@ -1,0 +1,124 @@
+2026-01-10 14:00:21.20
+4765d381
+User
+[Whitelist] Initiating discount operation for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-10 14:00:21.38
+4765d381
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 14:00:21.38
+4765d381
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 14:00:21.38
+4765d381
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 14:00:21.39
+4765d381
+User
+[AntiSybil] Released submission lock for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel:lesson-7-6
+2026-01-10 14:00:21.39
+4765d381
+User
+10:00:21 PM [express] POST /api/quiz/lesson-7-6/submit 200 in 1006ms :: {"id":"b47d8f42-65dc-486d-bf70-84f614813766","lessonId":"lesson-7-6","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","score":100,"passed":true,"completedAt":"2026-01-10T22:00:20.680Z","txHash":null,"txStatus":"pending","payloadHex":null,"walletAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","courseCompleted":true,"questions":[{"id":"q-7-6-1","lessonId":"lesson-7-6","question":"What gets preserved when a node prunes old block data?","options":["Everything is kept in full storage","Nothing at all - complete reset occurs","Block headers, UTXO set, and MuHash commitments","Only transaction data is preserved"],"correctIndex":2,"explanation":"Pruning removes block bodies but preserves headers, current UTXO set, and MuHash commitments for verification."}]}
+2026-01-10 14:00:21.73
+4765d381
+User
+},
+2026-01-10 14:00:21.73
+4765d381
+User
+"amount": "20000000",
+2026-01-10 14:00:21.73
+4765d381
+User
+"outpoint": {
+2026-01-10 14:00:21.73
+4765d381
+User
+"transactionId": "d375f690c87c2e6a51e09d50de8fd3381c8518b9a51e09aab425a283f74a35dc",
+2026-01-10 14:00:21.73
+4765d381
+User
+}
+2026-01-10 14:00:21.73
+4765d381
+User
+"blockDaaScore": "326449490",
+2026-01-10 14:00:21.73
+4765d381
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 14:00:21.73
+4765d381
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 14:00:21.73
+4765d381
+User
+"index": 0
+2026-01-10 14:00:21.73
+4765d381
+User
+},
+2026-01-10 14:00:21.73
+4765d381
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 14:00:21.73
+4765d381
+User
+"utxoEntry": {
+2026-01-10 14:00:21.73
+4765d381
+User
+"isCoinbase": false
+2026-01-10 14:00:21.73
+4765d381
+User
+[Whitelist] Failed to whitelist kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: networkId is required for Generator constructor with UTXO entries
+2026-01-10 14:00:21.78
+4765d381
+User
+[Quiz] Retrying in 2000ms...
+2026-01-10 14:00:21.78
+4765d381
+User
+[Quiz] On-chain TX attempt 2/3 failed: Treasury not configured
+2026-01-10 14:00:23.87
+4765d381
+User
+[Quiz] On-chain TX attempt 3/3 failed: Treasury not configured
+2026-01-10 14:00:23.87
+4765d381
+User
+[Kaspa] Cannot send quiz proof - service not in live mode
+2026-01-10 14:00:24.37
+4765d381
+User
+[Quiz] On-chain TX failed after 3 attempts for lesson lesson-7-6
+2026-01-10 14:00:24.83
+4765d381
+User
+10:00:24 PM [express] GET /api/courses 304 in 131ms :: [{"id":"bitcoin-vs-kaspa","title":"Bitcoin vs Kaspa: The Next Evolution","description":"Bitcoin revolutionized money. Kaspa revolutionizes Bitcoin.","thumbnail":"/thumbnails/bitcoin_evolving_to_kaspa.png","lessonCount":15,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"sound-money","title":"Sound Money & Monetary Debasement","description":"Explore the principles of sound money and how fiat currency debasement erodes purchasing power over time. Learn about the inflation hurdle every investor must overcome, the history of dollar devaluation, and why scarce digital assets like Kaspa represent a return to sound monetary principles.","thumbnail":"/thumbnails/sound_money_gold_scale.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"self-custody","title":"Self-Custody & Hardware Wallets","description":"Understand the critical importance of self-custody for financial sovereignty. Learn about hot wallets, cold storage, hardware wallets, and seed phrase security. Discover why holding your own keys to native Kaspa is essential for true ownership.","thumbnail":"/thumbnails/self_custody_wallet_key.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"ku-protocol","title":"KU Protocol: On-Chain Achievements","description":"Understand how Kaspa University's KU Protocol creates immutable achievement records on the blockchain. Learn about wallet-signed proofs, quiz verification, and how on-chain education credentials work.","thumbnail":"/thumbnails/ku_protocol_achievements.png","lessonCount":3,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"k-protocol","title":"K Protocol: Decentralized Social Media","description":"Learn how K Protocol enables censorship-resistant public messaging on Kaspa. Discover K Social, the Twitter/X alternative built on BlockDAG, and see how Kaspa University uses K Protocol for public Q&A discussions.","thumbnail":"/thumbnails/k_protocol_social.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"kasia-protocol","title":"Kasia Protocol: Encrypted P2P Messaging","description":"Explore Kasia, the end-to-end encrypted messaging protocol on Kaspa. Learn how private conversations work on a public blockchain, with in-chat payments and KNS integration. See how Kaspa University uses Kasia for admin support and direct messaging.","thumbnail":"/thumbnails/kasia_encrypted_messaging.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"krc721-nft-standard","title":"KRC-721: NFT Standard on Kaspa","description":"Master Kaspa's NFT standard for unique digital assets. Learn about commit-reveal minting, IPFS metadata, royalty support, and how Kaspa University issues verifiable diploma NFTs to graduates.","thumbnail":"/thumbnails/krc721_nft_standard.png","lessonCount":4,"kasReward":0.1,"difficulty":"intermediate","category":"Protocols"},{"id":"l2-on-kaspa","title":"Layer 2 on Kaspa: Smart Contracts & Beyond","description":"Discover Kaspa's L2 ecosystem including Kasplex zkEVM (birthplace of BMTUniversity.com) and Igra Labs. Learn step-by-step how to bridge KAS using Kurve and KSPR Bot. Understand how smart contracts expand Kaspa's capabilities for DeFi, gaming, and more.","thumbnail":"/thumbnails/l2_kaspa_ecosystem.png","lessonCount":5,"kasReward":0.1,"difficulty":"intermediate","category":"Development"},{"id":"dag-terminology","title":"DAG Terminology","description":"Past, Future, Anticone, Mergeset, K parameter, what does it all mean?","thumbnail":"/thumbnails/dag_terminology_visualization.png","lessonCount":8,"kasReward":0.1,"difficulty":"beginner","category":"Development"},{"id":"dag-and-kaspa","title":"DAG and Kaspa: Understanding the Structure","description":"By now you have probably heard that Kaspa is a BlockDAG, but what does that mean? This course assumes no prior knowledge, starting with graph theory fundamentals.","thumbnail":"/thumbnails/dag_structure_visualization.png","lessonCount":5,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"foundational-concepts","title":"Foundational Concepts","description":"Understanding the basic building blocks of Kaspa's architecture. This course introduces the fundamental concepts that underpin Kaspa's revolutionary consensus system, including Directed Acyclic Graphs (DAGs), essential terminology, the GHOSTDAG proto","thumbnail":"/thumbnails/foundational_concepts_building_blocks.png","lessonCount":5,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"core-data-structures","title":"Core Data Structures","description":"The fundamental data types that represent blockchain state in Kaspa. This course covers the essential data structures including UTXO (Unspent Transaction Outputs), MuHash for cryptographic commitments, Merkle Roots for transaction verification, and t","thumbnail":"/thumbnails/core_data_structures_visual.png","lessonCount":4,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"},{"id":"ghostdag-mechanics","title":"GHOSTDAG Mechanics","description":"A deep dive into the GHOSTDAG consensus algorithm implementation. This course covers the K Parameter, Parent Selection and Ordering, Mergeset Creation, Blue and Red Classification, and Blue Work Calculation.","thumbnail":"/thumbnails/ghostdag_mechanics_visualization.png","lessonCount":5,"kasReward":0.1,"difficulty":"intermediate","category":"Consensus"},{"id":"consensus-parameters","title":"Consensus Parameters","description":"Configuration values that govern Kaspa's network behavior. Learn about the mathematical relationships between BPS, K parameter, mergeset limits, merge depth bounds, finality depth, DAA windows, and pruning depth.","thumbnail":"/thumbnails/consensus_parameters_controls.png","lessonCount":6,"kasReward":0.1,"difficulty":"advanced","category":"Consensus"},{"id":"block-processing","title":"Block Processing","description":"How blocks flow through Kaspa's validation pipeline. Learn the complete journey of a block from creation through header validation, body validation, virtual chain updates, and pruning consideration.","thumbnail":"/thumbnails/block_processing_pipeline.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"difficulty-adjustment","title":"Difficulty Adjustment (DAA)","description":"How Kaspa maintains consistent block times through its Difficulty Adjustment Algorithm. Learn about DAA windows, the difference between DAA Score and Blue Score, and how non-DAA blocks are handled.","thumbnail":"/thumbnails/difficulty_adjustment_algorithm.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"transaction-processing","title":"Transaction Processing","description":"How transactions are validated and included in Kaspa blocks. Learn about the UTXO model in transaction context, selection strategies, mass calculation, and coinbase transactions.","thumbnail":"/thumbnails/transaction_processing_flow.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"pruning-system","title":"Pruning System","description":"Managing blockchain data growth in Kaspa. Learn about MuHash's role, first-order and second-order pruning, and the differences between archival and pruning nodes.","thumbnail":"/thumbnails/blockchain_pruning_system.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"anticone-finalization","title":"Anticone Finalization & Safe Pruning","description":"Mathematical foundations for safe data removal in Kaspa. Learn how DAG terminology, finality depth, merge depth bounds, and K parameter work together to guarantee that pruning old data never compromises security.","thumbnail":"/thumbnails/anticone_finalization_concept.png","lessonCount":2,"kasReward":0.1,"difficulty":"advanced","category":"Technical"},{"id":"virtual-state","title":"Virtual State","description":"Kaspa's unique approach to representing the current DAG tip. Learn about the Virtual Block concept, sink selection, virtual parents, and virtual DAA score.","thumbnail":"/thumbnails/virtual_state_visualization.png","lessonCount":2,"kasReward":0.1,"difficulty":"advanced","category":"Technical"},{"id":"timestamps-median-time","title":"Timestamps & Median Time","description":"Timestamp consensus and validation in Kaspa. Learn about Past Median Time calculation and timestamp validation rules.","thumbnail":"/thumbnails/timestamps_and_median_time.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"finality-security","title":"Finality & Security","description":"Understanding Kaspa's security guarantees. Learn about K parameter security properties, depth-based security, size constraints, probabilistic and deterministic finality.","thumbnail":"/thumbnails/finality_and_security_shield.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"},{"id":"network-scaling","title":"Network & Scaling","description":"Why Kaspa's architecture enables high throughput. Learn about Bitcoin's scaling limitations and how Kaspa overcomes them through BPS configuration, K parameter scaling, and merge depth bounds.","thumbnail":"/thumbnails/network_scaling_visualization.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"}]
+2026-01-10 14:00:24.91
+4765d381
+User
+10:00:24 PM [express] GET /api/courses/stats 200 in 211ms :: {"bitcoin-vs-kaspa":{"completions":5,"totalKasPaid":0.5},"sound-money":{"completions":4,"totalKasPaid":0.4},"self-custody":{"completions":4,"totalKasPaid":0.4},"ku-protocol":{"completions":4,"totalKasPaid":0.4},"k-protocol":{"completions":4,"totalKasPaid":0.4},"kasia-protocol":{"completions":3,"totalKasPaid":0.3},"krc721-nft-standard":{"completions":3,"totalKasPaid":0.3},"l2-on-kaspa":{"completions":3,"totalKasPaid":0.3},"dag-terminology":{"completions":6,"totalKasPaid":0.6},"dag-and-kaspa":{"completions":4,"totalKasPaid":0.4},"foundational-concepts":{"completions":4,"totalKasPaid":0.4},"core-data-structures":{"completions":3,"totalKasPaid":0.3},"ghostdag-mechanics":{"completions":3,"totalKasPaid":0.3},"consensus-parameters":{"completions":3,"totalKasPaid":0.3},"block-processing":{"completions":2,"totalKasPaid":0.2},"difficulty-adjustment":{"completions":2,"totalKasPaid":0.2},"transaction-processing":{"completions":2,"totalKasPaid":0.2},"pruning-system":{"completions":2,"totalKasPaid":0.2},"anticone-finalization":{"completions":2,"totalKasPaid":0.2},"virtual-state":{"completions":2,"totalKasPaid":0.2},"timestamps-median-time":{"completions":2,"totalKasPaid":0.2},"finality-security":{"completions":4,"totalKasPaid":0.4},"network-scaling":{"completions":2,"totalKasPaid":0.2}}
+2026-01-10 14:00:25.16
+640ceee0
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-10 14:00:25.16
+640ceee0
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-10 14:00:25.16
+640ceee0
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-10 14:00:25.16
+640ceee0
+User
+[Kasia Client] Fetching h
