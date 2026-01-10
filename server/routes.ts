@@ -1389,7 +1389,7 @@ export async function registerRoutes(
   // DIPLOMA STATUS ENDPOINT
   // ============================================
   // Diploma eligibility is derived from certificate count
-  // Users earn ONE diploma NFT after completing all 16 courses
+  // Users earn ONE diploma NFT after completing all courses
   
   app.get("/api/diploma/status", async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
@@ -2238,7 +2238,7 @@ export async function registerRoutes(
     // DEPRECATED: Per-course NFT minting is disabled
     // Use /api/diploma/reserve for diploma NFT minting after completing all courses
     return res.status(410).json({ 
-      error: "Per-course NFT minting has been deprecated. Complete all 16 courses to earn your diploma NFT.",
+      error: "Per-course NFT minting has been deprecated. Complete all courses to earn your diploma NFT.",
       redirectTo: "/api/diploma/reserve"
     });
   });
@@ -3104,12 +3104,12 @@ export async function registerRoutes(
         });
       }
 
-      // MAINNET-READY: Use pre-uploaded CIDs from scripts/mainnet-launch.ts
-      // Diploma Image: PNG artwork for the diploma NFT
-      // Metadata Folder: Contains per-token JSON metadata at /kudiploma-metadata/{tokenId}
+      // MAINNET-READY: Use pre-uploaded CIDs
+      // Diploma Image: Generic diploma artwork (no personalized data)
+      // Metadata Folder: Contains per-token JSON at /{tokenId} (no "Courses Completed" attribute)
       const MAINNET_DIPLOMA_IMAGE_CID = "QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4";
-      const MAINNET_METADATA_FOLDER_CID = "QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF";
-      const MAINNET_BURI = `ipfs://${MAINNET_METADATA_FOLDER_CID}/kudiploma-metadata`;
+      const MAINNET_METADATA_FOLDER_CID = "QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A";
+      const MAINNET_BURI = `ipfs://${MAINNET_METADATA_FOLDER_CID}`;
       
       // For mainnet, use the pre-uploaded deterministic CIDs
       // For testnet, we can still upload fresh (for testing image changes)

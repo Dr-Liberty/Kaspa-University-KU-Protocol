@@ -10,10 +10,10 @@ console.log("KUDIPLOMA MAINNET LAUNCH CHECKLIST");
 console.log("=".repeat(70));
 console.log("");
 
-// IPFS Assets (uploaded and ready)
+// IPFS Assets (uploaded and ready - NO "Courses Completed" attribute)
 const DIPLOMA_IMAGE_CID = "QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4";
-const METADATA_FOLDER_CID = "QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF";
-const BURI_VALUE = `ipfs://${METADATA_FOLDER_CID}/kudiploma-metadata`;
+const METADATA_FOLDER_CID = "QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A";
+const BURI_VALUE = `ipfs://${METADATA_FOLDER_CID}`;
 
 console.log("IPFS ASSETS:");
 console.log("-".repeat(70));
@@ -23,7 +23,7 @@ console.log(`  buri value:       ${BURI_VALUE}`);
 console.log("");
 console.log("  Verify at:");
 console.log(`    Image: https://gateway.pinata.cloud/ipfs/${DIPLOMA_IMAGE_CID}`);
-console.log(`    Token 1: https://gateway.pinata.cloud/ipfs/${METADATA_FOLDER_CID}/kudiploma-metadata/1`);
+console.log(`    Token 1: https://gateway.pinata.cloud/ipfs/${METADATA_FOLDER_CID}/1`);
 console.log("");
 
 // Collection Configuration
