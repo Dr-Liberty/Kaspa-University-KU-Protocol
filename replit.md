@@ -43,7 +43,7 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
     - **Anti-Sybil**: Quiz cooldowns, min completion times, daily reward caps, concurrent quiz submission locking.
     - **Rate Limiting**: Endpoint-specific rate limits.
     - **Threat Detection**: IP tracking, multi-wallet/IP detection, VPN detection.
-    - **UTXO Management**: Mutex-based locking to prevent double-spending.
+    - **UTXO Management**: Mutex-based locking to prevent double-spending. UTXO transformer with unit tests (`server/__tests__/utxo-transformer.test.ts`) normalizes RPC response formats for WASM SDK compatibility.
 - **Performance**: Job queue for async ops, in-memory TTL caching.
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
