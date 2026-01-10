@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { GraduationCap, CheckCircle2, Sparkles, Wallet, Loader2, Clock, ExternalLink, AlertCircle } from "lucide-react";
-import { useWhitelistStatus } from "@/hooks/use-whitelist";
+import { useWhitelistStatus, useApplyWhitelist } from "@/hooks/use-whitelist";
 import { useDiplomaStatus } from "@/hooks/use-diploma";
 import { useWallet } from "@/lib/wallet-context";
 import { useToast } from "@/hooks/use-toast";
@@ -186,8 +186,9 @@ function getExplorerTxUrl(txHash: string): string {
 export function BlockDAGProgress({ courses, certificates, walletConnected }: BlockDAGProgressProps) {
   const { toast } = useToast();
   const { wallet, isDemoMode, signKRC721Mint } = useWallet();
-  const { data: whitelistStatus } = useWhitelistStatus();
+  const { data: whitelistStatus, refetch: refetchWhitelist } = useWhitelistStatus();
   const { data: diplomaStatus } = useDiplomaStatus();
+  const applyWhitelistMutation = useApplyWhitelist();
   const queryClient = useQueryClient();
   const [showMintDialog, setShowMintDialog] = useState(false);
   
@@ -196,6 +197,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   const [mintError, setMintError] = useState<string | null>(null);
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [expiryCountdown, setExpiryCountdown] = useState<number>(0);
+  const [whitelistInProgress, setWhitelistInProgress] = useState(false);
 
   useEffect(() => {
     if (!reservation?.expiresAt) return;
@@ -326,6 +328,59 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     setMintError(null);
     setMintTxHash(null);
     setShowMintDialog(false);
+  };
+
+  const handleGetWhitelisted = async () => {
+    if (!wallet || isDemoMode) {
+      toast({
+        title: "Wallet Required",
+        description: "Connect a real Kaspa wallet to get whitelisted.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWhitelistInProgress(true);
+    try {
+      const result = await applyWhitelistMutation.mutateAsync();
+      if (result.success) {
+        toast({
+          title: "Whitelisting Started",
+          description: "Your whitelist transaction has been submitted. Please wait for confirmation.",
+        });
+        // Poll for confirmation with proper async handling
+        const pollForWhitelist = async () => {
+          for (let attempts = 0; attempts < 20; attempts++) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            const { data: status } = await refetchWhitelist();
+            if (status?.isWhitelisted) {
+              setWhitelistInProgress(false);
+              toast({
+                title: "Whitelisted!",
+                description: "You can now mint your diploma at the discounted price.",
+              });
+              return;
+            }
+          }
+          // Max attempts reached
+          setWhitelistInProgress(false);
+          toast({
+            title: "Still Processing",
+            description: "Whitelist may take a few minutes to confirm. The status will update automatically.",
+          });
+        };
+        pollForWhitelist(); // Run in background
+      } else {
+        throw new Error(result.error || "Whitelist failed");
+      }
+    } catch (err: any) {
+      setWhitelistInProgress(false);
+      toast({
+        title: "Whitelist Failed",
+        description: err.message || "Failed to apply whitelist. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const { nodes, connections, rows, totalWidth, totalHeight, diplomaNode } = useMemo(() => {
@@ -818,35 +873,55 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                       Whitelist Required
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      You must be whitelisted to mint. Non-whitelisted minting costs 20,000 KAS. 
-                      Whitelist status updates automatically - please wait a few minutes.
+                      Click "Get Whitelisted" to unlock the discounted mint price of ~20 KAS.
+                      Without whitelisting, minting costs 20,000 KAS.
                     </p>
                   </div>
                 )}
 
-                <Button 
-                  onClick={handleMintDiploma}
-                  disabled={!DIPLOMA_MINT_ENABLED || !isWhitelisted || isDemoMode}
-                  className="w-full gap-2"
-                  data-testid="button-confirm-mint-diploma"
-                >
-                  {!isWhitelisted ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Awaiting Whitelist...
-                    </>
-                  ) : DIPLOMA_MINT_ENABLED ? (
-                    <>
-                      <Wallet className="w-4 h-4" />
-                      Mint Diploma ({mintPrice})
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Coming Soon
-                    </>
-                  )}
-                </Button>
+                {/* Step 1: Get Whitelisted button (shows when not whitelisted) */}
+                {!isWhitelisted && (
+                  <Button 
+                    onClick={handleGetWhitelisted}
+                    disabled={whitelistInProgress || isDemoMode}
+                    className="w-full gap-2"
+                    data-testid="button-get-whitelisted"
+                  >
+                    {whitelistInProgress ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Whitelisting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Get Whitelisted (Free)
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {/* Step 2: Mint Diploma button (shows when whitelisted) */}
+                {isWhitelisted && (
+                  <Button 
+                    onClick={handleMintDiploma}
+                    disabled={!DIPLOMA_MINT_ENABLED || isDemoMode}
+                    className="w-full gap-2"
+                    data-testid="button-confirm-mint-diploma"
+                  >
+                    {DIPLOMA_MINT_ENABLED ? (
+                      <>
+                        <Wallet className="w-4 h-4" />
+                        Mint Diploma ({mintPrice})
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Coming Soon
+                      </>
+                    )}
+                  </Button>
+                )}
               </>
             )}
 

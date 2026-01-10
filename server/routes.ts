@@ -1324,7 +1324,6 @@ export async function registerRoutes(
       
       // Check diploma eligibility for informational purposes
       let isDiplomaEligible = false;
-      let whitelistPending = false;
       
       const courses = await storage.getCourses();
       const certificates = await storage.getCertificatesByUser(user.id);
@@ -1338,31 +1337,11 @@ export async function registerRoutes(
         source = "indexer";
       } else if (dbWhitelisted && hasRealTxHash) {
         source = "database";
-      } else if (whitelistPending) {
-        source = "pending";
       }
       
-      // If user is eligible but not whitelisted anywhere, attempt whitelist
-      if (isDiplomaEligible && !isWhitelisted && !dbWhitelisted) {
-        console.log(`[Whitelist] User ${walletAddress} needs whitelist (eligible=${isDiplomaEligible})`);
-        whitelistPending = true;
-        
-        // Attempt whitelist in background
-        (async () => {
-          try {
-            const discountResult = await discountService.applyDiscount(walletAddress);
-            if (discountResult.success) {
-              const txHash = discountResult.revealTxHash || discountResult.commitTxHash || "on-chain-verified";
-              await storage.setUserWhitelisted(user.id, txHash);
-              console.log(`[Whitelist] Successfully whitelisted ${walletAddress} (tx: ${txHash})`);
-            } else {
-              console.error(`[Whitelist] Retry failed for ${walletAddress}: ${discountResult.error}`);
-            }
-          } catch (err: any) {
-            console.error(`[Whitelist] Retry exception for ${walletAddress}: ${err.message}`);
-          }
-        })();
-      }
+      // Check if user needs to manually trigger whitelist
+      // (don't auto-whitelist - let user click the button)
+      const needsWhitelist = isDiplomaEligible && !isWhitelisted;
       
       // If indexer shows whitelisted but DB doesn't, sync DB
       if (indexerWhitelisted && !dbWhitelisted) {
@@ -1374,7 +1353,7 @@ export async function registerRoutes(
       res.json({
         isWhitelisted,
         isDiplomaEligible,
-        whitelistPending,
+        needsWhitelist, // User must manually click to get whitelisted
         whitelistedAt: user.whitelistedAt,
         whitelistTxHash: user.whitelistTxHash,
         collection: discountService.getTicker(),
