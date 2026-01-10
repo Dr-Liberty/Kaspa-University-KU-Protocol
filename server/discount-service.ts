@@ -601,7 +601,35 @@ class DiscountService {
 
   private async getUtxos(): Promise<any[]> {
     if (!this.treasuryAddress || !this.rpcClient) return [];
-    return this.getUtxosForAddress(this.treasuryAddress);
+    const allUtxos = await this.getUtxosForAddress(this.treasuryAddress);
+    
+    // Filter to only include P2PK UTXOs that the treasury can sign
+    // P2SH UTXOs (from commit transactions) cannot be signed by the treasury key
+    // P2PK scripts end with 'ac' (OP_CHECKSIG) and are 66 hex chars (33 bytes)
+    // P2SH scripts end with '87' (OP_EQUAL) and have different lengths
+    const signableUtxos = allUtxos.filter((utxo: any) => {
+      const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const scriptHex = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
+        ? spkRaw.scriptPublicKey 
+        : spkRaw;
+      
+      // P2PK (pay-to-public-key) scripts:
+      // - 66 hex chars (33 bytes): OP_DATA_32 + 32-byte pubkey + OP_CHECKSIG
+      // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
+      // P2SH scripts end with '87' (OP_EQUAL) - these are commit UTXOs
+      const isP2PK = typeof scriptHex === 'string' && 
+                     scriptHex.length === 66 && 
+                     scriptHex.endsWith('ac');
+      
+      if (!isP2PK) {
+        console.log(`[DiscountService] Filtering out non-P2PK UTXO: script=${scriptHex?.substring(0, 20)}...`);
+      }
+      
+      return isP2PK;
+    });
+    
+    console.log(`[DiscountService] Filtered ${allUtxos.length} UTXOs -> ${signableUtxos.length} signable P2PK UTXOs`);
+    return signableUtxos;
   }
 
   private async getUtxosForAddress(address: string): Promise<any[]> {
