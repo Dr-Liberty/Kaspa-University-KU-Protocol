@@ -1,0 +1,108 @@
+-01-10 14:11:41.87
+aa15302a
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 14:11:41.87
+aa15302a
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 14:11:41.87
+aa15302a
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 14:11:41.87
+aa15302a
+User
+[AntiSybil] Released submission lock for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel:lesson-10-3
+2026-01-10 14:11:41.91
+aa15302a
+User
+"scriptPublicKey": {
+2026-01-10 14:11:41.91
+aa15302a
+User
+}
+2026-01-10 14:11:41.91
+aa15302a
+User
+"utxoEntry": {
+2026-01-10 14:11:41.91
+aa15302a
+User
+}
+2026-01-10 14:11:41.91
+aa15302a
+User
+"transactionId": "e78bfbd84924671bff558a1671751f757cb3a7f635cd5ecdbd00cba29bd62bd0",
+2026-01-10 14:11:41.91
+aa15302a
+User
+},
+2026-01-10 14:11:41.91
+aa15302a
+User
+"index": 0
+2026-01-10 14:11:41.91
+aa15302a
+User
+"amount": "20000000",
+2026-01-10 14:11:41.91
+aa15302a
+User
+"outpoint": {
+2026-01-10 14:11:41.91
+aa15302a
+User
+"isCoinbase": false
+2026-01-10 14:11:41.91
+aa15302a
+User
+"version": 0,
+2026-01-10 14:11:41.91
+aa15302a
+User
+[DiscountService] Full error: networkId is required for Generator constructor with UTXO entries
+2026-01-10 14:11:42.23
+aa15302a
+User
+10:11:42 PM [express] GET /api/progress 200 in 218ms :: [{"id":"ec3b5481-f266-46a5-8a6b-da3ee6a397a9","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"finality-security","completedLessons":["lesson-15-1","lesson-15-2","lesson-15-3"],"currentLessonId":"lesson-15-3","startedAt":"2025-12-30T20:48:39.251Z","completedAt":null},{"id":"63c765e2-965d-4f89-b5bc-a1d9936e9743","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-1","completedLessons":["lesson-1-1","lesson-1-2","lesson-1-3"],"currentLessonId":"lesson-1-3","startedAt":"2025-12-26T23:36:12.564Z","completedAt":null},{"id":"32d6c46d-bac0-4689-a40c-7d61f7526abf","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-3","completedLessons":["lesson-3-1","lesson-3-2","lesson-3-3","lesson-3-4"],"currentLessonId":"lesson-3-4","startedAt":"2025-12-26T23:51:12.471Z","completedAt":null},{"id":"6165f2b1-62d4-4858-a081-2840abb5435d","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-4","completedLessons":["lesson-4-1","lesson-4-2","lesson-4-3","lesson-4-4","lesson-4-5"],"currentLessonId":"lesson-4-5","startedAt":"2025-12-27T00:09:42.549Z","completedAt":null},{"id":"f24a33e8-0a26-4a9f-9bc3-23cc83bc3ca1","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-15","completedLessons":["lesson-15-1","lesson-15-2","lesson-15-3"],"currentLessonId":"lesson-15-3","startedAt":"2025-12-28T07:58:07.214Z","completedAt":null},{"id":"ee468044-7704-4d16-8d75-87efda2b1f10","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"dag-terminology","completedLessons":["lesson-2-1","lesson-2-2","lesson-2-3","lesson-2-4","lesson-2-5","lesson-2-6","lesson-2-7","lesson-2-8"],"currentLessonId":"lesson-2-8","startedAt":"2025-12-30T20:56:44.886Z","completedAt":null},{"id":"69295d8e-856e-403b-9f00-7852f5799997","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-2","completedLessons":["lesson-2-1","lesson-2-2","lesson-2-3","lesson-2-4","lesson-2-5","lesson-2-6","lesson-2-7","lesson-2-8"],"currentLessonId":"lesson-2-8","startedAt":"2025-12-26T23:05:39.847Z","completedAt":null},{"id":"2e173e8c-326f-4f09-b25b-a052ec83749f","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"bitcoin-vs-kaspa","completedLessons":["lesson-1-1","lesson-1-2","lesson-1-3","lesson-1-4","lesson-1-5","lesson-1-6","lesson-1-7","lesson-1-8","lesson-1-9","lesson-1-10","lesson-1-11","lesson-1-12","lesson-1-13","lesson-1-14","lesson-1-15"],"currentLessonId":"lesson-1-15","startedAt":"2025-12-30T04:15:34.534Z","completedAt":null},{"id":"8f6a8544-30d1-4853-8505-1753a1451701","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"l2-on-kaspa","completedLessons":["lesson-21-1","lesson-21-2","lesson-21-3","lesson-21-4","lesson-21-5"],"currentLessonId":"lesson-21-5","startedAt":"2026-01-07T02:59:50.766Z","completedAt":null},{"id":"dca57c1e-8fd3-4805-ac22-e336306dbd14","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"kasia-protocol","completedLessons":["lesson-18-1","lesson-18-2","lesson-18-3","lesson-18-4"],"currentLessonId":"lesson-18-4","startedAt":"2026-01-10T20:40:54.964Z","completedAt":null},{"id":"b60041ad-1a99-4ddb-8207-0a3e41018169","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"transaction-processing","completedLessons":["lesson-10-1","lesson-10-2","lesson-10-3"],"currentLessonId":"lesson-10-3","startedAt":"2026-01-10T22:11:03.683Z","completedAt":null},{"id":"ae362515-c28d-424d-8b8b-467bcd46c60f","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"consensus-parameters","completedLessons":["lesson-7-1","lesson-7-2","lesson-7-3","lesson-7-4","lesson-7-5","lesson-7-6"],"currentLessonId":"lesson-7-6","startedAt":"2026-01-10T21:59:28.540Z","completedAt":null},{"id":"79362e9d-91ad-47ae-b897-e553f96982b0","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"sound-money","completedLessons":["lesson-sm-1","lesson-sm-2","lesson-sm-3","lesson-sm-4"],"currentLessonId":"lesson-sm-4","startedAt":"2026-01-10T20:27:04.912Z","completedAt":null},{"id":"b25bc4dd-d1de-4635-a5ed-ac81070bce9c","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"krc721-nft-standard","completedLessons":["lesson-20-1","lesson-20-2","lesson-20-3","lesson-20-4"],"currentLessonId":"lesson-20-4","startedAt":"2026-01-10T20:42:17.917Z","completedAt":null},{"id":"2f2c395f-1842-438c-a318-f44f063e9ff6","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"core-data-structures","completedLessons":["lesson-5-1","lesson-5-2","lesson-5-3","lesson-5-4"],"currentLessonId":"lesson-5-4","startedAt":"2026-01-10T20:54:41.009Z","completedAt":null},{"id":"2fb0ae4a-8214-4e97-9f0c-4f70c9b54411","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"self-custody","completedLessons":["lesson-sc-1","lesson-sc-2","lesson-sc-3","lesson-sc-4"],"currentLessonId":"lesson-sc-4","startedAt":"2026-01-10T20:27:44.677Z","completedAt":null},{"id":"44c5f3e7-57ca-4207-97b8-d37d609eb0d1","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"ku-protocol","completedLessons":["lesson-19-1","lesson-19-2","lesson-19-3"],"currentLessonId":"lesson-19-3","startedAt":"2026-01-10T20:29:25.419Z","completedAt":null},{"id":"79144840-5553-485d-8d24-b068f4162f33","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"dag-and-kaspa","completedLessons":["lesson-3-1","lesson-3-2","lesson-3-3","lesson-3-4","lesson-3-5"],"currentLessonId":"lesson-3-5","startedAt":"2026-01-10T20:43:40.656Z","completedAt":null},{"id":"b44432de-aa66-4164-9870-755f48de03f4","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"k-protocol","completedLessons":["lesson-17-1","lesson-17-2","lesson-17-3","lesson-17-4"],"currentLessonId":"lesson-17-4","startedAt":"2026-01-10T20:39:13.137Z","completedAt":null},{"id":"874115d1-08ed-46be-85e1-38561595c3a8","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"block-processing","completedLessons":["lesson-8-1","lesson-8-2"],"currentLessonId":"lesson-8-2","startedAt":"2026-01-10T22:08:40.847Z","completedAt":null},{"id":"a3e8e10a-1416-43c7-b7bd-a8d71688bcc6","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"ghostdag-mechanics","completedLessons":["lesson-6-1","lesson-6-2","lesson-6-3","lesson-6-4","lesson-6-5"],"currentLessonId":"lesson-6-5","startedAt":"2026-01-10T20:58:30.891Z","completedAt":null},{"id":"289a8fdd-1bd3-49d8-ab71-3d95010f32eb","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"foundational-concepts","completedLessons":["lesson-4-1","lesson-4-2","lesson-4-3","lesson-4-4","lesson-4-5"],"currentLessonId":"lesson-4-5","startedAt":"2026-01-10T20:45:47.369Z","completedAt":null},{"id":"eb1c20f3-4dd5-4ed9-adca-1778f0f730c1","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"difficulty-adjustment","completedLessons":["lesson-9-1","lesson-9-2"],"currentLessonId":"lesson-9-2","startedAt":"2026-01-10T22:10:19.483Z","completedAt":null}]
+2026-01-10 14:11:45.88
+aa15302a
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-10 14:11:45.88
+aa15302a
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-10 14:11:46.03
+aa15302a
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-10 14:11:46.03
+aa15302a
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-10 14:11:46.03
+aa15302a
+User
+[UTXO] Marked 1 UTXOs as spent in tx 090ad4d55e33c439...
+2026-01-10 14:11:46.03
+aa15302a
+User
+[Kaspa] Payload transaction 1 submitted: 090ad4d55e33c439ac1eecfda60544ea1adcafae7600323d244d3acdb6859513
+2026-01-10 14:11:46.06
+aa15302a
+User
+[Quiz] On-chain TX confirmed: 090ad4d55e33c439ac1eecfda60544ea1adcafae7600323d244d3acdb6859513 for lesson lesson-10-3
+2026-01-10 14:11:46.18
+aa15302a
+User
+10:11:46 PM [express] GET /api/courses/stats 200 in 153ms :: {"bitcoin-vs-kaspa":{"completions":5,"totalKasPaid":0.5},"sound-money":{"completions":4,"totalKasPaid":0.4},"self-custody":{"completions":4,"totalKasPaid":0.4},"ku-protocol":{"completions":4,"totalKasPaid":0.4},"k-protocol":{"completions":4,"totalKasPaid":0.4},"kasia-protocol":{"completions":3,"totalKasPaid":0.3},"krc721-nft-standard":{"completions":3,"totalKasPaid":0.3},"l2-on-kaspa":{"completions":3,"totalKasPaid":0.3},"dag-terminology":{"completions":6,"totalKasPaid":0.6},"dag-and-kaspa":{"completions":4,"totalKasPaid":0.4},"foundational-concepts":{"completions":4,"totalKasPaid":0.4},"core-data-structures":{"completions":3,"totalKasPaid":0.3},"ghostdag-mechanics":{"completions":3,"totalKasPaid":0.3},"consensus-parameters":{"completions":3,"totalKasPaid":0.3},"block-processing":{"completions":3,"totalKasPaid":0.3},"difficulty-adjustment":{"completions":3,"totalKasPaid":0.3},"transaction-processing":{"completions":3,"totalKasPaid":0.3},"pruning-system":{"completions":2,"totalKasPaid":0.2},"anticone-finalization":{"completions":2,"totalKasPaid":0.2},"virtual-state":{"completions":2,"totalKasPaid":0.2},"timestamps-median-time":{"completions":2,"totalKasPaid":0.2},"finality-security":{"completions":4,"totalKasPaid":0.4},"network-scaling":{"completions":2,"totalKasPaid":0.2}}
+2026-01-10 14:11:46.34
+aa15302a
+User
+10:11:46 PM [express] GET /api/courses 304 in 306ms :: [{"id":"bitcoin-vs-kaspa","title":"Bitcoin vs Kaspa: The Next Evolution","description":"Bitcoin revolutionized money. Kaspa revolutionizes Bitcoin.","thumbnail":"/thumbnails/bitcoin_evolving_to_kaspa.png","lessonCount":15,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"sound-money","title":"Sound Money & Monetary Debasement","description":"Explore the principles of sound money and how fiat currency debasement erodes purchasing power over time. Learn about the inflation hurdle every investor must overcome, the history of dollar devaluation, and why scarce digital assets like Kaspa represent a return to sound monetary principles.","thumbnail":"/thumbnails/sound_money_gold_scale.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"self-custody","title":"Self-Custody & Hardware Wallets","description":"Understand the critical importance of self-custody for financial sovereignty. Learn about hot wallets, cold storage, hardware wallets, and seed phrase security. Discover why holding your own keys to native Kaspa is essential for true ownership.","thumbnail":"/thumbnails/self_custody_wallet_key.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"ku-protocol","title":"KU Protocol: On-Chain Achievements","description":"Understand how Kaspa University's KU Protocol creates immutable achievement records on the blockchain. Learn about wallet-signed proofs, quiz verification, and how on-chain education credentials work.","thumbnail":"/thumbnails/ku_protocol_achievements.png","lessonCount":3,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"k-protocol","title":"K Protocol: Decentralized Social Media","description":"Learn how K Protocol enables censorship-resistant public messaging on Kaspa. Discover K Social, the Twitter/X alternative built on BlockDAG, and see how Kaspa University uses K Protocol for public Q&A discussions.","thumbnail":"/thumbnails/k_protocol_social.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"kasia-protocol","title":"Kasia Protocol: Encrypted P2P Messaging","description":"Explore Kasia, the end-to-end encrypted messaging protocol on Kaspa. Learn how private conversations work on a public blockchain, with in-chat payments and KNS integration. See how Kaspa University uses Kasia for admin support and direct messaging.","thumbnail":"/thumbnails/kasia_encrypted_messaging.png","lessonCount":4,"kasReward":0.1,"difficulty":"beginner","category":"Protocols"},{"id":"krc721-nft-standard","title":"KRC-721: NFT Standard on Kaspa","description":"Master Kaspa's NFT standard for unique digital assets. Learn about commit-reveal minting, IPFS metadata, royalty support, and how Kaspa University issues verifiable diploma NFTs to graduates.","thumbnail":"/thumbnails/krc721_nft_standard.png","lessonCount":4,"kasReward":0.1,"difficulty":"intermediate","category":"Protocols"},{"id":"l2-on-kaspa","title":"Layer 2 on Kaspa: Smart Contracts & Beyond","description":"Discover Kaspa's L2 ecosystem including Kasplex zkEVM (birthplace of BMTUniversity.com) and Igra Labs. Learn step-by-step how to bridge KAS using Kurve and KSPR Bot. Understand how smart contracts expand Kaspa's capabilities for DeFi, gaming, and more.","thumbnail":"/thumbnails/l2_kaspa_ecosystem.png","lessonCount":5,"kasReward":0.1,"difficulty":"intermediate","category":"Development"},{"id":"dag-terminology","title":"DAG Terminology","description":"Past, Future, Anticone, Mergeset, K parameter, what does it all mean?","thumbnail":"/thumbnails/dag_terminology_visualization.png","lessonCount":8,"kasReward":0.1,"difficulty":"beginner","category":"Development"},{"id":"dag-and-kaspa","title":"DAG and Kaspa: Understanding the Structure","description":"By now you have probably heard that Kaspa is a BlockDAG, but what does that mean? This course assumes no prior knowledge, starting with graph theory fundamentals.","thumbnail":"/thumbnails/dag_structure_visualization.png","lessonCount":5,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"foundational-concepts","title":"Foundational Concepts","description":"Understanding the basic building blocks of Kaspa's architecture. This course introduces the fundamental concepts that underpin Kaspa's revolutionary consensus system, including Directed Acyclic Graphs (DAGs), essential terminology, the GHOSTDAG proto","thumbnail":"/thumbnails/foundational_concepts_building_blocks.png","lessonCount":5,"kasReward":0.1,"difficulty":"beginner","category":"Fundamentals"},{"id":"core-data-structures","title":"Core Data Structures","description":"The fundamental data types that represent blockchain state in Kaspa. This course covers the essential data structures including UTXO (Unspent Transaction Outputs), MuHash for cryptographic commitments, Merkle Roots for transaction verification, and t","thumbnail":"/thumbnails/core_data_structures_visual.png","lessonCount":4,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"},{"id":"ghostdag-mechanics","title":"GHOSTDAG Mechanics","description":"A deep dive into the GHOSTDAG consensus algorithm implementation. This course covers the K Parameter, Parent Selection and Ordering, Mergeset Creation, Blue and Red Classification, and Blue Work Calculation.","thumbnail":"/thumbnails/ghostdag_mechanics_visualization.png","lessonCount":5,"kasReward":0.1,"difficulty":"intermediate","category":"Consensus"},{"id":"consensus-parameters","title":"Consensus Parameters","description":"Configuration values that govern Kaspa's network behavior. Learn about the mathematical relationships between BPS, K parameter, mergeset limits, merge depth bounds, finality depth, DAA windows, and pruning depth.","thumbnail":"/thumbnails/consensus_parameters_controls.png","lessonCount":6,"kasReward":0.1,"difficulty":"advanced","category":"Consensus"},{"id":"block-processing","title":"Block Processing","description":"How blocks flow through Kaspa's validation pipeline. Learn the complete journey of a block from creation through header validation, body validation, virtual chain updates, and pruning consideration.","thumbnail":"/thumbnails/block_processing_pipeline.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"difficulty-adjustment","title":"Difficulty Adjustment (DAA)","description":"How Kaspa maintains consistent block times through its Difficulty Adjustment Algorithm. Learn about DAA windows, the difference between DAA Score and Blue Score, and how non-DAA blocks are handled.","thumbnail":"/thumbnails/difficulty_adjustment_algorithm.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"transaction-processing","title":"Transaction Processing","description":"How transactions are validated and included in Kaspa blocks. Learn about the UTXO model in transaction context, selection strategies, mass calculation, and coinbase transactions.","thumbnail":"/thumbnails/transaction_processing_flow.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"pruning-system","title":"Pruning System","description":"Managing blockchain data growth in Kaspa. Learn about MuHash's role, first-order and second-order pruning, and the differences between archival and pruning nodes.","thumbnail":"/thumbnails/blockchain_pruning_system.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"anticone-finalization","title":"Anticone Finalization & Safe Pruning","description":"Mathematical foundations for safe data removal in Kaspa. Learn how DAG terminology, finality depth, merge depth bounds, and K parameter work together to guarantee that pruning old data never compromises security.","thumbnail":"/thumbnails/anticone_finalization_concept.png","lessonCount":2,"kasReward":0.1,"difficulty":"advanced","category":"Technical"},{"id":"virtual-state","title":"Virtual State","description":"Kaspa's unique approach to representing the current DAG tip. Learn about the Virtual Block concept, sink selection, virtual parents, and virtual DAA score.","thumbnail":"/thumbnails/virtual_state_visualization.png","lessonCount":2,"kasReward":0.1,"difficulty":"advanced","category":"Technical"},{"id":"timestamps-median-time","title":"Timestamps & Median Time","description":"Timestamp consensus and validation in Kaspa. Learn about Past Median Time calculation and timestamp validation rules.","thumbnail":"/thumbnails/timestamps_and_median_time.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Technical"},{"id":"finality-security","title":"Finality & Security","description":"Understanding Kaspa's security guarantees. Learn about K parameter security properties, depth-based security, size constraints, probabilistic and deterministic finality.","thumbnail":"/thumbnails/finality_and_security_shield.png","lessonCount":3,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"},{"id":"network-scaling","title":"Network & Scaling","description":"Why Kaspa's architecture enables high throughput. Learn about Bitcoin's scaling limitations and how Kaspa overcomes them through BPS configuration, K parameter scaling, and merge depth bounds.","thumbnail":"/thumbnails/network_scaling_visualization.png","lessonCount":2,"kasReward":0.1,"difficulty":"intermediate","category":"Fundamentals"}]
+2026-01-10 14:11:48.90
+aa15302a
+User
+10

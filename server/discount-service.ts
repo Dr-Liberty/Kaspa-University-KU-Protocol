@@ -395,13 +395,16 @@ class DiscountService {
       .addOp(Opcodes.OpEndIf);
 
     const isTestnet = process.env.KRC721_TESTNET === "true";
-    const networkId = isTestnet 
+    // WASM NetworkId enum for addressFromScriptPublicKey
+    const wasmNetworkId = isTestnet 
       ? this.kaspaModule.NetworkId.testnet10 
       : this.kaspaModule.NetworkId.mainnet;
+    // String networkId for createTransactions (Generator requires string format)
+    const networkIdString = isTestnet ? "testnet-10" : "mainnet";
     
     const p2shAddress = addressFromScriptPublicKey(
       script.createPayToScriptHashScript(),
-      networkId
+      wasmNetworkId
     )?.toString();
 
     if (!p2shAddress) {
@@ -454,7 +457,7 @@ class DiscountService {
       outputs: [{ address: p2shAddress, amount: commitAmount }],
       changeAddress: this.treasuryAddress,
       priorityFee: kaspaToSompi("0.001"),
-      networkId,
+      networkId: networkIdString,
     });
 
     if (!commitTxs || commitTxs.length === 0) {
@@ -555,7 +558,7 @@ class DiscountService {
       outputs: [],
       changeAddress: this.treasuryAddress,
       priorityFee: kaspaToSompi("0.01"), // Small fee for discount op
-      networkId,
+      networkId: networkIdString,
     });
 
     if (!revealTxs || revealTxs.length === 0) {
