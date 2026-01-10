@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Stats } from "@shared/schema";
-import { Coins, Award, Users, BookOpen } from "lucide-react";
+import { Coins, Award, Users, Shield } from "lucide-react";
 
 interface ExplorerTransaction {
   type: string;
@@ -44,9 +44,9 @@ export function StatsBar() {
       suffix: "",
     },
     {
-      label: "Courses Available",
-      value: stats?.coursesAvailable?.toLocaleString() ?? "0",
-      icon: BookOpen,
+      label: "Quiz Proofs On-Chain",
+      value: stats?.quizProofsOnChain?.toLocaleString() ?? "0",
+      icon: Shield,
       suffix: "",
     },
   ];
