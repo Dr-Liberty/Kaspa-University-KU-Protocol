@@ -1,0 +1,48 @@
+2026-01-10 10:20:33.98
+9200855f
+User
+[Whitelist] User kaspa:qp90jsw7mvqxlusughag4xvsu9gxdutra9zara7s5anmr9ch55p57jedhv5h7 needs whitelist (db=false, indexer=false, eligible=true)
+2026-01-10 10:20:33.98
+9200855f
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qp90jsw7mvqxlusughag4xvsu9gxdutra9zara7s5anmr9ch55p57jedhv5h7/KUDIPLOMA
+2026-01-10 10:20:33.98
+9200855f
+User
+6:20:33 PM [express] GET /api/whitelist/status 304 in 659ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"whitelistPending":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"pending"}
+2026-01-10 10:20:34.13
+9200855f
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 10:20:34.13
+9200855f
+User
+[DiscountService] Applying discount for kaspa:qp90jsw7mvqxlusughag4xvsu9gxdutra9zara7s5anmr9ch55p57jedhv5h7...
+2026-01-10 10:20:34.13
+9200855f
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 10:20:34.96
+9200855f
+User
+[DiscountService] Full error: Supplied object does not contain `utxoEntry.amount` property (or it is not a numerical value)
+2026-01-10 10:20:34.96
+9200855f
+User
+[Whitelist] Retry failed for kaspa:qp90jsw7mvqxlusughag4xvsu9gxdutra9zara7s5anmr9ch55p57jedhv5h7: Supplied object does not contain `utxoEntry.amount` property (or it is not a numerical value)
+2026-01-10 10:20:34.96
+9200855f
+User
+[DiscountService] Failed to apply discount: Supplied object does not contain `utxoEntry.amount` property (or it is not a numerical value)
+2026-01-10 10:20:34.98
+389ef720
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 10:20:35.98
+389ef720
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-10 10:20:37.58
+389ef720
+User
+[Kasia Indexer] Processin

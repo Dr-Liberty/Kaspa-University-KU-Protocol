@@ -413,19 +413,34 @@ class DiscountService {
       throw new Error("No UTXOs available for transaction");
     }
 
-    const entries = utxos.map((utxo: any) => ({
-      address: this.treasuryAddress,
-      outpoint: {
-        transactionId: utxo.outpoint.transactionId,
-        index: utxo.outpoint.index,
-      },
-      utxoEntry: {
-        amount: utxo.utxoEntry.amount,
-        scriptPublicKey: utxo.utxoEntry.scriptPublicKey,
-        blockDaaScore: utxo.utxoEntry.blockDaaScore,
-        isCoinbase: utxo.utxoEntry.isCoinbase,
-      },
-    }));
+    // Log first UTXO structure for debugging
+    if (utxos[0]) {
+      console.log(`[DiscountService] UTXO structure sample:`, JSON.stringify(utxos[0], null, 2).substring(0, 500));
+    }
+
+    const entries = utxos.map((utxo: any) => {
+      // Handle different UTXO structures from RPC
+      const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? utxo.satoshis ?? BigInt(0);
+      const scriptPublicKey = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
+      const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
+      const index = utxo.outpoint?.index ?? utxo.index ?? 0;
+      
+      return {
+        address: this.treasuryAddress,
+        outpoint: {
+          transactionId,
+          index,
+        },
+        utxoEntry: {
+          amount: BigInt(amount),
+          scriptPublicKey,
+          blockDaaScore,
+          isCoinbase,
+        },
+      };
+    }).filter((e: any) => e.utxoEntry.amount > BigInt(0));
 
     const commitAmount = kaspaToSompi("0.3");
     const { transactions: commitTxs } = await createTransactions({
@@ -470,41 +485,54 @@ class DiscountService {
       throw new Error("P2SH UTXO not found for reveal");
     }
 
-    const revealEntries = revealUtxos.map((utxo: any) => ({
-      address: p2shAddress,
-      outpoint: {
-        transactionId: utxo.outpoint.transactionId,
-        index: utxo.outpoint.index,
-      },
-      utxoEntry: {
-        amount: utxo.utxoEntry.amount,
-        scriptPublicKey: script.createPayToScriptHashScript().toString(),
-        blockDaaScore: utxo.utxoEntry.blockDaaScore,
-        isCoinbase: utxo.utxoEntry.isCoinbase,
-      },
-    }));
+    const revealEntries = revealUtxos.map((utxo: any) => {
+      const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
+      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
+      const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
+      const index = utxo.outpoint?.index ?? utxo.index ?? 0;
+      
+      return {
+        address: p2shAddress,
+        outpoint: { transactionId, index },
+        utxoEntry: {
+          amount: BigInt(amount),
+          scriptPublicKey: script.createPayToScriptHashScript().toString(),
+          blockDaaScore,
+          isCoinbase,
+        },
+      };
+    });
 
     // Get fresh UTXOs from treasury, excluding those used in commit
     const freshUtxos = await this.getUtxos();
     const filteredUtxos = freshUtxos.filter((utxo: any) => {
-      const id = `${utxo.outpoint.transactionId}-${utxo.outpoint.index}`;
+      const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
+      const index = utxo.outpoint?.index ?? utxo.index ?? 0;
+      const id = `${transactionId}-${index}`;
       return !commitUsedUtxoIds.has(id);
     });
     console.log(`[DiscountService] Reveal has ${filteredUtxos.length} fresh treasury UTXOs (filtered ${freshUtxos.length - filteredUtxos.length})`);
     
-    const treasuryEntries = filteredUtxos.map((utxo: any) => ({
-      address: this.treasuryAddress,
-      outpoint: {
-        transactionId: utxo.outpoint.transactionId,
-        index: utxo.outpoint.index,
-      },
-      utxoEntry: {
-        amount: utxo.utxoEntry.amount,
-        scriptPublicKey: utxo.utxoEntry.scriptPublicKey,
-        blockDaaScore: utxo.utxoEntry.blockDaaScore,
-        isCoinbase: utxo.utxoEntry.isCoinbase,
-      },
-    }));
+    const treasuryEntries = filteredUtxos.map((utxo: any) => {
+      const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
+      const scriptPublicKey = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
+      const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
+      const index = utxo.outpoint?.index ?? utxo.index ?? 0;
+      
+      return {
+        address: this.treasuryAddress,
+        outpoint: { transactionId, index },
+        utxoEntry: {
+          amount: BigInt(amount),
+          scriptPublicKey,
+          blockDaaScore,
+          isCoinbase,
+        },
+      };
+    }).filter((e: any) => e.utxoEntry.amount > BigInt(0));
 
     const { transactions: revealTxs } = await createTransactions({
       priorityEntries: revealEntries, // P2SH UTXO as priority
