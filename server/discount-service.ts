@@ -255,17 +255,19 @@ class DiscountService {
 
   /**
    * Check if a wallet is already whitelisted via the indexer API
+   * Uses the official KSPR KRC-721 indexer /royalties endpoint
    */
   async isWalletWhitelisted(walletAddress: string): Promise<boolean> {
     try {
       const isTestnet = process.env.KRC721_TESTNET === "true";
       const network = isTestnet ? "testnet-10" : "mainnet";
-      // Prefer KaspacomDAGs for mainnet (authoritative), KSPR for testnet
+      // Use official KSPR KRC-721 indexer (same as krc721.ts)
       const indexerUrl = isTestnet 
         ? "https://testnet-10.krc721.stream" 
-        : "https://kaspa-krc721d.kaspa.com";
+        : "https://mainnet.krc721.stream";
       
       const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/royalties/${walletAddress}/${getCollectionTicker()}`;
+      console.log(`[DiscountService] Checking whitelist status at: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -275,9 +277,23 @@ class DiscountService {
       
       if (response.ok) {
         const data = await response.json();
-        if (data && data.message === "success" && data.result) {
-          const discountFee = BigInt(data.result);
-          return discountFee <= DISCOUNT_FEE_SOMPI;
+        console.log(`[DiscountService] Indexer response:`, JSON.stringify(data));
+        
+        // Handle null/undefined result (not whitelisted)
+        if (data && data.message === "success") {
+          if (data.result === null || data.result === undefined || data.result === "") {
+            console.log(`[DiscountService] No discount registered for wallet`);
+            return false;
+          }
+          try {
+            const discountFee = BigInt(data.result);
+            const isWhitelisted = discountFee <= DISCOUNT_FEE_SOMPI;
+            console.log(`[DiscountService] Discount fee: ${discountFee}, threshold: ${DISCOUNT_FEE_SOMPI}, whitelisted: ${isWhitelisted}`);
+            return isWhitelisted;
+          } catch (e) {
+            console.log(`[DiscountService] Failed to parse discount fee: ${data.result}`);
+            return false;
+          }
         }
       }
       
@@ -337,6 +353,12 @@ class DiscountService {
         console.log(`[DiscountService] Discount applied for ${walletAddress}`);
         console.log(`[DiscountService] Commit: ${result.commitTxHash}`);
         console.log(`[DiscountService] Reveal: ${result.revealTxHash}`);
+        
+        // Verify the discount was indexed
+        const verified = await this.verifyDiscountApplied(walletAddress, 5);
+        if (!verified) {
+          console.log(`[DiscountService] Warning: Discount not yet visible in indexer for ${walletAddress}`);
+        }
       }
       
       return result;
@@ -417,7 +439,20 @@ class DiscountService {
       throw new Error("Failed to create commit transaction");
     }
 
-    const signedCommit = commitTxs[0].sign([this.privateKey]);
+    // Track UTXOs used in commit to exclude from reveal
+    const commitUsedUtxoIds = new Set<string>();
+    const commitTx = commitTxs[0];
+    if (commitTx.transaction && commitTx.transaction.inputs) {
+      for (const input of commitTx.transaction.inputs) {
+        if (input.previousOutpoint) {
+          const id = `${input.previousOutpoint.transactionId}-${input.previousOutpoint.index}`;
+          commitUsedUtxoIds.add(id);
+        }
+      }
+    }
+    console.log(`[DiscountService] Commit uses ${commitUsedUtxoIds.size} UTXOs`);
+    
+    const signedCommit = commitTx.sign([this.privateKey]);
     const commitResult = await this.submitTransaction(signedCommit);
     
     if (!commitResult.success) {
@@ -425,7 +460,10 @@ class DiscountService {
     }
 
     console.log(`[DiscountService] Commit tx: ${commitResult.txHash}`);
-    await this.waitForConfirmation(1000);
+    
+    // Wait longer for commit to be confirmed before fetching reveal UTXOs
+    console.log(`[DiscountService] Waiting for commit confirmation...`);
+    await this.waitForConfirmation(3000);
 
     const revealUtxos = await this.getUtxosForAddress(p2shAddress);
     if (!revealUtxos || revealUtxos.length === 0) {
@@ -446,24 +484,65 @@ class DiscountService {
       },
     }));
 
+    // Get fresh UTXOs from treasury, excluding those used in commit
+    const freshUtxos = await this.getUtxos();
+    const filteredUtxos = freshUtxos.filter((utxo: any) => {
+      const id = `${utxo.outpoint.transactionId}-${utxo.outpoint.index}`;
+      return !commitUsedUtxoIds.has(id);
+    });
+    console.log(`[DiscountService] Reveal has ${filteredUtxos.length} fresh treasury UTXOs (filtered ${freshUtxos.length - filteredUtxos.length})`);
+    
+    const treasuryEntries = filteredUtxos.map((utxo: any) => ({
+      address: this.treasuryAddress,
+      outpoint: {
+        transactionId: utxo.outpoint.transactionId,
+        index: utxo.outpoint.index,
+      },
+      utxoEntry: {
+        amount: utxo.utxoEntry.amount,
+        scriptPublicKey: utxo.utxoEntry.scriptPublicKey,
+        blockDaaScore: utxo.utxoEntry.blockDaaScore,
+        isCoinbase: utxo.utxoEntry.isCoinbase,
+      },
+    }));
+
     const { transactions: revealTxs } = await createTransactions({
-      entries: revealEntries,
+      priorityEntries: revealEntries, // P2SH UTXO as priority
+      entries: treasuryEntries, // Treasury UTXOs for fees
       outputs: [],
       changeAddress: this.treasuryAddress,
-      priorityFee: kaspaToSompi("0.001"),
+      priorityFee: kaspaToSompi("0.01"), // Small fee for discount op
     });
 
     if (!revealTxs || revealTxs.length === 0) {
       throw new Error("Failed to create reveal transaction");
     }
 
-    const signedReveal = revealTxs[0].sign([this.privateKey], false);
+    // Sign reveal transaction following KRC-721 commit-reveal pattern
+    // Per mint.ts: sign with checkSigs=false, then fill P2SH input with script signature
+    const revealTx = revealTxs[0];
+    revealTx.sign([this.privateKey], false); // Sign without checkSigs
     
-    const revealResult = await this.submitTransaction(signedReveal);
+    // Find the P2SH input (has empty signatureScript) and fill with script signature
+    const ourOutput = revealTx.transaction.inputs.findIndex(
+      (input: any) => input.signatureScript === ''
+    );
+    
+    if (ourOutput !== -1) {
+      const signature = await revealTx.createInputSignature(ourOutput, this.privateKey);
+      revealTx.fillInput(ourOutput, script.encodePayToScriptHashSignatureScript(signature));
+      console.log(`[DiscountService] Filled P2SH input ${ourOutput} with script signature`);
+    }
+    
+    const revealResult = await this.submitTransaction(revealTx);
     
     if (!revealResult.success) {
       throw new Error(`Reveal failed: ${revealResult.error}`);
     }
+
+    // Wait a bit and verify with indexer
+    console.log(`[DiscountService] Waiting for indexer to process discount...`);
+    await this.waitForConfirmation(3000);
 
     return {
       success: true,
@@ -508,6 +587,30 @@ class DiscountService {
 
   private async waitForConfirmation(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Poll the indexer to verify discount was applied
+   */
+  async verifyDiscountApplied(walletAddress: string, maxAttempts: number = 10): Promise<boolean> {
+    const pollIntervalMs = 3000;
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`[DiscountService] Verifying discount (attempt ${attempt}/${maxAttempts})...`);
+      
+      const isWhitelisted = await this.isWalletWhitelisted(walletAddress);
+      if (isWhitelisted) {
+        console.log(`[DiscountService] Discount verified for ${walletAddress}`);
+        return true;
+      }
+      
+      if (attempt < maxAttempts) {
+        await this.waitForConfirmation(pollIntervalMs);
+      }
+    }
+    
+    console.log(`[DiscountService] Discount not yet indexed for ${walletAddress} after ${maxAttempts} attempts`);
+    return false;
   }
 
   /**
