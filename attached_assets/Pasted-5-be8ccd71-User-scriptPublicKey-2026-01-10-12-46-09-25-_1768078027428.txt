@@ -1,0 +1,110 @@
+5
+be8ccd71
+User
+"scriptPublicKey": {
+2026-01-10 12:46:09.25
+be8ccd71
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-10 12:46:09.25
+be8ccd71
+User
+}
+2026-01-10 12:46:09.25
+be8ccd71
+User
+[Kaspa] Transformed 2 entries for WASM createTransactions
+2026-01-10 12:46:09.25
+be8ccd71
+User
+"version": 0,
+2026-01-10 12:46:09.25
+be8ccd71
+User
+"blockDaaScore": "326430288",
+2026-01-10 12:46:09.25
+be8ccd71
+User
+[UTXO] Reserved 2 UTXOs (40000000 sompi) for payload:6b753a313a717569
+2026-01-10 12:46:09.25
+be8ccd71
+User
+[Kaspa] Created 1 payload transaction(s) with 149 bytes
+2026-01-10 12:46:09.25
+be8ccd71
+User
+"outpoint": {
+2026-01-10 12:46:09.25
+be8ccd71
+User
+"transactionId": "5c09d8645b02f3efe41a007e00665af48947fd18133300b19e9b5deb8a86b193",
+2026-01-10 12:46:09.43
+be8ccd71
+User
+[AntiSybil] Released submission lock for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel:lesson-4-3
+2026-01-10 12:46:09.43
+be8ccd71
+User
+8:46:09 PM [express] POST /api/quiz/lesson-4-3/submit 200 in 819ms :: {"id":"a3f1ea98-04af-4c85-9090-955c29479ea5","lessonId":"lesson-4-3","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","score":100,"passed":true,"completedAt":"2026-01-10T20:46:09.021Z","txHash":null,"txStatus":"pending","payloadHex":null,"walletAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","courseCompleted":true,"questions":[{"id":"q-4-3-1","lessonId":"lesson-4-3","question":"How does GHOSTDAG achieve agreement on transaction ordering?","options":["Through random selection of valid transactions","By ordering all blocks despite parallel creation","Using first-come-first-served transaction processing","Through majority voting by network validators"],"correctIndex":1,"explanation":"GHOSTDAG provides total ordering of all blocks even when created in parallel, enabling transaction consensus."}]}
+2026-01-10 12:46:09.78
+be8ccd71
+User
+8:46:09 PM [express] GET /api/progress 200 in 206ms :: [{"id":"ec3b5481-f266-46a5-8a6b-da3ee6a397a9","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"finality-security","completedLessons":["lesson-15-1","lesson-15-2","lesson-15-3"],"currentLessonId":"lesson-15-3","startedAt":"2025-12-30T20:48:39.251Z","completedAt":null},{"id":"63c765e2-965d-4f89-b5bc-a1d9936e9743","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-1","completedLessons":["lesson-1-1","lesson-1-2","lesson-1-3"],"currentLessonId":"lesson-1-3","startedAt":"2025-12-26T23:36:12.564Z","completedAt":null},{"id":"32d6c46d-bac0-4689-a40c-7d61f7526abf","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-3","completedLessons":["lesson-3-1","lesson-3-2","lesson-3-3","lesson-3-4"],"currentLessonId":"lesson-3-4","startedAt":"2025-12-26T23:51:12.471Z","completedAt":null},{"id":"6165f2b1-62d4-4858-a081-2840abb5435d","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-4","completedLessons":["lesson-4-1","lesson-4-2","lesson-4-3","lesson-4-4","lesson-4-5"],"currentLessonId":"lesson-4-5","startedAt":"2025-12-27T00:09:42.549Z","completedAt":null},{"id":"f24a33e8-0a26-4a9f-9bc3-23cc83bc3ca1","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-15","completedLessons":["lesson-15-1","lesson-15-2","lesson-15-3"],"currentLessonId":"lesson-15-3","startedAt":"2025-12-28T07:58:07.214Z","completedAt":null},{"id":"ee468044-7704-4d16-8d75-87efda2b1f10","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"dag-terminology","completedLessons":["lesson-2-1","lesson-2-2","lesson-2-3","lesson-2-4","lesson-2-5","lesson-2-6","lesson-2-7","lesson-2-8"],"currentLessonId":"lesson-2-8","startedAt":"2025-12-30T20:56:44.886Z","completedAt":null},{"id":"69295d8e-856e-403b-9f00-7852f5799997","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"course-2","completedLessons":["lesson-2-1","lesson-2-2","lesson-2-3","lesson-2-4","lesson-2-5","lesson-2-6","lesson-2-7","lesson-2-8"],"currentLessonId":"lesson-2-8","startedAt":"2025-12-26T23:05:39.847Z","completedAt":null},{"id":"2e173e8c-326f-4f09-b25b-a052ec83749f","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"bitcoin-vs-kaspa","completedLessons":["lesson-1-1","lesson-1-2","lesson-1-3","lesson-1-4","lesson-1-5","lesson-1-6","lesson-1-7","lesson-1-8","lesson-1-9","lesson-1-10","lesson-1-11","lesson-1-12","lesson-1-13","lesson-1-14","lesson-1-15"],"currentLessonId":"lesson-1-15","startedAt":"2025-12-30T04:15:34.534Z","completedAt":null},{"id":"8f6a8544-30d1-4853-8505-1753a1451701","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"l2-on-kaspa","completedLessons":["lesson-21-1","lesson-21-2","lesson-21-3","lesson-21-4","lesson-21-5"],"currentLessonId":"lesson-21-5","startedAt":"2026-01-07T02:59:50.766Z","completedAt":null},{"id":"dca57c1e-8fd3-4805-ac22-e336306dbd14","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"kasia-protocol","completedLessons":["lesson-18-1","lesson-18-2","lesson-18-3","lesson-18-4"],"currentLessonId":"lesson-18-4","startedAt":"2026-01-10T20:40:54.964Z","completedAt":null},{"id":"79362e9d-91ad-47ae-b897-e553f96982b0","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"sound-money","completedLessons":["lesson-sm-1","lesson-sm-2","lesson-sm-3","lesson-sm-4"],"currentLessonId":"lesson-sm-4","startedAt":"2026-01-10T20:27:04.912Z","completedAt":null},{"id":"b25bc4dd-d1de-4635-a5ed-ac81070bce9c","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"krc721-nft-standard","completedLessons":["lesson-20-1","lesson-20-2","lesson-20-3","lesson-20-4"],"currentLessonId":"lesson-20-4","startedAt":"2026-01-10T20:42:17.917Z","completedAt":null},{"id":"2fb0ae4a-8214-4e97-9f0c-4f70c9b54411","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"self-custody","completedLessons":["lesson-sc-1","lesson-sc-2","lesson-sc-3","lesson-sc-4"],"currentLessonId":"lesson-sc-4","startedAt":"2026-01-10T20:27:44.677Z","completedAt":null},{"id":"44c5f3e7-57ca-4207-97b8-d37d609eb0d1","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"ku-protocol","completedLessons":["lesson-19-1","lesson-19-2","lesson-19-3"],"currentLessonId":"lesson-19-3","startedAt":"2026-01-10T20:29:25.419Z","completedAt":null},{"id":"79144840-5553-485d-8d24-b068f4162f33","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"dag-and-kaspa","completedLessons":["lesson-3-1","lesson-3-2","lesson-3-3","lesson-3-4","lesson-3-5"],"currentLessonId":"lesson-3-5","startedAt":"2026-01-10T20:43:40.656Z","completedAt":null},{"id":"b44432de-aa66-4164-9870-755f48de03f4","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"k-protocol","completedLessons":["lesson-17-1","lesson-17-2","lesson-17-3","lesson-17-4"],"currentLessonId":"lesson-17-4","startedAt":"2026-01-10T20:39:13.137Z","completedAt":null},{"id":"289a8fdd-1bd3-49d8-ab71-3d95010f32eb","userId":"99fbd090-9aef-44b9-b6aa-fd1b0e745086","courseId":"foundational-concepts","completedLessons":["lesson-4-1","lesson-4-2","lesson-4-3"],"currentLessonId":"lesson-4-3","startedAt":"2026-01-10T20:45:47.369Z","completedAt":null}]
+2026-01-10 12:46:09.99
+be8ccd71
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-10 12:46:09.99
+be8ccd71
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-10 12:46:09.99
+be8ccd71
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-10 12:46:09.99
+be8ccd71
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-10 12:46:10.02
+be8ccd71
+User
+[Kaspa] Payload transaction 1 submitted: cbb2a645a642af6def816845d9ffe99e1a97b86937853efee49693ef38f3386d
+2026-01-10 12:46:10.02
+be8ccd71
+User
+[UTXO] Marked 2 UTXOs as spent in tx cbb2a645a642af6d...
+2026-01-10 12:46:10.05
+be8ccd71
+User
+[Quiz] On-chain TX confirmed: cbb2a645a642af6def816845d9ffe99e1a97b86937853efee49693ef38f3386d for lesson lesson-4-3
+2026-01-10 12:46:12.73
+be8ccd71
+User
+8:46:12 PM [express] GET /api/qa/lesson-4-4 200 in 156ms :: []
+2026-01-10 12:46:22.94
+be8ccd71
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-10 12:46:22.94
+be8ccd71
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-10 12:46:23.14
+be8ccd71
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-10 12:46:23.14
+be8ccd71
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-10 12:46:23.54
+be8ccd71
+User
+[Kaspa] Payload transaction 1 submitted: e73b89a9664a20f9a64957299ff98721bce97b1caf1352668dd13e40fb2e943d
+2026-01-10 12:46:23.64
+be8ccd71
+User
+[UTXO] Marked 1 UTXOs as spent in tx e73b89a9664a20f9...
+2026-01-10 12:46:28.14
+be8ccd
