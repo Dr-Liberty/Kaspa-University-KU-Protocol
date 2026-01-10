@@ -3104,20 +3104,25 @@ export async function registerRoutes(
         });
       }
 
-      // Use pre-uploaded deterministic CID for collection image
-      // This ensures the same CID is used for every deploy, preventing indexer mismatches
-      // Pre-uploaded via: npx tsx /tmp/upload-collection-image.ts
-      const MAINNET_COLLECTION_CID = "QmePybcjw8MVigsaf5cXBKfoqW5kF5EEK9enxQNwMkbX4y";
+      // MAINNET-READY: Use pre-uploaded CIDs from scripts/mainnet-launch.ts
+      // Diploma Image: PNG artwork for the diploma NFT
+      // Metadata Folder: Contains per-token JSON metadata at /kudiploma-metadata/{tokenId}
+      const MAINNET_DIPLOMA_IMAGE_CID = "QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4";
+      const MAINNET_METADATA_FOLDER_CID = "QmR6KcvppV2zrWeUqfio2aDfGGQmeHhZyse9oK6ttpx2GF";
+      const MAINNET_BURI = `ipfs://${MAINNET_METADATA_FOLDER_CID}/kudiploma-metadata`;
       
-      // For mainnet, use the pre-uploaded deterministic CID
+      // For mainnet, use the pre-uploaded deterministic CIDs
       // For testnet, we can still upload fresh (for testing image changes)
       const isMainnet = process.env.KRC721_TESTNET !== "true";
       let collectionImageUrl: string;
+      let buriValue: string | undefined;
       
       if (isMainnet) {
-        // MAINNET: Use hardcoded CID for deterministic deployment
-        collectionImageUrl = `ipfs://${MAINNET_COLLECTION_CID}`;
-        console.log(`[Admin] Using pre-uploaded mainnet collection image: ${collectionImageUrl}`);
+        // MAINNET: Use hardcoded CIDs for deterministic deployment
+        collectionImageUrl = `ipfs://${MAINNET_DIPLOMA_IMAGE_CID}`;
+        buriValue = MAINNET_BURI;
+        console.log(`[Admin] Using mainnet diploma image: ${collectionImageUrl}`);
+        console.log(`[Admin] Using mainnet buri: ${buriValue}`);
       } else {
         // TESTNET: Upload fresh for testing flexibility
         const { getPinataService } = await import("./pinata");
@@ -3154,9 +3159,10 @@ export async function registerRoutes(
         }
         
         collectionImageUrl = uploadResult.ipfsUrl;
+        buriValue = undefined; // Testnet doesn't use buri
         console.log(`[Admin] Testnet collection image uploaded: ${collectionImageUrl}`);
       }
-      const result = await krc721Service.deployCollection(collectionImageUrl);
+      const result = await krc721Service.deployCollection(collectionImageUrl, buriValue);
       
       if (result.success) {
         console.log(`[Admin] Collection deployed! Commit: ${result.commitTxHash}, Reveal: ${result.revealTxHash}`);

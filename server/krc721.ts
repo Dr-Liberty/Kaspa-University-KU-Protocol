@@ -819,7 +819,7 @@ class KRC721Service {
    * SAFETY: If deploy fails after commit, funds can be recovered via admin P2SH recovery.
    * The deploy P2SH address is logged and stored in app_settings for recovery.
    */
-  async deployCollection(imageUrl: string): Promise<DeployResult> {
+  async deployCollection(imageUrl: string, buriUrl?: string): Promise<DeployResult> {
     if (!this.isLive()) {
       console.error("[KRC721] Cannot deploy - service not in live mode");
       return { success: false, error: "NFT service not configured. Treasury private key required." };
@@ -874,6 +874,13 @@ class KRC721Service {
         // Note: Field name is "royaltyTo" per KRC-721 spec, NOT "royaltyOwner"
         royaltyTo: this.address,
       };
+      
+      // Add buri (base URI) for per-token metadata if provided
+      // Format: ipfs://{cid}/kudiploma-metadata - indexer appends /{tokenId}
+      if (buriUrl) {
+        deployData.buri = buriUrl;
+        console.log(`[KRC721] Including buri in deploy: ${buriUrl}`);
+      }
 
       console.log(`[KRC721] Deploying collection: ${JSON.stringify(deployData)}`);
 
