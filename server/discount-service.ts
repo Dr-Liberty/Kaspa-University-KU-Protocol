@@ -421,7 +421,11 @@ class DiscountService {
     const entries = utxos.map((utxo: any) => {
       // Handle different UTXO structures from RPC
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? utxo.satoshis ?? BigInt(0);
-      const scriptPublicKey = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      // scriptPublicKey can be nested: {version, scriptPublicKey} or a flat hex string
+      const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
+        ? spkRaw.scriptPublicKey 
+        : spkRaw;
       const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
       const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
       const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
@@ -516,7 +520,11 @@ class DiscountService {
     
     const treasuryEntries = filteredUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
-      const scriptPublicKey = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      // scriptPublicKey can be nested: {version, scriptPublicKey} or a flat hex string
+      const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
+        ? spkRaw.scriptPublicKey 
+        : spkRaw;
       const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
       const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
       const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";

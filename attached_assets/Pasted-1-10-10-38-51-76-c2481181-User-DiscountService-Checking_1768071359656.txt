@@ -1,0 +1,112 @@
+1-10 10:38:51.76
+c2481181
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786/KUDIPLOMA
+2026-01-10 10:38:51.76
+c2481181
+User
+6:38:51 PM [express] GET /api/whitelist/status 304 in 735ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"whitelistPending":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"pending"}
+2026-01-10 10:38:51.90
+c2481181
+User
+[DiscountService] Applying discount for kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786...
+2026-01-10 10:38:51.90
+c2481181
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 10:38:51.90
+c2481181
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 10:38:52.47
+c2481181
+User
+"index": 0
+2026-01-10 10:38:52.47
+c2481181
+User
+"amount": "20000000",
+2026-01-10 10:38:52.47
+c2481181
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 10:38:52.47
+c2481181
+User
+"scriptPublicKey": {
+2026-01-10 10:38:52.47
+c2481181
+User
+"isCoinbase": false
+2026-01-10 10:38:52.47
+c2481181
+User
+},
+2026-01-10 10:38:52.47
+c2481181
+User
+}
+2026-01-10 10:38:52.47
+c2481181
+User
+}
+2026-01-10 10:38:52.47
+c2481181
+User
+"utxoEntry": {
+2026-01-10 10:38:52.47
+c2481181
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 10:38:52.47
+c2481181
+User
+[DiscountService] Full error: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-10 10:38:52.47
+c2481181
+User
+"blockDaaScore": "326423417",
+2026-01-10 10:38:52.47
+c2481181
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 10:38:52.47
+c2481181
+User
+[Whitelist] Retry failed for kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-10 10:38:52.47
+c2481181
+User
+"transactionId": "44831c97eae93ccd82ca329c4f8a9162c98b0faee5a8eeff4d3a08f025cae974",
+2026-01-10 10:38:52.47
+c2481181
+User
+[DiscountService] Failed to apply discount: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-10 10:38:52.47
+c2481181
+User
+"outpoint": {
+2026-01-10 10:38:52.47
+c2481181
+User
+},
+2026-01-10 10:38:52.47
+c2481181
+User
+"version": 0,
+2026-01-10 10:38:52.56
+9200855f
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-10 10:38:53.96
+9200855f
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 10:38:54.16
+9200855f
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 10:38:59.87
+c2481181
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
