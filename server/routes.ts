@@ -1309,27 +1309,46 @@ export async function registerRoutes(
         });
       }
 
-      let isWhitelisted = await storage.isUserWhitelisted(user.id);
+      const isWhitelisted = await storage.isUserWhitelisted(user.id);
       const discountService = getDiscountService();
       
-      // If not whitelisted but diploma-eligible, treat as whitelisted for minting
-      // This handles cases where the automatic whitelist transaction failed
+      // Check diploma eligibility for informational purposes
+      let isDiplomaEligible = false;
+      let whitelistPending = false;
       if (!isWhitelisted) {
         const courses = await storage.getCourses();
         const certificates = await storage.getCertificatesByUser(user.id);
         const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
         const totalCoursesRequired = Math.max(courses.length, 16);
-        const isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
+        isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
         
         if (isDiplomaEligible) {
-          console.log(`[Whitelist] User ${walletAddress} is diploma-eligible, auto-whitelisting`);
-          await storage.setUserWhitelisted(user.id, "diploma-eligible-auto");
-          isWhitelisted = true;
+          // User is eligible but whitelist transaction failed - retry it
+          console.log(`[Whitelist] User ${walletAddress} is diploma-eligible, retrying whitelist...`);
+          whitelistPending = true;
+          
+          // Attempt whitelist in background
+          (async () => {
+            try {
+              const discountResult = await discountService.applyDiscount(walletAddress);
+              if (discountResult.success) {
+                const txHash = discountResult.revealTxHash || discountResult.commitTxHash || "on-chain-verified";
+                await storage.setUserWhitelisted(user.id, txHash);
+                console.log(`[Whitelist] Successfully whitelisted ${walletAddress} (tx: ${txHash})`);
+              } else {
+                console.error(`[Whitelist] Retry failed for ${walletAddress}: ${discountResult.error}`);
+              }
+            } catch (err: any) {
+              console.error(`[Whitelist] Retry exception for ${walletAddress}: ${err.message}`);
+            }
+          })();
         }
       }
       
       res.json({
         isWhitelisted,
+        isDiplomaEligible,
+        whitelistPending,
         whitelistedAt: user.whitelistedAt,
         whitelistTxHash: user.whitelistTxHash,
         collection: discountService.getTicker(),
