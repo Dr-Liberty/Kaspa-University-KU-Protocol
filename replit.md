@@ -48,7 +48,13 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
-- **2026-01-10**: Fixed critical KRC-721 discount inscription field name from `discount` to `discountFee` per official spec (https://mainnet.krc721.stream/docs). This was causing the indexer to reject whitelist transactions, showing full 2000 KAS royalty instead of 10 KAS discount fee.
+- **2026-01-10**: Full KRC-721 spec verification against official `aspectron/krc721/doc/KRC-721.md`:
+    - **Deploy**: ✅ Verified (p, op, tick, max, metadata, royaltyFee, royaltyTo, buri)
+    - **Mint**: ✅ Verified (p, op, tick, to) - active mint-service.ts is spec-compliant
+    - **Discount**: ✅ FIXED - corrected field from `discount` to `discountFee` per spec
+    - **REST API**: ✅ Verified all indexer endpoints match official REST.md spec
+- **2026-01-10**: Fixed critical KRC-721 discount inscription field name from `discount` to `discountFee` per official spec (aspectron/krc721). This was causing the indexer to reject whitelist transactions, showing full 2000 KAS royalty instead of 10 KAS discount fee.
+- **Spec Authority**: KRC-721.md is authoritative; TS.md interface examples are incomplete (missing discountFee in Discount interface).
 - **KIP-0009 Compliance**: Reward transactions bump 0.1 KAS outputs to 0.101 KAS (storage mass < 100,000 grams requirement).
 
 ## External Dependencies
