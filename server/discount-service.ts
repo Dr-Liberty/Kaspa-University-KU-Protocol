@@ -454,6 +454,7 @@ class DiscountService {
       outputs: [{ address: p2shAddress, amount: commitAmount }],
       changeAddress: this.treasuryAddress,
       priorityFee: kaspaToSompi("0.001"),
+      networkId,
     });
 
     if (!commitTxs || commitTxs.length === 0) {
@@ -554,6 +555,7 @@ class DiscountService {
       outputs: [],
       changeAddress: this.treasuryAddress,
       priorityFee: kaspaToSompi("0.01"), // Small fee for discount op
+      networkId,
     });
 
     if (!revealTxs || revealTxs.length === 0) {
