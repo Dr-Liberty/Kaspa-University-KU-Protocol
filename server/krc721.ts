@@ -81,12 +81,11 @@ const KRC721_MINT_POW_FEE_KAS = "10"; // 10 KAS PoW fee (minimum required by ind
 const KRC721_MINT_POW_FEE_SOMPI = BigInt(1000000000); // 10 KAS in sompi
 
 // Get the indexer URL based on network
-// Prefer KaspacomDAGs (kaspa-krc721d.kaspa.com) for mainnet - authoritative source
-// Use KSPR (krc721.stream) for testnet since KaspacomDAGs only has mainnet
+// Use KSPR KRC-721 Indexer (krc721.stream) - the official mainnet/testnet indexer
 function getIndexerUrl(): string {
   return useTestnet 
     ? "https://testnet-10.krc721.stream"
-    : "https://kaspa-krc721d.kaspa.com";
+    : "https://mainnet.krc721.stream";
 }
 
 /**
@@ -2061,8 +2060,8 @@ export { verifyCollectionIndexed, verifyTokenIndexed };
  */
 export async function getMainnetMintedCount(): Promise<{ count: number; error?: string }> {
   try {
-    // Always use mainnet indexer and ticker
-    const indexerUrl = "https://kaspa-krc721d.kaspa.com";
+    // Always use mainnet indexer (KSPR) and ticker
+    const indexerUrl = "https://mainnet.krc721.stream";
     const ticker = process.env.KRC721_TICKER || "KUDIPLOMA";
     const apiUrl = `${indexerUrl}/api/v1/krc721/mainnet/nfts/${ticker}`;
     
