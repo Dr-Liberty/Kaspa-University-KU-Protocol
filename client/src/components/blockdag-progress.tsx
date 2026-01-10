@@ -734,12 +734,21 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
               {isComplete && (
                 <Button 
                   onClick={() => setShowMintDialog(true)}
-                  className="shrink-0 gap-2 bg-sky-500 hover:bg-sky-600"
+                  className="shrink-0 gap-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-50"
                   disabled={isDemoMode || !isWhitelisted}
                   data-testid="button-mint-diploma"
                 >
-                  <Wallet className="w-4 h-4" />
-                  Mint Diploma
+                  {isWhitelisted ? (
+                    <>
+                      <Wallet className="w-4 h-4" />
+                      Mint Diploma
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Awaiting Whitelist...
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -800,9 +809,16 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                 </div>
 
                 {!isWhitelisted && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    You'll be whitelisted automatically after course completion. This may take a few minutes.
-                  </p>
+                  <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 space-y-1">
+                    <p className="text-xs font-medium text-yellow-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Whitelist Required
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      You must be whitelisted to mint. Non-whitelisted minting costs 20,000 KAS. 
+                      Whitelist status updates automatically - please wait a few minutes.
+                    </p>
+                  </div>
                 )}
 
                 <Button 
@@ -811,7 +827,12 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                   className="w-full gap-2"
                   data-testid="button-confirm-mint-diploma"
                 >
-                  {DIPLOMA_MINT_ENABLED ? (
+                  {!isWhitelisted ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Awaiting Whitelist...
+                    </>
+                  ) : DIPLOMA_MINT_ENABLED ? (
                     <>
                       <Wallet className="w-4 h-4" />
                       Mint Diploma ({mintPrice})
