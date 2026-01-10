@@ -73,8 +73,8 @@ interface CertificateMetadata {
 // - Whitelisted users pay discountFee instead (via "discount" operation)
 //
 // Fee structure for Kaspa University:
-// - Non-whitelisted: royaltyFee (20,000 KAS) + miner fee (~0.01 KAS) = ~20,000 KAS total
-// - Whitelisted (course completers): discountFee (10 KAS) + miner fee (~0.01 KAS) = ~10 KAS total
+// - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = ~20,010 KAS total
+// - Whitelisted (course completers): discountFee (10 KAS) + PoW fee (10 KAS) = ~20 KAS total
 const KRC721_DEPLOY_FEE_KAS = "1000"; // 1000 KAS deploy fee (REQUIRED by indexer)
 const KRC721_DEPLOY_FEE_SOMPI = BigInt(100000000000); // 1000 KAS in sompi
 const KRC721_MINT_POW_FEE_KAS = "10"; // 10 KAS PoW fee (minimum required by indexer)

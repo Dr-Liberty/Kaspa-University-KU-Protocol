@@ -1892,7 +1892,7 @@ const courses: Course[] = [
 <p><strong>Collection Specifications</strong></p>
 <p>The diploma collection operates with the following parameters: the ticker KUDIPLOMA serves as the unique collection identifier, maximum supply is set at 10,000 diplomas, eligibility requires completion of all courses in the curriculum, and minting is user-initiated through wallet signature.</p>
 <p><strong>Whitelist-Based Access Control</strong></p>
-<p>The collection implements a creative use of KRC-721's royalty mechanism to control access. Non-whitelisted addresses face a 20,000 KAS deterrent fee, while graduates who have completed all courses are automatically whitelisted with a 10 KAS discount fee plus minimal miner fees. This economic design ensures that only verified graduates can practically obtain diplomas.</p>
+<p>The collection implements a creative use of KRC-721's royalty mechanism to control access. Non-whitelisted addresses face a 20,000 KAS deterrent fee plus 10 KAS PoW fee (~20,010 KAS total), while graduates who have completed all courses are automatically whitelisted and pay only 10 KAS discount fee plus 10 KAS PoW fee (~20 KAS total). This economic design ensures that only verified graduates can practically obtain diplomas.</p>
 <p><strong>Minting Process</strong></p>
 <p>The diploma minting workflow proceeds through defined stages. First, the student completes all courses in the curriculum, establishing eligibility. Upon navigating to the Diploma page, the platform automatically whitelists the student's wallet address. The student then signs the mint transaction with their wallet, and the diploma NFT is created and assigned to their address.</p>
 <p><strong>Credential Significance</strong></p>

@@ -1354,6 +1354,8 @@ export async function registerRoutes(
         collection: discountService.getTicker(),
         discountFee: discountService.getDiscountFeeSompi().toString(),
         discountFeeKas: "10",
+        powFeeKas: "10",
+        totalMintCostKas: "20", // discountFee + PoW fee
       });
     } catch (error: any) {
       console.error("[Whitelist] Status check failed:", error.message);

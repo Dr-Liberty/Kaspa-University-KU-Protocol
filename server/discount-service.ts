@@ -16,11 +16,11 @@ import { storage } from "./storage";
 
 // Discount fee for whitelisted users (course completers)
 // Fee structure:
-// - Non-whitelisted: pay royaltyFee (20,000 KAS) + PoW fee (~0.01 KAS) = ~20,000 KAS total
-// - Whitelisted: pay discountFee (10 KAS) + PoW fee (~0.01 KAS) = ~10 KAS total
+// - Non-whitelisted: royaltyFee (20,000 KAS) + PoW fee (10 KAS) = ~20,010 KAS total
+// - Whitelisted: discountFee (10 KAS) + PoW fee (10 KAS) = ~20 KAS total
 //
-// The discountFee is the royalty amount whitelisted users pay INSTEAD of royaltyFee
-// It's NOT the total cost - miner fees are separate
+// PoW fee (10 KAS) is burned to the network (required by indexer for minting)
+// discountFee is the royalty amount whitelisted users pay INSTEAD of royaltyFee
 const DISCOUNT_FEE_KAS = 10; // 10 KAS discount fee for whitelisted users
 const DISCOUNT_FEE_SOMPI = BigInt(DISCOUNT_FEE_KAS * 100_000_000); // 10 KAS = 1,000,000,000 sompi
 
