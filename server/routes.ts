@@ -1309,40 +1309,51 @@ export async function registerRoutes(
         });
       }
 
-      const isWhitelisted = await storage.isUserWhitelisted(user.id);
       const discountService = getDiscountService();
+      
+      // Check INDEXER first (source of truth for whitelist status)
+      const indexerWhitelisted = await discountService.isWalletWhitelisted(walletAddress);
+      const dbWhitelisted = await storage.isUserWhitelisted(user.id);
+      
+      // Determine actual whitelist status from indexer
+      const isWhitelisted = indexerWhitelisted;
       
       // Check diploma eligibility for informational purposes
       let isDiplomaEligible = false;
       let whitelistPending = false;
-      if (!isWhitelisted) {
-        const courses = await storage.getCourses();
-        const certificates = await storage.getCertificatesByUser(user.id);
-        const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
-        const totalCoursesRequired = Math.max(courses.length, 16);
-        isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
+      
+      const courses = await storage.getCourses();
+      const certificates = await storage.getCertificatesByUser(user.id);
+      const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
+      const totalCoursesRequired = Math.max(courses.length, 16);
+      isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
+      
+      // If DB says whitelisted but indexer doesn't, OR user is eligible but not whitelisted
+      if ((dbWhitelisted && !indexerWhitelisted) || (isDiplomaEligible && !indexerWhitelisted)) {
+        // User is eligible but whitelist transaction failed - retry it
+        console.log(`[Whitelist] User ${walletAddress} needs whitelist (db=${dbWhitelisted}, indexer=${indexerWhitelisted}, eligible=${isDiplomaEligible})`);
+        whitelistPending = true;
         
-        if (isDiplomaEligible) {
-          // User is eligible but whitelist transaction failed - retry it
-          console.log(`[Whitelist] User ${walletAddress} is diploma-eligible, retrying whitelist...`);
-          whitelistPending = true;
-          
-          // Attempt whitelist in background
-          (async () => {
-            try {
-              const discountResult = await discountService.applyDiscount(walletAddress);
-              if (discountResult.success) {
-                const txHash = discountResult.revealTxHash || discountResult.commitTxHash || "on-chain-verified";
-                await storage.setUserWhitelisted(user.id, txHash);
-                console.log(`[Whitelist] Successfully whitelisted ${walletAddress} (tx: ${txHash})`);
-              } else {
-                console.error(`[Whitelist] Retry failed for ${walletAddress}: ${discountResult.error}`);
-              }
-            } catch (err: any) {
-              console.error(`[Whitelist] Retry exception for ${walletAddress}: ${err.message}`);
+        // Attempt whitelist in background
+        (async () => {
+          try {
+            const discountResult = await discountService.applyDiscount(walletAddress);
+            if (discountResult.success) {
+              const txHash = discountResult.revealTxHash || discountResult.commitTxHash || "on-chain-verified";
+              await storage.setUserWhitelisted(user.id, txHash);
+              console.log(`[Whitelist] Successfully whitelisted ${walletAddress} (tx: ${txHash})`);
+            } else {
+              console.error(`[Whitelist] Retry failed for ${walletAddress}: ${discountResult.error}`);
             }
-          })();
-        }
+          } catch (err: any) {
+            console.error(`[Whitelist] Retry exception for ${walletAddress}: ${err.message}`);
+          }
+        })();
+      }
+      
+      // If indexer shows whitelisted but DB doesn't, sync DB
+      if (indexerWhitelisted && !dbWhitelisted) {
+        await storage.setUserWhitelisted(user.id, "indexer-synced");
       }
       
       res.json({
@@ -1356,6 +1367,7 @@ export async function registerRoutes(
         discountFeeKas: "10",
         powFeeKas: "10",
         totalMintCostKas: "20", // discountFee + PoW fee
+        source: indexerWhitelisted ? "indexer" : "pending",
       });
     } catch (error: any) {
       console.error("[Whitelist] Status check failed:", error.message);
@@ -1366,6 +1378,8 @@ export async function registerRoutes(
   // Manually trigger whitelist check/apply (for retry scenarios)
   app.post("/api/whitelist/apply", nftRateLimiter, async (req: Request, res: Response) => {
     const walletAddress = req.headers["x-wallet-address"] as string;
+    const force = req.query.force === "true";
+    
     if (!walletAddress) {
       return res.status(401).json({ error: "Wallet not connected" });
     }
@@ -1384,20 +1398,34 @@ export async function registerRoutes(
         });
       }
 
-      // Check if already whitelisted
-      const isWhitelisted = await storage.isUserWhitelisted(user.id);
-      if (isWhitelisted) {
+      const discountService = getDiscountService();
+      
+      // Check INDEXER first (source of truth), not just database
+      const indexerWhitelisted = await discountService.isWalletWhitelisted(walletAddress);
+      
+      // If already whitelisted on-chain and not forcing, return early
+      if (indexerWhitelisted && !force) {
+        // Update database to match indexer if needed
+        if (!user.whitelistedAt) {
+          await storage.setUserWhitelisted(user.id, "indexer-verified");
+        }
         return res.json({
           success: true,
-          message: "Already whitelisted",
+          message: "Already whitelisted on-chain",
           whitelistedAt: user.whitelistedAt,
           whitelistTxHash: user.whitelistTxHash,
+          source: "indexer",
         });
       }
+      
+      // Database says whitelisted but indexer doesn't - need to re-execute
+      const dbWhitelisted = await storage.isUserWhitelisted(user.id);
+      if (dbWhitelisted && !indexerWhitelisted) {
+        console.log(`[Whitelist] Database shows whitelisted but indexer doesn't - re-executing for ${walletAddress}`);
+      }
 
-      // Apply discount operation
-      console.log(`[Whitelist] Manual apply request for ${walletAddress}`);
-      const discountService = getDiscountService();
+      // Apply discount operation (will re-execute even if DB says whitelisted)
+      console.log(`[Whitelist] Manual apply request for ${walletAddress} (force=${force})`);
       const result = await discountService.applyDiscount(walletAddress);
 
       if (result.success) {
