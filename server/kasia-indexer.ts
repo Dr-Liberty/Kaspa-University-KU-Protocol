@@ -972,8 +972,10 @@ class KasiaIndexer {
   }
 
   /**
-   * Get all conversations for a wallet address (from per-wallet cache)
-   * Uses normalized address lookup to prevent cross-wallet cache pollution
+   * Get all conversations for a wallet address
+   * First checks per-wallet cache, then scans global conversations map for any
+   * where the wallet is a participant (handles case where indexer returns empty
+   * but conversations exist from other participant's sync)
    */
   getConversationsForWallet(walletAddress: string): IndexedConversation[] {
     const normalizedWallet = this.normalizeAddress(walletAddress);
@@ -982,16 +984,44 @@ class KasiaIndexer {
       return [];
     }
     
-    // Get from per-wallet cache (isolated from other wallets)
+    // Get from per-wallet cache first (fast path)
     const walletCache = this.walletConversations.get(normalizedWallet);
-    if (!walletCache || walletCache.size === 0) {
-      console.log(`[Kasia Indexer] getConversationsForWallet: no cached conversations for ${walletAddress.slice(0, 20)}... (normalized: ${normalizedWallet.slice(0,15)}...)`);
+    
+    // Also scan global conversations map for any where this wallet is a participant
+    // This handles the case where the Kasia indexer returns empty for this wallet
+    // but conversations exist from another participant's sync (e.g., treasury sync)
+    const globalMatches: IndexedConversation[] = [];
+    for (const conv of this.conversations.values()) {
+      const initiatorNorm = this.normalizeAddress(conv.initiatorAddress);
+      const recipientNorm = this.normalizeAddress(conv.recipientAddress);
+      if (initiatorNorm === normalizedWallet || recipientNorm === normalizedWallet) {
+        globalMatches.push(conv);
+        // Also add to per-wallet cache for future lookups
+        this.addToWalletCache(walletAddress, conv);
+      }
+    }
+    
+    // Merge wallet cache and global matches (dedupe by ID)
+    const conversationsMap = new Map<string, IndexedConversation>();
+    
+    if (walletCache) {
+      for (const conv of walletCache.values()) {
+        conversationsMap.set(conv.id, conv);
+      }
+    }
+    
+    for (const conv of globalMatches) {
+      conversationsMap.set(conv.id, conv);
+    }
+    
+    const conversations = Array.from(conversationsMap.values());
+    
+    if (conversations.length === 0) {
+      console.log(`[Kasia Indexer] getConversationsForWallet: no conversations for ${walletAddress.slice(0, 20)}... (normalized: ${normalizedWallet.slice(0,15)}...) - checked wallet cache and global map`);
       return [];
     }
     
-    const conversations = Array.from(walletCache.values());
-    console.log(`[Kasia Indexer] getConversationsForWallet: returning ${conversations.length} conversations for ${walletAddress.slice(0, 20)}...`);
-    // Log each conversation's status for debugging
+    console.log(`[Kasia Indexer] getConversationsForWallet: returning ${conversations.length} conversations for ${walletAddress.slice(0, 20)}... (cache: ${walletCache?.size || 0}, global: ${globalMatches.length})`);
     for (const conv of conversations) {
       console.log(`[Kasia Indexer]   - ${conv.id}: status=${conv.status}, initiator=${conv.initiatorAddress.slice(0,15)}..., recipient=${conv.recipientAddress.slice(0,15)}...`);
     }

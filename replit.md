@@ -36,6 +36,7 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
         - **Decentralization**: No treasury dependency; messages broadcast directly from user wallets.
         - **Source of Truth**: Public Kasia indexer is authoritative; local database is a cache synced periodically.
         - **Handshake/Message Flow**: Prepare payload, user signs and broadcasts transaction.
+        - **Conversation Cache**: `getConversationsForWallet` checks both per-wallet cache AND global `conversations` map for matching participants, ensuring users see their conversations even if Kasia indexer returns empty for their wallet (common for recipients whose handshakes were initiated by others).
 - **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`).
 - **Security**:
     - **SIWK**: Challenge-response authentication, nonce replay prevention, challenge expiry.
