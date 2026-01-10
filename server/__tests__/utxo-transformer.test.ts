@@ -17,7 +17,9 @@ function normalizeUtxoEntry(utxo: any, treasuryAddress: string) {
     ? spkRaw.scriptPublicKey 
     : spkRaw;
   
-  const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+  // blockDaaScore must be BigInt for WASM SDK
+  const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+  const blockDaaScore = BigInt(blockDaaScoreRaw);
   const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
   const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
   const index = utxo.outpoint?.index ?? utxo.index ?? 0;
@@ -199,7 +201,7 @@ describe('UTXO Transformer', () => {
   });
 
   describe('optional fields', () => {
-    it('should default blockDaaScore to "0"', () => {
+    it('should default blockDaaScore to BigInt(0)', () => {
       const utxo = {
         outpoint: { transactionId: "abc", index: 0 },
         utxoEntry: {
@@ -210,7 +212,22 @@ describe('UTXO Transformer', () => {
 
       const result = normalizeUtxoEntry(utxo, testAddress);
       
-      expect(result.utxoEntry.blockDaaScore).toBe("0");
+      expect(result.utxoEntry.blockDaaScore).toBe(BigInt(0));
+    });
+
+    it('should convert string blockDaaScore to BigInt', () => {
+      const utxo = {
+        outpoint: { transactionId: "abc", index: 0 },
+        utxoEntry: {
+          amount: "1000",
+          scriptPublicKey: "xyz",
+          blockDaaScore: "326423417"
+        }
+      };
+
+      const result = normalizeUtxoEntry(utxo, testAddress);
+      
+      expect(result.utxoEntry.blockDaaScore).toBe(BigInt(326423417));
     });
 
     it('should default isCoinbase to false', () => {

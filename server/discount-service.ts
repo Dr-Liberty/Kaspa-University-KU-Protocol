@@ -426,7 +426,9 @@ class DiscountService {
       const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
         ? spkRaw.scriptPublicKey 
         : spkRaw;
-      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      // blockDaaScore must be BigInt for WASM SDK
+      const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const blockDaaScore = BigInt(blockDaaScoreRaw);
       const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
       const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
       const index = utxo.outpoint?.index ?? utxo.index ?? 0;
@@ -491,7 +493,9 @@ class DiscountService {
 
     const revealEntries = revealUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
-      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      // blockDaaScore must be BigInt for WASM SDK
+      const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const blockDaaScore = BigInt(blockDaaScoreRaw);
       const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
       const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
       const index = utxo.outpoint?.index ?? utxo.index ?? 0;
@@ -525,7 +529,9 @@ class DiscountService {
       const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
         ? spkRaw.scriptPublicKey 
         : spkRaw;
-      const blockDaaScore = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      // blockDaaScore must be BigInt for WASM SDK
+      const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
+      const blockDaaScore = BigInt(blockDaaScoreRaw);
       const isCoinbase = utxo.utxoEntry?.isCoinbase ?? utxo.isCoinbase ?? false;
       const transactionId = utxo.outpoint?.transactionId ?? utxo.transactionId ?? "";
       const index = utxo.outpoint?.index ?? utxo.index ?? 0;
