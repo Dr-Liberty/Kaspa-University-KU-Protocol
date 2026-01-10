@@ -1,0 +1,103 @@
+55d1
+User
+[KRC721] Next token ID: 33 (reservations max: 0, cert count: 32)
+2026-01-10 07:33:10.53
+9d4b55d1
+User
+[KRC721] Verifying collection at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts/KUDIPLOMA
+2026-01-10 07:33:10.82
+9d4b55d1
+User
+[Admin] Using mainnet diploma image: ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4
+2026-01-10 07:33:10.82
+9d4b55d1
+User
+[Admin] Using mainnet buri: ipfs://QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A
+2026-01-10 07:33:11.05
+9d4b55d1
+User
+[KRC721] Pre-flight check passed: 1242.33 KAS available (need 1000 KAS)
+2026-01-10 07:33:11.05
+9d4b55d1
+User
+[KRC721] Deploying collection: {"p":"krc-721","op":"deploy","tick":"KUDIPLOMA","max":"10000","metadata":{"name":"Kaspa University Diploma","description":"Kaspa University Diploma NFT. Awarded for completing all courses. Mint only at Kaspa.University - external mints invalid.","image":"ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4"},"royaltyFee":"2000000000000","royaltyTo":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","buri":"ipfs://QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A"}
+2026-01-10 07:33:11.05
+9d4b55d1
+User
+[KRC721] Including buri in deploy: ipfs://QmcQVGnJfuwecUyJxr4csditwutFcoNC3eixxoyyEzfb8A
+2026-01-10 07:33:11.05
+9d4b55d1
+User
+[KRC721] Deploy P2SH Address: kaspa:pry6qxtqp4tm6yyawycu2dq9q7flljw97l3vzaq6uy5c5n97rf9rjl6m5kx2k
+2026-01-10 07:33:11.09
+9d4b55d1
+User
+[KRC721] Deploy P2SH stored for recovery: kaspa:pry6qxtqp4tm6yyawycu2dq9q7flljw97l3vzaq6uy5c5n97rf9rjl6m5kx2k
+2026-01-10 07:33:11.09
+9d4b55d1
+User
+[KRC721] Deploy P2SH address saved for recovery: kaspa:pry6qxtqp4tm6yyawycu2dq9q7flljw97l3vzaq6uy5c5n97rf9rjl6m5kx2k
+2026-01-10 07:33:11.09
+9d4b55d1
+User
+[KRC721] Creating commit transaction...
+2026-01-10 07:33:11.21
+9d4b55d1
+User
+[KRC721] Got 185 UTXOs from WASM RpcClient
+2026-01-10 07:33:11.21
+9d4b55d1
+User
+[KRC721] Sample UTXO structure: {"hasOutpoint":true,"hasAddress":true,"hasUtxoEntry":false,"outpointKeys":["__wbg_ptr"],"utxoEntryKeys":[],"amount":"20000000"}
+2026-01-10 07:33:11.21
+9d4b55d1
+User
+[KRC721] Using 185 entries for commit (passing directly to createTransactions)
+2026-01-10 07:33:11.21
+9d4b55d1
+User
+[KRC721] Total available in wallet: 124232602499 sompi (1242.32602499 KAS)
+2026-01-10 07:33:11.22
+9d4b55d1
+User
+[KRC721] Signing tx with 88 inputs
+2026-01-10 07:33:11.22
+9d4b55d1
+User
+[KRC721] Created 3 commit transactions
+2026-01-10 07:33:11.24
+9d4b55d1
+User
+[KRC721] Signing successful, submitting...
+2026-01-10 07:33:11.41
+9d4b55d1
+User
+[KRC721] Commit tx: 8e9a6d2412c44d0ffd105562a28473d8980357d01d7b73ab9383ec58215044ea
+2026-01-10 07:33:11.41
+9d4b55d1
+User
+[KRC721] Signing tx with 31 inputs
+2026-01-10 07:33:11.42
+9d4b55d1
+User
+[KRC721] Signing successful, submitting...
+2026-01-10 07:33:11.55
+9d4b55d1
+User
+[KRC721] Signing tx with 2 inputs
+2026-01-10 07:33:11.55
+9d4b55d1
+User
+[KRC721] Commit tx: d2c77d43693ef41caceb8a61c5f79e4c51707c9884a0fac08e7f7a4c8d016d5f
+2026-01-10 07:33:11.55
+9d4b55d1
+User
+[KRC721] Signing successful, submitting...
+2026-01-10 07:33:11.68
+9d4b55d1
+User
+[KRC721] Commit tx: 95df0ef1bd804d3d17ef7a798c1bc4872be02221db2f20462c3ae38757f5bead
+2026-01-10 07:33:13.64
+9d4b55d1
+User
+[KRC721] Creating reveal transaction...
