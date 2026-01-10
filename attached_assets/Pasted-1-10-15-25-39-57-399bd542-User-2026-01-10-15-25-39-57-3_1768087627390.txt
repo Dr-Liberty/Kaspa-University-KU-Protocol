@@ -1,0 +1,99 @@
+1-10 15:25:39.57
+399bd542
+User
+},
+2026-01-10 15:25:39.57
+399bd542
+User
+"utxoEntry": {
+2026-01-10 15:25:39.57
+399bd542
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 15:25:39.57
+399bd542
+User
+}
+2026-01-10 15:25:39.57
+399bd542
+User
+"version": 0,
+2026-01-10 15:25:39.57
+399bd542
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 15:25:39.57
+399bd542
+User
+"transactionId": "7d56c9782e0534eef2bdafa3bdce7fe578a9a9cbbeb6c34d756a123e00940d9c",
+2026-01-10 15:25:39.57
+399bd542
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 15:25:39.57
+399bd542
+User
+"index": 0
+2026-01-10 15:25:39.57
+399bd542
+User
+}
+2026-01-10 15:25:39.57
+399bd542
+User
+"scriptPublicKey": {
+2026-01-10 15:25:39.57
+399bd542
+User
+"amount": "20000000",
+2026-01-10 15:25:39.57
+399bd542
+User
+},
+2026-01-10 15:25:39.57
+399bd542
+User
+"blockDaaScore": "326427101",
+2026-01-10 15:25:39.58
+399bd542
+User
+[DiscountService] Failed to apply discount: (consensus core sign()) The transaction is partially signed
+2026-01-10 15:25:39.58
+399bd542
+User
+[Whitelist] Retry failed for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: (consensus core sign()) The transaction is partially signed
+2026-01-10 15:25:39.58
+399bd542
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-10 15:25:39.58
+399bd542
+User
+[DiscountService] Full error: (consensus core sign()) The transaction is partially signed
+2026-01-10 15:25:40.40
+399bd542
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-10 15:25:40.40
+399bd542
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-10 15:25:40.40
+399bd542
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-10 15:25:40.50
+399bd542
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-10 15:25:41.20
+399bd542
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-10 15:25:41.60
+399bd542
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-10 15:25:41.60
+399bd542
+Use
