@@ -16,12 +16,13 @@ import { storage } from "./storage";
 
 // Discount fee for whitelisted users (course completers)
 // Fee structure:
-// - Non-whitelisted: pay royaltyFee (20,000 KAS) + PoW fee (10 KAS) = 20,010 KAS total
-// - Whitelisted: pay discountFee (0 KAS) + PoW fee (10 KAS) = 10 KAS total
+// - Non-whitelisted: pay royaltyFee (20,000 KAS) + PoW fee (~0.01 KAS) = ~20,000 KAS total
+// - Whitelisted: pay discountFee (10 KAS) + PoW fee (~0.01 KAS) = ~10 KAS total
 //
 // The discountFee is the royalty amount whitelisted users pay INSTEAD of royaltyFee
-// It's NOT the total cost - the 10 KAS PoW fee is separate and goes to miners
-const DISCOUNT_FEE_SOMPI = BigInt(0); // 0 KAS - whitelisted users pay only PoW fee, no royalty
+// It's NOT the total cost - miner fees are separate
+const DISCOUNT_FEE_KAS = 10; // 10 KAS discount fee for whitelisted users
+const DISCOUNT_FEE_SOMPI = BigInt(DISCOUNT_FEE_KAS * 100_000_000); // 10 KAS = 1,000,000,000 sompi
 
 // Dynamic ticker based on current network mode
 // MUST match the ticker used in krc721.ts deploy inscription
@@ -41,12 +42,13 @@ interface DiscountResult {
 }
 
 // KRC-721 Discount inscription format per official spec
-// No discountFee field - discount simply whitelists the address
+// discountFee sets the amount whitelisted users pay instead of royaltyFee
 interface DiscountInscription {
   p: "krc-721";
   op: "discount";
   tick: string;
-  to?: string; // recipient address to whitelist
+  to: string; // recipient address to whitelist
+  discountFee: string; // amount in SOMPI that whitelisted user pays
 }
 
 class DiscountService {
@@ -247,6 +249,7 @@ class DiscountService {
       op: "discount",
       tick: getCollectionTicker(),
       to: walletAddress,
+      discountFee: DISCOUNT_FEE_SOMPI.toString(), // 10 KAS in sompi
     };
   }
 

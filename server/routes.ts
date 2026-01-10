@@ -1353,7 +1353,7 @@ export async function registerRoutes(
         whitelistTxHash: user.whitelistTxHash,
         collection: discountService.getTicker(),
         discountFee: discountService.getDiscountFeeSompi().toString(),
-        discountFeeKas: "10.5",
+        discountFeeKas: "10",
       });
     } catch (error: any) {
       console.error("[Whitelist] Status check failed:", error.message);
