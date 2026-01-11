@@ -46,5 +46,6 @@ integrations = ["javascript_mem_db:1.0.0"]
 
 [userenv.shared]
 SUPPORT_ADDRESS = "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er"
+KRC721_TESTNET = "false"
 
 [userenv.development]

@@ -394,12 +394,14 @@ class DiscountService {
       .addOp(Opcodes.OpEndIf);
 
     const isTestnet = process.env.KRC721_TESTNET === "true";
+    console.log(`[DiscountService] Network config: KRC721_TESTNET=${process.env.KRC721_TESTNET}, isTestnet=${isTestnet}`);
     // WASM NetworkId enum for addressFromScriptPublicKey
     const wasmNetworkId = isTestnet 
       ? this.kaspaModule.NetworkId.testnet10 
       : this.kaspaModule.NetworkId.mainnet;
     // String networkId for createTransactions (Generator requires string format)
     const networkIdString = isTestnet ? "testnet-10" : "mainnet";
+    console.log(`[DiscountService] Using network: ${networkIdString}`);
     
     const p2shAddress = addressFromScriptPublicKey(
       script.createPayToScriptHashScript(),
