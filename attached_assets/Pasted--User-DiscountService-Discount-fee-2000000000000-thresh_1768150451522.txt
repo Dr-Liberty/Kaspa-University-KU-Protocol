@@ -1,0 +1,95 @@
+
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 08:53:10.27
+24165534
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 08:53:10.27
+24165534
+User
+4:53:10 PM [express] GET /api/whitelist/status 304 in 492ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 08:53:11.56
+24165534
+User
+[DiscountService] Trying WASM RPC via Resolver...
+2026-01-11 08:53:12.37
+24165534
+User
+[DiscountService] WASM RPC connected via Resolver
+2026-01-11 08:53:12.37
+24165534
+User
+[DiscountService] Treasury: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-11 08:53:12.37
+24165534
+User
+[DiscountService] Initialized for collection KUDIPLOMA
+2026-01-11 08:53:12.37
+24165534
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 08:53:12.37
+24165534
+User
+[DiscountService] RPC connected
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] X-only pubkey: f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9fe (32 bytes)
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] Network config: KRC721_TESTNET=false, isTestnet=false
+2026-01-11 08:53:12.51
+24165534
+User
+[DiscountService] Using network: mainnet
+2026-01-11 08:53:12.64
+24165534
+User
+[DiscountService] Failed to apply discount: Treasury has 237 locked UTXO(s) (~238.05 KAS) from previous inscriptions. Please send at least 1 KAS to kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er to enable whitelisting.
+2026-01-11 08:53:12.64
+24165534
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-11 08:53:12.64
+24165534
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:13316)
+2026-01-11 08:53:12.64
+24165534
+User
+[DiscountService] Full error: Error: Treasury has 237 locked UTXO(s) (~238.05 KAS) from previous inscriptions. Please send at least 1 KAS to kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er to enable whitelisting.
+2026-01-11 08:53:12.64
+24165534
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11359)
+2026-01-11 08:53:12.64
+24165534
+User
+at async /home/runner/workspace/dist/index.cjs:1188:80939
+2026-01-11 08:53:12.64
+24165534
+User
+4:53:12 PM [express] POST /api/whitelist/apply 500 in 5831ms :: {"success":false,"error":"Treasury has 237 locked UTXO(s) (~238.05 KAS) from previous inscriptions. Please send at least 1 KAS to kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er to enable whitelisting."}
+2026-01-11 08:53:15.55
+24165534
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 08:53:15.69
+24165534
+User
+[DiscountService] Di

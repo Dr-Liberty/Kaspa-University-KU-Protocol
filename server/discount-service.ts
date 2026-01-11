@@ -418,42 +418,26 @@ class DiscountService {
     }
 
     // CRITICAL: Get UTXOs directly from WASM RpcClient and pass without transformation
-    // This matches the working krc721.ts pattern - manual transformation breaks SDK metadata
+    // This matches the working krc721.ts pattern - they don't filter UTXOs at all
+    // The WASM SDK handles UTXO selection internally during createTransactions
     if (!this.wasmRpcClient) {
       throw new Error("WASM RpcClient not initialized - required for inscription transactions");
     }
     
-    const { entries: allTreasuryEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.treasuryAddress!]);
-    
-    // Filter to only P2PK UTXOs (exclude any stuck P2SH UTXOs)
-    const entries = allTreasuryEntries.filter((utxo: any) => {
-      const scriptHex = utxo.utxoEntry?.scriptPublicKey?.toString?.() || 
-                        utxo.utxoEntry?.scriptPublicKey || "";
-      // P2PK scripts: 68 hex chars, start with '20', end with 'ac'
-      const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 68 && 
-                     scriptHex.startsWith('20') &&
-                     scriptHex.endsWith('ac');
-      return isP2PK;
-    });
+    const { entries } = await this.wasmRpcClient.getUtxosByAddresses([this.treasuryAddress!]);
     
     if (!entries || entries.length === 0) {
-      const status = await this.getTreasuryStatus();
-      if (status.lockedP2shUtxos > 0) {
-        const lockedKas = Number(status.lockedBalanceSompi) / 100_000_000;
-        throw new Error(
-          `Treasury has ${status.lockedP2shUtxos} locked UTXO(s) (~${lockedKas.toFixed(2)} KAS) from previous inscriptions. ` +
-          `Please send at least 1 KAS to ${this.treasuryAddress} to enable whitelisting.`
-        );
-      }
       throw new Error("No UTXOs available for transaction - treasury needs funding");
     }
 
-    // Log WASM RpcClient entry structure for debugging
+    // Log WASM RpcClient entry structure for debugging (don't filter - pass directly like krc721.ts)
+    console.log(`[DiscountService] Got ${entries.length} treasury entries from WASM RpcClient`);
     if (entries[0]) {
-      console.log(`[DiscountService] WASM entry structure:`, JSON.stringify(entries[0], (k, v) => typeof v === 'bigint' ? v.toString() : v, 2).substring(0, 500));
+      // Log entry structure to understand WASM SDK format
+      const sample = entries[0];
+      console.log(`[DiscountService] Sample entry keys:`, Object.keys(sample));
+      console.log(`[DiscountService] Sample utxoEntry keys:`, sample.utxoEntry ? Object.keys(sample.utxoEntry) : 'none');
     }
-    console.log(`[DiscountService] Using ${entries.length} treasury entries (WASM RpcClient format)`);
 
     const commitAmount = kaspaToSompi("0.3");
     const { transactions: commitTxs } = await createTransactions({
@@ -520,25 +504,16 @@ class DiscountService {
     console.log(`[DiscountService] P2SH UTXO (WASM format):`, JSON.stringify(p2shUtxo, (k, v) => typeof v === 'bigint' ? v.toString() : v, 2).substring(0, 500));
 
     // Get fresh treasury UTXOs directly from WASM RpcClient
-    // This matches the working krc721.ts pattern exactly
+    // This matches the working krc721.ts pattern exactly - no filtering by script type!
     const { entries: freshTreasuryEntries } = await this.wasmRpcClient.getUtxosByAddresses([this.treasuryAddress!]);
     
-    // Filter out UTXOs used in commit and non-P2PK entries
+    // Only filter out UTXOs used in commit (by outpoint ID)
+    // DO NOT filter by scriptPublicKey - WASM SDK handles that internally
     const treasuryEntries = freshTreasuryEntries.filter((utxo: any) => {
-      // Exclude UTXOs used in commit
       const txId = utxo.outpoint?.transactionId || "";
       const idx = utxo.outpoint?.index ?? 0;
       const id = `${txId}-${idx}`;
-      if (commitUsedUtxoIds.has(id)) return false;
-      
-      // Only include P2PK UTXOs
-      const scriptHex = utxo.utxoEntry?.scriptPublicKey?.toString?.() || 
-                        utxo.utxoEntry?.scriptPublicKey || "";
-      const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 68 && 
-                     scriptHex.startsWith('20') &&
-                     scriptHex.endsWith('ac');
-      return isP2PK;
+      return !commitUsedUtxoIds.has(id);
     });
     
     console.log(`[DiscountService] Reveal has ${treasuryEntries.length} fresh treasury UTXOs (WASM format)`);
@@ -603,45 +578,17 @@ class DiscountService {
   private async getUtxos(): Promise<any[]> {
     if (!this.treasuryAddress) return [];
     
-    // CRITICAL: Use WASM RpcClient for proper UTXO format
+    // Use WASM RpcClient for proper UTXO format - DO NOT filter by script type
+    // The WASM SDK handles UTXO selection internally during createTransactions
     if (!this.wasmRpcClient) {
       console.log(`[DiscountService] WASM RpcClient not available, falling back to kaspa-rpc-client`);
       if (!this.rpcClient) return [];
       const allUtxos = await this.getUtxosForAddress(this.treasuryAddress);
-      return this.filterP2PKUtxos(allUtxos);
+      return allUtxos;
     }
     
-    const { entries: allUtxos } = await this.wasmRpcClient.getUtxosByAddresses([this.treasuryAddress]);
-    return this.filterP2PKUtxos(allUtxos);
-  }
-  
-  private filterP2PKUtxos(allUtxos: any[]): any[] {
-    // Filter to only include P2PK UTXOs that the treasury can sign
-    // P2SH UTXOs (from commit transactions) cannot be signed by the treasury key
-    const signableUtxos = allUtxos.filter((utxo: any) => {
-      // WASM RpcClient may return scriptPublicKey as object with toString() or string
-      const scriptHex = utxo.utxoEntry?.scriptPublicKey?.toString?.() || 
-                        utxo.utxoEntry?.scriptPublicKey || "";
-      
-      // Kaspa P2PK (pay-to-public-key) scripts use 32-byte x-only Schnorr pubkeys:
-      // - 68 hex chars (34 bytes): 0x20 (length prefix 32) + 32-byte pubkey + OP_CHECKSIG (0xac)
-      // - Start with '20' (0x20 = 32, the pubkey length for x-only Schnorr keys)
-      // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
-      // P2SH scripts end with '87' (OP_EQUAL) - these are commit UTXOs
-      const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 68 && 
-                     scriptHex.startsWith('20') &&
-                     scriptHex.endsWith('ac');
-      
-      if (!isP2PK) {
-        console.log(`[DiscountService] Filtering out non-P2PK UTXO: script=${scriptHex?.substring(0, 20)}...`);
-      }
-      
-      return isP2PK;
-    });
-    
-    console.log(`[DiscountService] Filtered ${allUtxos.length} UTXOs -> ${signableUtxos.length} signable P2PK UTXOs`);
-    return signableUtxos;
+    const { entries } = await this.wasmRpcClient.getUtxosByAddresses([this.treasuryAddress]);
+    return entries || [];
   }
 
   private async getUtxosForAddress(address: string): Promise<any[]> {
