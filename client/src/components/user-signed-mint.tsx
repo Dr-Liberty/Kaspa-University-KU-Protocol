@@ -455,6 +455,13 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
                     </div>
                   </div>
                 </div>
+                <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <strong>Note:</strong> KasWare will show "Batch Transfer KRC20 Token" - 
+                    this is the NFT mint (both transactions bundled for safety). 
+                    Separate prompts are not available in the current wallet version.
+                  </p>
+                </div>
               </div>
               
               <div className="border-t pt-3 mt-3">

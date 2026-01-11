@@ -2,6 +2,23 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { WalletConnection } from "@shared/schema";
 import { setWalletAddress, setAuthToken, queryClient } from "@/lib/queryClient";
 
+interface KaswareUtxo {
+  entry: {
+    address: { version: string; prefix: string; payload: string };
+    outpoint: { transactionId: string; index: number };
+    amount: number;
+    scriptPublicKey: { version: number; script: string };
+    blockDaaScore: number;
+    isCoinbase: boolean;
+  };
+  outpoint: { transactionId: string; index: number };
+  address: { version: string; prefix: string; payload: string };
+  amount: number;
+  isCoinbase: boolean;
+  blockDaaScore: number;
+  scriptPublicKey: { version: number; script: string };
+}
+
 declare global {
   interface Window {
     kasware?: {
@@ -16,14 +33,17 @@ declare global {
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
       signKRC20Transaction: (inscribeJsonString: string, type: number, destAddr?: string, priorityFee?: number) => Promise<string>;
+      // Get user's UTXO entries for transaction building
+      getUtxoEntries: () => Promise<KaswareUtxo[]>;
       // KRC-721 buildScript API for proper commit-reveal flow
-      buildScript: (params: { type: string; data: string }) => Promise<{ script: string; p2shAddress: string }>;
+      buildScript: (params: { type: string; data: string }) => Promise<{ script: string; p2shAddress: string; amountSompi?: number }>;
       // KRC-721 inscribeKRC721 API - completes inscription after buildScript
       inscribeKRC721: (script: string, p2shAddress: string) => Promise<{ commitTxId: string; revealTxId: string } | string>;
-      // PSBT signing for advanced inscription flows
-      signPsbt: (psbt: string) => Promise<{ txId: string } | string>;
+      // PSKT signing for individual transaction prompts
+      signPskt: (params: { txJsonString: string; options?: { signInputs?: Array<{ index: number; sighashType: number }> } }) => Promise<string>;
+      // Broadcast a signed transaction
+      broadcastTransaction?: (signedTx: string) => Promise<string>;
       // KRC-721 submitCommitReveal API - handles full commit-reveal cycle for inscriptions
-      // KasWare 1.9+ uses options object signature
       submitCommitReveal: (
         options: {
           type: string;
@@ -399,9 +419,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     // KRC-721 minting via KasWare wallet
     // Uses signKRC20Transaction with type=5 which handles the full commit-reveal flow
-    // Note: This creates a single batched prompt. KasWare doesn't expose separate 
-    // commit/reveal methods, so two prompts are not possible without risking stuck funds.
+    // 
+    // NOTE: KasWare shows a generic "Batch Transfer KRC20 Token" prompt but this is 
+    // actually handling the KRC-721 NFT minting (commit + reveal transactions).
+    // Two separate prompts are NOT possible with current KasWare API without risking
+    // stuck funds. We show a detailed preview in our UI before triggering the wallet.
+    //
+    // If user wants to recover stuck funds: KasWare > Settings > Add-ons > 
+    // "Retrieve Incomplete KRC20 UTXOs"
     
+    // Use signKRC20Transaction with type=5 (batch flow) - the only safe method
     if (typeof window.kasware.signKRC20Transaction !== "function") {
       throw new Error(
         "Your KasWare wallet does not support KRC-721 minting. " +
@@ -409,12 +436,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       );
     }
     
-    console.log("[Wallet] Starting KRC-721 mint via signKRC20Transaction type=5");
-    console.log("[Wallet] Inscription data:", inscriptionJson);
-    console.log("[Wallet] This will prompt for commit+reveal in one batched approval");
+    console.log("[Wallet] Using signKRC20Transaction type=5 (batch flow)");
+    console.log("[Wallet] This will show a single approval for both commit+reveal");
     
     try {
-      // Type 5 = KRC-721 operations (handles full commit+reveal flow)
       const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 5);
       
       console.log("[Wallet] signKRC20Transaction result:", txId);
@@ -424,7 +449,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         return txId;
       }
       
-      // If result is an object with txId fields
       if (txId && typeof txId === "object") {
         const resultObj = txId as Record<string, any>;
         const resultTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || resultObj.commitId;
@@ -438,7 +462,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       console.error("[Wallet] KRC-721 mint failed:", err);
       
-      // Provide helpful error message
       if (err.message?.includes("User rejected") || err.message?.includes("cancelled")) {
         throw new Error("Transaction cancelled by user");
       }
