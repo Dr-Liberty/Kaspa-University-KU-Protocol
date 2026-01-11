@@ -530,9 +530,27 @@ class DiscountService {
     }
 
     // Get P2SH script as hex string for WASM SDK
-    const p2shScript = script.createPayToScriptHashScript();
-    const p2shScriptHex = p2shScript.toString();
-    console.log(`[DiscountService] P2SH script hex: ${p2shScriptHex.substring(0, 40)}...`);
+    // createPayToScriptHashScript() returns a ScriptPublicKey object, not a hex string
+    // We need to extract the actual script hex from it
+    const p2shScriptObj = script.createPayToScriptHashScript();
+    // ScriptPublicKey has .script property containing the hex string
+    // If toString() returns JSON, extract from the object directly
+    let p2shScriptHex: string;
+    if (typeof p2shScriptObj === 'object' && p2shScriptObj.script) {
+      p2shScriptHex = p2shScriptObj.script;
+    } else if (typeof p2shScriptObj === 'string') {
+      p2shScriptHex = p2shScriptObj;
+    } else {
+      // Try to get the script property via different means
+      const objStr = p2shScriptObj.toString();
+      try {
+        const parsed = JSON.parse(objStr);
+        p2shScriptHex = parsed.script || objStr;
+      } catch {
+        p2shScriptHex = objStr;
+      }
+    }
+    console.log(`[DiscountService] P2SH script hex (length ${p2shScriptHex.length}): ${p2shScriptHex.substring(0, 40)}...`);
     
     const revealEntries = revealUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
@@ -565,6 +583,12 @@ class DiscountService {
       return !commitUsedUtxoIds.has(id);
     });
     console.log(`[DiscountService] Reveal has ${filteredUtxos.length} fresh treasury UTXOs (filtered ${freshUtxos.length - filteredUtxos.length})`);
+    
+    // Log sample UTXO structure for debugging
+    if (filteredUtxos[0]) {
+      const sampleSpk = filteredUtxos[0].utxoEntry?.scriptPublicKey ?? filteredUtxos[0].scriptPublicKey;
+      console.log(`[DiscountService] Sample UTXO scriptPublicKey type: ${typeof sampleSpk}, value: ${JSON.stringify(sampleSpk).substring(0, 100)}`);
+    }
     
     const treasuryEntries = filteredUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);

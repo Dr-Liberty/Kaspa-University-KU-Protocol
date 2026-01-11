@@ -1,0 +1,94 @@
+
+"transactionId": "6b759feac8c655d69594f37fd28818ca10d3577cebd9b17372279f89ebeea09c",
+2026-01-11 07:26:38.40
+c7b55a1f
+User
+"amount": "20000000",
+2026-01-11 07:26:38.40
+c7b55a1f
+User
+"outpoint": {
+2026-01-11 07:26:38.40
+c7b55a1f
+User
+"scriptPublicKey": {
+2026-01-11 07:26:38.40
+c7b55a1f
+User
+}
+2026-01-11 07:26:38.41
+c7b55a1f
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-11 07:26:38.42
+c7b55a1f
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 07:26:38.57
+c7b55a1f
+User
+[DiscountService] WASM submit result: dd3b11e9fa0b8115890b6de6f00f0d2427848e0fe72c87bd179b88b268e186dc
+2026-01-11 07:26:38.57
+c7b55a1f
+User
+[DiscountService] Commit tx: dd3b11e9fa0b8115890b6de6f00f0d2427848e0fe72c87bd179b88b268e186dc
+2026-01-11 07:26:38.57
+c7b55a1f
+User
+[DiscountService] Waiting for P2SH UTXO to appear...
+2026-01-11 07:26:39.40
+c7b55a1f
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:26:39.55
+c7b55a1f
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 07:26:39.55
+c7b55a1f
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 07:26:39.72
+c7b55a1f
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 07:26:39.72
+c7b55a1f
+User
+3:26:39 PM [express] GET /api/whitelist/status 304 in 482ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 07:26:40.74
+c7b55a1f
+User
+[DiscountService] P2SH script hex: {"version":0,"script":"aa209a3c443b108d1...
+2026-01-11 07:26:40.74
+c7b55a1f
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 07:26:41.72
+c7b55a1f
+User
+[DiscountService] Filtered 244 UTXOs -> 244 signable P2PK UTXOs
+2026-01-11 07:26:41.72
+c7b55a1f
+User
+[DiscountService] Reveal has 244 fresh treasury UTXOs (filtered 0)
+2026-01-11 07:26:41.73
+c7b55a1f
+User
+[DiscountService] Failed to apply discount: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-11 07:26:41.73
+c7b55a1f
+User
+[DiscountService] Full error: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-11 07:26:41.73
+c7b55a1f
+User
+3:26:41 PM [express] POST /api/whitelist/apply 500 in 10157ms :: {"success":false,"error":"Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)"}
+2026-01-11 07:26:45.03
+c7b55a1f
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:26:45.32
+c7b55a1f
+User
+[DiscountService] Index
