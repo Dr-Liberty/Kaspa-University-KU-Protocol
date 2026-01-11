@@ -48,6 +48,11 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-11**: Made on-chain KRC-721 indexer the source of truth for diploma mints:
+    - Check `https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/{wallet}/KUDIPLOMA` before blocking mints
+    - Stale "minted" database records are automatically cleared if not found on-chain
+    - Database is now a cache only; on-chain state is authoritative
+    - Added `clearFailedReservations()` method for manual cleanup if needed
 - **2026-01-11**: Fixed KRC-721 user-signed minting with proper KasWare API:
     - **Primary method**: `submitCommitReveal("KSPR_KRC721", inscriptionJson)` - handles full commit-reveal cycle
     - **Fallback method**: `signKRC20Transaction(inscriptionJson, 5)` - type=5 for KRC-721 (type=3 is KRC-20 only)

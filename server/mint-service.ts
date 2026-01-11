@@ -4,25 +4,72 @@ import type { MintReservation, Certificate } from "@shared/schema";
 /**
  * Diploma Mint Service for Kaspa University
  * 
- * ARCHITECTURE: Single diploma collection (1,000 max supply)
+ * ARCHITECTURE: Single diploma collection (10,000 max supply)
  * - Users earn ONE diploma NFT after completing ALL 16 courses
  * - Token IDs are assigned randomly by the KRC-721 indexer
  * - Whitelist-based pricing: 0 KAS royalty for course completers, 20,000 KAS for others
  * 
- * NOTE: Uses existing storage methods with "diploma" as a special courseId
+ * SOURCE OF TRUTH: On-chain KRC-721 indexer (database is cache only)
+ * - Always verify on-chain before blocking mint attempts
+ * - Database reservations are cleared if not confirmed on-chain
  */
 
 // Dynamic ticker based on network mode - MUST match krc721.ts defaults
-// All ticker defaults must be kept in sync across:
-// - krc721.ts (getDefaultConfig)
-// - mint-service.ts (this function)
-// - discount-service.ts (getCollectionTicker)
 function getCollectionTicker(): string {
   const isTestnet = process.env.KRC721_TESTNET === "true";
   if (isTestnet) {
     return process.env.KRC721_TESTNET_TICKER || "KUDIPLOMA";
   }
   return process.env.KRC721_TICKER || "KUDIPLOMA";
+}
+
+// Get the KRC-721 indexer URL
+function getIndexerUrl(): string {
+  const isTestnet = process.env.KRC721_TESTNET === "true";
+  return isTestnet 
+    ? "https://testnet-10.krc721.stream"
+    : "https://mainnet.krc721.stream";
+}
+
+/**
+ * Check if a wallet owns any KUDIPLOMA NFT on-chain via the indexer
+ * This is the SOURCE OF TRUTH - database is just a cache
+ * 
+ * API endpoint: /api/v1/krc721/{network}/address/{address}/{tick}
+ */
+async function checkOnChainOwnership(walletAddress: string): Promise<{ ownsNft: boolean; tokenIds: number[] }> {
+  try {
+    const ticker = getCollectionTicker();
+    const isTestnet = process.env.KRC721_TESTNET === "true";
+    const network = isTestnet ? "testnet-10" : "mainnet";
+    const indexerUrl = getIndexerUrl();
+    
+    const apiUrl = `${indexerUrl}/api/v1/krc721/${network}/address/${encodeURIComponent(walletAddress)}/${ticker}`;
+    console.log(`[MintService] Checking on-chain ownership at: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.message === "success" && Array.isArray(data.result) && data.result.length > 0) {
+        const tokenIds = data.result.map((nft: any) => parseInt(nft.tokenId, 10)).filter((id: number) => !isNaN(id));
+        console.log(`[MintService] Wallet ${walletAddress.slice(0, 20)}... owns ${tokenIds.length} ${ticker} NFT(s) on-chain`);
+        return { ownsNft: true, tokenIds };
+      }
+    }
+    
+    // No NFTs found or error - wallet doesn't own any
+    console.log(`[MintService] Wallet ${walletAddress.slice(0, 20)}... does NOT own any ${ticker} NFTs on-chain`);
+    return { ownsNft: false, tokenIds: [] };
+  } catch (error: any) {
+    console.log(`[MintService] On-chain check failed (allowing mint attempt): ${error.message}`);
+    // If indexer is unreachable, allow the mint attempt (fail open for UX)
+    return { ownsNft: false, tokenIds: [] };
+  }
 }
 
 const RESERVATION_TTL_MINUTES = 10;
@@ -102,6 +149,8 @@ export class MintService {
   /**
    * Reserve a diploma mint slot
    * Only users who completed all 16 courses can mint
+   * 
+   * SOURCE OF TRUTH: On-chain KRC-721 indexer (database is cache only)
    */
   async reserveDiplomaMint(
     walletAddress: string
@@ -116,20 +165,29 @@ export class MintService {
       };
     }
 
-    // Check for existing active reservation
+    // SOURCE OF TRUTH: Check on-chain ownership via KRC-721 indexer
+    // This is authoritative - if they own one on-chain, they can't mint another
+    const onChainCheck = await checkOnChainOwnership(walletAddress);
+    if (onChainCheck.ownsNft) {
+      return { error: "You already have a diploma NFT (verified on-chain)" };
+    }
+
+    // Since on-chain says no NFT, clear any stale database records that say "minted"
+    // These are from failed mint attempts that never completed on-chain
+    const diplomaCertificateId = `diploma-${walletAddress}`;
+    const existingMint = await storage.getMintReservationByCertificate(diplomaCertificateId);
+    if (existingMint && existingMint.status === "minted") {
+      console.log(`[MintService] Clearing stale 'minted' record for ${walletAddress} - not found on-chain`);
+      await storage.updateMintReservation(existingMint.id, { status: "expired" });
+    }
+
+    // Check for existing active reservation (not expired)
     const existingReservation = await storage.getActiveMintReservation(walletAddress, DIPLOMA_COURSE_ID);
     if (existingReservation) {
       return {
         reservation: existingReservation,
         inscriptionJson: existingReservation.inscriptionJson,
       };
-    }
-
-    // Check if this wallet already has a minted diploma using deterministic certificateId
-    const diplomaCertificateId = `diploma-${walletAddress}`;
-    const existingMint = await storage.getMintReservationByCertificate(diplomaCertificateId);
-    if (existingMint && existingMint.status === "minted") {
-      return { error: "You already have a diploma NFT" };
     }
 
     await storage.expireOldReservations();
@@ -160,6 +218,23 @@ export class MintService {
     console.log(`[MintService] Diploma reserved for ${walletAddress} (internal tokenId: ${tokenId})`);
 
     return { reservation, inscriptionJson };
+  }
+
+  /**
+   * Clear failed/stale mint reservations for a wallet
+   * Useful when database is out of sync with on-chain state
+   */
+  async clearFailedReservations(walletAddress: string): Promise<{ cleared: number }> {
+    const diplomaCertificateId = `diploma-${walletAddress}`;
+    const existingMint = await storage.getMintReservationByCertificate(diplomaCertificateId);
+    
+    if (existingMint && existingMint.status !== "reserved") {
+      console.log(`[MintService] Clearing reservation ${existingMint.id} (status: ${existingMint.status})`);
+      await storage.updateMintReservation(existingMint.id, { status: "expired" });
+      return { cleared: 1 };
+    }
+    
+    return { cleared: 0 };
   }
 
   async confirmMint(
