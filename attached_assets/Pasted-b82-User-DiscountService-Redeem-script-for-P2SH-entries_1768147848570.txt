@@ -1,0 +1,91 @@
+b82
+User
+[DiscountService] Redeem script for P2SH entries (length 394): 20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad...
+2026-01-11 08:09:55.37
+7bec2b82
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 08:09:55.47
+7bec2b82
+User
+[DiscountService] Filtered 237 UTXOs -> 237 signable P2PK UTXOs
+2026-01-11 08:09:55.47
+7bec2b82
+User
+[DiscountService] Sample UTXO scriptPublicKey type: object, value: {"version":0,"scriptPublicKey":"20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac
+2026-01-11 08:09:55.47
+7bec2b82
+User
+[DiscountService] Reveal has 237 fresh treasury UTXOs (filtered 0)
+2026-01-11 08:09:55.47
+7bec2b82
+User
+[DiscountService] Redeem script length: 394 hex chars (197 bytes)
+2026-01-11 08:09:55.47
+7bec2b82
+User
+[DiscountService] Redeem script preview: 20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac0063046b737072004c987b2270223a22...
+2026-01-11 08:09:55.48
+7bec2b82
+User
+[DiscountService] Signature script preview: 4198caaf7e2b9cbcc4583e1635b619771e294b8605d189cc5d3d54f2231b1b70baa2078cb7ae6fcdded18be749ba613b2868...
+2026-01-11 08:09:55.48
+7bec2b82
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 08:09:55.48
+7bec2b82
+User
+[DiscountService] Signature script length: 530 hex chars
+2026-01-11 08:09:55.48
+7bec2b82
+User
+[DiscountService] Signature length: 132 bytes
+2026-01-11 08:09:55.48
+7bec2b82
+User
+[DiscountService] Filled P2SH input 0 with script signature
+2026-01-11 08:09:55.59
+7bec2b82
+User
+[DiscountService] Submit failed: RPC Server (remote error) -> Rejected transaction 5fb771daa0d0987ff5d35ac661bdfeedbae4031c66d56296eff17c5afe648a11: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:09:55.59
+7bec2b82
+User
+[DiscountService] Failed to apply discount: Reveal failed: RPC Server (remote error) -> Rejected transaction 5fb771daa0d0987ff5d35ac661bdfeedbae4031c66d56296eff17c5afe648a11: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:09:55.60
+7bec2b82
+User
+[DiscountService] Full error: Error: Reveal failed: RPC Server (remote error) -> Rejected transaction 5fb771daa0d0987ff5d35ac661bdfeedbae4031c66d56296eff17c5afe648a11: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:09:55.60
+7bec2b82
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11360)
+2026-01-11 08:09:55.60
+7bec2b82
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:17889)
+2026-01-11 08:09:59.17
+7bec2b82
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 08:09:59.17
+7bec2b82
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 08:09:59.71
+7bec2b82
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 08:09:59.71
+7bec2b82
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-11 08:09:59.81
+7bec2b82
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 08:10:00.21
+7bec2b82
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none,
