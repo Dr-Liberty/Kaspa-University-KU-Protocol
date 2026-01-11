@@ -395,9 +395,27 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     let lastError: Error | null = null;
     
-    // Approach 1: Use buildScript + inscribeKRC721 if available (KSPR wallet API)
+    // Approach 1: Try submitCommitReveal FIRST (the primary KRC-721 method that accepts fees)
+    if (typeof window.kasware.submitCommitReveal === "function") {
+      console.log("[Wallet] Trying submitCommitReveal with KSPR_KRC721 type, fee:", feeSompi, "sompi (", totalFeeKas, "KAS)");
+      try {
+        const result = await window.kasware.submitCommitReveal(
+          "KSPR_KRC721",
+          inscriptionJson,
+          [],
+          feeSompi
+        );
+        console.log("[Wallet] submitCommitReveal SUCCESS:", result);
+        return result.revealTxId || result.commitTxId;
+      } catch (err: any) {
+        console.warn("[Wallet] submitCommitReveal failed:", err?.message || err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+    
+    // Approach 2: Use buildScript + inscribeKRC721 (fallback, may not pass fee)
     if (typeof window.kasware.buildScript === "function" && typeof window.kasware.inscribeKRC721 === "function") {
-      console.log("[Wallet] Trying buildScript + inscribeKRC721...");
+      console.log("[Wallet] Trying buildScript + inscribeKRC721 (fallback)...");
       try {
         const buildResult = await window.kasware.buildScript({
           type: "KSPR_KRC721",
@@ -415,60 +433,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Approach 2: Use buildScript alone and return the P2SH for user payment
-    if (typeof window.kasware.buildScript === "function") {
-      console.log("[Wallet] Trying buildScript for KRC-721...");
-      try {
-        const buildResult = await window.kasware.buildScript({
-          type: "KSPR_KRC721",
-          data: inscriptionJson,
-        });
-        console.log("[Wallet] buildScript result:", buildResult);
-        
-        // If wallet has signPsbt or similar for completing the inscription
-        if (typeof window.kasware.signPsbt === "function") {
-          console.log("[Wallet] Wallet has signPsbt - attempting inscription completion...");
-          const signedResult = await window.kasware.signPsbt(buildResult.script);
-          console.log("[Wallet] signPsbt SUCCESS:", signedResult);
-          if (typeof signedResult === "string") return signedResult;
-          return signedResult.txId;
-        }
-        
-        // Try sendKaspa to the P2SH address to trigger commit phase
-        if (buildResult.p2shAddress && typeof window.kasware.sendKaspa === "function") {
-          console.log("[Wallet] Sending commit to P2SH:", buildResult.p2shAddress);
-          const commitFee = 1000000; // 0.01 KAS in sompi
-          const txHash = await window.kasware.sendKaspa(buildResult.p2shAddress, commitFee);
-          console.log("[Wallet] Commit transaction sent:", txHash);
-          return txHash;
-        }
-      } catch (err: any) {
-        console.warn("[Wallet] buildScript approach failed:", err?.message || err);
-        lastError = err instanceof Error ? err : new Error(String(err));
-      }
-    }
-    
-    // Approach 3: submitCommitReveal with KSPR_KRC721 type (older API)
-    if (typeof window.kasware.submitCommitReveal === "function") {
-      console.log("[Wallet] Trying submitCommitReveal with KSPR_KRC721 type, fee:", feeSompi);
-      try {
-        const result = await window.kasware.submitCommitReveal(
-          "KSPR_KRC721",
-          inscriptionJson,
-          [],
-          feeSompi
-        );
-        console.log("[Wallet] submitCommitReveal SUCCESS:", result);
-        return result.revealTxId || result.commitTxId;
-      } catch (err: any) {
-        console.warn("[Wallet] submitCommitReveal failed:", err?.message || err);
-        lastError = err instanceof Error ? err : new Error(String(err));
-      }
-    }
-    
-    // Approach 4: signKRC20Transaction with type=5 (KRC-721 fallback)
+    // Approach 3: signKRC20Transaction with type=5 (last resort fallback)
     if (typeof window.kasware.signKRC20Transaction === "function") {
-      console.log("[Wallet] Trying signKRC20Transaction with type=5 (KRC-721 fallback)...");
+      console.log("[Wallet] Trying signKRC20Transaction with type=5 (last resort)...");
       try {
         const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 5);
         console.log("[Wallet] signKRC20Transaction type=5 SUCCESS:", txHash);
