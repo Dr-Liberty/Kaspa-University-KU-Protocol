@@ -48,6 +48,13 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-11**: Enhanced diploma minting UX with mandatory preview and on-chain verification:
+    - **Preview Step**: Users now see full transaction details (commit-reveal explanation, PoW fee, "Batch Transfer" warning) before wallet prompt
+    - **Token ID Display**: Shows "Random (assigned on-chain)" in preview, then verified token ID (e.g., "KUDIPLOMA #4829") in success
+    - **Baseline Snapshot**: Records existing token IDs BEFORE signing (3 retries); fails if indexer unreachable
+    - **On-Chain Verification**: 12 attempts × 5s polling comparing against baseline to detect only NEW tokens
+    - **Error Handling**: All failure paths (baseline failure, signing error, verification timeout) cancel reservation to release token ID
+    - **Success Dialog**: Displays verified token ID and transaction explorer link
 - **2026-01-11**: Made on-chain KRC-721 indexer the source of truth for diploma mints:
     - Check `https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/{wallet}/KUDIPLOMA` before blocking mints
     - Stale "minted" database records are automatically cleared if not found on-chain
