@@ -1,0 +1,166 @@
+
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 13:19:11.70
+74c677d1
+User
+9:19:11 PM [express] GET /api/whitelist/status 304 in 698ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 13:19:14.74
+74c677d1
+User
+[MintService] Checking on-chain ownership at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 13:19:14.88
+74c677d1
+User
+[MintService] Wallet kaspa:qrmzgsh8chv72q... does NOT own any KUDIPLOMA NFTs on-chain
+2026-01-11 13:19:15.12
+74c677d1
+User
+[MintService] Building diploma inscription with ticker: KUDIPLOMA, to: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-11 13:19:15.15
+74c677d1
+User
+[MintService] Diploma reserved for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel (internal tokenId: 6)
+2026-01-11 13:19:15.15
+74c677d1
+User
+9:19:15 PM [express] POST /api/diploma/reserve 200 in 763ms :: {"success":true,"reservationId":"ddfd60c4-de91-4a0c-8bc9-d5bdefa64166","tokenId":6,"inscriptionJson":"{\"p\":\"krc-721\",\"op\":\"mint\",\"tick\":\"KUDIPLOMA\",\"to\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\"}","expiresAt":1768166955124,"courseId":"diploma","courseName":"Kaspa University Diploma","imageUrl":"ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4"}
+2026-01-11 13:19:15.43
+74c677d1
+User
+9:19:15 PM [express] POST /api/nft/signing/ddfd60c4-de91-4a0c-8bc9-d5bdefa64166 200 in 181ms :: {"success":true,"status":"signing"}
+2026-01-11 13:19:16.94
+74c677d1
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 13:19:17.08
+74c677d1
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 13:19:17.08
+74c677d1
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 13:19:17.30
+74c677d1
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 13:19:17.30
+74c677d1
+User
+9:19:17 PM [express] GET /api/whitelist/status 304 in 517ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 13:19:22.58
+74c677d1
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 13:19:22.76
+74c677d1
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 13:19:22.76
+74c677d1
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 13:19:22.98
+74c677d1
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 13:19:22.99
+74c677d1
+User
+9:19:22 PM [express] GET /api/whitelist/status 304 in 567ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 13:19:24.69
+74c677d1
+User
+[Confirm] NFT minted - tokenId: 6, tx: {"commitId":"549...
+2026-01-11 13:19:24.69
+74c677d1
+User
+[MintService] Confirmed diploma mint, txHash: {"commitId":"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75","revealId":"518149d860db311b951fd85962397d533d090664ef52374915f0a916d72079c8","commitTxStr":"{\"id\":\"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75\",\"version\":0,\"inputs\":[{\"transactionId\":\"90e5522e398246fe7c63f5f71bf57653967c6ee2beca7195d844dd8c1224603a\",\"index\":1,\"sequence\":\"0\",\"sigOpCount\":1,\"signatureScript\":\"41627b188e8fb17bc5f4f189bbb7dc90530d3d3dd3f57f5071728e71771354c4e397f1df1c7c37b27dfbec18388050cf56866b02496cd18110e282a0355d11054501\",\"utxo\":{\"address\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\",\"amount\":\"968855088726\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\",\"blockDaaScore\":\"327449869\",\"isCoinbase\":false}}],\"outputs\":[{\"value\":\"300010000\",\"scriptPublicKey\":\"0000aa204cef71e81944d6c4aabc5128647abc807202e88a8abffb18596d1b70cc3a114487\"},{\"value\":\"968555075393\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\"}],\"subnetworkId\":\"0000000000000000000000000000000000000000\",\"lockTime\":\"0\",\"gas\":\"0\",\"mass\":\"3333\",\"payload\":\"\"}","revealTxStr":"{\"id\":\"518149d860db311b951fd85962397d533d090664ef52374915f0a916d72079c8\",\"version\":0,\"inputs\":[{\"transactionId\":\"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75\",\"index\":0,\"sequence\":\"0\",\"sigOpCount\":1,\"signatureScript\":\"4192abdcab57f25b4a7e4afc48e748b6122a3bb824d2860b945db9273801c92e301f7e201d78abea6fd5e808a568bd964aae0a0606b5f2bc9b19fb820ef6125da7014ca920f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004c797b2270223a226b72632d373231222c226f70223a226d696e74222c227469636b223a224b554449504c4f4d41222c22746f223a226b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c227d68\",\"utxo\":{\"address\":\"kaspa:ppxw7u0gr9zdd392h3gjser6hjq8yqhg329tl7cct9k3kuxv8gg5gwawwywka\",\"amount\":\"300010000\",\"scriptPublicKey\":\"0000aa204cef71e81944d6c4aabc5128647abc807202e88a8abffb18596d1b70cc3a114487\",\"blockDaaScore\":\"327468341\",\"isCoinbase\":false}}],\"outputs\":[{\"value\":\"300000000\",\"scriptPublicKey\":\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\"}],\"subnetworkId\":\"0000000000000000000000000000000000000000\",\"lockTime\":\"0\",\"gas\":\"0\",\"mass\":\"0\",\"payload\":\"\"}"}
+2026-01-11 13:19:24.69
+74c677d1
+User
+9:19:24 PM [express] POST /api/nft/confirm/ddfd60c4-de91-4a0c-8bc9-d5bdefa64166 200 in 305ms :: {"success":true,"tokenId":6,"mintTxHash":"{\"commitId\":\"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75\",\"revealId\":\"518149d860db311b951fd85962397d533d090664ef52374915f0a916d72079c8\",\"commitTxStr\":\"{\\\"id\\\":\\\"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"90e5522e398246fe7c63f5f71bf57653967c6ee2beca7195d844dd8c1224603a\\\",\\\"index\\\":1,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"41627b188e8fb17bc5f4f189bbb7dc90530d3d3dd3f57f5071728e71771354c4e397f1df1c7c37b27dfbec18388050cf56866b02496cd18110e282a0355d11054501\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\\\",\\\"amount\\\":\\\"968855088726\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\",\\\"blockDaaScore\\\":\\\"327449869\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300010000\\\",\\\"scriptPublicKey\\\":\\\"0000aa204cef71e81944d6c4aabc5128647abc807202e88a8abffb18596d1b70cc3a114487\\\"},{\\\"value\\\":\\\"968555075393\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"3333\\\",\\\"payload\\\":\\\"\\\"}\",\"revealTxStr\":\"{\\\"id\\\":\\\"518149d860db311b951fd85962397d533d090664ef52374915f0a916d72079c8\\\",\\\"version\\\":0,\\\"inputs\\\":[{\\\"transactionId\\\":\\\"54926effd405d0d501c05bd36ae2d40a4815c7a521283a657fd4a05cbe266a75\\\",\\\"index\\\":0,\\\"sequence\\\":\\\"0\\\",\\\"sigOpCount\\\":1,\\\"signatureScript\\\":\\\"4192abdcab57f25b4a7e4afc48e748b6122a3bb824d2860b945db9273801c92e301f7e201d78abea6fd5e808a568bd964aae0a0606b5f2bc9b19fb820ef6125da7014ca920f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063076b6173706c6578004c797b2270223a226b72632d373231222c226f70223a226d696e74222c227469636b223a224b554449504c4f4d41222c22746f223a226b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c227d68\\\",\\\"utxo\\\":{\\\"address\\\":\\\"kaspa:ppxw7u0gr9zdd392h3gjser6hjq8yqhg329tl7cct9k3kuxv8gg5gwawwywka\\\",\\\"amount\\\":\\\"300010000\\\",\\\"scriptPublicKey\\\":\\\"0000aa204cef71e81944d6c4aabc5128647abc807202e88a8abffb18596d1b70cc3a114487\\\",\\\"blockDaaScore\\\":\\\"327468341\\\",\\\"isCoinbase\\\":false}}],\\\"outputs\\\":[{\\\"value\\\":\\\"300000000\\\",\\\"scriptPublicKey\\\":\\\"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac\\\"}],\\\"subnetworkId\\\":\\\"0000000000000000000000000000000000000000\\\",\\\"lockTime\\\":\\\"0\\\",\\\"gas\\\":\\\"0\\\",\\\"mass\\\":\\\"0\\\",\\\"payload\\\":\\\"\\\"}\"}","status":"minted"}
+2026-01-11 13:19:24.95
+74c677d1
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 13:19:25.09
+74c677d1
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 13:19:25.09
+74c677d1
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 13:19:25.30
+74c677d1
+User
+9:19:25 PM [express] GET /api/diploma/status 304 in 499ms :: {"isEligible":true,"coursesCompleted":23,"totalCoursesRequired":23,"progressPercent":100,"nftStatus":"eligible","completedCourseIds":["bitcoin-vs-kaspa","network-scaling","timestamps-median-time","virtual-state","anticone-finalization","pruning-system","transaction-processing","difficulty-adjustment","block-processing","consensus-parameters","ghostdag-mechanics","core-data-structures","foundational-concepts","dag-and-kaspa","krc721-nft-standard","kasia-protocol","k-protocol","ku-protocol","self-custody","sound-money","l2-on-kaspa","dag-terminology","finality-security"],"remainingCourses":0}
+2026-01-11 13:19:25.30
+74c677d1
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 13:19:25.30
+74c677d1
+User
+9:19:25 PM [express] GET /api/whitelist/status 304 in 502ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 13:19:25.46
+74c677d1
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:25.46
+74c677d1
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:25.46
+74c677d1
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 13:19:25.50
+74c677d1
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 13:19:26.80
+74c677d1
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-11 13:19:27.10
+74c677d1
+User
+[Kasia Client] Received handshake: f
