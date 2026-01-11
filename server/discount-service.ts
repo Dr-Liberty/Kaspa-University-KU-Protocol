@@ -650,8 +650,19 @@ class DiscountService {
     );
     
     if (ourOutput !== -1) {
+      // Debug: Check script state before encoding signature script
+      const scriptHex = script.toString();
+      console.log(`[DiscountService] Redeem script length: ${scriptHex.length} hex chars (${scriptHex.length / 2} bytes)`);
+      console.log(`[DiscountService] Redeem script preview: ${scriptHex.substring(0, 100)}...`);
+      
       const signature = await revealTx.createInputSignature(ourOutput, this.privateKey);
-      revealTx.fillInput(ourOutput, script.encodePayToScriptHashSignatureScript(signature));
+      console.log(`[DiscountService] Signature length: ${signature.length} bytes`);
+      
+      const sigScript = script.encodePayToScriptHashSignatureScript(signature);
+      console.log(`[DiscountService] Signature script length: ${sigScript.length} hex chars`);
+      console.log(`[DiscountService] Signature script preview: ${sigScript.substring(0, 100)}...`);
+      
+      revealTx.fillInput(ourOutput, sigScript);
       console.log(`[DiscountService] Filled P2SH input ${ourOutput} with script signature`);
     }
     

@@ -1,0 +1,87 @@
+1:30.13
+092e0a00
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 07:41:30.13
+092e0a00
+User
+[DiscountService] P2SH script hex (length 70): aa209a3c443b108d110cb5740e4a4d99349eeef5...
+2026-01-11 07:41:30.30
+092e0a00
+User
+[DiscountService] Reveal has 241 fresh treasury UTXOs (filtered 0)
+2026-01-11 07:41:30.30
+092e0a00
+User
+[DiscountService] Filtered 241 UTXOs -> 241 signable P2PK UTXOs
+2026-01-11 07:41:30.30
+092e0a00
+User
+[DiscountService] Sample UTXO scriptPublicKey type: object, value: {"version":0,"scriptPublicKey":"20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac
+2026-01-11 07:41:30.31
+092e0a00
+User
+[DiscountService] Filled P2SH input 0 with script signature
+2026-01-11 07:41:30.31
+092e0a00
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 07:41:30.45
+092e0a00
+User
+[DiscountService] Failed to apply discount: Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:41:30.45
+092e0a00
+User
+[DiscountService] Submit failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:41:30.45
+092e0a00
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-11 07:41:30.45
+092e0a00
+User
+[DiscountService] Full error: Error: Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:41:30.45
+092e0a00
+User
+at async /home/runner/workspace/dist/index.cjs:1188:81494
+2026-01-11 07:41:30.45
+092e0a00
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11359)
+2026-01-11 07:41:30.45
+092e0a00
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:17508)
+2026-01-11 07:41:30.45
+092e0a00
+User
+3:41:30 PM [express] POST /api/whitelist/apply 500 in 6403ms :: {"success":false,"error":"Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution"}
+2026-01-11 07:41:32.03
+092e0a00
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:41:32.20
+092e0a00
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 07:41:32.20
+092e0a00
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 07:41:32.41
+092e0a00
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 07:41:32.41
+092e0a00
+User
+3:41:32 PM [express] GET /api/whitelist/status 304 in 737ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 07:41:37.67
+092e0a00
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:41:37.84
+092e0a00
+User
