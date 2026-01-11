@@ -505,13 +505,26 @@ class DiscountService {
 
     console.log(`[DiscountService] Commit tx: ${commitResult.txHash}`);
     
-    // Wait longer for commit to be confirmed before fetching reveal UTXOs
-    console.log(`[DiscountService] Waiting for commit confirmation...`);
-    await this.waitForConfirmation(3000);
-
-    const revealUtxos = await this.getUtxosForAddress(p2shAddress);
+    // Poll for P2SH UTXO with retries - RPC may take time to propagate
+    console.log(`[DiscountService] Waiting for P2SH UTXO to appear...`);
+    const maxAttempts = 10;
+    const pollInterval = 2000; // 2 seconds between attempts
+    let revealUtxos: any[] = [];
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await this.waitForConfirmation(pollInterval);
+      revealUtxos = await this.getUtxosForAddress(p2shAddress);
+      
+      if (revealUtxos && revealUtxos.length > 0) {
+        console.log(`[DiscountService] P2SH UTXO found after ${attempt} attempt(s)`);
+        break;
+      }
+      
+      console.log(`[DiscountService] P2SH UTXO not yet available (attempt ${attempt}/${maxAttempts})`);
+    }
+    
     if (!revealUtxos || revealUtxos.length === 0) {
-      throw new Error("P2SH UTXO not found for reveal");
+      throw new Error(`P2SH UTXO not found after ${maxAttempts} attempts - commit tx: ${commitResult.txHash}`);
     }
 
     const revealEntries = revealUtxos.map((utxo: any) => {

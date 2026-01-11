@@ -1,0 +1,148 @@
+16:44:46.37
+9952fa0b
+User
+[Whitelist] Manual apply request for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel (force=false)
+2026-01-10 16:44:46.55
+9952fa0b
+User
+[DiscountService] Derived treasury for mainnet: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-10 16:44:47.88
+9952fa0b
+User
+[DiscountService] Trying WASM RPC via Resolver...
+2026-01-10 16:44:48.58
+9952fa0b
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 16:44:48.58
+9952fa0b
+User
+[DiscountService] WASM RPC connected via Resolver
+2026-01-10 16:44:48.58
+9952fa0b
+User
+[DiscountService] RPC connected
+2026-01-10 16:44:48.58
+9952fa0b
+User
+[DiscountService] Treasury: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-10 16:44:48.58
+9952fa0b
+User
+[DiscountService] Initialized for collection KUDIPLOMA
+2026-01-10 16:44:48.72
+9952fa0b
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 16:44:48.72
+9952fa0b
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 16:44:48.72
+9952fa0b
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"utxoEntry": {
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"transactionId": "062bc49169d9794da682e22a73f15e163b72c947d8b3f90f6072e5215c87f33f",
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"amount": "20000000",
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"blockDaaScore": "326443660",
+2026-01-10 16:44:48.77
+9952fa0b
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 16:44:48.77
+9952fa0b
+User
+}
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"version": 0,
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"isCoinbase": false
+2026-01-10 16:44:48.77
+9952fa0b
+User
+}
+2026-01-10 16:44:48.77
+9952fa0b
+User
+},
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"scriptPublicKey": {
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"index": 0
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"outpoint": {
+2026-01-10 16:44:48.77
+9952fa0b
+User
+[DiscountService] Filtered 251 UTXOs -> 251 signable P2PK UTXOs
+2026-01-10 16:44:48.77
+9952fa0b
+User
+},
+2026-01-10 16:44:48.77
+9952fa0b
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 16:44:48.79
+9952fa0b
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-10 16:44:48.85
+9952fa0b
+User
+[DiscountService] Waiting for commit confirmation...
+2026-01-10 16:44:48.85
+9952fa0b
+User
+[DiscountService] Commit tx: 77bca06458d9a58d5ccda9f9e10f4be4b376eff58b1954b61763c3b05dd6792f
+2026-01-10 16:44:49.18
+9952fa0b
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 16:44:49.32
+9952fa0b
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 16:44:49.32
+9952fa0b
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 16:44:49.49
+9952fa0b
+User
+12:44:49 AM [express] GET /api/whitelist/status 304 in 476ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 16:44:49.49
+9952fa0b
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-10 16:44:51.94
+9952fa0b
+User
+[DiscountService] Filtered 250 UTXOs -> 250 signable P2PK UTXOs
