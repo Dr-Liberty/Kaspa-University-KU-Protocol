@@ -1,0 +1,124 @@
+-10 16:39:32.96
+fbc92f92
+User
+},
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"utxoEntry": {
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 16:39:32.96
+fbc92f92
+User
+},
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"scriptPublicKey": {
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"transactionId": "2c149f59345da1a73b3da7926e9d8674925df3be0df922dd798d2ee564b5e1eb",
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"amount": "20000000",
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"blockDaaScore": "326432978",
+2026-01-10 16:39:32.96
+fbc92f92
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 16:39:32.96
+fbc92f92
+User
+"index": 0
+2026-01-10 16:39:32.97
+fbc92f92
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-10 16:39:32.98
+fbc92f92
+User
+[DiscountService] Failed to apply discount: Commit failed: Cannot read properties of undefined (reading 'submit')
+2026-01-10 16:39:32.98
+fbc92f92
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:14344)
+2026-01-10 16:39:32.98
+fbc92f92
+User
+at async /home/runner/workspace/dist/index.cjs:1188:80308
+2026-01-10 16:39:32.98
+fbc92f92
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-10 16:39:32.98
+fbc92f92
+User
+[DiscountService] Full error: Error: Commit failed: Cannot read properties of undefined (reading 'submit')
+2026-01-10 16:39:32.98
+fbc92f92
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11359)
+2026-01-10 16:39:32.98
+fbc92f92
+User
+12:39:32 AM [express] POST /api/whitelist/apply 500 in 4286ms :: {"success":false,"error":"Commit failed: Cannot read properties of undefined (reading 'submit')"}
+2026-01-10 16:39:36.46
+fbc92f92
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 16:39:36.49
+5269d407
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:39:36.49
+5269d407
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:39:36.49
+5269d407
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-10 16:39:36.60
+fbc92f92
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 16:39:36.60
+fbc92f92
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 16:39:36.68
+5269d407
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-10 16:39:36.78
+fbc92f92
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-10 16:39:36.79
+fbc92f92
+User
+12:39:36 AM [express] GET /api/whitelist/status 304 in 483ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 16:39:37.38
+5269d407
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:39:37.48
+5269d407
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:39:37.48
+5269d407
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:39:37.48
+5269d407
+User
+[Kasia Client] 

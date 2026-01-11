@@ -494,8 +494,10 @@ class DiscountService {
     }
     console.log(`[DiscountService] Commit uses ${commitUsedUtxoIds.size} UTXOs`);
     
-    const signedCommit = commitTx.sign([this.privateKey]);
-    const commitResult = await this.submitTransaction(signedCommit);
+    // sign() modifies transaction in place and may not return a value
+    // Use commitTx directly after signing
+    commitTx.sign([this.privateKey]);
+    const commitResult = await this.submitTransaction(commitTx);
     
     if (!commitResult.success) {
       throw new Error(`Commit failed: ${commitResult.error}`);
