@@ -527,6 +527,11 @@ class DiscountService {
       throw new Error(`P2SH UTXO not found after ${maxAttempts} attempts - commit tx: ${commitResult.txHash}`);
     }
 
+    // Get P2SH script as hex string for WASM SDK
+    const p2shScript = script.createPayToScriptHashScript();
+    const p2shScriptHex = p2shScript.toString();
+    console.log(`[DiscountService] P2SH script hex: ${p2shScriptHex.substring(0, 40)}...`);
+    
     const revealEntries = revealUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
       // blockDaaScore must be BigInt for WASM SDK
@@ -541,8 +546,8 @@ class DiscountService {
         outpoint: { transactionId, index },
         utxoEntry: {
           amount: BigInt(amount),
-          // WASM SDK requires scriptPublicKey as object: { script, version }
-          scriptPublicKey: { script: script.createPayToScriptHashScript().toString(), version: 0 },
+          // priorityEntries require raw hex string - not normalized like regular entries
+          scriptPublicKey: p2shScriptHex,
           blockDaaScore,
           isCoinbase,
         },

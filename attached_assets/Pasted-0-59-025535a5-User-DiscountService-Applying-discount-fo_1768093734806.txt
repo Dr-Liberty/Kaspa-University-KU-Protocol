@@ -1,0 +1,128 @@
+0.59
+025535a5
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 17:08:20.59
+025535a5
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 17:08:20.72
+025535a5
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 17:08:20.72
+025535a5
+User
+}
+2026-01-10 17:08:20.72
+025535a5
+User
+},
+2026-01-10 17:08:20.72
+025535a5
+User
+"utxoEntry": {
+2026-01-10 17:08:20.72
+025535a5
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 17:08:20.72
+025535a5
+User
+[DiscountService] Filtered 247 UTXOs -> 247 signable P2PK UTXOs
+2026-01-10 17:08:20.72
+025535a5
+User
+}
+2026-01-10 17:08:20.72
+025535a5
+User
+"outpoint": {
+2026-01-10 17:08:20.72
+025535a5
+User
+"amount": "20000000",
+2026-01-10 17:08:20.72
+025535a5
+User
+"blockDaaScore": "326424196",
+2026-01-10 17:08:20.72
+025535a5
+User
+"scriptPublicKey": {
+2026-01-10 17:08:20.72
+025535a5
+User
+"transactionId": "11e78069f3391fd4cd4f1f950e4b11cc81a256a9f6cbe91b01a2c5e74b51d10a",
+2026-01-10 17:08:20.72
+025535a5
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 17:08:20.72
+025535a5
+User
+"version": 0,
+2026-01-10 17:08:20.72
+025535a5
+User
+"isCoinbase": false
+2026-01-10 17:08:20.72
+025535a5
+User
+"index": 0
+2026-01-10 17:08:20.72
+025535a5
+User
+},
+2026-01-10 17:08:20.73
+025535a5
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-10 17:08:20.79
+025535a5
+User
+[DiscountService] Waiting for P2SH UTXO to appear...
+2026-01-10 17:08:20.79
+025535a5
+User
+[DiscountService] Commit tx: 10e4ad2355294a162faf7c49a679ffb8053ea34922105d7553d1fe02a4e45679
+2026-01-10 17:08:22.91
+025535a5
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-10 17:08:23.04
+025535a5
+User
+[DiscountService] Filtered 246 UTXOs -> 246 signable P2PK UTXOs
+2026-01-10 17:08:23.04
+025535a5
+User
+[DiscountService] Reveal has 246 fresh treasury UTXOs (filtered 0)
+2026-01-10 17:08:23.05
+025535a5
+User
+[DiscountService] Failed to apply discount: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-10 17:08:23.05
+025535a5
+User
+[DiscountService] Full error: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-10 17:08:23.06
+025535a5
+User
+1:08:23 AM [express] POST /api/whitelist/apply 500 in 3019ms :: {"success":false,"error":"Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)"}
+2026-01-10 17:08:24.77
+025535a5
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 17:08:24.94
+025535a5
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 17:08:24.94
+025535a5
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 17:08:25.11
+025535a5
+User
+[Whitelist] Status for kasp
