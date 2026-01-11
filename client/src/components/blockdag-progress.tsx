@@ -167,7 +167,7 @@ function CourseBlock({
   );
 }
 
-type DiplomaMintStep = "idle" | "reserving" | "signing" | "confirming" | "success" | "error";
+type DiplomaMintStep = "idle" | "reserving" | "preview" | "signing" | "confirming" | "success" | "error";
 
 interface DiplomaReservation {
   reservationId: string;
@@ -197,6 +197,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
   const [reservation, setReservation] = useState<DiplomaReservation | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
+  const [verifiedTokenId, setVerifiedTokenId] = useState<string | null>(null);
   const [expiryCountdown, setExpiryCountdown] = useState<number>(0);
   const [whitelistInProgress, setWhitelistInProgress] = useState(false);
 
@@ -253,21 +254,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         expiresAt: data.expiresAt,
         imageUrl: data.imageUrl,
       });
-      setMintStep("signing");
-      try {
-        await apiRequest("POST", `/api/nft/signing/${data.reservationId}`);
-        const txHash = await signKRC721Mint(data.inscriptionJson);
-        setMintTxHash(txHash);
-        setMintStep("confirming");
-        confirmMutation.mutate({ reservationId: data.reservationId, mintTxHash: txHash });
-      } catch (err: any) {
-        console.error("[DiplomaMint] Signing failed:", err);
-        try {
-          await apiRequest("POST", `/api/nft/cancel/${data.reservationId}`);
-        } catch {}
-        setMintError(err.message || "Failed to sign transaction");
-        setMintStep("error");
-      }
+      setMintStep("preview");
     },
     onError: (err: any) => {
       setMintError(err.message || "Failed to reserve diploma");
@@ -329,7 +316,136 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     setReservation(null);
     setMintError(null);
     setMintTxHash(null);
+    setVerifiedTokenId(null);
     setShowMintDialog(false);
+  };
+
+  const handleProceedToSign = async () => {
+    if (!reservation || !wallet) return;
+    
+    setMintStep("signing");
+    try {
+      // Get baseline: record existing token IDs before minting
+      const isTestnet = import.meta.env.VITE_KASPA_NETWORK === "testnet-10";
+      const network = isTestnet ? "testnet-10" : "mainnet";
+      const indexerUrl = isTestnet ? "https://testnet-10.krc721.stream" : "https://mainnet.krc721.stream";
+      const verifyUrl = `${indexerUrl}/api/v1/krc721/${network}/address/${encodeURIComponent(wallet)}/${encodeURIComponent("KUDIPLOMA")}`;
+      
+      let existingTokenIds: Set<string> = new Set();
+      let baselineSuccess = false;
+      
+      // Try to get baseline up to 3 times
+      for (let baselineAttempt = 0; baselineAttempt < 3; baselineAttempt++) {
+        try {
+          const baselineResponse = await fetch(verifyUrl);
+          if (baselineResponse.ok) {
+            const baselineData = await baselineResponse.json();
+            if (baselineData.message === "success" && Array.isArray(baselineData.result)) {
+              baselineData.result.forEach((nft: any) => {
+                if (nft.tokenId) existingTokenIds.add(String(nft.tokenId));
+              });
+              baselineSuccess = true;
+              break;
+            }
+          }
+        } catch (e) {
+          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      if (!baselineSuccess) {
+        // Cannot proceed without baseline - cancel and show error
+        try {
+          await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+        } catch {}
+        setMintError(
+          "Could not connect to the KRC-721 indexer to verify your transaction. " +
+          "Please try again in a few minutes."
+        );
+        setMintStep("error");
+        return;
+      }
+      
+      console.log("[DiplomaMint] Baseline token IDs:", Array.from(existingTokenIds));
+      
+      await apiRequest("POST", `/api/nft/signing/${reservation.reservationId}`);
+      const txHash = await signKRC721Mint(reservation.inscriptionJson);
+      setMintTxHash(txHash);
+      setMintStep("confirming");
+      
+      // Poll the KRC-721 indexer to verify a NEW token was added
+      let verified = false;
+      let newTokenId: string | null = null;
+      const maxAttempts = 12; // 60 seconds total (5s intervals)
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          const response = await fetch(verifyUrl);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.message === "success" && Array.isArray(data.result)) {
+              // Check for any NEW token that wasn't in the baseline
+              for (const nft of data.result) {
+                if (nft.tokenId && !existingTokenIds.has(String(nft.tokenId))) {
+                  verified = true;
+                  newTokenId = String(nft.tokenId);
+                  setVerifiedTokenId(newTokenId);
+                  console.log("[DiplomaMint] New token detected:", newTokenId);
+                  break;
+                }
+              }
+              if (verified) break;
+            }
+          }
+        } catch (e) {
+          console.log(`[DiplomaMint] Verification attempt ${attempt + 1} failed, retrying...`);
+        }
+      }
+      
+      if (!verified) {
+        // Cancel the reservation since verification failed
+        try {
+          await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+        } catch {}
+        
+        setMintError(
+          "Could not verify your mint on-chain. Your transaction may still be processing. " +
+          "Check your KasWare wallet for your KUDIPLOMA. If the mint failed, you can use " +
+          "Settings > Add-ons > 'Retrieve Incomplete KRC20 UTXOs' to recover your funds."
+        );
+        setMintStep("error");
+        return;
+      }
+      
+      // Only confirm with server after on-chain verification
+      confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: txHash });
+    } catch (err: any) {
+      console.error("[DiplomaMint] Signing failed:", err);
+      try {
+        await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+      } catch {}
+      setMintError(err.message || "Failed to sign transaction");
+      setMintStep("error");
+    }
+  };
+
+  const handleCancelMint = async () => {
+    if (!reservation) {
+      resetMintState();
+      return;
+    }
+    
+    try {
+      await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+    } catch {}
+    
+    toast({
+      title: "Mint Cancelled",
+      description: "You can try minting again when ready.",
+    });
+    resetMintState();
   };
 
   const handleGetWhitelisted = async () => {
@@ -947,6 +1063,67 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
               </>
             )}
 
+            {mintStep === "preview" && reservation && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3">
+                  <p className="text-sm font-medium text-yellow-500 flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Review Before Signing
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    You're about to sign a KRC-721 mint transaction. Your wallet will show a "Batch Transfer" 
+                    prompt - this is normal for the commit-reveal inscription process.
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+                  <div className="text-center pb-2 border-b border-border">
+                    <span className="text-sm font-medium">Transaction Details</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Collection</span>
+                    <Badge variant="outline">KUDIPLOMA</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Token ID</span>
+                    <Badge variant="secondary">Random (assigned on-chain)</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Est. Cost</span>
+                    <span className="font-medium text-primary">~10 KAS</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Process</span>
+                    <span className="text-xs text-muted-foreground">Commit + Reveal (batched)</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Reservation expires in {formatTime(expiryCountdown)}</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelMint} 
+                    className="flex-1"
+                    data-testid="button-cancel-preview"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleProceedToSign} 
+                    className="flex-1 gap-2"
+                    data-testid="button-approve-wallet"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Approve in Wallet
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {(mintStep === "reserving" || mintStep === "signing" || mintStep === "confirming") && (
               <div className="space-y-4">
                 <div className="flex flex-col items-center gap-4 py-4">
@@ -963,8 +1140,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {mintStep === "reserving" && "Preparing your diploma NFT slot."}
-                      {mintStep === "signing" && `Token #${reservation?.tokenId ?? "..."}`}
-                      {mintStep === "confirming" && "Please wait while we confirm your transaction."}
+                      {mintStep === "signing" && "Please confirm in your KasWare wallet"}
+                      {mintStep === "confirming" && "Verifying on-chain..."}
                     </p>
                   </div>
                 </div>
@@ -1000,10 +1177,23 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium">KUDIPLOMA #{reservation?.tokenId}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your diploma has been permanently recorded on the Kaspa blockchain.
+                    <p className="font-medium">
+                      {verifiedTokenId ? `KUDIPLOMA #${verifiedTokenId}` : "KUDIPLOMA Minted"}
                     </p>
+                    <p className="text-sm text-muted-foreground">
+                      Your diploma has been verified on the Kaspa blockchain.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Token ID</span>
+                    <Badge variant="outline">#{verifiedTokenId || "Verified"}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Collection</span>
+                    <span className="font-medium">KUDIPLOMA</span>
                   </div>
                 </div>
                 
@@ -1013,6 +1203,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-sm text-sky-500 hover:underline"
+                    data-testid="link-mint-tx"
                   >
                     <ExternalLink className="h-4 w-4" />
                     View Transaction
