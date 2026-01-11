@@ -1,0 +1,70 @@
+ser
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:54:19.39
+9af6ddbf
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 10:54:19.39
+9af6ddbf
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 10:54:19.56
+9af6ddbf
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 10:54:19.57
+9af6ddbf
+User
+6:54:19 PM [express] GET /api/whitelist/status 304 in 632ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 10:54:21.69
+9af6ddbf
+User
+[MintService] Checking on-chain ownership at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:54:21.83
+9af6ddbf
+User
+[MintService] Wallet kaspa:qrmzgsh8chv72q... does NOT own any KUDIPLOMA NFTs on-chain
+2026-01-11 10:54:22.05
+9af6ddbf
+User
+[Diploma] Reserve failed: malformed array literal: "fc4d8738-94a7-411b-b09f-b630792ffd95"
+2026-01-11 10:54:22.05
+9af6ddbf
+User
+6:54:22 PM [express] POST /api/diploma/reserve 500 in 668ms :: {"error":"Failed to reserve diploma","message":"malformed array literal: \"fc4d8738-94a7-411b-b09f-b630792ffd95\""}
+2026-01-11 10:54:24.82
+9af6ddbf
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:54:24.96
+9af6ddbf
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 10:54:24.96
+9af6ddbf
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 10:54:25.15
+9af6ddbf
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 10:54:25.15
+9af6ddbf
+User
+6:54:25 PM [express] GET /api/whitelist/status 304 in 480ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 10:54:30.44
+9af6ddbf
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:54:30.61
+9af6ddbf
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 10:54:30.61
+9af6ddbf
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 10:54:30.79
+9af6ddbf
+User
+[White
