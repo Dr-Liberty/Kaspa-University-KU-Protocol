@@ -432,11 +432,20 @@ class DiscountService {
     const entries = utxos.map((utxo: any) => {
       // Handle different UTXO structures from RPC
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? utxo.satoshis ?? BigInt(0);
-      // scriptPublicKey can be nested: {version, scriptPublicKey} or a flat hex string
+      // WASM SDK requires scriptPublicKey as object: { script: hexString, version: 0 }
+      // RPC returns either {version, scriptPublicKey} object or flat hex string
       const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
-      const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
-        ? spkRaw.scriptPublicKey 
-        : spkRaw;
+      let scriptPublicKey: { script: string; version: number };
+      if (typeof spkRaw === 'object' && spkRaw.scriptPublicKey) {
+        // RPC object format: { version, scriptPublicKey }
+        scriptPublicKey = { script: spkRaw.scriptPublicKey, version: spkRaw.version ?? 0 };
+      } else if (typeof spkRaw === 'object' && spkRaw.script) {
+        // Already correct format
+        scriptPublicKey = { script: spkRaw.script, version: spkRaw.version ?? 0 };
+      } else {
+        // Flat hex string - wrap in object with version 0
+        scriptPublicKey = { script: spkRaw, version: 0 };
+      }
       // blockDaaScore must be BigInt for WASM SDK
       const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
       const blockDaaScore = BigInt(blockDaaScoreRaw);
@@ -517,7 +526,8 @@ class DiscountService {
         outpoint: { transactionId, index },
         utxoEntry: {
           amount: BigInt(amount),
-          scriptPublicKey: script.createPayToScriptHashScript().toString(),
+          // WASM SDK requires scriptPublicKey as object: { script, version }
+          scriptPublicKey: { script: script.createPayToScriptHashScript().toString(), version: 0 },
           blockDaaScore,
           isCoinbase,
         },
@@ -536,11 +546,16 @@ class DiscountService {
     
     const treasuryEntries = filteredUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
-      // scriptPublicKey can be nested: {version, scriptPublicKey} or a flat hex string
+      // WASM SDK requires scriptPublicKey as object: { script: hexString, version: 0 }
       const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
-      const scriptPublicKey = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
-        ? spkRaw.scriptPublicKey 
-        : spkRaw;
+      let scriptPublicKey: { script: string; version: number };
+      if (typeof spkRaw === 'object' && spkRaw.scriptPublicKey) {
+        scriptPublicKey = { script: spkRaw.scriptPublicKey, version: spkRaw.version ?? 0 };
+      } else if (typeof spkRaw === 'object' && spkRaw.script) {
+        scriptPublicKey = { script: spkRaw.script, version: spkRaw.version ?? 0 };
+      } else {
+        scriptPublicKey = { script: spkRaw, version: 0 };
+      }
       // blockDaaScore must be BigInt for WASM SDK
       const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
       const blockDaaScore = BigInt(blockDaaScoreRaw);

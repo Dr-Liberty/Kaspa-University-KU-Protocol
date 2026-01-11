@@ -1,0 +1,132 @@
+01-10 16:30:54.49
+5269d407
+User
+12:30:54 AM [express] GET /api/whitelist/status 304 in 467ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-10 16:30:54.83
+5269d407
+User
+[DiscountService] Trying WASM RPC via Resolver...
+2026-01-10 16:30:55.45
+5269d407
+User
+[DiscountService] WASM RPC connected via Resolver
+2026-01-10 16:30:55.45
+5269d407
+User
+[DiscountService] Treasury: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-10 16:30:55.45
+5269d407
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 16:30:55.45
+5269d407
+User
+[DiscountService] RPC connected
+2026-01-10 16:30:55.45
+5269d407
+User
+[DiscountService] Initialized for collection KUDIPLOMA
+2026-01-10 16:30:55.59
+5269d407
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 16:30:55.59
+5269d407
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 16:30:55.59
+5269d407
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 16:30:55.66
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 16:30:55.87
+5269d407
+User
+"transactionId": "d3db8a466bebe1db162118934138d40edbfee1c40ef046b05b1da34a50f22b2a",
+2026-01-10 16:30:55.87
+5269d407
+User
+}
+2026-01-10 16:30:55.87
+5269d407
+User
+"amount": "20000000",
+2026-01-10 16:30:55.87
+5269d407
+User
+"isCoinbase": false
+2026-01-10 16:30:55.87
+5269d407
+User
+"blockDaaScore": "326429561",
+2026-01-10 16:30:55.87
+5269d407
+User
+"utxoEntry": {
+2026-01-10 16:30:55.87
+5269d407
+User
+[DiscountService] UTXO structure sample: {
+2026-01-10 16:30:55.87
+5269d407
+User
+"version": 0,
+2026-01-10 16:30:55.87
+5269d407
+User
+}
+2026-01-10 16:30:55.87
+5269d407
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-10 16:30:55.87
+5269d407
+User
+},
+2026-01-10 16:30:55.87
+5269d407
+User
+},
+2026-01-10 16:30:55.87
+5269d407
+User
+"outpoint": {
+2026-01-10 16:30:55.87
+5269d407
+User
+"index": 0
+2026-01-10 16:30:55.87
+5269d407
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-10 16:30:55.87
+5269d407
+User
+[DiscountService] Filtered 251 UTXOs -> 251 signable P2PK UTXOs
+2026-01-10 16:30:55.87
+5269d407
+User
+"scriptPublicKey": {
+2026-01-10 16:30:55.89
+5269d407
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-10 16:30:55.90
+5269d407
+User
+[DiscountService] Failed to apply discount: (consensus core sign()) The transaction is partially signed
+2026-01-10 16:30:55.90
+5269d407
+User
+[DiscountService] Full error: (consensus core sign()) The transaction is partially signed
+2026-01-10 16:30:55.90
+5269d407
+User
+12:30:55 AM [express] POST /api/whitelist/apply 500 in 3341ms :: {"success":false,"error":"(consensus core sign()) The transaction is partially signed"}
+2026-01-10 16:30:57.13
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=ka
