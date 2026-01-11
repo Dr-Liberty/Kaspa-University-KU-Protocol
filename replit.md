@@ -48,6 +48,11 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-11**: Fixed KRC-721 user-signed minting with proper KasWare API:
+    - **Primary method**: `submitCommitReveal("KSPR_KRC721", inscriptionJson)` - handles full commit-reveal cycle
+    - **Fallback method**: `signKRC20Transaction(inscriptionJson, 5)` - type=5 for KRC-721 (type=3 is KRC-20 only)
+    - Added TypeScript type declarations for `submitCommitReveal` method
+    - Inscription JSON format: `{p: "krc-721", op: "mint", tick: "KUDIPLOMA", to: walletAddress}`
 - **2026-01-11**: Fixed P2PK script detection for treasury UTXO classification:
     - Kaspa uses 32-byte x-only Schnorr pubkeys (not 33-byte compressed like Bitcoin)
     - P2PK scripts are 68 hex chars: `20` (length 32) + 32-byte pubkey + `ac` (OP_CHECKSIG)

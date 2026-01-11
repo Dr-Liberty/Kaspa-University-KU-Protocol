@@ -1,0 +1,180 @@
+2026-01-11 09:20:15.74
+41ba7f45
+User
+}
+2026-01-11 09:20:15.74
+41ba7f45
+User
+[Kaspa] Found 238 UTXOs in treasury
+2026-01-11 09:20:15.75
+41ba7f45
+User
+[UTXO] Reserved 1 UTXOs (200000000 sompi) for reward:virtual-state:uugf3786
+2026-01-11 09:20:15.75
+41ba7f45
+User
+- scriptPublicKey.script: 20f2eb7a1a44c5c11998cc0ebf335a... (len: 68)
+2026-01-11 09:20:15.75
+41ba7f45
+User
+[Kaspa] RPC entry keys: [ 'address', 'outpoint', 'utxoEntry' ]
+2026-01-11 09:20:15.75
+41ba7f45
+User
+[Kaspa] Total treasury balance: 237.9282 KAS
+2026-01-11 09:20:15.75
+41ba7f45
+User
+[Kaspa] scriptPublicKey keys: [ 'version', 'scriptPublicKey' ]
+2026-01-11 09:20:15.75
+41ba7f45
+User
+- address: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-11 09:20:15.75
+41ba7f45
+User
+[Kaspa] Output 10000000 sompi too low for KIP-0009, bumping to 10100000 sompi (0.101 KAS)
+2026-01-11 09:20:16.67
+41ba7f45
+User
+[Kaspa] WASM RpcClient connected
+2026-01-11 09:20:16.67
+41ba7f45
+User
+[Kaspa] Processing transaction 1/1...
+2026-01-11 09:20:16.67
+41ba7f45
+User
+[Kaspa] Submitting via WASM SDK...
+2026-01-11 09:20:16.67
+41ba7f45
+User
+[Kaspa] Transaction 1 signed
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[UTXO] Marked 1 UTXOs as spent in tx 6ce8e7af912bcd86...
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[Kaspa] WASM RpcClient disconnected
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[Kaspa] Reward sent: 6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf, proof: 35d0f693914dde98b224394937f9d06ec2078b6ef0f8191f60c41fc425a1bc74
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[Kaspa] All 1 transaction(s) submitted successfully
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[Kaspa] Transaction 1 confirmed: 6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf
+2026-01-11 09:20:16.80
+41ba7f45
+User
+[Kaspa] Reward sent: 0.1 KAS for lesson virtual-state (score: 100)
+2026-01-11 09:20:16.89
+41ba7f45
+User
+5:20:16 PM [express] POST /api/rewards/3a56d144-b65e-422d-bcdc-b1ccdd84292b/claim 200 in 3173ms :: {"success":true,"txHash":"6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf","amount":0.1,"status":"confirming"}
+2026-01-11 09:20:16.89
+41ba7f45
+User
+[Claim] Course reward submitted: 0.1 KAS for Virtual State, txHash: 6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf
+2026-01-11 09:20:17.01
+41ba7f45
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.01
+41ba7f45
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 09:20:17.01
+41ba7f45
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.02
+41ba7f45
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 09:20:17.27
+41ba7f45
+User
+5:20:17 PM [express] GET /api/user 200 in 184ms :: {"id":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","displayName":null,"avatarUrl":null,"totalKasEarned":0.4,"createdAt":"2026-01-10T16:19:32.680Z","whitelistedAt":"2026-01-11T17:18:47.076Z","whitelistTxHash":"e5d768656039a51a877e29153b93bd30ff2c43d77431e62515c3c4cbec81a066","isWhitelisted":true}
+2026-01-11 09:20:17.29
+41ba7f45
+User
+5:20:17 PM [express] GET /api/rewards 200 in 207ms :: [{"id":"a9a3ea57-1bb2-4a3f-a7de-171616db49d6","courseId":"network-scaling","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"claimed","txHash":"914ccbf86299e782acc294fd2ed5a53b31f910b953f7f5499c492a6dc7d75b73","txConfirmed":true,"completedAt":"2026-01-10T17:10:27.240Z","claimedAt":"2026-01-10T17:20:44.036Z","courseTitle":"Network & Scaling"},{"id":"e41eecc1-4d0f-47ee-9374-becdd46aca76","courseId":"finality-security","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"claimed","txHash":"52f358ac96b6adf9f9362ece43a8ed524b0da49ecb65e8066f23865fde128797","txConfirmed":true,"completedAt":"2026-01-10T17:09:59.847Z","claimedAt":"2026-01-10T17:20:53.516Z","courseTitle":"Finality & Security"},{"id":"9c2b47c5-d4c7-4ec7-bce4-f15baca4d620","courseId":"timestamps-median-time","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"claimed","txHash":"bfc237b5dd8d446dfe4a06f163e855f707fbda3d42d6cd6da8794be6d956276b","txConfirmed":true,"completedAt":"2026-01-10T17:09:24.038Z","claimedAt":"2026-01-11T17:20:07.468Z","courseTitle":"Timestamps & Median Time"},{"id":"3a56d144-b65e-422d-bcdc-b1ccdd84292b","courseId":"virtual-state","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"confirming","txHash":"6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf","txConfirmed":false,"completedAt":"2026-01-10T17:08:55.158Z","claimedAt":"2026-01-11T17:20:16.800Z","courseTitle":"Virtual State"},{"id":"99407a25-840d-4017-bb49-08cbef924634","courseId":"anticone-finalization","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:08:30.473Z","claimedAt":null,"courseTitle":"Anticone Finalization & Safe Pruning"},{"id":"f5f839a3-d6fd-4703-a42d-13f881b640f3","courseId":"pruning-system","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:08:00.751Z","claimedAt":null,"courseTitle":"Pruning System"},{"id":"dabe55ca-a37a-4bd2-9b4c-018ce8d7a781","courseId":"transaction-processing","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:07:25.219Z","claimedAt":null,"courseTitle":"Transaction Processing"},{"id":"9bab1118-95f0-46c1-a111-8a47391e88bd","courseId":"difficulty-adjustment","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:06:33.614Z","claimedAt":null,"courseTitle":"Difficulty Adjustment (DAA)"},{"id":"59ebbaaf-af6f-4844-b861-3ced2e0e90fa","courseId":"block-processing","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:05:56.232Z","claimedAt":null,"courseTitle":"Block Processing"},{"id":"2a60dc89-945b-432c-87e2-8a4f976d1bc1","courseId":"consensus-parameters","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:05:04.458Z","claimedAt":null,"courseTitle":"Consensus Parameters"},{"id":"10705443-2431-4c78-8415-03cb3cf9e7b8","courseId":"ghostdag-mechanics","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:02:29.560Z","claimedAt":null,"courseTitle":"GHOSTDAG Mechanics"},{"id":"151c3c9e-d342-495f-9a84-c31cf139b532","courseId":"core-data-structures","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T17:00:47.880Z","claimedAt":null,"courseTitle":"Core Data Structures"},{"id":"bb0bde81-506c-4331-a77a-4de4ecc63603","courseId":"foundational-concepts","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:59:02.957Z","claimedAt":null,"courseTitle":"Foundational Concepts"},{"id":"d386f572-e662-4cb3-87b6-59ac183bc439","courseId":"dag-and-kaspa","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:56:51.194Z","claimedAt":null,"courseTitle":"DAG and Kaspa: Understanding the Structure"},{"id":"5e55ea65-9799-48ad-89de-ca9631e9fb8e","courseId":"l2-on-kaspa","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:52:18.829Z","claimedAt":null,"courseTitle":"Layer 2 on Kaspa: Smart Contracts & Beyond"},{"id":"3ffcdb03-1281-4ede-8362-d04873b594a4","courseId":"krc721-nft-standard","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:49:50.310Z","claimedAt":null,"courseTitle":"KRC-721: NFT Standard on Kaspa"},{"id":"4959e239-f59f-4db4-a26c-6123a5d7a43b","courseId":"dag-terminology","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:48:01.580Z","claimedAt":null,"courseTitle":"DAG Terminology"},{"id":"ffd4d1cd-005b-4651-9547-3e188d4409f1","courseId":"kasia-protocol","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:43:40.038Z","claimedAt":null,"courseTitle":"Kasia Protocol: Encrypted P2P Messaging"},{"id":"3658a1d6-eaf7-4cb9-83d4-552029fbd9d9","courseId":"k-protocol","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:39:48.493Z","claimedAt":null,"courseTitle":"K Protocol: Decentralized Social Media"},{"id":"a12fb158-bf2e-42bd-a35b-3b57b20cdb96","courseId":"ku-protocol","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:37:13.000Z","claimedAt":null,"courseTitle":"KU Protocol: On-Chain Achievements"},{"id":"7dafc8de-c410-4072-999f-62d1f2da372b","courseId":"self-custody","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:35:24.582Z","claimedAt":null,"courseTitle":"Self-Custody & Hardware Wallets"},{"id":"aa0ed8aa-5091-4e7a-8f75-33b522832e81","courseId":"sound-money","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:34:22.439Z","claimedAt":null,"courseTitle":"Sound Money & Monetary Debasement"},{"id":"a6cd5e43-5d51-4dc8-a360-d8a2bd94dcc1","courseId":"bitcoin-vs-kaspa","userId":"7629bcb4-29b1-4e82-be8f-995ed5f8b870","walletAddress":"kaspa:qr2xcc0halm52mdy6090r6xhq4965mrwhngld4lhnw07ycqj7m4scuugf3786","kasAmount":0.1,"averageScore":100,"status":"pending","txHash":null,"txConfirmed":null,"completedAt":"2026-01-10T16:29:49.383Z","claimedAt":null,"courseTitle":"Bitcoin vs Kaspa: The Next Evolution"}]
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 09:20:17.37
+41ba7f45
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-11 09:20:17.40
+41ba7f45
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-11 09:20:17.67
+41ba7f45
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-11 09:20:19.43
+41ba7f45
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-11 09:20:20.07
+41ba7f45
+User
+[Kaspa] Verifying transaction: 6ce8e7af912bcd86efd0189f8bd2f912055755ec8ff1fb2af2bfabf6a00bc1cf
+2026-01-11 09:20:20.57
+41ba7f45
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-11 09:20:20.64
+41ba7f45
+User
+[Kaspa] TX verified via explorer API: 6ce8e7af912bcd86

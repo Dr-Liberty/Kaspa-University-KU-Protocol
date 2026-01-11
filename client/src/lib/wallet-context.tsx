@@ -16,6 +16,17 @@ declare global {
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
       signKRC20Transaction: (inscribeJsonString: string, type: number) => Promise<string>;
+      // KRC-721 buildScript API for proper commit-reveal flow
+      buildScript: (params: { type: string; data: string }) => Promise<{ script: string; p2shAddress: string }>;
+      // KRC-721 submitCommitReveal API - handles full commit-reveal cycle for inscriptions
+      // type: "KRC20" | "KNS" | "KSPR_KRC721"
+      // Returns both commit and reveal transaction IDs
+      submitCommitReveal: (
+        type: string,
+        data: string,
+        extraOutput?: Array<{ address: string; amount: number }>,
+        priorityFee?: number
+      ) => Promise<{ commitTxId: string; revealTxId: string }>;
       on: (event: string, callback: (...args: any[]) => void) => void;
       removeListener: (event: string, callback: (...args: any[]) => void) => void;
     };
@@ -359,20 +370,86 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
-    if (typeof window.kasware.signKRC20Transaction !== "function") {
-      throw new Error("Your KasWare wallet does not support KRC-721 minting. Please update to the latest version.");
-    }
+    console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
     
-    console.log("[Wallet] Signing KRC-721 mint transaction with inscription:", inscriptionJson);
+    // Log available wallet methods for debugging
+    const availableMethods = Object.keys(window.kasware).filter(
+      key => typeof (window.kasware as any)[key] === "function"
+    );
+    console.log("[Wallet] Available KasWare methods:", availableMethods.join(", "));
+    
     try {
       const parsed = JSON.parse(inscriptionJson);
-      console.log("[Wallet] Inscription ticker:", parsed.tick);
+      console.log("[Wallet] KRC-721 mint: ticker=" + parsed.tick + ", op=" + parsed.op + ", to=" + (parsed.to?.slice(0, 20) || "none"));
+      console.log("[Wallet] Protocol p=" + parsed.p);
     } catch {
       console.log("[Wallet] Could not parse inscription JSON");
     }
-    const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
-    console.log(`[Wallet] KRC-721 mint signed, txHash: ${txHash}`);
-    return txHash;
+    
+    // KRC-721 minting approaches in KasWare (priority order):
+    // 1. submitCommitReveal("KSPR_KRC721", data) - handles full commit-reveal cycle
+    // 2. signKRC20Transaction(data, 5) - type=5 for KRC-721 operations
+    
+    let lastError: Error | null = null;
+    
+    // Approach 1: submitCommitReveal with KSPR_KRC721 type
+    if (typeof window.kasware.submitCommitReveal === "function") {
+      console.log("[Wallet] Trying submitCommitReveal with KSPR_KRC721 type...");
+      try {
+        const result = await window.kasware.submitCommitReveal(
+          "KSPR_KRC721",
+          inscriptionJson,
+          [],  // extraOutput - no additional outputs needed
+          0    // priorityFee
+        );
+        console.log("[Wallet] submitCommitReveal SUCCESS:", result);
+        return result.revealTxId || result.commitTxId;
+      } catch (err: any) {
+        console.warn("[Wallet] submitCommitReveal failed:", err?.message || err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    } else {
+      console.log("[Wallet] submitCommitReveal not available in this wallet version");
+    }
+    
+    // Approach 2: signKRC20Transaction with type=5 (KRC-721 operations)
+    if (typeof window.kasware.signKRC20Transaction === "function") {
+      console.log("[Wallet] Trying signKRC20Transaction with type=5 (KRC-721)...");
+      try {
+        const txHash = await window.kasware.signKRC20Transaction(inscriptionJson, 5);
+        console.log("[Wallet] signKRC20Transaction type=5 SUCCESS:", txHash);
+        return txHash;
+      } catch (err: any) {
+        console.warn("[Wallet] signKRC20Transaction type=5 failed:", err?.message || err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+        
+        // If type=5 is rejected, provide clear error message
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes("unsupported") || errMsg.includes("protocol") || errMsg.includes("krc-20")) {
+          throw new Error(
+            "KRC-721 NFT minting is not yet supported by your KasWare wallet version. " +
+            "Please check for wallet updates or try again later. " +
+            "Error: " + errMsg
+          );
+        }
+      }
+    } else {
+      console.log("[Wallet] signKRC20Transaction not available in this wallet version");
+    }
+    
+    // If we get here, no method worked
+    if (lastError) {
+      throw new Error(
+        "NFT minting failed: " + lastError.message + ". " +
+        "Please ensure you have the latest KasWare wallet version."
+      );
+    }
+    
+    throw new Error(
+      "Your KasWare wallet does not support KRC-721 NFT minting. " +
+      "Available methods: " + availableMethods.join(", ") + ". " +
+      "Please update to the latest version."
+    );
   }, [isDemoMode]);
 
   const signKasiaHandshake = useCallback(async (recipientAddress: string, amountKas: number = 0.2): Promise<string> => {

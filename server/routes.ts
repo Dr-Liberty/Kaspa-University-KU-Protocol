@@ -1547,6 +1547,10 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, error: result.error });
       }
 
+      // Use the mainnet diploma image for success popup display
+      const MAINNET_DIPLOMA_IMAGE_CID = "QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4";
+      const diplomaImageUrl = `ipfs://${MAINNET_DIPLOMA_IMAGE_CID}`;
+      
       res.json({
         success: true,
         reservationId: result.reservation.id,
@@ -1555,6 +1559,7 @@ export async function registerRoutes(
         expiresAt: new Date(result.reservation.expiresAt).getTime(),
         courseId: "diploma",
         courseName: "Kaspa University Diploma",
+        imageUrl: diplomaImageUrl,
       });
     } catch (error: any) {
       console.error("[Diploma] Reserve failed:", error.message);

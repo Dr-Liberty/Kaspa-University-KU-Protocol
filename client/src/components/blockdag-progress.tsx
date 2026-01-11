@@ -174,6 +174,7 @@ interface DiplomaReservation {
   tokenId: number;
   inscriptionJson: string;
   expiresAt: number;
+  imageUrl?: string;
 }
 
 function getExplorerTxUrl(txHash: string): string {
@@ -250,6 +251,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         tokenId: data.tokenId,
         inscriptionJson: data.inscriptionJson,
         expiresAt: data.expiresAt,
+        imageUrl: data.imageUrl,
       });
       setMintStep("signing");
       try {
@@ -978,6 +980,21 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
 
             {mintStep === "success" && (
               <div className="space-y-4">
+                {reservation?.imageUrl && (
+                  <div className="flex justify-center">
+                    <div className="relative overflow-hidden rounded-lg border bg-muted/30 p-2">
+                      <img 
+                        src={reservation.imageUrl.startsWith("ipfs://") 
+                          ? `https://gateway.pinata.cloud/ipfs/${reservation.imageUrl.replace("ipfs://", "")}`
+                          : reservation.imageUrl
+                        }
+                        alt="KUDIPLOMA NFT"
+                        className="max-h-48 w-auto rounded object-contain"
+                        data-testid="img-diploma-nft"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
