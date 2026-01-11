@@ -52,7 +52,7 @@ interface WalletContextType {
   connectionError: string | null;
   sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
   getBalance: () => Promise<number>;
-  signKRC721Mint: (inscriptionJson: string) => Promise<string>;
+  signKRC721Mint: (inscriptionJson: string, feeKas?: number) => Promise<string>;
   signKasiaHandshake: (recipientAddress: string, amountKas?: number) => Promise<string>;
 }
 
@@ -365,7 +365,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return balance.total / 100000000;
   }, [isDemoMode]);
 
-  const signKRC721Mint = useCallback(async (inscriptionJson: string): Promise<string> => {
+  const signKRC721Mint = useCallback(async (inscriptionJson: string, feeKas?: number): Promise<string> => {
     if (isDemoMode) {
       throw new Error("NFT minting not available in demo mode. Please connect a real wallet.");
     }
@@ -374,7 +374,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
+    const totalFeeKas = feeKas || 20;
+    const feeSompi = Math.floor(totalFeeKas * 100000000);
+    
     console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
+    console.log("[Wallet] Total fee: " + totalFeeKas + " KAS (" + feeSompi + " sompi)");
     
     const availableMethods = Object.keys(window.kasware).filter(
       key => typeof (window.kasware as any)[key] === "function"
@@ -446,13 +450,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     // Approach 3: submitCommitReveal with KSPR_KRC721 type (older API)
     if (typeof window.kasware.submitCommitReveal === "function") {
-      console.log("[Wallet] Trying submitCommitReveal with KSPR_KRC721 type...");
+      console.log("[Wallet] Trying submitCommitReveal with KSPR_KRC721 type, fee:", feeSompi);
       try {
         const result = await window.kasware.submitCommitReveal(
           "KSPR_KRC721",
           inscriptionJson,
           [],
-          0
+          feeSompi
         );
         console.log("[Wallet] submitCommitReveal SUCCESS:", result);
         return result.revealTxId || result.commitTxId;

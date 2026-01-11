@@ -1,0 +1,78 @@
+40
+b1039f21
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 10:25:48.40
+b1039f21
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 10:25:48.63
+b1039f21
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 10:25:48.63
+b1039f21
+User
+6:25:48 PM [express] GET /api/whitelist/status 304 in 680ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 10:25:51.63
+b1039f21
+User
+6:25:51 PM [express] POST /api 200 in 1ms
+2026-01-11 10:25:52.14
+b1039f21
+User
+[MintService] Checking on-chain ownership at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:25:52.27
+b1039f21
+User
+[MintService] Wallet kaspa:qrmzgsh8chv72q... does NOT own any KUDIPLOMA NFTs on-chain
+2026-01-11 10:25:52.51
+b1039f21
+User
+[MintService] Building diploma inscription with ticker: KUDIPLOMA, to: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-11 10:25:52.55
+b1039f21
+User
+6:25:52 PM [express] POST /api/diploma/reserve 200 in 776ms :: {"success":true,"reservationId":"fc4d8738-94a7-411b-b09f-b630792ffd95","tokenId":5,"inscriptionJson":"{\"p\":\"krc-721\",\"op\":\"mint\",\"tick\":\"KUDIPLOMA\",\"to\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\"}","expiresAt":1768156552516,"courseId":"diploma","courseName":"Kaspa University Diploma","imageUrl":"ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4"}
+2026-01-11 10:25:52.55
+b1039f21
+User
+[MintService] Diploma reserved for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel (internal tokenId: 5)
+2026-01-11 10:25:52.82
+b1039f21
+User
+6:25:52 PM [express] POST /api/nft/signing/fc4d8738-94a7-411b-b09f-b630792ffd95 200 in 184ms :: {"success":true,"status":"signing"}
+2026-01-11 10:25:53.88
+b1039f21
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 10:25:54.02
+b1039f21
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 10:25:54.02
+b1039f21
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 10:25:54.25
+b1039f21
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 10:25:54.25
+b1039f21
+User
+6:25:54 PM [express] GET /api/whitelist/status 304 in 523ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 10:26:02.98
+b1039f21
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 10:26:02.98
+b1039f21
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 10:26:02.98
+b1039f21
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 10:26:03.22
+b1039f21

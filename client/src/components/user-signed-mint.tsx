@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useWallet } from "@/lib/wallet-context";
+import { useWhitelistStatus } from "@/hooks/use-whitelist";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,6 +41,7 @@ function getKUExplorerUrl(courseId: string): string {
 
 export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMintProps) {
   const { wallet, isDemoMode, signKRC721Mint } = useWallet();
+  const { data: whitelistStatus } = useWhitelistStatus();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -126,7 +128,12 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
       try {
         await apiRequest("POST", `/api/nft/signing/${data.reservationId}`);
         
-        const txHash = await signKRC721Mint(data.inscriptionJson);
+        const mintFeeKas = whitelistStatus?.totalMintCostKas 
+          ? parseFloat(whitelistStatus.totalMintCostKas) 
+          : 20;
+        console.log("[UserSignedMint] Minting with fee:", mintFeeKas, "KAS");
+        
+        const txHash = await signKRC721Mint(data.inscriptionJson, mintFeeKas);
         setMintTxHash(txHash);
         
         setStep("confirming");
