@@ -15,7 +15,7 @@ declare global {
       sendKaspa: (toAddress: string, satoshis: number, options?: { priorityFee?: number; payload?: string }) => Promise<string>;
       getBalance: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
       signMessage: (message: string, type?: string | { type: string }) => Promise<string>;
-      signKRC20Transaction: (inscribeJsonString: string, type: number) => Promise<string>;
+      signKRC20Transaction: (inscribeJsonString: string, type: number, destAddr?: string, priorityFee?: number) => Promise<string>;
       // KRC-721 buildScript API for proper commit-reveal flow
       buildScript: (params: { type: string; data: string }) => Promise<{ script: string; p2shAddress: string }>;
       // KRC-721 inscribeKRC721 API - completes inscription after buildScript
@@ -400,53 +400,72 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Treasury address for royalty payments
     const TREASURY_ADDRESS = "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er";
     
-    // For KRC-721 minting: discountFee (10 KAS royalty) + operation fee (10 KAS PoW) = 20 KAS
-    // Extra 0.5 KAS for network fees
-    const royaltyKas = 10.5; // discountFee royalty to treasury
-    const operationKas = 10; // PoW/operation fee to treasury
+    let lastError: Error | null = null;
     
-    // Approach 1: submitCommitReveal with options object (KasWare 1.9+ API)
-    if (typeof window.kasware.submitCommitReveal === "function") {
-      console.log("[Wallet] Trying submitCommitReveal with options object...");
-      console.log("[Wallet] Total fee:", totalFeeKas, "KAS (royalty:", royaltyKas, "+ ops:", operationKas, ")");
+    // Approach 1: Use signKRC20Transaction with type=5 for KRC-721
+    // This is the primary method that handles the full commit-reveal and fee payment
+    if (typeof window.kasware.signKRC20Transaction === "function") {
+      console.log("[Wallet] Trying signKRC20Transaction with type=5 for KRC-721...");
+      console.log("[Wallet] Inscription:", inscriptionJson);
       
       try {
-        // KasWare 1.9+ expects options object with extraOutputs for fees
-        const options = {
-          type: "KSPR_KRC721",
-          data: inscriptionJson,
-          extraOutputs: [
-            { address: TREASURY_ADDRESS, amount: royaltyKas },
-            { address: TREASURY_ADDRESS, amount: operationKas }
-          ],
-          priorityFee: 0.5 // Small priority fee for faster confirmation
-        };
-        
-        console.log("[Wallet] submitCommitReveal options:", JSON.stringify(options, null, 2));
-        const result = await window.kasware.submitCommitReveal(options);
-        console.log("[Wallet] submitCommitReveal SUCCESS:", result);
-        
-        if (typeof result === "string") return result;
-        const txId = result.revealTxId || result.commitTxId || result.txId;
-        if (!txId) {
-          throw new Error("No transaction ID returned from wallet");
-        }
-        return txId;
-      } catch (err: any) {
-        console.error("[Wallet] submitCommitReveal FAILED:", err?.message || err);
-        // Don't fall back to other methods - they don't support proper fees
-        throw new Error(
-          "KRC-721 minting failed: " + (err?.message || String(err)) + ". " +
-          "Please ensure you have KasWare wallet version 1.9 or later."
+        // type=5 is KRC-721 (type=3 is KRC-20)
+        // priorityFee is in KAS
+        const txHash = await window.kasware.signKRC20Transaction(
+          inscriptionJson,
+          5,  // Type 5 = KRC-721
+          TREASURY_ADDRESS,  // Destination for royalty
+          totalFeeKas  // Priority fee in KAS
         );
+        console.log("[Wallet] signKRC20Transaction type=5 SUCCESS:", txHash);
+        return txHash;
+      } catch (err: any) {
+        console.warn("[Wallet] signKRC20Transaction type=5 failed:", err?.message || err);
+        lastError = err instanceof Error ? err : new Error(String(err));
       }
     }
     
-    // If submitCommitReveal is not available, fail with a clear message
+    // Approach 2: Use buildScript to get script and P2SH, then manually complete
+    if (typeof window.kasware.buildScript === "function") {
+      console.log("[Wallet] Trying buildScript for KRC-721...");
+      try {
+        const { script, p2shAddress } = await window.kasware.buildScript({
+          type: "KSPR_KRC721",
+          data: inscriptionJson,
+        });
+        console.log("[Wallet] buildScript result: script length=", script.length, "p2sh=", p2shAddress);
+        
+        // If inscribeKRC721 is available, use it to complete the inscription
+        if (typeof window.kasware.inscribeKRC721 === "function") {
+          console.log("[Wallet] Completing with inscribeKRC721...");
+          const mintResult = await window.kasware.inscribeKRC721(script, p2shAddress);
+          console.log("[Wallet] inscribeKRC721 SUCCESS:", mintResult);
+          if (typeof mintResult === "string") return mintResult;
+          return mintResult.revealTxId || mintResult.commitTxId;
+        }
+        
+        // Otherwise, send the commit fee to P2SH address
+        console.log("[Wallet] Sending", totalFeeKas, "KAS to P2SH:", p2shAddress);
+        const commitTx = await window.kasware.sendKaspa(p2shAddress, feeSompi);
+        console.log("[Wallet] Commit transaction sent:", commitTx);
+        return commitTx;
+      } catch (err: any) {
+        console.warn("[Wallet] buildScript approach failed:", err?.message || err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+    
+    if (lastError) {
+      throw new Error(
+        "NFT minting failed: " + lastError.message + ". " +
+        "Please ensure you have the latest KasWare wallet version."
+      );
+    }
+    
     throw new Error(
       "Your KasWare wallet does not support KRC-721 NFT minting. " +
       "Available methods: " + availableMethods.join(", ") + ". " +
-      "Please update to KasWare version 1.9 or later."
+      "Please update to the latest version."
     );
   }, [isDemoMode]);
 
