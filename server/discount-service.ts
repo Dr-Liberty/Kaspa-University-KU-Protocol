@@ -412,7 +412,16 @@ class DiscountService {
 
     const utxos = await this.getUtxos();
     if (!utxos || utxos.length === 0) {
-      throw new Error("No UTXOs available for transaction");
+      // Provide detailed error message with recovery instructions
+      const status = await this.getTreasuryStatus();
+      if (status.lockedP2shUtxos > 0) {
+        const lockedKas = Number(status.lockedBalanceSompi) / 100_000_000;
+        throw new Error(
+          `Treasury has ${status.lockedP2shUtxos} locked UTXO(s) (~${lockedKas.toFixed(2)} KAS) from previous inscriptions. ` +
+          `Please send at least 1 KAS to ${this.treasuryAddress} to enable whitelisting.`
+        );
+      }
+      throw new Error("No UTXOs available for transaction - treasury needs funding");
     }
 
     // Log first UTXO structure for debugging
@@ -612,11 +621,13 @@ class DiscountService {
         : spkRaw;
       
       // P2PK (pay-to-public-key) scripts:
-      // - 66 hex chars (33 bytes): OP_DATA_32 + 32-byte pubkey + OP_CHECKSIG
+      // - 70 hex chars (35 bytes): 0x21 (length prefix 33) + 33-byte pubkey + OP_CHECKSIG (0xac)
+      // - Start with '21' (0x21 = 33, the pubkey length)
       // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
       // P2SH scripts end with '87' (OP_EQUAL) - these are commit UTXOs
       const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 66 && 
+                     scriptHex.length === 70 && 
+                     scriptHex.startsWith('21') &&
                      scriptHex.endsWith('ac');
       
       if (!isP2PK) {
@@ -699,6 +710,96 @@ class DiscountService {
    */
   getDiscountFeeSompi(): bigint {
     return DISCOUNT_FEE_SOMPI;
+  }
+
+  /**
+   * Get treasury status including UTXO breakdown
+   */
+  async getTreasuryStatus(): Promise<{
+    address: string | null;
+    isLive: boolean;
+    totalUtxos: number;
+    spendableUtxos: number;
+    lockedP2shUtxos: number;
+    totalBalanceSompi: bigint;
+    spendableBalanceSompi: bigint;
+    lockedBalanceSompi: bigint;
+    needsFunding: boolean;
+    message: string;
+  }> {
+    await this.initialize();
+
+    if (!this.treasuryAddress || !this.rpcClient) {
+      return {
+        address: null,
+        isLive: false,
+        totalUtxos: 0,
+        spendableUtxos: 0,
+        lockedP2shUtxos: 0,
+        totalBalanceSompi: BigInt(0),
+        spendableBalanceSompi: BigInt(0),
+        lockedBalanceSompi: BigInt(0),
+        needsFunding: true,
+        message: "Treasury not configured - missing credentials or RPC connection",
+      };
+    }
+
+    const allUtxos = await this.getUtxosForAddress(this.treasuryAddress);
+    
+    let spendableCount = 0;
+    let lockedCount = 0;
+    let spendableBalance = BigInt(0);
+    let lockedBalance = BigInt(0);
+
+    for (const utxo of allUtxos) {
+      const amount = BigInt(utxo.utxoEntry?.amount ?? utxo.amount ?? 0);
+      const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
+      const scriptHex = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
+        ? spkRaw.scriptPublicKey 
+        : spkRaw;
+      
+      // P2PK (pay-to-public-key) scripts:
+      // - 70 hex chars (35 bytes): 0x21 (length prefix 33) + 33-byte pubkey + OP_CHECKSIG (0xac)
+      // - Start with '21' (0x21 = 33, the pubkey length)
+      // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
+      const isP2PK = typeof scriptHex === 'string' && 
+                     scriptHex.length === 70 && 
+                     scriptHex.startsWith('21') &&
+                     scriptHex.endsWith('ac');
+      
+      if (isP2PK) {
+        spendableCount++;
+        spendableBalance += amount;
+      } else {
+        lockedCount++;
+        lockedBalance += amount;
+      }
+    }
+
+    const needsFunding = spendableCount === 0;
+    let message = "";
+    
+    if (needsFunding) {
+      const lockedKas = Number(lockedBalance) / 100_000_000;
+      message = `Treasury has ${lockedCount} locked P2SH UTXO(s) containing ~${lockedKas.toFixed(2)} KAS from previous inscriptions. ` +
+                `To enable whitelisting, please send at least 1 KAS to: ${this.treasuryAddress}`;
+    } else {
+      const spendableKas = Number(spendableBalance) / 100_000_000;
+      message = `Treasury ready with ${spendableCount} spendable UTXO(s) (~${spendableKas.toFixed(2)} KAS)`;
+    }
+
+    return {
+      address: this.treasuryAddress,
+      isLive: this.isLive(),
+      totalUtxos: allUtxos.length,
+      spendableUtxos: spendableCount,
+      lockedP2shUtxos: lockedCount,
+      totalBalanceSompi: spendableBalance + lockedBalance,
+      spendableBalanceSompi: spendableBalance,
+      lockedBalanceSompi: lockedBalance,
+      needsFunding,
+      message,
+    };
   }
 }
 

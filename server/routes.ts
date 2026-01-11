@@ -1445,6 +1445,35 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // TREASURY STATUS ENDPOINT (Admin)
+  // ============================================
+  // Shows UTXO status for debugging whitelisting issues
+  
+  app.get("/api/treasury/status", async (req: Request, res: Response) => {
+    try {
+      const discountService = getDiscountService();
+      const status = await discountService.getTreasuryStatus();
+      
+      // Convert BigInt to string for JSON serialization
+      res.json({
+        address: status.address,
+        isLive: status.isLive,
+        totalUtxos: status.totalUtxos,
+        spendableUtxos: status.spendableUtxos,
+        lockedP2shUtxos: status.lockedP2shUtxos,
+        totalBalance: status.totalBalanceSompi.toString(),
+        spendableBalance: status.spendableBalanceSompi.toString(),
+        lockedBalance: status.lockedBalanceSompi.toString(),
+        needsFunding: status.needsFunding,
+        message: status.message,
+      });
+    } catch (error: any) {
+      console.error("[Treasury] Status check failed:", error.message);
+      res.status(500).json({ error: "Failed to check treasury status" });
+    }
+  });
+
+  // ============================================
   // DIPLOMA STATUS ENDPOINT
   // ============================================
   // Diploma eligibility is derived from certificate count
