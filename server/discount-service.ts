@@ -620,14 +620,14 @@ class DiscountService {
         ? spkRaw.scriptPublicKey 
         : spkRaw;
       
-      // P2PK (pay-to-public-key) scripts:
-      // - 70 hex chars (35 bytes): 0x21 (length prefix 33) + 33-byte pubkey + OP_CHECKSIG (0xac)
-      // - Start with '21' (0x21 = 33, the pubkey length)
+      // Kaspa P2PK (pay-to-public-key) scripts use 32-byte x-only Schnorr pubkeys:
+      // - 68 hex chars (34 bytes): 0x20 (length prefix 32) + 32-byte pubkey + OP_CHECKSIG (0xac)
+      // - Start with '20' (0x20 = 32, the pubkey length for x-only Schnorr keys)
       // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
       // P2SH scripts end with '87' (OP_EQUAL) - these are commit UTXOs
       const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 70 && 
-                     scriptHex.startsWith('21') &&
+                     scriptHex.length === 68 && 
+                     scriptHex.startsWith('20') &&
                      scriptHex.endsWith('ac');
       
       if (!isP2PK) {
@@ -758,13 +758,13 @@ class DiscountService {
         ? spkRaw.scriptPublicKey 
         : spkRaw;
       
-      // P2PK (pay-to-public-key) scripts:
-      // - 70 hex chars (35 bytes): 0x21 (length prefix 33) + 33-byte pubkey + OP_CHECKSIG (0xac)
-      // - Start with '21' (0x21 = 33, the pubkey length)
+      // Kaspa P2PK (pay-to-public-key) scripts use 32-byte x-only Schnorr pubkeys:
+      // - 68 hex chars (34 bytes): 0x20 (length prefix 32) + 32-byte pubkey + OP_CHECKSIG (0xac)
+      // - Start with '20' (0x20 = 32, the pubkey length for x-only Schnorr keys)
       // - End with 'ac' (OP_CHECKSIG opcode = 0xAC)
       const isP2PK = typeof scriptHex === 'string' && 
-                     scriptHex.length === 70 && 
-                     scriptHex.startsWith('21') &&
+                     scriptHex.length === 68 && 
+                     scriptHex.startsWith('20') &&
                      scriptHex.endsWith('ac');
       
       if (isP2PK) {
