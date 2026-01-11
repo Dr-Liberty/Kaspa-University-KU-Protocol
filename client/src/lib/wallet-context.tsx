@@ -397,47 +397,87 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.log("[Wallet] Could not parse inscription JSON");
     }
     
-    // Treasury address for royalty payments  
-    const TREASURY_ADDRESS = "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er";
+    // KRC-721 minting via KasWare wallet
+    // Try signKRC20Transaction with type=5 first (full commit-reveal flow)
+    // Fall back to other methods if needed
     
-    // KRC-721 minting via KasWare's submitCommitReveal
-    // This method handles BOTH commit and reveal with two separate wallet prompts
-    // DO NOT use buildScript + sendKaspa - that only does commit, leaving funds locked
-    
-    if (typeof window.kasware.submitCommitReveal !== "function") {
-      throw new Error(
-        "Your KasWare wallet does not support KRC-721 NFT minting. " +
-        "Please update to the latest KasWare version."
-      );
+    // Method 1: Try signKRC20Transaction with type=5 (handles full commit+reveal)
+    // This is the preferred method as it handles both transactions automatically
+    if (typeof window.kasware.signKRC20Transaction === "function") {
+      console.log("[Wallet] Trying signKRC20Transaction type=5 for KRC-721...");
+      console.log("[Wallet] Data:", inscriptionJson);
+      
+      try {
+        // Type 5 = KRC-721 operations (undocumented but may work)
+        const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 5);
+        
+        console.log("[Wallet] signKRC20Transaction result:", txId);
+        
+        if (typeof txId === "string" && txId.length > 0) {
+          return txId;
+        }
+        
+        // If result is an object with txId fields
+        if (txId && typeof txId === "object") {
+          const resultObj = txId as Record<string, any>;
+          const resultTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || resultObj.commitId;
+          if (resultTxId) {
+            return resultTxId;
+          }
+        }
+        
+        throw new Error("No transaction ID returned");
+      } catch (err: any) {
+        console.log("[Wallet] signKRC20Transaction type=5 failed:", err?.message);
+        // Continue to fallback methods
+      }
     }
     
-    console.log("[Wallet] Starting KRC-721 mint via submitCommitReveal...");
-    console.log("[Wallet] Type: KSPR_KRC721");
-    console.log("[Wallet] Data:", inscriptionJson);
-    console.log("[Wallet] Fee:", totalFeeKas, "KAS");
-    
-    // KasWare submitCommitReveal handles the full commit+reveal flow
-    // User will see TWO wallet prompts: one for commit, one for reveal
-    // Per official docs: takes an object with {type, data} properties
-    const result = await window.kasware.submitCommitReveal({
-      type: "KSPR_KRC721",  // Type for KRC-721 inscriptions
-      data: inscriptionJson  // The inscription JSON data (stringified)
-    });
-    
-    console.log("[Wallet] submitCommitReveal result:", result);
-    
-    // The result should contain the reveal transaction ID
-    if (typeof result === "string") {
-      return result;
+    // Method 2: Try submitCommitReveal (if it handles full flow)
+    if (typeof window.kasware.submitCommitReveal === "function") {
+      console.log("[Wallet] Trying submitCommitReveal for KRC-721...");
+      
+      try {
+        const result = await window.kasware.submitCommitReveal({
+          type: "KSPR_KRC721",
+          data: inscriptionJson
+        });
+        
+        console.log("[Wallet] submitCommitReveal result:", result);
+        
+        // If it returns a tx ID string, the full flow completed
+        if (typeof result === "string" && result.length > 0) {
+          return result;
+        }
+        
+        // If it returns an object with tx IDs
+        if (result && typeof result === "object") {
+          const resultObj = result as Record<string, any>;
+          const txId = resultObj.revealTxId || resultObj.revealId || resultObj.txId || resultObj.commitTxId;
+          if (txId) {
+            return txId;
+          }
+          
+          // If it only returns script/p2shAddress, this method doesn't complete the flow
+          if (resultObj.script && resultObj.p2shAddress && !resultObj.revealTxId) {
+            console.log("[Wallet] submitCommitReveal only builds script, doesn't submit");
+            throw new Error("Method only builds script, need different approach");
+          }
+        }
+        
+        throw new Error("No transaction ID returned from submitCommitReveal");
+      } catch (err: any) {
+        console.log("[Wallet] submitCommitReveal failed:", err?.message);
+      }
     }
     
-    // Handle object result with various tx ID fields
-    const txId = result.revealTxId || result.txId || result.commitTxId;
-    if (!txId) {
-      throw new Error("No transaction ID returned from wallet. The mint may have failed.");
-    }
-    
-    return txId;
+    // If we get here, no method worked
+    throw new Error(
+      "KRC-721 minting is not available. Your KasWare wallet may need an update, " +
+      "or KRC-721 minting is not yet supported in the current version. " +
+      "If you have funds stuck in a P2SH address, go to KasWare Settings > Add-ons > " +
+      "'Retrieve Incomplete KRC20 UTXOs' to recover them."
+    );
   }, [isDemoMode]);
 
   const signKasiaHandshake = useCallback(async (recipientAddress: string, amountKas: number = 0.2): Promise<string> => {
