@@ -91,6 +91,19 @@ interface KasiaStats {
   totalMessages: number;
 }
 
+interface TreasuryStatus {
+  address: string;
+  isLive: boolean;
+  totalUtxos: number;
+  spendableUtxos: number;
+  lockedP2shUtxos: number;
+  totalBalance: string;
+  spendableBalance: string;
+  lockedBalance: string;
+  needsFunding: boolean;
+  message: string;
+}
+
 interface KasiaHandshakeData {
   conversations: KasiaConversation[];
   stats: KasiaStats;
@@ -206,6 +219,18 @@ export default function AdminPage() {
     enabled: authenticated && !!selectedConvId,
     staleTime: 10000,
     refetchInterval: selectedConvId ? 10000 : false,
+  });
+
+  const { data: treasuryStatus, isLoading: treasuryLoading, refetch: refetchTreasury } = useQuery<TreasuryStatus>({
+    queryKey: ["/api/treasury/status"],
+    queryFn: async () => {
+      const res = await fetch("/api/treasury/status");
+      if (!res.ok) throw new Error("Failed to fetch treasury status");
+      return res.json();
+    },
+    enabled: authenticated,
+    staleTime: 10000,
+    refetchInterval: 30000,
   });
 
   const { data: collectionStatus, refetch: refetchCollection } = useQuery<{
@@ -486,6 +511,7 @@ export default function AdminPage() {
     refetchP2SH();
     refetchDemoCerts();
     refetchKasia();
+    refetchTreasury();
     toast({ title: "Refreshed", description: "All data refreshed" });
   };
 
@@ -714,13 +740,16 @@ export default function AdminPage() {
           </Card>
         )}
 
-        <Tabs defaultValue="certificates" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs defaultValue="treasury" className="w-full">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="treasury" data-testid="tab-treasury">
+              Treasury {treasuryStatus?.needsFunding && "(!)"}
+            </TabsTrigger>
             <TabsTrigger value="certificates" data-testid="tab-certificates">
               Certificates ({certificates.length})
             </TabsTrigger>
             <TabsTrigger value="demo" data-testid="tab-demo">
-              Demo Certs {demoCerts && demoCerts.count > 0 && `(${demoCerts.count})`}
+              Demo {demoCerts && demoCerts.count > 0 && `(${demoCerts.count})`}
             </TabsTrigger>
             <TabsTrigger value="reservations" data-testid="tab-reservations">
               Reservations ({reservations.length})
@@ -735,6 +764,131 @@ export default function AdminPage() {
               Messages {kasiaHandshakes?.stats?.pendingHandshakes ? `(${kasiaHandshakes.stats.pendingHandshakes})` : ""}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="treasury" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="w-5 h-5" />
+                  Treasury Status
+                </CardTitle>
+                <CardDescription>
+                  Monitor treasury UTXO availability for KRC-721 whitelisting operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {treasuryLoading ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Checking treasury status...
+                  </div>
+                ) : treasuryStatus ? (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-md ${
+                      treasuryStatus.needsFunding 
+                        ? "bg-red-500/10 border border-red-500/30" 
+                        : "bg-green-500/10 border border-green-500/30"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {treasuryStatus.needsFunding ? (
+                          <AlertTriangle className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Check className="w-5 h-5 text-green-400" />
+                        )}
+                        <span className={`font-semibold ${
+                          treasuryStatus.needsFunding ? "text-red-400" : "text-green-400"
+                        }`}>
+                          {treasuryStatus.needsFunding ? "Treasury Needs Funding" : "Treasury Ready"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {treasuryStatus.message}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-3 border rounded-md">
+                        <div className="text-xs text-muted-foreground">Spendable UTXOs</div>
+                        <div className={`text-xl font-bold ${
+                          treasuryStatus.spendableUtxos > 0 ? "text-green-400" : "text-red-400"
+                        }`}>
+                          {treasuryStatus.spendableUtxos}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-md">
+                        <div className="text-xs text-muted-foreground">Locked P2SH</div>
+                        <div className="text-xl font-bold text-yellow-400">
+                          {treasuryStatus.lockedP2shUtxos}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-md">
+                        <div className="text-xs text-muted-foreground">Spendable Balance</div>
+                        <div className={`text-xl font-bold ${
+                          Number(treasuryStatus.spendableBalance) > 0 ? "text-green-400" : "text-red-400"
+                        }`}>
+                          {(Number(treasuryStatus.spendableBalance) / 100000000).toFixed(2)} KAS
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-md">
+                        <div className="text-xs text-muted-foreground">Locked Balance</div>
+                        <div className="text-xl font-bold text-yellow-400">
+                          {(Number(treasuryStatus.lockedBalance) / 100000000).toFixed(2)} KAS
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Treasury Address</div>
+                      <div className="p-3 bg-muted rounded-md font-mono text-xs break-all">
+                        {treasuryStatus.address}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Send KAS directly to this address to create spendable P2PK UTXOs for whitelisting operations.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchTreasury()}
+                        data-testid="button-refresh-treasury"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                        Refresh Status
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(treasuryStatus.address);
+                          toast({ title: "Copied", description: "Treasury address copied to clipboard" });
+                        }}
+                        data-testid="button-copy-treasury"
+                      >
+                        Copy Address
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Failed to load treasury status</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => refetchTreasury()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="certificates" className="mt-4">
             <Card>
