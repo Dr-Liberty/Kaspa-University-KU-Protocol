@@ -318,21 +318,19 @@ class DiscountService {
     const isTreasuryTestnet = this.treasuryAddress?.startsWith("kaspatest:") || false;
     
     if (isTestnetAddress !== isTreasuryTestnet) {
-      console.log(`[DiscountService] Network mismatch - Treasury: ${isTreasuryTestnet ? 'testnet' : 'mainnet'}, Target: ${isTestnetAddress ? 'testnet' : 'mainnet'}`);
-      console.log(`[DiscountService] Demo mode - simulating discount for ${walletAddress}`);
+      const msg = `Network mismatch - Treasury: ${isTreasuryTestnet ? 'testnet' : 'mainnet'}, Target: ${isTestnetAddress ? 'testnet' : 'mainnet'}`;
+      console.log(`[DiscountService] ${msg}`);
       return {
-        success: true,
-        commitTxHash: `demo-commit-${Date.now().toString(16)}`,
-        revealTxHash: `demo-reveal-${Date.now().toString(16)}`,
+        success: false,
+        error: `Cannot whitelist: ${msg}. Please ensure wallet network matches treasury network.`,
       };
     }
 
     if (!this.isLive()) {
-      console.log(`[DiscountService] Demo mode - simulating discount for ${walletAddress}`);
+      console.log(`[DiscountService] Not live - Treasury: ${this.treasuryAddress || 'none'}, RPC: ${!!this.rpcClient}, PrivateKey: ${!!this.privateKey}`);
       return {
-        success: true,
-        commitTxHash: `demo-commit-${Date.now().toString(16)}`,
-        revealTxHash: `demo-reveal-${Date.now().toString(16)}`,
+        success: false,
+        error: "Whitelist service not available. Treasury credentials or RPC connection missing. Please try again later.",
       };
     }
 
