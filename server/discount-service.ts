@@ -568,15 +568,15 @@ class DiscountService {
     
     const treasuryEntries = filteredUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
-      // WASM SDK requires scriptPublicKey as object: { script: hexString, version: 0 }
+      // WASM SDK requires scriptPublicKey as raw hex string
       const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
-      let scriptPublicKey: { script: string; version: number };
+      let scriptPublicKey: string;
       if (typeof spkRaw === 'object' && spkRaw.scriptPublicKey) {
-        scriptPublicKey = { script: spkRaw.scriptPublicKey, version: spkRaw.version ?? 0 };
+        scriptPublicKey = spkRaw.scriptPublicKey;
       } else if (typeof spkRaw === 'object' && spkRaw.script) {
-        scriptPublicKey = { script: spkRaw.script, version: spkRaw.version ?? 0 };
+        scriptPublicKey = spkRaw.script;
       } else {
-        scriptPublicKey = { script: spkRaw, version: 0 };
+        scriptPublicKey = spkRaw;
       }
       // blockDaaScore must be BigInt for WASM SDK
       const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";

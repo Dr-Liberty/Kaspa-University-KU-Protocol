@@ -1,0 +1,100 @@
+8.04
+b46830e0
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 07:19:18.19
+b46830e0
+User
+[DiscountService] Waiting for P2SH UTXO to appear...
+2026-01-11 07:19:18.19
+b46830e0
+User
+[DiscountService] Commit tx: b3bb0fae602af8548f7f494f7a7b71db9e52b83aef9fc9d64241cea245e7ca43
+2026-01-11 07:19:18.19
+b46830e0
+User
+[DiscountService] WASM submit result: b3bb0fae602af8548f7f494f7a7b71db9e52b83aef9fc9d64241cea245e7ca43
+2026-01-11 07:19:19.26
+b46830e0
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:19:19.40
+b46830e0
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 07:19:19.40
+b46830e0
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 07:19:19.58
+b46830e0
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 07:19:19.58
+b46830e0
+User
+3:19:19 PM [express] GET /api/whitelist/status 304 in 469ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 07:19:20.34
+b46830e0
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 07:19:20.34
+b46830e0
+User
+[DiscountService] P2SH script hex: {"version":0,"script":"aa209a3c443b108d1...
+2026-01-11 07:19:20.50
+b46830e0
+User
+[DiscountService] Reveal has 245 fresh treasury UTXOs (filtered 0)
+2026-01-11 07:19:20.50
+b46830e0
+User
+[DiscountService] Filtered 245 UTXOs -> 245 signable P2PK UTXOs
+2026-01-11 07:19:20.50
+b46830e0
+User
+[DiscountService] Failed to apply discount: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-11 07:19:20.50
+b46830e0
+User
+[DiscountService] Full error: Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)
+2026-01-11 07:19:20.51
+b46830e0
+User
+3:19:20 PM [express] POST /api/whitelist/apply 500 in 5336ms :: {"success":false,"error":"Supplied object does not contain `utxoEntry.scriptPublicKey` property (or it is not a hex string or a ScriptPublicKey class)"}
+2026-01-11 07:19:22.18
+3b9d2d85
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 07:19:22.18
+3b9d2d85
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 07:19:22.18
+3b9d2d85
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 07:19:22.18
+3b9d2d85
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 07:19:22.66
+3b9d2d85
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 07:19:22.96
+3b9d2d85
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-11 07:19:22.96
+3b9d2d85
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 07:19:22.96
+3b9d2d85
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 07:19:22.96
+3b9d2d85
+User
+[Kasia Client]
