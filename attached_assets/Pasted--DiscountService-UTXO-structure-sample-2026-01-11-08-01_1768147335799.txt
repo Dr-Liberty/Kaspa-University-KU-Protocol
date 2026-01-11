@@ -1,0 +1,150 @@
+
+[DiscountService] UTXO structure sample: {
+2026-01-11 08:01:43.35
+3796ba96
+User
+"amount": "20000000",
+2026-01-11 08:01:43.35
+3796ba96
+User
+"outpoint": {
+2026-01-11 08:01:43.35
+3796ba96
+User
+"scriptPublicKey": {
+2026-01-11 08:01:43.35
+3796ba96
+User
+[DiscountService] Filtered 239 UTXOs -> 239 signable P2PK UTXOs
+2026-01-11 08:01:43.35
+3796ba96
+User
+"index": 0
+2026-01-11 08:01:43.35
+3796ba96
+User
+"isCoinbase": false
+2026-01-11 08:01:43.35
+3796ba96
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-11 08:01:43.35
+3796ba96
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-11 08:01:43.36
+3796ba96
+User
+[DiscountService] Commit uses 2 UTXOs
+2026-01-11 08:01:43.62
+3796ba96
+User
+[DiscountService] WASM submit result: 6bbcda4bcbdb621b0f0cdfb9262da7c8f90ced56f64015d8869b9078488ca693
+2026-01-11 08:01:43.62
+3796ba96
+User
+[DiscountService] Waiting for P2SH UTXO to appear...
+2026-01-11 08:01:43.62
+3796ba96
+User
+[DiscountService] Commit tx: 6bbcda4bcbdb621b0f0cdfb9262da7c8f90ced56f64015d8869b9078488ca693
+2026-01-11 08:01:45.52
+3796ba96
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 08:01:45.66
+3796ba96
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 08:01:45.66
+3796ba96
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 08:01:45.66
+3796ba96
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 08:01:45.66
+3796ba96
+User
+[DiscountService] Redeem script for P2SH entries (length 394): 20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad...
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Reveal has 238 fresh treasury UTXOs (filtered 0)
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Filtered 238 UTXOs -> 238 signable P2PK UTXOs
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Sample UTXO scriptPublicKey type: object, value: {"version":0,"scriptPublicKey":"20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Filled P2SH input 0 with script signature
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Signature length: 132 bytes
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Signature script length: 530 hex chars
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Redeem script preview: 20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac0063046b737072004c987b2270223a22...
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Redeem script length: 394 hex chars (197 bytes)
+2026-01-11 08:01:45.71
+3796ba96
+User
+[DiscountService] Signature script preview: 41055f2025aa2b11e4bc26acfc114e5e6bd235bb1118217c7e3160be40f155abee72e203b209875b6d8573233f0081dcfc75...
+2026-01-11 08:01:45.83
+3796ba96
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 08:01:45.83
+3796ba96
+User
+4:01:45 PM [express] GET /api/whitelist/status 304 in 465ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 08:01:45.97
+3796ba96
+User
+[DiscountService] Full error: Error: Reveal failed: RPC Server (remote error) -> Rejected transaction b4ff48b6f0877d6c55c21d3d9c429d0d77b109edd3124e78e1a07c48e17cb8f6: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:01:45.97
+3796ba96
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11360)
+2026-01-11 08:01:45.97
+3796ba96
+User
+[DiscountService] Submit failed: RPC Server (remote error) -> Rejected transaction b4ff48b6f0877d6c55c21d3d9c429d0d77b109edd3124e78e1a07c48e17cb8f6: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:01:45.97
+3796ba96
+User
+[DiscountService] Failed to apply discount: Reveal failed: RPC Server (remote error) -> Rejected transaction b4ff48b6f0877d6c55c21d3d9c429d0d77b109edd3124e78e1a07c48e17cb8f6: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 08:01:45.97
+3796ba96
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:17791)
+2026-01-11 08:01:45.97
+3796ba96
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-11 08:01:45.97
+3796ba96
+User
+at async /home/runner/workspace/dist/index.cjs:1188:81761
+2026-01-11 08:01:45.98
+3796ba96
+User
+4:01:45 PM [express] POST /api/whitelist/apply 500 in 3275ms :: {"success":false,"error":"Reveal failed: RPC Server (

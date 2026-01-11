@@ -556,9 +556,10 @@ class DiscountService {
         outpoint: { transactionId, index },
         utxoEntry: {
           amount: BigInt(amount),
-          // CRITICAL: Use the REDEEM script, not P2SH locking script
+          // CRITICAL: Use the REDEEM script (not P2SH locking script) in object format
           // createInputSignature needs the redeem script for correct sighash computation
-          scriptPublicKey: redeemScriptHex,
+          // Must use same { script, version } format as other UTXO entries
+          scriptPublicKey: { script: redeemScriptHex, version: 0 },
           blockDaaScore,
           isCoinbase,
         },
@@ -583,15 +584,15 @@ class DiscountService {
     
     const treasuryEntries = filteredUtxos.map((utxo: any) => {
       const amount = utxo.utxoEntry?.amount ?? utxo.amount ?? BigInt(0);
-      // WASM SDK requires scriptPublicKey as raw hex string
+      // WASM SDK requires scriptPublicKey as object: { script: hexString, version: 0 }
       const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
-      let scriptPublicKey: string;
+      let scriptPublicKey: { script: string; version: number };
       if (typeof spkRaw === 'object' && spkRaw.scriptPublicKey) {
-        scriptPublicKey = spkRaw.scriptPublicKey;
+        scriptPublicKey = { script: spkRaw.scriptPublicKey, version: spkRaw.version ?? 0 };
       } else if (typeof spkRaw === 'object' && spkRaw.script) {
-        scriptPublicKey = spkRaw.script;
+        scriptPublicKey = { script: spkRaw.script, version: spkRaw.version ?? 0 };
       } else {
-        scriptPublicKey = spkRaw;
+        scriptPublicKey = { script: spkRaw, version: 0 };
       }
       // blockDaaScore must be BigInt for WASM SDK
       const blockDaaScoreRaw = utxo.utxoEntry?.blockDaaScore ?? utxo.blockDaaScore ?? "0";
