@@ -1,0 +1,180 @@
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-10 16:04:21.70
+85c6e58c
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-10 16:04:21.73
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 16:04:21.76
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-10 16:04:21.99
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 16:04:22.20
+85c6e58c
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-10 16:04:22.42
+85c6e58c
+User
+[DiscountService] Trying WASM RPC via Resolver...
+2026-01-10 16:04:23.11
+85c6e58c
+User
+[DiscountService] Treasury: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-10 16:04:23.11
+85c6e58c
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-10 16:04:23.11
+85c6e58c
+User
+[DiscountService] RPC connected
+2026-01-10 16:04:23.11
+85c6e58c
+User
+[DiscountService] Initialized for collection KUDIPLOMA
+2026-01-10 16:04:23.11
+85c6e58c
+User
+[DiscountService] WASM RPC connected via Resolver
+2026-01-10 16:04:23.25
+85c6e58c
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-10 16:04:23.25
+85c6e58c
+User
+[DiscountService] Applying discount for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel...
+2026-01-10 16:04:23.25
+85c6e58c
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
+2026-01-10 16:04:23.61
+85c6e58c
+User
+[DiscountService] Filtering out non-P2PK UTXO: script=20f2eb7a1a44c5c11998...
