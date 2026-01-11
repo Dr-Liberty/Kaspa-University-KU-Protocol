@@ -689,10 +689,13 @@ class DiscountService {
   private async submitTransaction(tx: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
       if (this.wasmRpcClient && typeof tx.submit === 'function') {
+        console.log(`[DiscountService] Submitting via WASM RPC...`);
         const txHash = await tx.submit(this.wasmRpcClient);
+        console.log(`[DiscountService] WASM submit result: ${txHash}`);
         return { success: true, txHash };
       }
 
+      console.log(`[DiscountService] Submitting via kaspa-rpc-client...`);
       const serialized = tx.serializeToObject ? tx.serializeToObject() : tx;
       const result = await this.rpcClient.submitTransaction({
         transaction: serialized,
@@ -701,7 +704,9 @@ class DiscountService {
       
       return { success: true, txHash: result?.transactionId };
     } catch (error: any) {
-      return { success: false, error: error.message };
+      const errorMsg = error?.message || error?.toString?.() || JSON.stringify(error) || 'Unknown error';
+      console.error(`[DiscountService] Submit failed:`, errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
