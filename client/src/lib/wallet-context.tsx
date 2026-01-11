@@ -418,10 +418,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     // KasWare submitCommitReveal handles the full commit+reveal flow
     // User will see TWO wallet prompts: one for commit, one for reveal
-    const result = await window.kasware.submitCommitReveal(
-      "KSPR_KRC721",  // Type for KRC-721 inscriptions
-      inscriptionJson  // The inscription JSON data
-    );
+    // Per official docs: takes an object with {type, data} properties
+    const result = await window.kasware.submitCommitReveal({
+      type: "KSPR_KRC721",  // Type for KRC-721 inscriptions
+      data: inscriptionJson  // The inscription JSON data (stringified)
+    });
     
     console.log("[Wallet] submitCommitReveal result:", result);
     
