@@ -383,8 +383,13 @@ class DiscountService {
 
     // Build inscription script following KRC-721 spec
     // Format: pubkey + OP_CHECKSIG + OP_FALSE + OP_IF + "kspr" + contentType(0) + JSON + OP_ENDIF
+    // CRITICAL: Push public key as raw 32-byte binary, NOT as ASCII hex string
+    const xOnlyPubKeyHex = this.publicKey.toXOnlyPublicKey().toString();
+    const xOnlyPubKeyBytes = Buffer.from(xOnlyPubKeyHex, 'hex');
+    console.log(`[DiscountService] X-only pubkey: ${xOnlyPubKeyHex} (${xOnlyPubKeyBytes.length} bytes)`);
+    
     const script = new ScriptBuilder()
-      .addData(this.publicKey.toXOnlyPublicKey().toString())
+      .addData(xOnlyPubKeyBytes)
       .addOp(Opcodes.OpCheckSig)
       .addOp(Opcodes.OpFalse)
       .addOp(Opcodes.OpIf)

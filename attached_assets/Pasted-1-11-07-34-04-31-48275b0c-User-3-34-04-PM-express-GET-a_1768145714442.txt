@@ -1,0 +1,90 @@
+1-11 07:34:04.31
+48275b0c
+User
+3:34:04 PM [express] GET /api/whitelist/status 304 in 469ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 07:34:05.93
+48275b0c
+User
+[DiscountService] P2SH script hex (length 70): aa209a3c443b108d110cb5740e4a4d99349eeef5...
+2026-01-11 07:34:05.93
+48275b0c
+User
+[DiscountService] P2SH UTXO found after 1 attempt(s)
+2026-01-11 07:34:06.29
+48275b0c
+User
+[DiscountService] Sample UTXO scriptPublicKey type: object, value: {"version":0,"scriptPublicKey":"20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac
+2026-01-11 07:34:06.29
+48275b0c
+User
+[DiscountService] Filtered 242 UTXOs -> 242 signable P2PK UTXOs
+2026-01-11 07:34:06.29
+48275b0c
+User
+[DiscountService] Reveal has 242 fresh treasury UTXOs (filtered 0)
+2026-01-11 07:34:06.30
+48275b0c
+User
+[DiscountService] Submitting via WASM RPC...
+2026-01-11 07:34:06.30
+48275b0c
+User
+[DiscountService] Filled P2SH input 0 with script signature
+2026-01-11 07:34:06.43
+48275b0c
+User
+at Tb.executeCommitReveal (/home/runner/workspace/dist/index.cjs:1188:17396)
+2026-01-11 07:34:06.43
+48275b0c
+User
+at async Tb.applyDiscount (/home/runner/workspace/dist/index.cjs:1188:11359)
+2026-01-11 07:34:06.43
+48275b0c
+User
+[DiscountService] Submit failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:34:06.43
+48275b0c
+User
+at async /home/runner/workspace/dist/index.cjs:1188:81380
+2026-01-11 07:34:06.43
+48275b0c
+User
+[DiscountService] Failed to apply discount: Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:34:06.43
+48275b0c
+User
+[DiscountService] Full error: Error: Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution
+2026-01-11 07:34:06.43
+48275b0c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-11 07:34:06.43
+48275b0c
+User
+3:34:06 PM [express] POST /api/whitelist/apply 500 in 4121ms :: {"success":false,"error":"Reveal failed: RPC Server (remote error) -> Rejected transaction 66a784007c9e50635b27186e9f3f4ce7c26bb89eee9ec0c0efd911f08b4983d8: failed to verify the signature script: false stack entry at end of script execution"}
+2026-01-11 07:34:09.62
+48275b0c
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:34:09.79
+48275b0c
+User
+[DiscountService] Discount fee: 2000000000000, threshold: 1000000000, whitelisted: false
+2026-01-11 07:34:09.79
+48275b0c
+User
+[DiscountService] Indexer response: {"message":"success","result":"2000000000000"}
+2026-01-11 07:34:09.97
+48275b0c
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=false, source=none, indexer=false, db=false, realTx=null
+2026-01-11 07:34:09.97
+48275b0c
+User
+3:34:09 PM [express] GET /api/whitelist/status 304 in 505ms :: {"isWhitelisted":false,"isDiplomaEligible":true,"needsWhitelist":true,"whitelistedAt":null,"whitelistTxHash":null,"collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"none"}
+2026-01-11 07:34:15.23
+48275b0c
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 07:34:15.40
+48275b0
