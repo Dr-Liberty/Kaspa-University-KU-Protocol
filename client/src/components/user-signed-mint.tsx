@@ -337,7 +337,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
               {reservation && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Reserved Token</span>
-                  <Badge variant="outline">#{reservation.tokenId}</Badge>
+                  <Badge variant="outline">Random ID (assigned on-chain)</Badge>
                 </div>
               )}
             </div>
@@ -419,7 +419,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
               <div className="text-center">
                 <p className="font-medium">Confirm in your wallet</p>
                 <p className="text-sm text-muted-foreground">
-                  Sign the mint transaction for Token #{reservation.tokenId}
+                  Sign the mint transaction (token ID assigned randomly)
                 </p>
               </div>
             </div>
@@ -469,7 +469,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
             <div className="text-center">
               <p className="font-medium">NFT Minted Successfully!</p>
               <p className="text-sm text-muted-foreground">
-                Token #{reservation.tokenId} is now in your wallet
+                Your KUDIPLOMA is now in your wallet
               </p>
             </div>
             <Button onClick={() => setShowSuccessDialog(true)} data-testid="button-view-nft-details">
@@ -534,7 +534,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">Token ID</span>
-                <Badge variant="outline">#{reservation?.tokenId}</Badge>
+                <Badge variant="outline">KUDIPLOMA</Badge>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">Completed</span>

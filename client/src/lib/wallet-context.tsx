@@ -400,72 +400,43 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Treasury address for royalty payments  
     const TREASURY_ADDRESS = "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er";
     
-    // KRC-721 minting uses a two-step commit-reveal flow (NOT batch/KRC-20 APIs)
-    // Step 1: buildScript to get inscription script and P2SH address
-    // Step 2: sendKaspa to P2SH for commit (regular send, NOT batch)
-    // Step 3: inscribeKRC721 for reveal (if available) or let indexer handle
+    // KRC-721 minting via KasWare's submitCommitReveal
+    // This method handles BOTH commit and reveal with two separate wallet prompts
+    // DO NOT use buildScript + sendKaspa - that only does commit, leaving funds locked
     
-    if (typeof window.kasware.buildScript !== "function") {
+    if (typeof window.kasware.submitCommitReveal !== "function") {
       throw new Error(
         "Your KasWare wallet does not support KRC-721 NFT minting. " +
-        "Please update to the latest version with buildScript support."
+        "Please update to the latest KasWare version."
       );
     }
     
-    console.log("[Wallet] Step 1: Building KRC-721 inscription script...");
+    console.log("[Wallet] Starting KRC-721 mint via submitCommitReveal...");
+    console.log("[Wallet] Type: KSPR_KRC721");
+    console.log("[Wallet] Data:", inscriptionJson);
+    console.log("[Wallet] Fee:", totalFeeKas, "KAS");
     
-    // Build the inscription script - this does NOT broadcast anything
-    const buildResult = await window.kasware.buildScript({
-      type: "KSPR_KRC721",
-      data: inscriptionJson,
-    });
+    // KasWare submitCommitReveal handles the full commit+reveal flow
+    // User will see TWO wallet prompts: one for commit, one for reveal
+    const result = await window.kasware.submitCommitReveal(
+      "KSPR_KRC721",  // Type for KRC-721 inscriptions
+      inscriptionJson  // The inscription JSON data
+    );
     
-    const { script, p2shAddress } = buildResult;
-    // Some wallets return amountSompi - the required commit amount
-    const commitAmount = (buildResult as any).amountSompi || feeSompi;
+    console.log("[Wallet] submitCommitReveal result:", result);
     
-    console.log("[Wallet] buildScript SUCCESS:");
-    console.log("  - script length:", script.length);
-    console.log("  - P2SH address:", p2shAddress);
-    console.log("  - commit amount:", commitAmount, "sompi");
-    
-    // Step 2: Send commit transaction to P2SH address
-    // This is a REGULAR send transaction, NOT a batch operation
-    console.log("[Wallet] Step 2: Sending COMMIT transaction to P2SH...");
-    console.log("  - Amount:", commitAmount / 100000000, "KAS");
-    
-    const commitTxId = await window.kasware.sendKaspa(p2shAddress, commitAmount);
-    console.log("[Wallet] COMMIT transaction sent:", commitTxId);
-    
-    // Step 3: If inscribeKRC721 is available, complete the reveal
-    // Otherwise, return commit tx and let the indexer/backend handle reveal
-    if (typeof window.kasware.inscribeKRC721 === "function") {
-      console.log("[Wallet] Step 3: Completing REVEAL transaction...");
-      console.log("  - Waiting for commit to be available...");
-      
-      // Small delay to allow commit to propagate
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      try {
-        const revealResult = await window.kasware.inscribeKRC721(script, p2shAddress);
-        console.log("[Wallet] REVEAL transaction sent:", revealResult);
-        
-        if (typeof revealResult === "string") {
-          return revealResult;
-        }
-        return revealResult.revealTxId || revealResult.commitTxId || commitTxId;
-      } catch (revealErr: any) {
-        console.warn("[Wallet] inscribeKRC721 failed, commit still sent:", revealErr?.message);
-        // Return commit tx - the indexer can handle reveal later
-        return commitTxId;
-      }
+    // The result should contain the reveal transaction ID
+    if (typeof result === "string") {
+      return result;
     }
     
-    // No inscribeKRC721 available - return commit tx
-    // The KRC-721 indexer will handle the reveal automatically
-    console.log("[Wallet] inscribeKRC721 not available, returning commit tx");
-    console.log("[Wallet] The KRC-721 indexer will complete the reveal automatically");
-    return commitTxId;
+    // Handle object result with various tx ID fields
+    const txId = result.revealTxId || result.txId || result.commitTxId;
+    if (!txId) {
+      throw new Error("No transaction ID returned from wallet. The mint may have failed.");
+    }
+    
+    return txId;
   }, [isDemoMode]);
 
   const signKasiaHandshake = useCallback(async (recipientAddress: string, amountKas: number = 0.2): Promise<string> => {
