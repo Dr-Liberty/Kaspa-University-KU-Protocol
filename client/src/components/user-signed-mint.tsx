@@ -17,7 +17,7 @@ interface UserSignedMintProps {
   onSuccess?: (tokenId: number, txHash: string) => void;
 }
 
-type MintStep = "idle" | "reserving" | "signing" | "confirming" | "success" | "error";
+type MintStep = "idle" | "reserving" | "preview" | "signing" | "confirming" | "success" | "error";
 
 interface ReservationData {
   reservationId: string;
@@ -123,28 +123,8 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
     },
     onSuccess: async (data) => {
       setReservation(data);
-      setStep("signing");
-      
-      try {
-        await apiRequest("POST", `/api/nft/signing/${data.reservationId}`);
-        
-        const mintFeeKas = whitelistStatus?.totalMintCostKas 
-          ? parseFloat(whitelistStatus.totalMintCostKas) 
-          : 20;
-        console.log("[UserSignedMint] Minting with fee:", mintFeeKas, "KAS");
-        
-        const txHash = await signKRC721Mint(data.inscriptionJson, mintFeeKas);
-        setMintTxHash(txHash);
-        
-        setStep("confirming");
-        confirmMutation.mutate({ reservationId: data.reservationId, mintTxHash: txHash });
-      } catch (err: any) {
-        console.error("[UserSignedMint] Signing failed:", err);
-        setError(err.message || "Failed to sign mint transaction");
-        setStep("error");
-        
-        await apiRequest("POST", `/api/nft/cancel/${data.reservationId}`).catch(() => {});
-      }
+      // Show preview step so user can see what they're approving
+      setStep("preview");
     },
     onError: (err: any) => {
       console.error("[UserSignedMint] Reserve failed:", err);
@@ -228,7 +208,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
     }
   };
 
-  const handleResumeSigning = async () => {
+  const handleProceedToSign = async () => {
     if (!reservation) return;
     
     setStep("signing");
@@ -236,13 +216,18 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
     try {
       await apiRequest("POST", `/api/nft/signing/${reservation.reservationId}`);
       
-      const txHash = await signKRC721Mint(reservation.inscriptionJson);
+      const mintFeeKas = whitelistStatus?.totalMintCostKas 
+        ? parseFloat(whitelistStatus.totalMintCostKas) 
+        : 20;
+      console.log("[UserSignedMint] Minting with fee:", mintFeeKas, "KAS");
+      
+      const txHash = await signKRC721Mint(reservation.inscriptionJson, mintFeeKas);
       setMintTxHash(txHash);
       
       setStep("confirming");
       confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: txHash });
     } catch (err: any) {
-      console.error("[UserSignedMint] Resume signing failed:", err);
+      console.error("[UserSignedMint] Signing failed:", err);
       
       try {
         await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
@@ -255,6 +240,13 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
       
       setError(err.message || "Failed to sign mint transaction");
       setStep("error");
+    }
+  };
+
+  const handleResumeSigning = async () => {
+    // For existing reservations, go to preview first
+    if (reservation) {
+      setStep("preview");
     }
   };
 
@@ -409,6 +401,107 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
           <div className="flex flex-col items-center gap-4 py-6">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Reserving your token...</p>
+          </div>
+        )}
+
+        {step === "preview" && reservation && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-primary">
+              <FileCheck className="h-5 w-5" />
+              <span className="font-medium">Transaction Preview</span>
+            </div>
+            
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <p className="text-sm text-muted-foreground mb-3">
+                Review the transaction details before approving in your wallet:
+              </p>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Operation</span>
+                  <Badge variant="secondary">KRC-721 Mint</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Collection</span>
+                  <span className="font-mono">KUDIPLOMA</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Token ID</span>
+                  <span className="text-muted-foreground italic">Random (assigned on-chain)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Recipient</span>
+                  <span className="font-mono text-xs truncate max-w-[180px]" title={wallet?.address}>
+                    {wallet?.address?.slice(0, 12)}...{wallet?.address?.slice(-6)}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="border-t pt-3 mt-3 space-y-2 text-sm">
+                <div className="text-muted-foreground font-medium">This will submit 2 transactions:</div>
+                <div className="pl-2 space-y-1">
+                  <div className="flex items-start gap-2">
+                    <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-xs font-medium">1</span>
+                    <div>
+                      <span className="font-medium">Commit</span>
+                      <span className="text-muted-foreground"> - Locks inscription data</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-xs font-medium">2</span>
+                    <div>
+                      <span className="font-medium">Reveal</span>
+                      <span className="text-muted-foreground"> - Mints the NFT to your wallet</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Estimated Total Cost</span>
+                  <span className="text-lg font-bold text-primary">
+                    ~{whitelistStatus?.totalMintCostKas || "20"} KAS
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Includes royalty fee + network fees
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Reservation expires in {formatTime(expiryCountdown)}</span>
+            </div>
+            
+            <div className="space-y-2">
+              <Button 
+                onClick={handleProceedToSign}
+                className="w-full"
+                data-testid="button-proceed-to-sign"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                Approve in Wallet
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={cancelMutation.isPending}
+                className="w-full"
+                data-testid="button-cancel-preview"
+              >
+                {cancelMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  "Cancel"
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
