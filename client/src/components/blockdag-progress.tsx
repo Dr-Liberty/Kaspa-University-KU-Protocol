@@ -329,7 +329,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       const isTestnet = import.meta.env.VITE_KASPA_NETWORK === "testnet-10";
       const network = isTestnet ? "testnet-10" : "mainnet";
       const indexerUrl = isTestnet ? "https://testnet-10.krc721.stream" : "https://mainnet.krc721.stream";
-      const verifyUrl = `${indexerUrl}/api/v1/krc721/${network}/address/${encodeURIComponent(wallet)}/${encodeURIComponent("KUDIPLOMA")}`;
+      const walletAddress = typeof wallet === 'string' ? wallet : wallet.address;
+      const verifyUrl = `${indexerUrl}/api/v1/krc721/${network}/address/${encodeURIComponent(walletAddress)}/${encodeURIComponent("KUDIPLOMA")}`;
       
       let existingTokenIds: Set<string> = new Set();
       let baselineSuccess = false;
@@ -337,19 +338,29 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       // Try to get baseline up to 3 times
       for (let baselineAttempt = 0; baselineAttempt < 3; baselineAttempt++) {
         try {
+          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1}, fetching ${verifyUrl}`);
           const baselineResponse = await fetch(verifyUrl);
+          console.log(`[DiplomaMint] Baseline response status: ${baselineResponse.status}`);
+          
           if (baselineResponse.ok) {
             const baselineData = await baselineResponse.json();
-            if (baselineData.message === "success" && Array.isArray(baselineData.result)) {
-              baselineData.result.forEach((nft: any) => {
-                if (nft.tokenId) existingTokenIds.add(String(nft.tokenId));
-              });
+            console.log(`[DiplomaMint] Baseline data:`, JSON.stringify(baselineData));
+            
+            // Accept success response - result can be array or empty/null for wallets with no tokens
+            if (baselineData.message === "success") {
+              if (Array.isArray(baselineData.result)) {
+                baselineData.result.forEach((nft: any) => {
+                  if (nft.tokenId) existingTokenIds.add(String(nft.tokenId));
+                });
+              }
+              // Empty result is valid for wallets with no existing KUDIPLOMA tokens
               baselineSuccess = true;
+              console.log(`[DiplomaMint] Baseline success, existing tokens: ${existingTokenIds.size}`);
               break;
             }
           }
         } catch (e) {
-          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1} failed, retrying...`);
+          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1} failed:`, e);
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
