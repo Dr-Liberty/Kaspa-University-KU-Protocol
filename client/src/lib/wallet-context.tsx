@@ -398,11 +398,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
-    const totalFeeKas = feeKas || 20;
-    const feeSompi = Math.floor(totalFeeKas * 100000000);
+    const priorityFeeKas = feeKas || 0;
     
     console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
-    console.log("[Wallet] Total fee: " + totalFeeKas + " KAS (" + feeSompi + " sompi)");
+    console.log("[Wallet] Priority fee: " + priorityFeeKas + " KAS");
     
     const availableMethods = Object.keys(window.kasware).filter(
       key => typeof (window.kasware as any)[key] === "function"
@@ -428,102 +427,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     let lastError: Error | null = null;
     
-    if (hasSubmitCommitReveal) {
-      try {
-        console.log("[Wallet] Trying submitCommitReveal (preferred method)");
-        
-        let result: { commitTxId: string; revealTxId: string; txId?: string } | string;
-        
-        try {
-          result = await window.kasware.submitCommitReveal({
-            type: "KSPR_KRC721",
-            data: inscriptionJson,
-            priorityFee: feeSompi
-          });
-        } catch (objectCallErr: any) {
-          if (objectCallErr.message?.includes("User rejected") || objectCallErr.message?.includes("cancelled")) {
-            throw objectCallErr;
-          }
-          console.log("[Wallet] Object signature failed, trying legacy 2-arg signature:", objectCallErr.message);
-          result = await window.kasware.submitCommitReveal(
-            inscriptionJson,
-            undefined,
-            undefined,
-            feeSompi
-          );
-        }
-        
-        console.log("[Wallet] submitCommitReveal result:", result);
-        
-        if (typeof result === "object" && result !== null) {
-          const revealTxId = result.revealTxId || result.txId;
-          const commitTxId = result.commitTxId;
-          if (revealTxId) {
-            console.log("[Wallet] Mint successful via submitCommitReveal - revealTxId:", revealTxId, "commitTxId:", commitTxId);
-            return { revealTxId, commitTxId };
-          }
-        } else if (typeof result === "string" && result.length > 0) {
-          console.log("[Wallet] Mint successful via submitCommitReveal (string result):", result);
-          return { revealTxId: result };
-        }
-        console.log("[Wallet] submitCommitReveal returned no valid transaction ID, trying fallback...");
-      } catch (err: any) {
-        if (err.message?.includes("User rejected") || err.message?.includes("cancelled")) {
-          throw new Error("Transaction cancelled by user");
-        }
-        console.log("[Wallet] submitCommitReveal failed, trying fallback:", err.message);
-        lastError = err;
-      }
-    }
-    
-    if (hasBuildScript && hasInscribeKRC721) {
-      try {
-        console.log("[Wallet] Trying buildScript + inscribeKRC721 (fallback method)");
-        const scriptResult = await window.kasware.buildScript({
-          type: "KSPR_KRC721",
-          data: inscriptionJson
-        });
-        
-        console.log("[Wallet] buildScript result:", scriptResult);
-        
-        if (!scriptResult || typeof scriptResult !== "object" || !scriptResult.script || !scriptResult.p2shAddress) {
-          throw new Error("buildScript returned invalid result: missing script or p2shAddress");
-        }
-        
-        const inscribeResult = await window.kasware.inscribeKRC721(
-          scriptResult.script,
-          scriptResult.p2shAddress
-        );
-        
-        console.log("[Wallet] inscribeKRC721 result:", inscribeResult);
-        
-        if (typeof inscribeResult === "object" && inscribeResult !== null) {
-          const revealTxId = inscribeResult.revealTxId;
-          const commitTxId = inscribeResult.commitTxId;
-          if (revealTxId) {
-            console.log("[Wallet] Mint successful via inscribeKRC721 - revealTxId:", revealTxId);
-            return { revealTxId, commitTxId };
-          }
-        } else if (typeof inscribeResult === "string" && inscribeResult.length > 0) {
-          console.log("[Wallet] Mint successful via inscribeKRC721 (string):", inscribeResult);
-          return { revealTxId: inscribeResult };
-        }
-        console.log("[Wallet] inscribeKRC721 returned no valid transaction ID, trying fallback...");
-      } catch (err: any) {
-        if (err.message?.includes("User rejected") || err.message?.includes("cancelled")) {
-          throw new Error("Transaction cancelled by user");
-        }
-        console.log("[Wallet] buildScript+inscribeKRC721 failed, trying fallback:", err.message);
-        lastError = err;
-      }
-    }
-    
+    // Primary method: signKRC20Transaction with type=3 (mint) for inscriptions
     try {
       if (hasSignKRC20) {
-        console.log("[Wallet] Using signKRC20Transaction type=5 (legacy fallback)");
-        console.log("[Wallet] This will show a single approval for both commit+reveal");
+        console.log("[Wallet] Using signKRC20Transaction type=3 (mint) for KRC-721");
+        console.log("[Wallet] Inscription:", inscriptionJson);
         
-        const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 5);
+        const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
         
         console.log("[Wallet] signKRC20Transaction result:", txId);
         
