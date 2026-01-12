@@ -325,98 +325,68 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
     
     setMintStep("signing");
     try {
-      // Get baseline: record existing token IDs before minting
       const isTestnet = import.meta.env.VITE_KASPA_NETWORK === "testnet-10";
       const network = isTestnet ? "testnet-10" : "mainnet";
       const indexerUrl = isTestnet ? "https://testnet-10.krc721.stream" : "https://mainnet.krc721.stream";
-      const walletAddress = typeof wallet === 'string' ? wallet : wallet.address;
-      const verifyUrl = `${indexerUrl}/api/v1/krc721/${network}/address/${encodeURIComponent(walletAddress)}/${encodeURIComponent("KUDIPLOMA")}`;
-      
-      let existingTokenIds: Set<string> = new Set();
-      let baselineSuccess = false;
-      
-      // Try to get baseline up to 3 times
-      for (let baselineAttempt = 0; baselineAttempt < 3; baselineAttempt++) {
-        try {
-          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1}, fetching ${verifyUrl}`);
-          const baselineResponse = await fetch(verifyUrl);
-          console.log(`[DiplomaMint] Baseline response status: ${baselineResponse.status}`);
-          
-          if (baselineResponse.ok) {
-            const baselineData = await baselineResponse.json();
-            console.log(`[DiplomaMint] Baseline data:`, JSON.stringify(baselineData));
-            
-            // Accept success response - result can be array or empty/null for wallets with no tokens
-            if (baselineData.message === "success") {
-              if (Array.isArray(baselineData.result)) {
-                baselineData.result.forEach((nft: any) => {
-                  if (nft.tokenId) existingTokenIds.add(String(nft.tokenId));
-                });
-              }
-              // Empty result is valid for wallets with no existing KUDIPLOMA tokens
-              baselineSuccess = true;
-              console.log(`[DiplomaMint] Baseline success, existing tokens: ${existingTokenIds.size}`);
-              break;
-            }
-          }
-        } catch (e) {
-          console.log(`[DiplomaMint] Baseline attempt ${baselineAttempt + 1} failed:`, e);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-      
-      if (!baselineSuccess) {
-        // Cannot proceed without baseline - cancel and show error
-        try {
-          await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
-        } catch {}
-        setMintError(
-          "Could not connect to the KRC-721 indexer to verify your transaction. " +
-          "Please try again in a few minutes."
-        );
-        setMintStep("error");
-        return;
-      }
-      
-      console.log("[DiplomaMint] Baseline token IDs:", Array.from(existingTokenIds));
       
       await apiRequest("POST", `/api/nft/signing/${reservation.reservationId}`);
-      const txHash = await signKRC721Mint(reservation.inscriptionJson);
-      setMintTxHash(txHash);
+      
+      console.log("[DiplomaMint] Calling signKRC721Mint...");
+      const mintResult = await signKRC721Mint(reservation.inscriptionJson);
+      const { revealTxId, commitTxId } = mintResult;
+      
+      console.log("[DiplomaMint] Mint result - revealTxId:", revealTxId, "commitTxId:", commitTxId);
+      setMintTxHash(revealTxId);
       setMintStep("confirming");
       
-      // Poll the KRC-721 indexer to verify a NEW token was added
+      const txVerifyUrl = `${indexerUrl}/api/v1/krc721/${network}/ops/txid/${encodeURIComponent(revealTxId)}`;
+      console.log("[DiplomaMint] Verifying via:", txVerifyUrl);
+      
       let verified = false;
       let newTokenId: string | null = null;
-      const maxAttempts = 12; // 60 seconds total (5s intervals)
+      const maxAttempts = 12;
       
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-          const response = await fetch(verifyUrl);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log(`[DiplomaMint] Verification attempt ${attempt + 1}/${maxAttempts}...`);
+          
+          const response = await fetch(txVerifyUrl);
+          console.log(`[DiplomaMint] Response status: ${response.status}`);
+          
           if (response.ok) {
             const data = await response.json();
-            if (data.message === "success" && Array.isArray(data.result)) {
-              // Check for any NEW token that wasn't in the baseline
-              for (const nft of data.result) {
-                if (nft.tokenId && !existingTokenIds.has(String(nft.tokenId))) {
+            console.log("[DiplomaMint] Transaction data:", JSON.stringify(data));
+            
+            if (data.message === "success" && data.result) {
+              const opResult = data.result;
+              
+              if (opResult.op === "mint" && opResult.tick === "KUDIPLOMA") {
+                if (opResult.opError) {
+                  console.error("[DiplomaMint] Transaction has error:", opResult.opError);
+                  throw new Error(`Mint rejected: ${opResult.opError}`);
+                }
+                
+                const tokenId = opResult.opData?.tokenId || opResult.tokenId;
+                if (tokenId) {
                   verified = true;
-                  newTokenId = String(nft.tokenId);
+                  newTokenId = String(tokenId);
                   setVerifiedTokenId(newTokenId);
-                  console.log("[DiplomaMint] New token detected:", newTokenId);
+                  console.log("[DiplomaMint] Verified token ID:", newTokenId);
                   break;
                 }
               }
-              if (verified) break;
             }
           }
-        } catch (e) {
-          console.log(`[DiplomaMint] Verification attempt ${attempt + 1} failed, retrying...`);
+        } catch (e: any) {
+          if (e.message?.includes("Mint rejected")) {
+            throw e;
+          }
+          console.log(`[DiplomaMint] Verification attempt ${attempt + 1} failed:`, e);
         }
       }
       
       if (!verified) {
-        // Cancel the reservation since verification failed
         try {
           await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
         } catch {}
@@ -430,8 +400,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         return;
       }
       
-      // Only confirm with server after on-chain verification
-      confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: txHash });
+      confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: revealTxId });
     } catch (err: any) {
       console.error("[DiplomaMint] Signing failed:", err);
       try {

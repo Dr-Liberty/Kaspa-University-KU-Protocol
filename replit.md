@@ -48,6 +48,13 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-12**: Improved KRC-721 minting reliability with transaction-based verification:
+    - **Wallet API Prioritization**: `submitCommitReveal` (preferred) → `buildScript+inscribeKRC721` → `signKRC20Transaction` (legacy fallback)
+    - **Signature Compatibility**: Handles both modern object-based and legacy multi-argument `submitCommitReveal` signatures
+    - **Return Type**: `signKRC721Mint` now returns `{ revealTxId, commitTxId }` for reliable transaction tracking
+    - **Transaction Verification**: Polls `/ops/txid/{revealTxId}` instead of wallet inventory diffing
+    - **Token ID Extraction**: Gets assigned tokenId directly from indexer operation response
+    - **Error Handling**: Detects `opError` in indexer response for rejected mints
 - **2026-01-11**: Enhanced diploma minting UX with mandatory preview and on-chain verification:
     - **Preview Step**: Users now see full transaction details (commit-reveal explanation, PoW fee, "Batch Transfer" warning) before wallet prompt
     - **Token ID Display**: Shows "Random (assigned on-chain)" in preview, then verified token ID (e.g., "KUDIPLOMA #4829") in success
