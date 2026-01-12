@@ -398,10 +398,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
-    const priorityFeeKas = feeKas || 0;
-    
     console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
-    console.log("[Wallet] Priority fee: " + priorityFeeKas + " KAS");
     
     const availableMethods = Object.keys(window.kasware).filter(
       key => typeof (window.kasware as any)[key] === "function"
@@ -418,41 +415,68 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     const hasSubmitCommitReveal = typeof window.kasware.submitCommitReveal === "function";
     const hasBuildScript = typeof window.kasware.buildScript === "function";
-    const hasInscribeKRC721 = typeof window.kasware.inscribeKRC721 === "function";
-    const hasSignKRC20 = typeof window.kasware.signKRC20Transaction === "function";
     
     console.log("[Wallet] Capability detection: submitCommitReveal=" + hasSubmitCommitReveal + 
-      ", buildScript=" + hasBuildScript + ", inscribeKRC721=" + hasInscribeKRC721 + 
-      ", signKRC20Transaction=" + hasSignKRC20);
+      ", buildScript=" + hasBuildScript);
     
-    let lastError: Error | null = null;
-    
-    // Primary method: signKRC20Transaction with type=3 (mint) for inscriptions
+    // Primary method: buildScript + submitCommitReveal for KSPR_KRC721
     try {
-      if (hasSignKRC20) {
-        console.log("[Wallet] Using signKRC20Transaction type=3 (mint) for KRC-721");
-        console.log("[Wallet] Inscription:", inscriptionJson);
+      if (hasBuildScript && hasSubmitCommitReveal) {
+        console.log("[Wallet] Using buildScript(KSPR_KRC721) + submitCommitReveal");
         
-        const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
+        // Build the inscription script
+        const { script, p2shAddress } = await window.kasware.buildScript({
+          type: "KSPR_KRC721",
+          data: inscriptionJson
+        });
         
-        console.log("[Wallet] signKRC20Transaction result:", txId);
+        console.log("[Wallet] Script built, p2shAddress:", p2shAddress?.slice(0, 30) + "...");
         
-        if (typeof txId === "string" && txId.length > 0) {
-          console.log("[Wallet] Mint successful via signKRC20Transaction:", txId);
-          return { revealTxId: txId };
+        // Submit commit-reveal using the new object-based API
+        const result = await window.kasware.submitCommitReveal("KSPR_KRC721", inscriptionJson);
+        
+        console.log("[Wallet] submitCommitReveal result:", result);
+        
+        if (typeof result === "string" && result.length > 0) {
+          console.log("[Wallet] Mint successful:", result);
+          return { revealTxId: result };
         }
         
-        if (txId && typeof txId === "object") {
-          const resultObj = txId as Record<string, any>;
-          const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId;
-          const commitTxId = resultObj.commitId || resultObj.commitTxId;
+        if (result && typeof result === "object") {
+          const resultObj = result as Record<string, any>;
+          const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || resultObj.reveal;
+          const commitTxId = resultObj.commitId || resultObj.commitTxId || resultObj.commit;
           if (revealTxId) {
-            console.log("[Wallet] Mint successful via signKRC20Transaction (object):", revealTxId);
+            console.log("[Wallet] Mint successful (object result):", revealTxId);
             return { revealTxId, commitTxId };
           }
         }
         
-        throw new Error("signKRC20Transaction returned no transaction ID");
+        throw new Error("submitCommitReveal returned no transaction ID");
+      }
+      
+      // Fallback: Try submitCommitReveal directly without buildScript
+      if (hasSubmitCommitReveal) {
+        console.log("[Wallet] Fallback: submitCommitReveal without buildScript");
+        
+        const result = await window.kasware.submitCommitReveal("KSPR_KRC721", inscriptionJson);
+        
+        console.log("[Wallet] submitCommitReveal result:", result);
+        
+        if (typeof result === "string" && result.length > 0) {
+          return { revealTxId: result };
+        }
+        
+        if (result && typeof result === "object") {
+          const resultObj = result as Record<string, any>;
+          const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || resultObj.reveal;
+          const commitTxId = resultObj.commitId || resultObj.commitTxId || resultObj.commit;
+          if (revealTxId) {
+            return { revealTxId, commitTxId };
+          }
+        }
+        
+        throw new Error("submitCommitReveal returned no transaction ID");
       }
       
       throw new Error(
