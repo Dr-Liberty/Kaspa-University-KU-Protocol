@@ -133,17 +133,26 @@ export class MintService {
 
   /**
    * Build mint inscription JSON per KRC-721 spec
+   * Note: tokenId is assigned pseudo-randomly by the indexer, so we omit 'id' field
+   * The 'to' field specifies the recipient address per KRC-721 mint spec
    */
-  buildInscriptionJson(walletAddress: string): MintInscriptionData {
+  buildInscriptionJson(walletAddress: string, tokenId?: number): MintInscriptionData {
     const ticker = getCollectionTicker();
-    console.log(`[MintService] Building diploma inscription with ticker: ${ticker}, to: ${walletAddress}`);
+    console.log(`[MintService] Building diploma inscription with ticker: ${ticker}, to: ${walletAddress}, tokenId: ${tokenId || 'auto'}`);
     
-    return {
+    const inscription: MintInscriptionData = {
       p: "krc-721",
       op: "mint",
       tick: ticker,
       to: walletAddress,
     };
+    
+    // Include token ID if specified (for specific ID minting)
+    if (tokenId !== undefined) {
+      (inscription as any).id = String(tokenId);
+    }
+    
+    return inscription;
   }
 
   /**
@@ -198,8 +207,8 @@ export class MintService {
       return { error: "Diploma collection is sold out" };
     }
 
-    // Build inscription per KRC-721 spec
-    const inscriptionData = this.buildInscriptionJson(walletAddress);
+    // Build inscription per KRC-721 spec (with token ID for specific minting)
+    const inscriptionData = this.buildInscriptionJson(walletAddress, tokenId);
     const inscriptionJson = JSON.stringify(inscriptionData);
 
     const expiresAt = new Date();
