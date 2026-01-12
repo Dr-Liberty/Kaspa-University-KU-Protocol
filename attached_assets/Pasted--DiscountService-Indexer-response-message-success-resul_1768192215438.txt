@@ -1,0 +1,106 @@
+
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 20:29:04.94
+3966274e
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 20:29:04.94
+3966274e
+User
+4:29:04 AM [express] GET /api/whitelist/status 304 in 440ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 20:29:10.20
+3966274e
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 20:29:10.38
+3966274e
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 20:29:10.38
+3966274e
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 20:29:10.56
+3966274e
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 20:29:10.56
+3966274e
+User
+4:29:10 AM [express] GET /api/whitelist/status 304 in 513ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 20:29:15.82
+3966274e
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-11 20:29:16.00
+3966274e
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-11 20:29:16.00
+3966274e
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-11 20:29:16.18
+3966274e
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-11 20:29:16.19
+3966274e
+User
+4:29:16 AM [express] GET /api/whitelist/status 304 in 529ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-11 20:29:16.21
+3966274e
+User
+[MintService] Cancelled reservation 8723988a-28ec-45ee-b1ec-0cf836886c00
+2026-01-11 20:29:16.21
+3966274e
+User
+4:29:16 AM [express] POST /api/nft/cancel/8723988a-28ec-45ee-b1ec-0cf836886c00 200 in 517ms :: {"success":true}
+2026-01-11 20:29:20.30
+a6df227b
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-11 20:29:20.30
+a6df227b
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-11 20:29:20.30
+a6df227b
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 20:29:20.30
+a6df227b
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-11 20:29:21.07
+a6df227b
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-11 20:29:21.37
+a6df227b
+User
+[Kasia Client] Found
