@@ -563,32 +563,28 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         // Step 3: Submit the reveal transaction  
         // Include original KRC-721 payload type and data for wallet cache consistency
-        console.log("[Wallet] Step 3: Calling submitReveal with full payload...");
-        const revealOptions = {
-          type: "KSPR_KRC721",
-          data: inscriptionJson,
-          scriptHex: script,
-          commitTxId: commitTxId
-        };
-        console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
+        console.log("[Wallet] Step 3: Calling submitReveal (uses cached state from buildScript)...");
         
         // Try multiple parameter formats for submitReveal
         let revealResult;
         try {
-          // Try with full options object first
-          revealResult = await window.kasware.submitReveal(revealOptions);
+          // Try with NO parameters first - KasWare caches state from buildScript
+          console.log("[Wallet] Trying submitReveal() with no parameters...");
+          revealResult = await window.kasware.submitReveal();
         } catch (e1) {
-          console.log("[Wallet] submitReveal with full options failed:", e1);
+          console.log("[Wallet] submitReveal() no params failed:", e1);
           try {
-            // Try with just type and data (like submitCommitReveal)
-            revealResult = await window.kasware.submitReveal("KSPR_KRC721", inscriptionJson);
+            // Try with commit txId only
+            console.log("[Wallet] Trying submitReveal(commitTxId)...");
+            revealResult = await window.kasware.submitReveal(commitTxId);
           } catch (e2) {
-            console.log("[Wallet] submitReveal with type+data failed:", e2);
+            console.log("[Wallet] submitReveal(commitTxId) failed:", e2);
             try {
-              // Try with just script
-              revealResult = await window.kasware.submitReveal(script);
+              // Try with type and data (like submitCommitReveal)
+              console.log("[Wallet] Trying submitReveal(type, data)...");
+              revealResult = await window.kasware.submitReveal("KSPR_KRC721", inscriptionJson);
             } catch (e3) {
-              console.log("[Wallet] submitReveal with script failed:", e3);
+              console.log("[Wallet] submitReveal(type, data) failed:", e3);
               // Last resort: return commit info and let user retry
               console.log("[Wallet] All submitReveal attempts failed. Commit succeeded, reveal needs manual completion.");
               return { revealTxId: commitTxId, commitTxId, revealPending: true };
