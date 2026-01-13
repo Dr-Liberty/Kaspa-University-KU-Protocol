@@ -1158,12 +1158,21 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                     <div className="relative overflow-hidden rounded-lg border bg-muted/30 p-2">
                       <img 
                         src={reservation.imageUrl.startsWith("ipfs://") 
-                          ? `https://gateway.pinata.cloud/ipfs/${reservation.imageUrl.replace("ipfs://", "")}`
+                          ? `https://ipfs.io/ipfs/${reservation.imageUrl.replace("ipfs://", "")}`
                           : reservation.imageUrl
                         }
                         alt="KUDIPLOMA NFT"
                         className="max-h-48 w-auto rounded object-contain"
                         data-testid="img-diploma-nft"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const cid = reservation.imageUrl?.replace("ipfs://", "") || "";
+                          if (target.src.includes("ipfs.io")) {
+                            target.src = `https://gateway.pinata.cloud/ipfs/${cid}`;
+                          } else if (target.src.includes("pinata.cloud")) {
+                            target.src = `https://cloudflare-ipfs.com/ipfs/${cid}`;
+                          }
+                        }}
                       />
                     </div>
                   </div>
