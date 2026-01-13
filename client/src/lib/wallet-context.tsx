@@ -465,16 +465,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           if (!window.kasware) {
             throw new Error("KasWare wallet not available");
           }
-          try {
-            return await window.kasware.submitCommitReveal(commitRevealOptions);
-          } catch (optErr: any) {
-            // Fallback to string arguments if options object not supported
-            console.log("[Wallet] Options object failed, trying string args:", optErr.message);
-            if (!window.kasware) {
-              throw new Error("KasWare wallet not available");
-            }
-            return await window.kasware.submitCommitReveal("KSPR_KRC721", inscriptionJson);
-          }
+          
+          // Try positional arguments format first (more widely supported)
+          // submitCommitReveal(type, data, extraOutputs, priorityFee)
+          console.log("[Wallet] Calling submitCommitReveal with positional args");
+          console.log("[Wallet] extraOutputs:", JSON.stringify(extraOutputs));
+          
+          return await window.kasware.submitCommitReveal(
+            "KSPR_KRC721",
+            inscriptionJson,
+            extraOutputs.length > 0 ? extraOutputs : undefined,
+            options?.priorityFee
+          );
         };
         
         const timeoutPromise = new Promise((_, reject) => {
