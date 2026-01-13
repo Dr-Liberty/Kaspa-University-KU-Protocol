@@ -604,11 +604,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             type: "KSPR_KRC721",
             data: inscriptionJson,
             script: script,
-            priorityEntries: [priorityEntry],
-            outputs: [{
-              address: royaltyOptions?.royaltyTo || "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
-              amount: royaltyOptions?.royaltyFeeSompi || "1000000000"
-            }]
+            priorityEntries: [priorityEntry]
           };
           console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
           revealResult = await window.kasware.submitReveal(revealOptions);
