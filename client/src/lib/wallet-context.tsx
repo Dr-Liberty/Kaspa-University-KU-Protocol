@@ -405,8 +405,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("KasWare wallet not installed");
     }
     
-    console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
-    console.log("[Wallet] Royalty options:", options);
+    console.log("[Wallet] Starting KRC-721 mint");
+    console.log("[Wallet] Inscription JSON (raw):", inscriptionJson);
+    console.log("[Wallet] Inscription JSON (parsed):", JSON.parse(inscriptionJson));
+    console.log("[Wallet] Royalty options:", JSON.stringify(options));
     
     const availableMethods = Object.keys(window.kasware).filter(
       key => typeof (window.kasware as any)[key] === "function"

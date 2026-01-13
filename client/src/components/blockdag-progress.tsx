@@ -333,7 +333,10 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       
       await apiRequest("POST", `/api/nft/signing/${reservation.reservationId}`);
       
-      console.log("[DiplomaMint] Calling signKRC721Mint with royalty options...");
+      console.log("[DiplomaMint] Calling signKRC721Mint...");
+      console.log("[DiplomaMint] inscriptionJson:", reservation.inscriptionJson);
+      console.log("[DiplomaMint] royaltyTo:", reservation.royaltyTo);
+      console.log("[DiplomaMint] royaltyFeeSompi:", reservation.royaltyFeeSompi);
       const mintResult = await signKRC721Mint(reservation.inscriptionJson, {
         royaltyTo: reservation.royaltyTo,
         royaltyFeeSompi: reservation.royaltyFeeSompi,
