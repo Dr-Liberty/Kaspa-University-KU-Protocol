@@ -1,0 +1,57 @@
+inpage.js:1 MetaMask encountered an error setting the global Ethereum provider - this is likely due to another Ethereum wallet extension also setting the global Ethereum provider: TypeError: Cannot set property ethereum of #<Window> which has only a getter
+    at a (inpage.js:1:146243)
+    at r.initializeProvider (inpage.js:1:146014)
+    at Object.<anonymous> (inpage.js:1:2308)
+    at Object.<anonymous> (inpage.js:1:6316)
+    at 2.../../shared/modules/provider-injection (inpage.js:1:6329)
+    at i (inpage.js:1:254)
+    at e (inpage.js:1:412)
+    at inpage.js:1:429
+
+index-BipQAWaJ.js:8 [SIWK] Requesting challenge for kaspa:qrmzgsh8c...
+index-BipQAWaJ.js:8 [SIWK] Signing challenge message with Schnorr...
+index-BipQAWaJ.js:8 [SIWK] Verifying signature...
+index-BipQAWaJ.js:8 [SIWK] Authenticated via Sign-In with Kaspa: kaspa:qrmzgsh8c... (mainnet)
+index-BipQAWaJ.js:8 [API] POST /api/diploma/reserve 
+Object
+index-BipQAWaJ.js:8 [API] POST /api/nft/signing/b606ff30-3946-41bf-b84d-49cd0f791b12 
+Object
+index-BipQAWaJ.js:69 [DiplomaMint] Calling signKRC721Mint...
+index-BipQAWaJ.js:69 [DiplomaMint] inscriptionJson: {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-BipQAWaJ.js:69 [DiplomaMint] royaltyTo: undefined
+index-BipQAWaJ.js:69 [DiplomaMint] royaltyFeeSompi: undefined
+index-BipQAWaJ.js:8 [Wallet] Starting KRC-721 mint
+index-BipQAWaJ.js:8 [Wallet] Inscription JSON (raw): {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-BipQAWaJ.js:8 [Wallet] Inscription JSON (parsed): 
+Object
+index-BipQAWaJ.js:8 [Wallet] Royalty options: {}
+index-BipQAWaJ.js:8 [Wallet] Available KasWare methods: initialize, keepAlive, _requestPromiseCheckVisibility, _handleBackgroundMessage, _request, requestAccounts, getNetwork, switchNetwork, getAccounts, getPublicKey, getBalance, getKRC20Balance, getUtxoEntries, getP2shAddress, createKRC20Order, cancelKRC20Order, signCancelKRC20Order, buyKRC20Token, signBuyKRC20Token, submitCommit, submitReveal, submitCommitReveal, signMessage, verifyMessage, verifyMessageECDSA, buildScript, sendKaspa, signKRC20Transaction, signKRC20BatchTransferTransaction, krc20BatchTransferTransaction, cancelKRC20BatchTransfer, pushTx, disconnect, signPskt, getVersion
+index-BipQAWaJ.js:8 [Wallet] KRC-721 mint: ticker=KUDIPLOMA, op=mint, to=kaspa:qrmzgsh8chv72q
+index-BipQAWaJ.js:8 [Wallet] Capability detection: submitCommitReveal=true, buildScript=true
+index-BipQAWaJ.js:8 [Wallet] Using submitCommitReveal with options: {"type":"KSPR_KRC721","data":"{\"p\":\"krc-721\",\"op\":\"mint\",\"tick\":\"KUDIPLOMA\",\"to\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\"}"}
+index-BipQAWaJ.js:8 [Wallet] Options object failed, trying string args: User rejected the request.
+index-BipQAWaJ.js:8 [Wallet] KRC-721 mint failed: 
+Object
+index-BipQAWaJ.js:69 [DiplomaMint] Signing failed: Error: Transaction cancelled by user
+    at index-BipQAWaJ.js:8:200614
+    at async ae (index-BipQAWaJ.js:69:3526)
+index-BipQAWaJ.js:8 [API] POST /api/nft/cancel/b606ff30-3946-41bf-b84d-49cd0f791b12 
+Object
+index-BipQAWaJ.js:8 [API] POST /api/diploma/reserve 
+Object
+index-BipQAWaJ.js:8 [API] POST /api/nft/signing/66c48925-59bb-4b2f-9f06-29364e2e81cd 
+Object
+index-BipQAWaJ.js:69 [DiplomaMint] Calling signKRC721Mint...
+index-BipQAWaJ.js:69 [DiplomaMint] inscriptionJson: {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-BipQAWaJ.js:69 [DiplomaMint] royaltyTo: undefined
+index-BipQAWaJ.js:69 [DiplomaMint] royaltyFeeSompi: undefined
+index-BipQAWaJ.js:8 [Wallet] Starting KRC-721 mint
+index-BipQAWaJ.js:8 [Wallet] Inscription JSON (raw): {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-BipQAWaJ.js:8 [Wallet] Inscription JSON (parsed): 
+Object
+index-BipQAWaJ.js:8 [Wallet] Royalty options: {}
+index-BipQAWaJ.js:8 [Wallet] Available KasWare methods: initialize, keepAlive, _requestPromiseCheckVisibility, _handleBackgroundMessage, _request, requestAccounts, getNetwork, switchNetwork, getAccounts, getPublicKey, getBalance, getKRC20Balance, getUtxoEntries, getP2shAddress, createKRC20Order, cancelKRC20Order, signCancelKRC20Order, buyKRC20Token, signBuyKRC20Token, submitCommit, submitReveal, submitCommitReveal, signMessage, verifyMessage, verifyMessageECDSA, buildScript, sendKaspa, signKRC20Transaction, signKRC20BatchTransferTransaction, krc20BatchTransferTransaction, cancelKRC20BatchTransfer, pushTx, disconnect, signPskt, getVersion
+index-BipQAWaJ.js:8 [Wallet] KRC-721 mint: ticker=KUDIPLOMA, op=mint, to=kaspa:qrmzgsh8chv72q
+index-BipQAWaJ.js:8 [Wallet] Capability detection: submitCommitReveal=true, buildScript=true
+index-BipQAWaJ.js:8 [Wallet] Using submitCommitReveal with options: {"type":"KSPR_KRC721","data":"{\"p\":\"krc-721\",\"op\":\"mint\",\"tick\":\"KUDIPLOMA\",\"to\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\"}"}
+﻿

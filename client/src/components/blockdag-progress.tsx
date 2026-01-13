@@ -255,6 +255,8 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         inscriptionJson: data.inscriptionJson,
         expiresAt: data.expiresAt,
         imageUrl: data.imageUrl,
+        royaltyTo: data.royaltyTo,
+        royaltyFeeSompi: data.royaltyFeeSompi,
       });
       setMintStep("preview");
     },
