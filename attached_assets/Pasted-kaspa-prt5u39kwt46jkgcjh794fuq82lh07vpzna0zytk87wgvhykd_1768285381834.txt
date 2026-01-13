@@ -1,0 +1,78 @@
+kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74
+index-B8Cs7Xtd.js:8 [Wallet] Commit amount: 2050000000 sompi ( 20.5 KAS)
+index-B8Cs7Xtd.js:8 [Wallet] Step 2: Sending 2050000000 sompi to P2SH address via sendKaspa...
+index-B8Cs7Xtd.js:8 [Wallet] sendKaspa result: {"id":"ad98ea2073e4b74ba91d6cf2ba366d3cd9bd44dd36c7581881f60b559a62dde8","version":0,"inputs":[{"transactionId":"e05bf076f28a9f0415214d8bd0f4ef864b1dda5581550ddd95e1d74f7825d38d","index":1,"sequence":"0","sigOpCount":1,"signatureScript":"","utxo":{"address":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","amount":"959499941583","scriptPublicKey":"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac","blockDaaScore":"328652978","isCoinbase":false}}],"outputs":[{"value":"2050000000","scriptPublicKey":"0000aa20d74e44b672eba9591895fc5aa7803abf77f98114faf111763f9c865c966d1d8787"},{"value":"957449939536","scriptPublicKey":"000020f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac"}],"subnetworkId":"0000000000000000000000000000000000000000","lockTime":"0","gas":"0","mass":"2047","payload":""}
+index-B8Cs7Xtd.js:8 [Wallet] Extracted commit txId: ad98ea2073e4b74ba91d6cf2ba366d3cd9bd44dd36c7581881f60b559a62dde8
+index-B8Cs7Xtd.js:8 [Wallet] Waiting for commit UTXO to be visible...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...
+index-B8Cs7Xtd.js:8 [Wallet] getUtxoEntries error: TypeError: xe.scriptPublicKey?.includes is not a function
+    at index-B8Cs7Xtd.js:8:201768
+    at Array.find (<anonymous>)
+    at index-B8Cs7Xtd.js:8:201723
+    at async ne (index-B8Cs7Xtd.js:69:3558)
+index-B8Cs7Xtd.js:8 [Wallet] Commit UTXO not yet visible, waiting...

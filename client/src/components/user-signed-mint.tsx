@@ -331,7 +331,7 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Mint Fee</span>
-                <span className="text-sm font-medium text-primary">~10 KAS</span>
+                <span className="text-sm font-medium text-primary">~20.5 KAS</span>
               </div>
               {reservation && (
                 <div className="flex items-center justify-between">

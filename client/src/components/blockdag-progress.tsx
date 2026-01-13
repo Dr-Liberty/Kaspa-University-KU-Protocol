@@ -236,7 +236,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
 
   const isComplete = diplomaStatus?.isEligible ?? (courses.length > 0 && completedCount >= courses.length);
   const isWhitelisted = whitelistStatus?.isWhitelisted;
-  const mintPrice = isWhitelisted ? "~10 KAS" : "~20,000 KAS";
+  const mintPrice = isWhitelisted ? "~20.5 KAS" : "~20,000 KAS";
   const DIPLOMA_MINT_ENABLED = true;
 
   const reserveMutation = useMutation({
@@ -905,7 +905,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                     data-testid="button-mint-diploma"
                   >
                     <Wallet className="w-4 h-4" />
-                    Mint Diploma (~10 KAS)
+                    Mint Diploma (~20.5 KAS)
                   </Button>
                 ) : whitelistStatus?.needsWhitelist ? (
                   <Button 
@@ -1080,7 +1080,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Est. Cost</span>
-                    <span className="font-medium text-primary">~10 KAS</span>
+                    <span className="font-medium text-primary">~20.5 KAS</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Process</span>

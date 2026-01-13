@@ -285,7 +285,7 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
   const isClaimed = nftStatus === "claimed";
   
   const isWhitelisted = whitelistStatus?.isWhitelisted;
-  const mintPrice = isWhitelisted ? "~10 KAS" : "~20,000 KAS";
+  const mintPrice = isWhitelisted ? "~20.5 KAS" : "~20,000 KAS";
 
   useEffect(() => {
     if (isMinting) {
