@@ -504,7 +504,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (hasBuildScript && hasSubmitCommitReveal) {
         console.log("[Wallet] Using buildScript + submitCommitReveal (proper Commit & Reveal UI)");
         
-        // Step 1: Build the commit script to get P2SH address
+        // Step 1: Build the commit script to get P2SH address AND amountSompi
         console.log("[Wallet] Step 1: Calling buildScript to get P2SH address...");
         const buildResult = await window.kasware.buildScript({
           type: "KSPR_KRC721",
@@ -517,15 +517,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           throw new Error("buildScript failed to return p2shAddress");
         }
         
-        const { p2shAddress } = buildResult;
+        const { p2shAddress, amountSompi: buildAmountSompi } = buildResult;
         
-        // KRC-721 mint costs:
-        // - 10 KAS PoW fee (to P2SH commit address)
-        // - 10 KAS royalty (to collection owner)
-        // - ~0.5 KAS transaction fees
-        const commitAmountSompi = 1000000000; // 10 KAS for PoW
+        // Use the amount from buildScript, or default to 10 KAS
+        const commitAmountSompi = buildAmountSompi || 1000000000; // Amount returned by buildScript or 10 KAS
         const royaltyAmountSompi = options?.royaltyFeeSompi ? 
           parseInt(options.royaltyFeeSompi, 10) : 1000000000; // 10 KAS royalty
+        const priorityFeeSompi = 50000000; // 0.5 KAS priority fee
+        
+        console.log("[Wallet] Amounts - commit:", commitAmountSompi / 100000000, "KAS, royalty:", royaltyAmountSompi / 100000000, "KAS, priority:", priorityFeeSompi / 100000000, "KAS");
         
         // Build extraOutputs for the proper Commit & Reveal UI
         const extraOutputs: Array<{ address: string; amount: number }> = [
@@ -547,7 +547,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           type: "KSPR_KRC721",
           data: inscriptionJson,
           extraOutputs: extraOutputs,
-          priorityFee: 0
+          priorityFee: priorityFeeSompi
         };
         
         console.log("[Wallet] submitCommitReveal params:", JSON.stringify(submitParams, null, 2));
