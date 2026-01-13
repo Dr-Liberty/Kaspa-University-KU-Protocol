@@ -451,11 +451,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const accounts = await window.kasware.getAccounts();
         const walletAddress = accounts[0];
         const entries = await window.kasware.getUtxoEntries();
-        const networkId = await window.kasware.getNetwork();
+        const rawNetworkId = await window.kasware.getNetwork();
+        
+        // Convert network ID to the format submitCommitReveal expects
+        // KasWare returns 0 for mainnet, but we may need "mainnet" string
+        let networkId: string | number = rawNetworkId;
+        if (rawNetworkId === 0 || rawNetworkId === "kaspa_mainnet") {
+          networkId = "mainnet";
+        } else if (rawNetworkId === 1 || rawNetworkId === "kaspa_testnet-10") {
+          networkId = "testnet-10";
+        } else if (rawNetworkId === 2 || rawNetworkId === "kaspa_testnet-11") {
+          networkId = "testnet-11";
+        }
         
         console.log("[Wallet] Wallet address:", walletAddress);
         console.log("[Wallet] UTXOs count:", entries.length);
-        console.log("[Wallet] Network ID:", networkId);
+        console.log("[Wallet] Raw network ID:", rawNetworkId, "-> Converted:", networkId);
         
         // Step 2: Build the script to get P2SH address and script data
         console.log("[Wallet] Step 2: Calling buildScript...");
