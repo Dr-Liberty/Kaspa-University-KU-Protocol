@@ -301,9 +301,14 @@ export async function registerRoutes(
     const mainnetCount = await getMainnetMintedCount();
     stats.certificatesMinted = mainnetCount.count;
     
-    // Add quiz proofs on-chain count from KU indexer
+    // Quiz proofs on-chain: use max of in-memory indexer and database count
+    // (in-memory resets on restart, database persists)
     const kuStats = kuIndexer.getStats();
-    stats.quizProofsOnChain = kuStats.totalQuizProofs;
+    const allQuizResults = await storage.getAllQuizResults();
+    const confirmedDbCount = allQuizResults.filter(
+      r => r.txHash && r.txStatus === "confirmed" && !r.txHash.startsWith("demo_")
+    ).length;
+    stats.quizProofsOnChain = Math.max(kuStats.totalQuizProofs, confirmedDbCount);
     
     statsCache.set("platform_stats", stats);
     res.json(stats);
@@ -1038,6 +1043,21 @@ export async function registerRoutes(
                 txHash: txResult.txHash, 
                 txStatus: "confirmed" 
               });
+              
+              // Record to KU indexer for stats tracking
+              kuIndexer.recordQuizProof({
+                id: result.id,
+                txHash: txResult.txHash,
+                walletAddress,
+                courseId: lesson.courseId,
+                lessonId,
+                score,
+                maxScore: 100,
+                timestamp: new Date(),
+                contentHash: quizPayload,
+                verified: true,
+              }, true); // Skip re-verification since we just sent it
+              
               console.log(`[Quiz] On-chain TX confirmed: ${txResult.txHash} for lesson ${lessonId}`);
               return; // Success - exit retry loop
             } else {
