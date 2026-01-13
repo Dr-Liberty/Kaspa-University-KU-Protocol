@@ -547,12 +547,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Step 3: Submit the reveal transaction
-        console.log("[Wallet] Step 3: Calling submitReveal...");
+        // Must include commit transaction details so wallet knows which UTXO to spend
+        console.log("[Wallet] Step 3: Calling submitReveal with commit details...");
         
         const revealParams = {
           type: "KSPR_KRC721",
           data: inscriptionJson,
-          script: script
+          script: script,
+          commitTxId: commitTxId,
+          commitVout: 0,
+          commitAmountSompi: commitAmountSompi
         };
         
         console.log("[Wallet] submitReveal params:", JSON.stringify(revealParams, null, 2));
