@@ -499,10 +499,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // Method 2: buildScript + submitCommit + submitReveal (separate calls)
-      // This is the most reliable approach for KasWare
-      if (hasBuildScript && hasSubmitCommit && hasSubmitReveal) {
-        console.log("[Wallet] Using three-step flow: buildScript + submitCommit + submitReveal");
+      // Method 2: buildScript + sendKaspa (manual commit) + submitReveal
+      // submitCommit is internally gated, so use sendKaspa to fund the P2SH address directly
+      if (hasBuildScript && hasSendKaspa && hasSubmitReveal) {
+        console.log("[Wallet] Using manual commit flow: buildScript + sendKaspa + submitReveal");
         
         // Step 1: Build the commit script
         console.log("[Wallet] Step 1: Calling buildScript...");
@@ -518,42 +518,43 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
         
         const { script, p2shAddress } = buildResult;
-        // Calculate amount if not provided - KRC-721 mints typically need ~0.3 KAS for commit
-        const amountSompi = buildResult.amountSompi || 30000000; // Default 0.3 KAS
+        // KRC-721 mints need ~0.3 KAS for commit (covers storage + reveal fees)
+        const commitAmountKAS = buildResult.amountSompi 
+          ? (buildResult.amountSompi / 100000000).toFixed(8)
+          : "0.3";
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
-        console.log("[Wallet] Got amountSompi:", amountSompi, "(default if undefined)");
+        console.log("[Wallet] Commit amount:", commitAmountKAS, "KAS");
         
-        // Step 2: Submit the commit transaction (sends KAS to P2SH address)
-        // KasWare expects a single options object, not positional arguments
-        console.log("[Wallet] Step 2: Calling submitCommit with options object...");
-        const commitOptions = {
-          scriptHex: script,
-          p2shAddress: p2shAddress,
-          amountSompi: amountSompi,
-          priorityFee: 0
-        };
-        console.log("[Wallet] submitCommit options:", JSON.stringify(commitOptions));
-        const commitResult = await window.kasware.submitCommit(commitOptions);
-        console.log("[Wallet] submitCommit result:", commitResult);
-        
-        const commitTxId = typeof commitResult === "string" ? commitResult : 
-          (commitResult?.txId || commitResult?.hash || commitResult?.sendCommitTxId);
+        // Step 2: Send KAS to P2SH address using sendKaspa (this triggers wallet popup!)
+        console.log("[Wallet] Step 2: Sending", commitAmountKAS, "KAS to P2SH address via sendKaspa...");
+        const commitTxId = await window.kasware.sendKaspa(p2shAddress, commitAmountKAS);
+        console.log("[Wallet] Commit transaction sent! TxId:", commitTxId);
         
         if (!commitTxId) {
-          throw new Error("submitCommit failed to return transaction ID");
+          throw new Error("sendKaspa failed to return transaction ID");
         }
-        console.log("[Wallet] Commit successful, txId:", commitTxId);
+        
+        // Wait a moment for the commit tx to propagate
+        console.log("[Wallet] Waiting 3s for commit tx to propagate...");
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Step 3: Submit the reveal transaction  
-        // KasWare expects a single options object for reveal as well
-        console.log("[Wallet] Step 3: Calling submitReveal with options object...");
+        console.log("[Wallet] Step 3: Calling submitReveal...");
         const revealOptions = {
           scriptHex: script,
           commitTxId: commitTxId
         };
         console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
-        const revealResult = await window.kasware.submitReveal(revealOptions);
+        
+        // Try submitReveal with options object first, then string
+        let revealResult;
+        try {
+          revealResult = await window.kasware.submitReveal(revealOptions);
+        } catch (e1) {
+          console.log("[Wallet] submitReveal with options failed, trying with script only:", e1);
+          revealResult = await window.kasware.submitReveal(script);
+        }
         console.log("[Wallet] submitReveal result:", revealResult);
         
         const revealTxId = typeof revealResult === "string" ? revealResult :
@@ -564,8 +565,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           return { revealTxId, commitTxId };
         }
         
-        // If reveal doesn't return ID, use commit as reference
-        console.log("[Wallet] No reveal txId, using commit as reference");
+        // If reveal doesn't return ID, user may need to wait and retry
+        console.log("[Wallet] No reveal txId returned. Commit succeeded, reveal may need manual retry.");
         return { revealTxId: commitTxId, commitTxId };
       }
       
