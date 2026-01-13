@@ -76,7 +76,7 @@ interface WalletContextType {
   connectionError: string | null;
   sendKaspa: (toAddress: string, amountKas: number) => Promise<string>;
   getBalance: () => Promise<number>;
-  signKRC721Mint: (inscriptionJson: string, feeKas?: number) => Promise<{ revealTxId: string; commitTxId?: string }>;
+  signKRC721Mint: (inscriptionJson: string, options?: { royaltyTo?: string; royaltyFeeSompi?: string; priorityFee?: number }) => Promise<{ revealTxId: string; commitTxId?: string }>;
   signKasiaHandshake: (recipientAddress: string, amountKas?: number) => Promise<string>;
 }
 
@@ -389,7 +389,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return balance.total / 100000000;
   }, [isDemoMode]);
 
-  const signKRC721Mint = useCallback(async (inscriptionJson: string, feeKas?: number): Promise<{ revealTxId: string; commitTxId?: string }> => {
+  const signKRC721Mint = useCallback(async (
+    inscriptionJson: string, 
+    options?: { 
+      royaltyTo?: string; 
+      royaltyFeeSompi?: string;
+      priorityFee?: number;
+    }
+  ): Promise<{ revealTxId: string; commitTxId?: string }> => {
     if (isDemoMode) {
       throw new Error("NFT minting not available in demo mode. Please connect a real wallet.");
     }
@@ -399,6 +406,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     console.log("[Wallet] Starting KRC-721 mint with inscription:", inscriptionJson);
+    console.log("[Wallet] Royalty options:", options);
     
     const availableMethods = Object.keys(window.kasware).filter(
       key => typeof (window.kasware as any)[key] === "function"
@@ -419,14 +427,42 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     console.log("[Wallet] Capability detection: submitCommitReveal=" + hasSubmitCommitReveal + 
       ", buildScript=" + hasBuildScript);
     
-    // Primary method: submitCommitReveal for KSPR_KRC721
+    // Primary method: submitCommitReveal with options object for KSPR_KRC721
+    // KasWare requires extraOutputs to build the reveal transaction with royalty payment
     try {
       if (hasSubmitCommitReveal) {
-        console.log("[Wallet] Using submitCommitReveal('KSPR_KRC721', inscription)");
-        console.log("[Wallet] Inscription:", inscriptionJson);
+        // Build extraOutputs for royalty payment if provided
+        const extraOutputs: { address: string; amount: number }[] = [];
+        if (options?.royaltyTo && options?.royaltyFeeSompi) {
+          const royaltyAmount = parseInt(options.royaltyFeeSompi, 10);
+          if (royaltyAmount > 0) {
+            extraOutputs.push({
+              address: options.royaltyTo,
+              amount: royaltyAmount
+            });
+            console.log("[Wallet] Adding royalty output:", options.royaltyTo, royaltyAmount, "sompi");
+          }
+        }
         
-        // Submit commit-reveal for KRC-721 minting
-        const result = await window.kasware.submitCommitReveal("KSPR_KRC721", inscriptionJson);
+        // Build options object for KasWare
+        const commitRevealOptions = {
+          type: "KSPR_KRC721",
+          data: inscriptionJson,
+          extraOutputs: extraOutputs.length > 0 ? extraOutputs : undefined,
+          priorityFee: options?.priorityFee,
+        };
+        
+        console.log("[Wallet] Using submitCommitReveal with options:", JSON.stringify(commitRevealOptions));
+        
+        // Try options object first (newer KasWare API)
+        let result: any;
+        try {
+          result = await window.kasware.submitCommitReveal(commitRevealOptions);
+        } catch (optErr: any) {
+          // Fallback to string arguments if options object not supported
+          console.log("[Wallet] Options object failed, trying string args:", optErr.message);
+          result = await window.kasware.submitCommitReveal("KSPR_KRC721", inscriptionJson);
+        }
         
         console.log("[Wallet] submitCommitReveal result:", result);
         

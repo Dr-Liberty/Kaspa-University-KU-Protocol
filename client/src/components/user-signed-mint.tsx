@@ -26,6 +26,8 @@ interface ReservationData {
   expiresAt: number;
   courseId: string;
   courseName: string;
+  royaltyTo?: string;
+  royaltyFeeSompi?: string;
 }
 
 function getExplorerTxUrl(txHash: string): string {
@@ -220,8 +222,13 @@ export function UserSignedMint({ certificate, onClose, onSuccess }: UserSignedMi
         ? parseFloat(whitelistStatus.totalMintCostKas) 
         : 20;
       console.log("[UserSignedMint] Minting with fee:", mintFeeKas, "KAS");
+      console.log("[UserSignedMint] Royalty:", reservation.royaltyTo, reservation.royaltyFeeSompi, "sompi");
       
-      const txHash = await signKRC721Mint(reservation.inscriptionJson, mintFeeKas);
+      const mintResult = await signKRC721Mint(reservation.inscriptionJson, {
+        royaltyTo: reservation.royaltyTo,
+        royaltyFeeSompi: reservation.royaltyFeeSompi,
+      });
+      const txHash = mintResult.revealTxId;
       setMintTxHash(txHash);
       
       setStep("confirming");

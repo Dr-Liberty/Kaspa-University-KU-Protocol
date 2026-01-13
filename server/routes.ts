@@ -1551,6 +1551,12 @@ export async function registerRoutes(
       const MAINNET_DIPLOMA_IMAGE_CID = "QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4";
       const diplomaImageUrl = `ipfs://${MAINNET_DIPLOMA_IMAGE_CID}`;
       
+      // Get treasury address and discount fee for KRC-721 minting
+      // KasWare needs this info to build the reveal transaction with proper royalty payment
+      const discountSvc = getDiscountService();
+      const treasuryStatus = await discountSvc.getTreasuryStatus();
+      const discountFeeSompi = discountSvc.getDiscountFeeSompi().toString();
+      
       res.json({
         success: true,
         reservationId: result.reservation.id,
@@ -1560,6 +1566,9 @@ export async function registerRoutes(
         courseId: "diploma",
         courseName: "Kaspa University Diploma",
         imageUrl: diplomaImageUrl,
+        // KRC-721 minting requires royalty payment to treasury
+        royaltyTo: treasuryStatus.address,
+        royaltyFeeSompi: discountFeeSompi,
       });
     } catch (error: any) {
       console.error("[Diploma] Reserve failed:", error.message);
