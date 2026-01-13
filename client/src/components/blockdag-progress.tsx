@@ -397,17 +397,24 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       }
       
       if (!verified) {
-        // Transaction was broadcast successfully but indexer hasn't indexed it yet
-        // This is common - indexer can take longer than 60 seconds
-        // Since we have a valid revealTxId from KasWare, treat as success
-        console.log("[DiplomaMint] Indexer verification timed out, but transaction was broadcast successfully");
-        console.log("[DiplomaMint] Proceeding with confirmation using revealTxId:", revealTxId);
+        // Transaction was broadcast but indexer didn't recognize it as a valid KRC-721 mint
+        // This could mean: collection not deployed, invalid inscription, or indexer issue
+        console.log("[DiplomaMint] Indexer verification failed - mint may not be valid");
         
-        // Set a pending token ID indicator
-        setVerifiedTokenId("pending");
+        try {
+          await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
+        } catch {}
+        
+        setMintError(
+          "The transaction was broadcast but the KRC-721 indexer did not recognize it as a valid mint. " +
+          "This may mean the KUDIPLOMA collection is not yet deployed on mainnet. " +
+          "Transaction ID: " + revealTxId
+        );
+        setMintStep("error");
+        return;
       }
       
-      // Confirm the mint with our backend (works with or without verified tokenId)
+      // Only confirm if indexer verified the mint
       confirmMutation.mutate({ reservationId: reservation.reservationId, mintTxHash: revealTxId });
     } catch (err: any) {
       console.error("[DiplomaMint] Signing failed:", err);
