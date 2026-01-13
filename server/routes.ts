@@ -1557,6 +1557,11 @@ export async function registerRoutes(
       const treasuryStatus = await discountSvc.getTreasuryStatus();
       const discountFeeSompi = discountSvc.getDiscountFeeSompi().toString();
       
+      // Log the exact inscription JSON being returned to the client
+      console.log("[Diploma] Reserve response inscriptionJson:", result.inscriptionJson);
+      console.log("[Diploma] Reserve response royaltyTo:", treasuryStatus.address);
+      console.log("[Diploma] Reserve response royaltyFeeSompi:", discountFeeSompi);
+      
       res.json({
         success: true,
         reservationId: result.reservation.id,
