@@ -557,36 +557,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           throw new Error("Could not extract transaction ID from sendKaspa result");
         }
         
-        // Wait for the commit tx to propagate and be visible in UTXOs
-        console.log("[Wallet] Waiting for commit UTXO to be visible...");
-        const maxWaitTime = 30000; // 30 seconds max
-        const pollInterval = 2000; // Check every 2 seconds
-        let utxoVisible = false;
-        const startTime = Date.now();
-        
-        while (Date.now() - startTime < maxWaitTime) {
-          try {
-            const utxos = await window.kasware.getUtxoEntries();
-            // Check if P2SH address has our commit output
-            const p2shUtxo = utxos?.find((u: any) => 
-              u.address === p2shAddress || 
-              u.scriptPublicKey?.includes(p2shAddress?.replace("kaspa:", ""))
-            );
-            if (p2shUtxo) {
-              console.log("[Wallet] Commit UTXO found:", p2shUtxo);
-              utxoVisible = true;
-              break;
-            }
-          } catch (e) {
-            console.log("[Wallet] getUtxoEntries error:", e);
-          }
-          console.log("[Wallet] Commit UTXO not yet visible, waiting...");
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
-        }
-        
-        if (!utxoVisible) {
-          console.log("[Wallet] Commit UTXO not visible after 30s, proceeding anyway...");
-        }
+        // Wait a moment for commit tx to propagate before reveal
+        console.log("[Wallet] Waiting 5s for commit tx to propagate...");
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Step 3: Submit the reveal transaction  
         // Include original KRC-721 payload type and data for wallet cache consistency
