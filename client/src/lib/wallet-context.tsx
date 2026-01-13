@@ -570,9 +570,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         } else if (commitRevealResult && typeof commitRevealResult === "object") {
           const resultObj = commitRevealResult as Record<string, any>;
           console.log("[Wallet] Result keys:", Object.keys(resultObj));
-          commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId || resultObj.commit || resultObj.commitTx;
-          revealTxId = resultObj.revealTxId || resultObj.sendRevealTxId || resultObj.reveal || 
-                      resultObj.txId || resultObj.hash || resultObj.revealTx;
+          
+          // Check for array properties (commitIds, revealIds) first
+          if (Array.isArray(resultObj.commitIds) && resultObj.commitIds.length > 0) {
+            commitTxId = resultObj.commitIds[0];
+          }
+          if (Array.isArray(resultObj.revealIds) && resultObj.revealIds.length > 0) {
+            revealTxId = resultObj.revealIds[0];
+          }
+          
+          // Fallback to singular properties
+          if (!commitTxId) {
+            commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId || resultObj.commit || resultObj.commitTx;
+          }
+          if (!revealTxId) {
+            revealTxId = resultObj.revealTxId || resultObj.sendRevealTxId || resultObj.reveal || 
+                        resultObj.txId || resultObj.hash || resultObj.revealTx;
+          }
         }
         
         if (revealTxId) {
