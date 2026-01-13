@@ -1,0 +1,263 @@
+[SIWK] Requesting challenge for kaspa:qrmzgsh8c...
+index-bWyLEF-C.js:8 [SIWK] Signing challenge message with Schnorr...
+index-bWyLEF-C.js:8 [SIWK] Verifying signature...
+index-bWyLEF-C.js:8 [SIWK] Authenticated via Sign-In with Kaspa: kaspa:qrmzgsh8c... (mainnet)
+index-bWyLEF-C.js:8 [API] POST /api/diploma/reserve {hasWallet: true, hasAuth: true, walletPreview: 'kaspa:qrmzgsh8c'}
+index-bWyLEF-C.js:8 [API] POST /api/nft/signing/bb0251dc-e0f8-4071-a8d3-5d28c5aca019 {hasWallet: true, hasAuth: true, walletPreview: 'kaspa:qrmzgsh8c'}
+index-bWyLEF-C.js:69 [DiplomaMint] Calling signKRC721Mint...
+index-bWyLEF-C.js:69 [DiplomaMint] inscriptionJson: {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-bWyLEF-C.js:69 [DiplomaMint] royaltyTo: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+index-bWyLEF-C.js:69 [DiplomaMint] royaltyFeeSompi: 1000000000
+index-bWyLEF-C.js:8 [Wallet] Starting KRC-721 mint
+index-bWyLEF-C.js:8 [Wallet] Inscription JSON (raw): {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+index-bWyLEF-C.js:8 [Wallet] Inscription JSON (parsed): {p: 'krc-721', op: 'mint', tick: 'KUDIPLOMA', to: 'kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel'}
+index-bWyLEF-C.js:8 [Wallet] Royalty options: {"royaltyTo":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","royaltyFeeSompi":"1000000000"}
+index-bWyLEF-C.js:8 [Wallet] Available KasWare methods: initialize, keepAlive, _requestPromiseCheckVisibility, _handleBackgroundMessage, _request, requestAccounts, getNetwork, switchNetwork, getAccounts, getPublicKey, getBalance, getKRC20Balance, getUtxoEntries, getP2shAddress, createKRC20Order, cancelKRC20Order, signCancelKRC20Order, buyKRC20Token, signBuyKRC20Token, submitCommit, submitReveal, submitCommitReveal, signMessage, verifyMessage, verifyMessageECDSA, buildScript, sendKaspa, signKRC20Transaction, signKRC20BatchTransferTransaction, krc20BatchTransferTransaction, cancelKRC20BatchTransfer, pushTx, disconnect, signPskt, getVersion
+index-bWyLEF-C.js:8 [Wallet] KRC-721 mint: ticker=KUDIPLOMA, op=mint, to=kaspa:qrmzgsh8chv72q
+index-bWyLEF-C.js:8 [Wallet] Capability detection: submitCommitReveal=true, buildScript=true, inscribeKRC721=false, submitCommit=true, submitReveal=true, sendKaspa=true
+index-bWyLEF-C.js:8 [Wallet] Using KCOM-style submitCommitReveal (4 params)
+index-bWyLEF-C.js:8 [Wallet] Wallet address: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+index-bWyLEF-C.js:8 [Wallet] UTXOs count: 2
+index-bWyLEF-C.js:8 [Wallet] Raw network ID: kaspa_mainnet -> Converted: mainnet
+index-bWyLEF-C.js:8 [Wallet] Step 2: Calling buildScript...
+index-bWyLEF-C.js:8 [Wallet] buildScript result: {
+  "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063046b737072004c797b2270223a226b72632d373231222c226f70223a226d696e74222c227469636b223a224b554449504c4f4d41222c22746f223a226b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c227d68",
+  "p2shAddress": "kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74"
+}
+index-bWyLEF-C.js:8 [Wallet] P2SH address: kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74
+index-bWyLEF-C.js:8 [Wallet] Script data length: 332
+index-bWyLEF-C.js:8 [Wallet] Base PoW fee: 10 KAS
+index-bWyLEF-C.js:8 [Wallet] Royalty fee: 10 KAS
+index-bWyLEF-C.js:8 [Wallet] Priority fee: 0.5 KAS
+index-bWyLEF-C.js:8 [Wallet] Total commit output: 20.5 KAS
+index-bWyLEF-C.js:8 [Wallet] Step 3: Calling submitCommitReveal (KCOM 4-param style)...
+index-bWyLEF-C.js:8 [Wallet] commit: {
+  "priorityEntries": [],
+  "entries": [
+    {
+      "entry": {
+        "address": {
+          "version": "PubKey",
+          "prefix": "kaspa",
+          "payload": "qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"
+        },
+        "outpoint": {
+          "transactionId": "aa9d19d675615474eeae96486cda7f3996076a62af2cbfcee99613ac4d108ec7",
+          "index": 1
+        },
+        "amount": 999997964,
+        "scriptPublicKey": {
+          "version": 0,
+          "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac"
+        },
+        "blockDaaScore": 328736119,
+        "isCoinbase": false
+      },
+      "outpoint": {
+        "transactionId": "aa9d19d675615474eeae96486cda7f3996076a62af2cbfcee99613ac4d108ec7",
+        "index": 1
+      },
+      "address": {
+        "version": "PubKey",
+        "prefix": "kaspa",
+        "payload": "qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"
+      },
+      "amount": 999997964,
+      "isCoinbase": false,
+      "blockDaaScore": 328736119,
+      "scriptPublicKey": {
+        "version": 0,
+        "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac"
+      }
+    },
+    {
+      "entry": {
+        "address": {
+          "version": "PubKey",
+          "prefix": "kaspa",
+          "payload": "qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"
+        },
+        "outpoint": {
+          "transactionId": "95b52492adb152b20f8c84a5267d0bda74c80ddc13c312724b7486ee7459f9e8",
+          "index": 1
+        },
+        "amount": 938949906662,
+        "scriptPublicKey": {
+          "version": 0,
+          "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac"
+        },
+        "blockDaaScore": 328736115,
+        "isCoinbase": false
+      },
+      "outpoint": {
+        "transactionId": "95b52492adb152b20f8c84a5267d0bda74c80ddc13c312724b7486ee7459f9e8",
+        "index": 1
+      },
+      "address": {
+        "version": "PubKey",
+        "prefix": "kaspa",
+        "payload": "qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"
+      },
+      "amount": 938949906662,
+      "isCoinbase": false,
+      "blockDaaScore": 328736115,
+      "scriptPublicKey": {
+        "version": 0,
+        "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "address": "kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74",
+      "amount": 20.5
+    }
+  ],
+  "changeAddress": "kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel",
+  "priorityFee": 0.5
+}
+index-bWyLEF-C.js:8 [Wallet] reveal: {
+  "outputs": [
+    {
+      "address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+      "amount": 10
+    }
+  ],
+  "changeAddress": "kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel",
+  "priorityFee": 0.5
+}
+index-bWyLEF-C.js:8 [Wallet] scriptData: 20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1df...
+index-bWyLEF-C.js:8 [Wallet] networkId: mainnet
+index-bWyLEF-C.js:8 [Wallet] submitCommitReveal result: {commitIds: Array(1), revealIds: Array(1)}
+index-bWyLEF-C.js:8 [Wallet] Result keys: (2) ['commitIds', 'revealIds']
+index-bWyLEF-C.js:8 [Wallet] Mint successful - revealTxId: d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 commitTxId: d7407ab114dd22d9ef5a0e3f45bec2c2689dbd3af6325064e1c0bb34f9b4451f
+index-bWyLEF-C.js:69 [DiplomaMint] Mint result - revealTxId: d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 commitTxId: d7407ab114dd22d9ef5a0e3f45bec2c2689dbd3af6325064e1c0bb34f9b4451f
+index-bWyLEF-C.js:69 [DiplomaMint] Verifying via: https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 1/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 2/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 3/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 4/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 5/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 6/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 7/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response status: 404
+index-bWyLEF-C.js:69 [DiplomaMint] Verification attempt 8/12...
+index-bWyLEF-C.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/d5a92e2dd6c4b6099d81d85facc7e96a127102af4ff7d305fa5efe0fd9a013c9 404 (Not Found)
+ie @ index-bWyLEF-C.js:69
+await in ie
+IB @ index-bWyLEF-C.js:5
+$B @ index-bWyLEF-C.js:5
+LB @ index-bWyLEF-C.js:5
+wA @ index-bWyLEF-C.js:5
+jA @ index-bWyLEF-C.js:5
+(anonymous) @ index-bWyLEF-C.js:5
+_y @ index-bWyLEF-C.js:8
+TP @ index-bWyLEF-C.js:5
+_g @ index-bWyLEF-C.js:5
+pg @ index-bWyLEF-C.js:5
+ez @ index-bWyLEF-C.js:5Understand this error
+index-bWyLEF-C.js:69 [DiplomaMint] Response stat
