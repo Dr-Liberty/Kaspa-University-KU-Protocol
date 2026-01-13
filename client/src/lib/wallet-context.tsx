@@ -598,26 +598,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // Try multiple parameter formats for submitReveal
         let revealResult;
         try {
-          // Try with priority entries object (what submitReveal expects internally)
-          console.log("[Wallet] Trying submitReveal with priorityEntries...");
-          revealResult = await window.kasware.submitReveal({
+          // Try with full reveal options including type, data, and priorityEntries
+          console.log("[Wallet] Trying submitReveal with full options...");
+          const revealOptions = {
+            type: "KSPR_KRC721",
+            data: inscriptionJson,
+            script: script,
             priorityEntries: [priorityEntry],
-            script: script
-          });
+            outputs: [{
+              address: royaltyOptions?.royaltyTo || "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+              amount: royaltyOptions?.royaltyFeeSompi || "1000000000"
+            }]
+          };
+          console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
+          revealResult = await window.kasware.submitReveal(revealOptions);
         } catch (e1) {
-          console.log("[Wallet] submitReveal with priorityEntries failed:", e1);
+          console.log("[Wallet] submitReveal with full options failed:", e1);
           try {
-            // Try with just the script
-            console.log("[Wallet] Trying submitReveal(script)...");
-            revealResult = await window.kasware.submitReveal(script);
+            // Try with type + data + priorityEntries only
+            console.log("[Wallet] Trying submitReveal with type+data+priorityEntries...");
+            revealResult = await window.kasware.submitReveal({
+              type: "KSPR_KRC721",
+              data: inscriptionJson,
+              priorityEntries: [priorityEntry]
+            });
           } catch (e2) {
-            console.log("[Wallet] submitReveal(script) failed:", e2);
+            console.log("[Wallet] submitReveal with type+data+priorityEntries failed:", e2);
             try {
-              // Try with type and data (like submitCommitReveal)
-              console.log("[Wallet] Trying submitReveal(type, data)...");
-              revealResult = await window.kasware.submitReveal("KSPR_KRC721", inscriptionJson);
+              // Try with just the script
+              console.log("[Wallet] Trying submitReveal(script)...");
+              revealResult = await window.kasware.submitReveal(script);
             } catch (e3) {
-              console.log("[Wallet] submitReveal(type, data) failed:", e3);
+              console.log("[Wallet] submitReveal(script) failed:", e3);
               // Last resort: return commit info and let user retry
               console.log("[Wallet] All submitReveal attempts failed. Commit succeeded, reveal needs manual completion.");
               return { revealTxId: commitTxId, commitTxId, revealPending: true };
