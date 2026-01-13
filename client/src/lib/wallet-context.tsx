@@ -500,7 +500,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
       
       // Method 2: signKRC20Transaction with type=5 for KRC-721
-      // Some KasWare versions use this for inscriptions
+      // This method works but KasWare popup doesn't show exact amount
+      // We show the cost in our preview dialog before calling wallet
       const hasSignKRC20Transaction = typeof window.kasware.signKRC20Transaction === "function";
       if (hasSignKRC20Transaction) {
         console.log("[Wallet] Using signKRC20Transaction with type=5 (KRC-721)");
@@ -557,10 +558,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Method 3: buildScript + sendKaspa (manual commit)
-      // The reveal should happen automatically via wallet after commit confirms
+      // Method 3: buildScript + sendKaspa (fallback - shows exact amount)
+      // This shows the 20.5 KAS amount in the wallet popup
       if (hasBuildScript && hasSendKaspa) {
-        console.log("[Wallet] Using buildScript + sendKaspa (manual commit flow)");
+        console.log("[Wallet] Using buildScript + sendKaspa (shows exact amount)");
         
         // Step 1: Build the commit script
         console.log("[Wallet] Step 1: Calling buildScript...");
