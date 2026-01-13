@@ -518,9 +518,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
         
         const { script, p2shAddress } = buildResult;
-        // KRC-721 mints need ~0.3 KAS for commit (covers storage + reveal fees)
+        // KRC-721 mints need 10 KAS (royalty) + ~0.5 KAS (fees) = 10.5 KAS total
         // sendKaspa expects amount in sompi (integer), not KAS
-        const commitAmountSompi = buildResult.amountSompi || 30000000; // 0.3 KAS = 30,000,000 sompi
+        const commitAmountSompi = buildResult.amountSompi || 1050000000; // 10.5 KAS = 1,050,000,000 sompi
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
         console.log("[Wallet] Commit amount:", commitAmountSompi, "sompi (", commitAmountSompi / 100000000, "KAS)");
@@ -528,16 +528,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // Step 2: Send KAS to P2SH address using sendKaspa (this triggers wallet popup!)
         // sendKaspa(toAddress, amount) - amount should be in sompi as a number
         console.log("[Wallet] Step 2: Sending", commitAmountSompi, "sompi to P2SH address via sendKaspa...");
-        const commitTxId = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
-        console.log("[Wallet] Commit transaction sent! TxId:", commitTxId);
+        const commitResult = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
+        console.log("[Wallet] sendKaspa result:", commitResult);
         
-        if (!commitTxId) {
+        // Extract the txId from the result - it can be a string, object, or JSON string
+        let commitTxId: string;
+        if (typeof commitResult === "string") {
+          // Could be a plain txId or a JSON string
+          if (commitResult.startsWith("{")) {
+            try {
+              const parsed = JSON.parse(commitResult);
+              commitTxId = parsed.id || parsed.txId || parsed.hash;
+            } catch {
+              commitTxId = commitResult;
+            }
+          } else {
+            commitTxId = commitResult;
+          }
+        } else if (commitResult && typeof commitResult === "object") {
+          commitTxId = (commitResult as any).id || (commitResult as any).txId || (commitResult as any).hash;
+        } else {
           throw new Error("sendKaspa failed to return transaction ID");
         }
         
-        // Wait a moment for the commit tx to propagate
-        console.log("[Wallet] Waiting 3s for commit tx to propagate...");
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log("[Wallet] Extracted commit txId:", commitTxId);
+        
+        if (!commitTxId) {
+          throw new Error("Could not extract transaction ID from sendKaspa result");
+        }
+        
+        // Wait for the commit tx to propagate before reveal
+        console.log("[Wallet] Waiting 5s for commit tx to propagate...");
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Step 3: Submit the reveal transaction  
         console.log("[Wallet] Step 3: Calling submitReveal...");
