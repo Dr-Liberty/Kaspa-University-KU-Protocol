@@ -517,14 +517,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           throw new Error("buildScript failed to return script data");
         }
         
-        const { script, p2shAddress, amountSompi } = buildResult;
+        const { script, p2shAddress } = buildResult;
+        // Calculate amount if not provided - KRC-721 mints typically need ~0.3 KAS for commit
+        const amountSompi = buildResult.amountSompi || 30000000; // Default 0.3 KAS
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
-        console.log("[Wallet] Got amountSompi:", amountSompi);
+        console.log("[Wallet] Got amountSompi:", amountSompi, "(default if undefined)");
         
         // Step 2: Submit the commit transaction (sends KAS to P2SH address)
-        console.log("[Wallet] Step 2: Calling submitCommit...");
-        const commitResult = await window.kasware.submitCommit(script);
+        // Pass script, p2shAddress, and amount as KasWare may need all three
+        console.log("[Wallet] Step 2: Calling submitCommit with script and p2shAddress...");
+        const commitResult = await window.kasware.submitCommit(script, p2shAddress, amountSompi);
         console.log("[Wallet] submitCommit result:", commitResult);
         
         const commitTxId = typeof commitResult === "string" ? commitResult : 
