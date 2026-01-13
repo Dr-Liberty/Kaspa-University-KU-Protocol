@@ -440,15 +440,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       ", submitCommit=" + hasSubmitCommit + ", submitReveal=" + hasSubmitReveal +
       ", sendKaspa=" + hasSendKaspa);
     
-    // PRIMARY METHOD: submitCommitReveal with extraOutputs
-    // This produces the single "Commit & Reveal" popup like KCOM
+    // PRIMARY METHOD: submitCommitReveal with KCOM's 4-parameter signature
+    // KCOM uses: submitCommitReveal(commit, reveal, scriptData, networkId)
     try {
-      // Method 1: submitCommitReveal with extraOutputs (KCOM-style single popup)
+      // Method 1: KCOM-style submitCommitReveal (4 parameters)
       if (hasSubmitCommitReveal && hasBuildScript) {
-        console.log("[Wallet] Using submitCommitReveal with extraOutputs (KCOM-style)");
+        console.log("[Wallet] Using KCOM-style submitCommitReveal (4 params)");
         
-        // Step 1: Build the script to get P2SH address
-        console.log("[Wallet] Step 1: Calling buildScript...");
+        // Step 1: Get wallet address and UTXOs
+        const accounts = await window.kasware.getAccounts();
+        const walletAddress = accounts[0];
+        const entries = await window.kasware.getUtxoEntries();
+        const networkId = await window.kasware.getNetwork();
+        
+        console.log("[Wallet] Wallet address:", walletAddress);
+        console.log("[Wallet] UTXOs count:", entries.length);
+        console.log("[Wallet] Network ID:", networkId);
+        
+        // Step 2: Build the script to get P2SH address and script data
+        console.log("[Wallet] Step 2: Calling buildScript...");
         const buildResult = await window.kasware.buildScript({
           type: "KSPR_KRC721",
           data: inscriptionJson
@@ -456,55 +466,79 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         console.log("[Wallet] buildScript result:", JSON.stringify(buildResult, null, 2));
         
-        if (!buildResult || !buildResult.p2shAddress) {
-          throw new Error("buildScript failed to return p2shAddress");
+        if (!buildResult || !buildResult.p2shAddress || !buildResult.script) {
+          throw new Error("buildScript failed to return p2shAddress/script");
         }
         
-        const { p2shAddress, amountSompi: buildAmountSompi } = buildResult;
+        const { p2shAddress, script: scriptData, amountSompi: buildAmountSompi } = buildResult;
         
-        // Calculate amounts in sompi
-        // PoW fee: 10 KAS = 1,000,000,000 sompi (goes to miners via commit)
-        // Royalty: 10 KAS = 1,000,000,000 sompi (goes to royalty address)
-        // Priority fee: 0.5 KAS = 50,000,000 sompi
-        const powFeeSompi = 1000000000; // 10 KAS
-        const royaltyFeeSompi = options?.royaltyFeeSompi ? parseInt(options.royaltyFeeSompi) : 1000000000; // 10 KAS default
-        const priorityFeeSompi = options?.priorityFee || 50000000; // 0.5 KAS default
+        // Calculate amounts in KAS (KCOM uses KAS, not sompi for outputs)
+        // PoW fee: 10 KAS minimum for mint
+        // Royalty: From options (in sompi, convert to KAS)
+        const royaltyFeeSompi = options?.royaltyFeeSompi ? parseInt(options.royaltyFeeSompi) : 1000000000;
+        const royaltyFeeKas = royaltyFeeSompi / 100000000;
+        const priorityFeeKas = (options?.priorityFee || 50000000) / 100000000;
         
-        // Use buildScript's amountSompi if available, otherwise calculate
-        const commitAmountSompi = buildAmountSompi || (powFeeSompi + priorityFeeSompi);
+        // KCOM: totalFees = sum of additionalOutputs amounts + revealPriorityFee
+        // KCOM: commit output amount = getSubmitRevealKaspaToSend() + totalFees
+        // getSubmitRevealKaspaToSend() returns the base PoW fee (10 KAS = 10)
+        const basePoWFee = 10; // 10 KAS
+        const totalFees = royaltyFeeKas + priorityFeeKas;
+        const commitOutputAmount = basePoWFee + totalFees;
         
         console.log("[Wallet] P2SH address:", p2shAddress);
-        console.log("[Wallet] Commit amount:", commitAmountSompi / 100000000, "KAS");
-        console.log("[Wallet] Royalty amount:", royaltyFeeSompi / 100000000, "KAS");
-        console.log("[Wallet] Royalty to:", options?.royaltyTo);
+        console.log("[Wallet] Script data length:", scriptData.length);
+        console.log("[Wallet] Base PoW fee:", basePoWFee, "KAS");
+        console.log("[Wallet] Royalty fee:", royaltyFeeKas, "KAS");
+        console.log("[Wallet] Priority fee:", priorityFeeKas, "KAS");
+        console.log("[Wallet] Total commit output:", commitOutputAmount, "KAS");
         
-        // Step 2: Call submitCommitReveal with extraOutputs
-        // extraOutputs shows the additional outputs in the popup (like KCOM)
-        const extraOutputs: Array<{ address: string; amount: number }> = [];
+        // Build commit outputs (P2SH address with total amount)
+        const commitOutputs = [
+          {
+            address: p2shAddress,
+            amount: commitOutputAmount
+          }
+        ];
         
-        // Add P2SH commit output
-        extraOutputs.push({
-          address: p2shAddress,
-          amount: commitAmountSompi
-        });
-        
-        // Add royalty output if specified
-        if (options?.royaltyTo) {
-          extraOutputs.push({
+        // Build reveal outputs (additional outputs like royalty)
+        const revealOutputs: Array<{ address: string; amount: number }> = [];
+        if (options?.royaltyTo && royaltyFeeKas > 0) {
+          revealOutputs.push({
             address: options.royaltyTo,
-            amount: royaltyFeeSompi
+            amount: royaltyFeeKas
           });
         }
         
-        console.log("[Wallet] Step 2: Calling submitCommitReveal with extraOutputs...");
-        console.log("[Wallet] extraOutputs:", JSON.stringify(extraOutputs, null, 2));
+        // KCOM commit object structure
+        const commit = {
+          priorityEntries: [],
+          entries: entries,
+          outputs: commitOutputs,
+          changeAddress: walletAddress,
+          priorityFee: priorityFeeKas
+        };
         
-        const commitRevealResult = await window.kasware.submitCommitReveal({
-          type: "KSPR_KRC721",
-          data: inscriptionJson,
-          extraOutputs: extraOutputs,
-          priorityFee: priorityFeeSompi
-        });
+        // KCOM reveal object structure
+        const reveal = {
+          outputs: revealOutputs,
+          changeAddress: walletAddress,
+          priorityFee: Math.max(priorityFeeKas, 0.00001712)
+        };
+        
+        console.log("[Wallet] Step 3: Calling submitCommitReveal (KCOM 4-param style)...");
+        console.log("[Wallet] commit:", JSON.stringify(commit, null, 2));
+        console.log("[Wallet] reveal:", JSON.stringify(reveal, null, 2));
+        console.log("[Wallet] scriptData:", scriptData.slice(0, 50) + "...");
+        console.log("[Wallet] networkId:", networkId);
+        
+        // KCOM signature: submitCommitReveal(commit, reveal, scriptData, networkId)
+        const commitRevealResult = await (window.kasware.submitCommitReveal as any)(
+          commit,
+          reveal,
+          scriptData,
+          networkId
+        );
         
         console.log("[Wallet] submitCommitReveal result:", commitRevealResult);
         
@@ -512,14 +546,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         let commitTxId: string | undefined;
         let revealTxId: string | undefined;
         
-        if (typeof commitRevealResult === "string") {
+        if (Array.isArray(commitRevealResult)) {
+          // KCOM returns array: [commitTxId, revealTxId] or just revealTxId
+          if (commitRevealResult.length >= 2) {
+            commitTxId = commitRevealResult[0];
+            revealTxId = commitRevealResult[1];
+          } else if (commitRevealResult.length === 1) {
+            revealTxId = commitRevealResult[0];
+          }
+        } else if (typeof commitRevealResult === "string") {
           revealTxId = commitRevealResult;
         } else if (commitRevealResult && typeof commitRevealResult === "object") {
           const resultObj = commitRevealResult as Record<string, any>;
           console.log("[Wallet] Result keys:", Object.keys(resultObj));
-          commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId || resultObj.commit;
+          commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId || resultObj.commit || resultObj.commitTx;
           revealTxId = resultObj.revealTxId || resultObj.sendRevealTxId || resultObj.reveal || 
-                      resultObj.txId || resultObj.hash;
+                      resultObj.txId || resultObj.hash || resultObj.revealTx;
         }
         
         if (revealTxId) {
