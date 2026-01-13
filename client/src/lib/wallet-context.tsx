@@ -433,30 +433,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // KasWare requires extraOutputs to build the reveal transaction with royalty payment
     try {
       if (hasSubmitCommitReveal) {
-        // Build extraOutputs for royalty payment if provided
-        const extraOutputs: { address: string; amount: number }[] = [];
+        // Build psktExtraOutput for royalty payment if provided
+        // IMPORTANT: KasWare expects amount in KAS, not sompi!
+        const psktExtraOutput: { address: string; amount: number }[] = [];
         if (options?.royaltyTo && options?.royaltyFeeSompi) {
-          const royaltyAmount = parseInt(options.royaltyFeeSompi, 10);
-          if (royaltyAmount > 0) {
-            extraOutputs.push({
+          const royaltySompi = parseInt(options.royaltyFeeSompi, 10);
+          const royaltyKas = royaltySompi / 100_000_000; // Convert sompi to KAS
+          if (royaltyKas > 0) {
+            psktExtraOutput.push({
               address: options.royaltyTo,
-              amount: royaltyAmount
+              amount: royaltyKas // KasWare expects KAS, not sompi!
             });
-            console.log("[Wallet] Adding royalty output:", options.royaltyTo, royaltyAmount, "sompi");
+            console.log("[Wallet] Adding royalty output:", options.royaltyTo, royaltyKas, "KAS");
           }
         }
         
-        // Build options object for KasWare
-        const commitRevealOptions = {
-          type: "KSPR_KRC721",
-          data: inscriptionJson,
-          extraOutputs: extraOutputs.length > 0 ? extraOutputs : undefined,
-          priorityFee: options?.priorityFee,
-        };
-        
-        console.log("[Wallet] Using submitCommitReveal with options:", JSON.stringify(commitRevealOptions));
-        
-        // Try options object first (newer KasWare API)
         // Add a timeout to prevent infinite hanging (5 minutes for commit-reveal cycle)
         const MINT_TIMEOUT_MS = 5 * 60 * 1000;
         let result: any;
@@ -466,16 +457,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             throw new Error("KasWare wallet not available");
           }
           
-          // Try positional arguments format first (more widely supported)
-          // submitCommitReveal(type, data, extraOutputs, priorityFee)
-          console.log("[Wallet] Calling submitCommitReveal with positional args");
-          console.log("[Wallet] extraOutputs:", JSON.stringify(extraOutputs));
+          // Use positional arguments: submitCommitReveal(type, data, psktExtraOutput, priorityFee)
+          // According to KasWare docs, this returns { txJsonString, sendCommitTxId }
+          console.log("[Wallet] Calling submitCommitReveal(type, data, psktExtraOutput, priorityFee)");
+          console.log("[Wallet] psktExtraOutput:", JSON.stringify(psktExtraOutput));
           
           return await window.kasware.submitCommitReveal(
             "KSPR_KRC721",
             inscriptionJson,
-            extraOutputs.length > 0 ? extraOutputs : undefined,
-            options?.priorityFee
+            psktExtraOutput.length > 0 ? psktExtraOutput : undefined,
+            options?.priorityFee || 0
           );
         };
         
@@ -504,14 +495,28 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         if (result && typeof result === "object") {
           const resultObj = result as Record<string, any>;
+          console.log("[Wallet] Result object fields:", Object.keys(resultObj));
+          
+          // KasWare returns { txJsonString, sendCommitTxId } according to docs
+          // The sendCommitTxId is the commit transaction, we need to find the reveal txId
+          const commitTxId = resultObj.sendCommitTxId || resultObj.commitId || resultObj.commitTxId || resultObj.commit;
+          
           // Check all possible field names for the reveal transaction ID
           const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || 
                             resultObj.reveal || resultObj.hash || resultObj.txHash ||
-                            resultObj.transactionId || resultObj.id;
-          const commitTxId = resultObj.commitId || resultObj.commitTxId || resultObj.commit;
+                            resultObj.transactionId || resultObj.id || resultObj.sendRevealTxId;
+          
           if (revealTxId) {
-            console.log("[Wallet] Mint successful (object):", revealTxId);
+            console.log("[Wallet] Mint successful - revealTxId:", revealTxId, "commitTxId:", commitTxId);
             return { revealTxId, commitTxId };
+          }
+          
+          // If we have a commit but no reveal, the wallet may have only returned commit info
+          // The reveal happens after commit is confirmed - wallet may handle this automatically
+          if (commitTxId) {
+            console.log("[Wallet] Got commitTxId but no revealTxId - using commit as reference:", commitTxId);
+            // Return commit as the reference - the reveal should follow automatically
+            return { revealTxId: commitTxId, commitTxId };
           }
           
           // If result is an object but we can't find a txId, check if it has any string values
