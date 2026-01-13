@@ -518,9 +518,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
         
         const { script, p2shAddress } = buildResult;
-        // KRC-721 mints need 10 KAS (royalty) + ~0.5 KAS (fees) = 10.5 KAS total
+        // KRC-721 mints need: 10 KAS (PoW fee) + 10 KAS (royalty) + ~0.5 KAS (tx fees) = 20.5 KAS total
         // sendKaspa expects amount in sompi (integer), not KAS
-        const commitAmountSompi = buildResult.amountSompi || 1050000000; // 10.5 KAS = 1,050,000,000 sompi
+        const commitAmountSompi = buildResult.amountSompi || 2050000000; // 20.5 KAS = 2,050,000,000 sompi
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
         console.log("[Wallet] Commit amount:", commitAmountSompi, "sompi (", commitAmountSompi / 100000000, "KAS)");
