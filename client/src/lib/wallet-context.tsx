@@ -525,9 +525,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         console.log("[Wallet] Got amountSompi:", amountSompi, "(default if undefined)");
         
         // Step 2: Submit the commit transaction (sends KAS to P2SH address)
-        // Pass script, p2shAddress, and amount as KasWare may need all three
-        console.log("[Wallet] Step 2: Calling submitCommit with script and p2shAddress...");
-        const commitResult = await window.kasware.submitCommit(script, p2shAddress, amountSompi);
+        // KasWare expects a single options object, not positional arguments
+        console.log("[Wallet] Step 2: Calling submitCommit with options object...");
+        const commitOptions = {
+          scriptHex: script,
+          p2shAddress: p2shAddress,
+          amountSompi: amountSompi,
+          priorityFee: 0
+        };
+        console.log("[Wallet] submitCommit options:", JSON.stringify(commitOptions));
+        const commitResult = await window.kasware.submitCommit(commitOptions);
         console.log("[Wallet] submitCommit result:", commitResult);
         
         const commitTxId = typeof commitResult === "string" ? commitResult : 
@@ -539,8 +546,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         console.log("[Wallet] Commit successful, txId:", commitTxId);
         
         // Step 3: Submit the reveal transaction  
-        console.log("[Wallet] Step 3: Calling submitReveal...");
-        const revealResult = await window.kasware.submitReveal(script);
+        // KasWare expects a single options object for reveal as well
+        console.log("[Wallet] Step 3: Calling submitReveal with options object...");
+        const revealOptions = {
+          scriptHex: script,
+          commitTxId: commitTxId
+        };
+        console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
+        const revealResult = await window.kasware.submitReveal(revealOptions);
         console.log("[Wallet] submitReveal result:", revealResult);
         
         const revealTxId = typeof revealResult === "string" ? revealResult :
