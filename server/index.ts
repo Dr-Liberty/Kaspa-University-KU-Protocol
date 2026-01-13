@@ -2,6 +2,12 @@
 import WebSocket from "ws";
 (globalThis as any).WebSocket = WebSocket;
 
+// Log startup environment for debugging deployment issues
+console.log("[Startup] Node.js version:", process.version);
+console.log("[Startup] NODE_ENV:", process.env.NODE_ENV);
+console.log("[Startup] CWD:", process.cwd());
+console.log("[Startup] __dirname equivalent:", import.meta.url);
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";

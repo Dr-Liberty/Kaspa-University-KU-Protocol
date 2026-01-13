@@ -92,26 +92,43 @@ class DiscountService {
   }
 
   private async loadKaspaModule(): Promise<void> {
-    const path = await import("path");
+    const pathModule = await import("path");
     const fs = await import("fs");
+    const url = await import("url");
     
-    const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
-    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
+    // Try multiple path strategies for maximum compatibility
+    const pathCandidates: string[] = [];
+    
+    // Strategy 1: Relative to bundle file (production deployment)
+    try {
+      const bundleDir = pathModule.dirname(url.fileURLToPath(import.meta.url));
+      pathCandidates.push(pathModule.join(bundleDir, "wasm/kaspa.js"));
+    } catch {}
+    
+    // Strategy 2: process.cwd() + dist/wasm (production)
+    pathCandidates.push(pathModule.join(process.cwd(), "dist/wasm/kaspa.js"));
+    
+    // Strategy 3: process.cwd() + server/wasm (development)
+    pathCandidates.push(pathModule.join(process.cwd(), "server/wasm/kaspa.js"));
+    
+    // Strategy 4: Just "wasm/kaspa.js" relative to cwd
+    pathCandidates.push(pathModule.join(process.cwd(), "wasm/kaspa.js"));
     
     let wasmPath: string | null = null;
-    if (fs.existsSync(prodWasmPath)) {
-      wasmPath = prodWasmPath;
-    } else if (fs.existsSync(devWasmPath)) {
-      wasmPath = devWasmPath;
+    for (const candidate of pathCandidates) {
+      if (fs.existsSync(candidate)) {
+        wasmPath = candidate;
+        break;
+      }
     }
     
     if (!wasmPath) {
-      throw new Error("Kaspa WASM module not found");
+      throw new Error("Kaspa WASM module not found in any candidate paths");
     }
     
     const { createRequire } = await import("module");
-    const require = createRequire(import.meta.url);
-    this.kaspaModule = require(wasmPath);
+    const customRequire = createRequire(import.meta.url);
+    this.kaspaModule = customRequire(wasmPath);
     
     if (typeof this.kaspaModule.initConsolePanicHook === 'function') {
       this.kaspaModule.initConsolePanicHook();

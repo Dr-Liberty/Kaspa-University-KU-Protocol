@@ -440,27 +440,44 @@ class KRC721Service {
    * Source: https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.0.1
    */
   private async loadKaspaModule(): Promise<void> {
-    const path = await import("path");
+    const pathModule = await import("path");
     const fs = await import("fs");
+    const url = await import("url");
     
     console.log("[KRC721] Loading kaspa WASM module v1.0.1...");
     
-    // Development path (tsx from project root)
-    const devWasmPath = path.join(process.cwd(), "server/wasm/kaspa.js");
-    // Production path (esbuild bundle in dist/)
-    const prodWasmPath = path.join(process.cwd(), "dist/wasm/kaspa.js");
+    // Try multiple path strategies for maximum compatibility
+    const pathCandidates: string[] = [];
     
-    // Determine which WASM path to use
+    // Strategy 1: Relative to bundle file (production deployment)
+    try {
+      const bundleDir = pathModule.dirname(url.fileURLToPath(import.meta.url));
+      pathCandidates.push(pathModule.join(bundleDir, "wasm/kaspa.js"));
+    } catch {}
+    
+    // Strategy 2: process.cwd() + dist/wasm (production)
+    pathCandidates.push(pathModule.join(process.cwd(), "dist/wasm/kaspa.js"));
+    
+    // Strategy 3: process.cwd() + server/wasm (development)
+    pathCandidates.push(pathModule.join(process.cwd(), "server/wasm/kaspa.js"));
+    
+    // Strategy 4: Just "wasm/kaspa.js" relative to cwd
+    pathCandidates.push(pathModule.join(process.cwd(), "wasm/kaspa.js"));
+    
+    console.log("[KRC721] Searching for WASM in paths:", pathCandidates);
+    
     let wasmPath: string | null = null;
-    if (fs.existsSync(prodWasmPath)) {
-      wasmPath = prodWasmPath;
-      console.log("[KRC721] Using production WASM from dist/wasm/");
-    } else if (fs.existsSync(devWasmPath)) {
-      wasmPath = devWasmPath;
-      console.log("[KRC721] Using development WASM from server/wasm/");
+    for (const candidate of pathCandidates) {
+      if (fs.existsSync(candidate)) {
+        wasmPath = candidate;
+        console.log(`[KRC721] Found WASM at: ${candidate}`);
+        break;
+      }
     }
     
     if (!wasmPath) {
+      console.error("[KRC721] WASM not found in any candidate paths");
+      console.error("[KRC721] CWD:", process.cwd());
       throw new Error("Kaspa WASM module not found. Expected at server/wasm/kaspa.js or dist/wasm/kaspa.js");
     }
     
