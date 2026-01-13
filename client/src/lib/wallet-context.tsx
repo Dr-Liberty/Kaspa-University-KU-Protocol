@@ -512,10 +512,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         };
         
         // Add royalty via extraOutput if provided (amounts in KAS, not sompi)
-        if (royaltyTo && royaltyFeeSompi) {
-          const royaltyKas = royaltyFeeSompi / 100000000; // Convert sompi to KAS
+        if (options?.royaltyTo && options?.royaltyFeeSompi) {
+          const royaltyFeeSompiNum = parseInt(options.royaltyFeeSompi, 10);
+          const royaltyKas = royaltyFeeSompiNum / 100000000; // Convert sompi to KAS
           submitParams.extraOutput = [{
-            address: royaltyTo,
+            address: options.royaltyTo,
             amount: royaltyKas // KasWare expects KAS, not sompi
           }];
           console.log("[Wallet] Adding royalty extraOutput:", submitParams.extraOutput);
