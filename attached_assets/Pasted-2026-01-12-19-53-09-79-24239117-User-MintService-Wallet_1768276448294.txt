@@ -1,0 +1,180 @@
+2026-01-12 19:53:09.79
+24239117
+User
+[MintService] Wallet kaspa:qrmzgsh8chv72q... does NOT own any KUDIPLOMA NFTs on-chain
+2026-01-12 19:53:10.04
+24239117
+User
+[MintService] Building diploma inscription with ticker: KUDIPLOMA, to: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel (tokenId auto-assigned by indexer)
+2026-01-12 19:53:10.08
+24239117
+User
+[MintService] Diploma reserved for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel (internal tokenId: 8)
+2026-01-12 19:53:10.35
+24239117
+User
+[Diploma] Reserve response inscriptionJson: {"p":"krc-721","op":"mint","tick":"KUDIPLOMA","to":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel"}
+2026-01-12 19:53:10.35
+24239117
+User
+[Diploma] Reserve response royaltyFeeSompi: 1000000000
+2026-01-12 19:53:10.35
+24239117
+User
+[Diploma] Reserve response royaltyTo: kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er
+2026-01-12 19:53:10.35
+24239117
+User
+3:53:10 AM [express] POST /api/diploma/reserve 200 in 1007ms :: {"success":true,"reservationId":"b606ff30-3946-41bf-b84d-49cd0f791b12","tokenId":8,"inscriptionJson":"{\"p\":\"krc-721\",\"op\":\"mint\",\"tick\":\"KUDIPLOMA\",\"to\":\"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel\"}","expiresAt":1768276990049,"courseId":"diploma","courseName":"Kaspa University Diploma","imageUrl":"ipfs://QmaJGqYfWHBAWAPnenz4yKZ3n8M3fD3YUt73EszaoizCj4","royaltyTo":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","royaltyFeeSompi":"1000000000"}
+2026-01-12 19:53:11.73
+24239117
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-12 19:53:11.87
+24239117
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-12 19:53:11.87
+24239117
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-12 19:53:12.05
+24239117
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-12 19:53:12.05
+24239117
+User
+3:53:12 AM [express] GET /api/whitelist/status 304 in 484ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-12 19:53:12.57
+24239117
+User
+3:53:12 AM [express] POST /api/nft/signing/b606ff30-3946-41bf-b84d-49cd0f791b12 200 in 195ms :: {"success":true,"status":"signing"}
+2026-01-12 19:53:15.25
+24239117
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-12 19:53:15.25
+24239117
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:15.25
+24239117
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:15.25
+24239117
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-12 19:53:16.80
+24239117
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-12 19:53:16.90
+24239117
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-12 19:53:17.00
+24239117
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-12 19:53:17.18
+24239117
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-12 19:53:17.40
+24239117
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active
+2026-01-12 19:53:17.54
+24239117
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-12 19:53:17.62
+24239117
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-12 19:53:17.65
+24239117
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active
+2026-01-12 19:53:17.71
+24239117
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-12 19:53:17.71
+24239117
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-12 19:53:18.07
+24239117
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-12 19:53:18.07
+24239117
+User
+3:53:18 AM [express] GET /api/whitelist/status 304 in 888ms :: {"isWhitelisted":true,"isDiplomaEligible":true,"needsWhitelist":false,"whitelistedAt":"2026-01-11T17:16:58.531Z","whitelistTxHash":"a0159778c318f6a49755f1e1c2f3c87aabe534c22915ddd515596368e12f6d02","collection":"KUDIPLOMA","discountFee":"1000000000","discountFeeKas":"10","powFeeKas":"10","totalMintCostKas":"20","source":"indexer"}
+2026-01-12 19:53:22.24
+24239117
+User
+[MintService] Cancelled reservation b606ff30-3946-41bf-b84d-49cd0f791b12
+2026-01-12 19:53:22.25
+24239117
+User
+3:53:22 AM [express] POST /api/nft/cancel/b606ff30-3946-41bf-b84d-49cd0f791b12 200 in 310ms :: {"success":true}
+2026-01-12 19:53:23.32
+24239117
+User
+[DiscountService] Checking whitelist status at: https://mainnet.krc721.stream/api/v1/krc721/mainnet/royalties/kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel/KUDIPLOMA
+2026-01-12 19:53:23.62
+24239117
+User
+[DiscountService] Discount fee: 1000000000, threshold: 1000000000, whitelisted: true
+2026-01-12 19:53:23.62
+24239117
+User
+[DiscountService] Indexer response: {"message":"success","result":"1000000000"}
+2026-01-12 19:53:23.83
+24239117
+User
+[Whitelist] Status for kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel: isWhitelisted=true, source=indexer, indexer=true, db=true, realTx=true
+2026-01-12 19:53:23.83
+24239117
+User
+3:53:23 AM [express] GET /api/whitelist
