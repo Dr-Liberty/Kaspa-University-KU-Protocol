@@ -516,16 +516,37 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           );
           
           console.log("[Wallet] signKRC20Transaction result:", result);
+          console.log("[Wallet] Result type:", typeof result);
           
-          if (typeof result === "string" && result.length > 0) {
-            return { revealTxId: result };
+          // Parse the result - can be string (JSON) or object
+          let parsedResult: any = result;
+          if (typeof result === "string") {
+            try {
+              parsedResult = JSON.parse(result);
+              console.log("[Wallet] Parsed JSON result:", parsedResult);
+            } catch {
+              // Not JSON, use as-is
+              console.log("[Wallet] Result is plain string txId");
+              return { revealTxId: result };
+            }
           }
           
-          if (result && typeof result === "object") {
-            const resultObj = result as Record<string, any>;
-            const revealTxId = resultObj.revealTxId || resultObj.txId || resultObj.hash;
+          // Extract revealId and commitId from the result
+          if (parsedResult && typeof parsedResult === "object") {
+            console.log("[Wallet] Result keys:", Object.keys(parsedResult));
+            
+            // KasWare returns { commitId, revealId, commitTxStr, revealTxStr }
+            const revealTxId = parsedResult.revealId || parsedResult.revealTxId || 
+                              parsedResult.txId || parsedResult.hash;
+            const commitTxId = parsedResult.commitId || parsedResult.commitTxId;
+            
+            console.log("[Wallet] Extracted - revealTxId:", revealTxId, "commitTxId:", commitTxId);
+            
             if (revealTxId) {
-              return { revealTxId };
+              return { revealTxId, commitTxId };
+            }
+            if (commitTxId) {
+              return { revealTxId: commitTxId, commitTxId };
             }
           }
           
