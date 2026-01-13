@@ -48,6 +48,12 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-13**: Fixed KRC-721 minting PoW fee issue:
+    - **Root Cause**: Reveal transaction had only ~0.5 KAS fee, but KRC-721 requires 10 KAS minimum PoW fee (`feeRev`)
+    - **Fix**: Set reveal `priorityFee` to 10 KAS in the KCOM submitCommitReveal call
+    - **Indexer Behavior**: Silently rejects mints with insufficient feeRev - transaction succeeds but mint not indexed
+    - **Verification**: Use `/api/v1/krc721/{network}/nfts/{tick}` endpoint to check collection (not `/token/`)
+    - **Debug Tip**: Check `feeRev` in indexer response - must be ≥1000000000 (10 KAS in sompi)
 - **2026-01-12**: Improved KRC-721 minting reliability with transaction-based verification:
     - **Wallet API Prioritization**: `submitCommitReveal` (preferred) → `buildScript+inscribeKRC721` → `signKRC20Transaction` (legacy fallback)
     - **Signature Compatibility**: Handles both modern object-based and legacy multi-argument `submitCommitReveal` signatures

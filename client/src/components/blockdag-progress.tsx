@@ -398,8 +398,9 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
       
       if (!verified) {
         // Transaction was broadcast but indexer didn't recognize it as a valid KRC-721 mint
-        // This could mean: collection not deployed, invalid inscription, or indexer issue
+        // This typically means insufficient PoW fee (requires 10 KAS minimum)
         console.log("[DiplomaMint] Indexer verification failed - mint may not be valid");
+        console.log("[DiplomaMint] Possible causes: insufficient PoW fee (<10 KAS), invalid inscription format, or indexer issue");
         
         try {
           await apiRequest("POST", `/api/nft/cancel/${reservation.reservationId}`);
@@ -407,7 +408,7 @@ export function BlockDAGProgress({ courses, certificates, walletConnected }: Blo
         
         setMintError(
           "The transaction was broadcast but the KRC-721 indexer did not recognize it as a valid mint. " +
-          "This may mean the KUDIPLOMA collection is not yet deployed on mainnet. " +
+          "This may indicate insufficient PoW fee (10 KAS minimum required). " +
           "Transaction ID: " + revealTxId
         );
         setMintStep("error");

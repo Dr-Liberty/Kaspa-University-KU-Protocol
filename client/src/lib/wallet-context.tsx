@@ -531,10 +531,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         };
         
         // KCOM reveal object structure
+        // CRITICAL: KRC-721 requires 10 KAS minimum PoW fee (feeRev) for the reveal transaction
+        // This fee is burned to miners and tracked by the indexer
+        // Without sufficient feeRev, the indexer will silently reject the mint
+        const powFeeKas = 10; // 10 KAS minimum required by KRC-721 spec
         const reveal = {
           outputs: revealOutputs,
           changeAddress: walletAddress,
-          priorityFee: Math.max(priorityFeeKas, 0.00001712)
+          priorityFee: powFeeKas // Use 10 KAS PoW fee instead of tiny priority fee
         };
         
         console.log("[Wallet] Step 3: Calling submitCommitReveal (KCOM 4-param style)...");
