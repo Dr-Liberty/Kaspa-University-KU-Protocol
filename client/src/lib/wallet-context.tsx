@@ -499,69 +499,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // Method 2: signKRC20Transaction with type=5 for KRC-721
-      // This method works but KasWare popup doesn't show exact amount
-      // We show the cost in our preview dialog before calling wallet
-      const hasSignKRC20Transaction = typeof window.kasware.signKRC20Transaction === "function";
-      if (hasSignKRC20Transaction) {
-        console.log("[Wallet] Using signKRC20Transaction with type=5 (KRC-721)");
-        
-        try {
-          // signKRC20Transaction(inscribeJsonString, type, destAddr?, priorityFee?)
-          // type=5 is for KRC-721 inscriptions
-          const result = await window.kasware.signKRC20Transaction(
-            inscriptionJson,
-            5, // type 5 = KRC-721
-            options?.royaltyTo, // destination for royalty
-            0 // priority fee
-          );
-          
-          console.log("[Wallet] signKRC20Transaction result:", result);
-          console.log("[Wallet] Result type:", typeof result);
-          
-          // Parse the result - can be string (JSON) or object
-          let parsedResult: any = result;
-          if (typeof result === "string") {
-            try {
-              parsedResult = JSON.parse(result);
-              console.log("[Wallet] Parsed JSON result:", parsedResult);
-            } catch {
-              // Not JSON, use as-is
-              console.log("[Wallet] Result is plain string txId");
-              return { revealTxId: result };
-            }
-          }
-          
-          // Extract revealId and commitId from the result
-          if (parsedResult && typeof parsedResult === "object") {
-            console.log("[Wallet] Result keys:", Object.keys(parsedResult));
-            
-            // KasWare returns { commitId, revealId, commitTxStr, revealTxStr }
-            const revealTxId = parsedResult.revealId || parsedResult.revealTxId || 
-                              parsedResult.txId || parsedResult.hash;
-            const commitTxId = parsedResult.commitId || parsedResult.commitTxId;
-            
-            console.log("[Wallet] Extracted - revealTxId:", revealTxId, "commitTxId:", commitTxId);
-            
-            if (revealTxId) {
-              return { revealTxId, commitTxId };
-            }
-            if (commitTxId) {
-              return { revealTxId: commitTxId, commitTxId };
-            }
-          }
-          
-          throw new Error("signKRC20Transaction returned no transaction ID");
-        } catch (err: any) {
-          console.log("[Wallet] signKRC20Transaction failed:", err.message);
-          // Fall through to next method
-        }
-      }
-      
-      // Method 3: buildScript + sendKaspa (fallback - shows exact amount)
-      // This shows the 20.5 KAS amount in the wallet popup
-      if (hasBuildScript && hasSendKaspa) {
-        console.log("[Wallet] Using buildScript + sendKaspa (shows exact amount)");
+      // Method 2: buildScript + sendKaspa + submitReveal (PRIMARY - shows exact amount!)
+      // This shows the 20.5 KAS amount clearly in the wallet popup
+      if (hasBuildScript && hasSendKaspa && hasSubmitReveal) {
+        console.log("[Wallet] Using buildScript + sendKaspa + submitReveal (shows exact amount)");
         
         // Step 1: Build the commit script
         console.log("[Wallet] Step 1: Calling buildScript...");
@@ -572,45 +513,148 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         console.log("[Wallet] buildScript result:", JSON.stringify(buildResult, null, 2));
         
-        if (!buildResult || !buildResult.p2shAddress) {
-          throw new Error("buildScript failed to return p2shAddress");
+        if (!buildResult || !buildResult.p2shAddress || !buildResult.script) {
+          throw new Error("buildScript failed to return p2shAddress/script");
         }
         
-        const { p2shAddress } = buildResult;
+        const { p2shAddress, script } = buildResult;
         // KRC-721 needs: 10 KAS PoW + 10 KAS royalty + ~0.5 KAS fees = 20.5 KAS
         const commitAmountSompi = 2050000000; // 20.5 KAS in sompi
         
-        console.log("[Wallet] Sending", commitAmountSompi / 100000000, "KAS to P2SH:", p2shAddress);
+        console.log("[Wallet] Step 2: Sending", commitAmountSompi / 100000000, "KAS to P2SH:", p2shAddress);
+        console.log("[Wallet] This popup will show the exact amount being spent!");
         
-        // Step 2: Send KAS to P2SH address (this is the commit tx)
+        // Step 2: Send KAS to P2SH address (COMMIT tx - shows amount in wallet popup!)
         const commitResult = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
-        console.log("[Wallet] sendKaspa result:", commitResult);
+        console.log("[Wallet] sendKaspa (commit) result:", commitResult);
         
-        // Extract commit txId
+        // Extract commit tx data - we need the full tx string for reveal
         let commitTxId: string;
+        let commitTxStr: string = "";
+        
         if (typeof commitResult === "string") {
           if (commitResult.startsWith("{")) {
+            // It's a JSON string - this is the full tx data
+            commitTxStr = commitResult;
             try {
               const parsed = JSON.parse(commitResult);
-              commitTxId = parsed.id || parsed.txId || parsed.hash || commitResult;
+              commitTxId = parsed.id || parsed.txId || parsed.hash;
             } catch {
               commitTxId = commitResult;
             }
           } else {
+            // Just a txId string
             commitTxId = commitResult;
           }
         } else if (commitResult && typeof commitResult === "object") {
-          commitTxId = (commitResult as any).id || (commitResult as any).txId || 
-                       (commitResult as any).hash || JSON.stringify(commitResult);
+          const resultObj = commitResult as Record<string, any>;
+          commitTxId = resultObj.id || resultObj.txId || resultObj.hash;
+          // Try to serialize the full tx for submitReveal
+          commitTxStr = JSON.stringify(resultObj);
         } else {
-          throw new Error("sendKaspa failed");
+          throw new Error("sendKaspa failed to return result");
         }
         
-        console.log("[Wallet] Commit tx sent:", commitTxId);
-        console.log("[Wallet] The reveal transaction should auto-complete via wallet...");
+        console.log("[Wallet] Commit txId:", commitTxId);
+        console.log("[Wallet] Commit tx string length:", commitTxStr.length);
         
-        // Return the commit txId - the reveal should happen automatically
-        return { revealTxId: commitTxId, commitTxId };
+        // Wait a moment for commit to propagate
+        console.log("[Wallet] Waiting 2s for commit to propagate...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Step 3: Submit the reveal transaction
+        console.log("[Wallet] Step 3: Calling submitReveal with commitTxStr...");
+        
+        try {
+          // Pass the commit transaction data to submitReveal so it can build the reveal
+          const revealParams: any = {
+            type: "KSPR_KRC721",
+            data: inscriptionJson
+          };
+          
+          // Add the commit tx string if we have it
+          if (commitTxStr) {
+            revealParams.commitTxStr = commitTxStr;
+          }
+          
+          console.log("[Wallet] submitReveal params:", JSON.stringify({
+            ...revealParams,
+            commitTxStr: commitTxStr ? `[${commitTxStr.length} chars]` : "none"
+          }));
+          
+          const revealResult = await window.kasware.submitReveal(revealParams);
+          console.log("[Wallet] submitReveal result:", revealResult);
+          
+          // Extract reveal txId
+          let revealTxId: string | undefined;
+          if (typeof revealResult === "string") {
+            if (revealResult.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(revealResult);
+                revealTxId = parsed.revealId || parsed.txId || parsed.hash || parsed.id;
+              } catch {
+                revealTxId = revealResult;
+              }
+            } else {
+              revealTxId = revealResult;
+            }
+          } else if (revealResult && typeof revealResult === "object") {
+            const resultObj = revealResult as Record<string, any>;
+            revealTxId = resultObj.revealId || resultObj.txId || resultObj.hash || resultObj.id;
+          }
+          
+          if (revealTxId) {
+            console.log("[Wallet] Mint complete! commitTxId:", commitTxId, "revealTxId:", revealTxId);
+            return { revealTxId, commitTxId };
+          }
+          
+          // If no reveal txId, return commit as reference
+          console.log("[Wallet] No revealTxId, using commitTxId as reference");
+          return { revealTxId: commitTxId, commitTxId };
+          
+        } catch (revealErr: any) {
+          console.log("[Wallet] submitReveal failed:", revealErr.message);
+          // Commit succeeded but reveal failed - return commit info
+          return { revealTxId: commitTxId, commitTxId, revealPending: true };
+        }
+      }
+      
+      // Method 3: signKRC20Transaction (FALLBACK - doesn't show amount in popup)
+      const hasSignKRC20Transaction = typeof window.kasware.signKRC20Transaction === "function";
+      if (hasSignKRC20Transaction) {
+        console.log("[Wallet] FALLBACK: Using signKRC20Transaction with type=5 (KRC-721)");
+        
+        const result = await window.kasware.signKRC20Transaction(
+          inscriptionJson,
+          5, // type 5 = KRC-721
+          options?.royaltyTo,
+          0
+        );
+        
+        console.log("[Wallet] signKRC20Transaction result:", result);
+        
+        let parsedResult: any = result;
+        if (typeof result === "string") {
+          try {
+            parsedResult = JSON.parse(result);
+          } catch {
+            return { revealTxId: result };
+          }
+        }
+        
+        if (parsedResult && typeof parsedResult === "object") {
+          const revealTxId = parsedResult.revealId || parsedResult.revealTxId || 
+                            parsedResult.txId || parsedResult.hash;
+          const commitTxId = parsedResult.commitId || parsedResult.commitTxId;
+          
+          console.log("[Wallet] Extracted - revealTxId:", revealTxId, "commitTxId:", commitTxId);
+          
+          if (revealTxId) {
+            return { revealTxId, commitTxId };
+          }
+        }
+        
+        throw new Error("signKRC20Transaction returned no transaction ID");
       }
       
       throw new Error(
