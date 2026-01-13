@@ -426,15 +426,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const hasSubmitCommitReveal = typeof window.kasware.submitCommitReveal === "function";
     const hasBuildScript = typeof window.kasware.buildScript === "function";
     
-    console.log("[Wallet] Capability detection: submitCommitReveal=" + hasSubmitCommitReveal + 
-      ", buildScript=" + hasBuildScript);
+    // Detect all KRC-721 related methods
+    const hasInscribeKRC721 = typeof window.kasware.inscribeKRC721 === "function";
+    const hasSubmitCommit = typeof window.kasware.submitCommit === "function";
+    const hasSubmitReveal = typeof window.kasware.submitReveal === "function";
+    const hasSendKaspa = typeof window.kasware.sendKaspa === "function";
     
-    // PRIMARY METHOD: Two-step buildScript + inscribeKRC721 flow
+    console.log("[Wallet] Capability detection: submitCommitReveal=" + hasSubmitCommitReveal + 
+      ", buildScript=" + hasBuildScript + ", inscribeKRC721=" + hasInscribeKRC721 +
+      ", submitCommit=" + hasSubmitCommit + ", submitReveal=" + hasSubmitReveal +
+      ", sendKaspa=" + hasSendKaspa);
+    
+    // PRIMARY METHOD: Two-step buildScript + (submitCommit/submitReveal OR inscribeKRC721)
     // This is the proven approach used by kaspa.com/nft/marketplace
     // The shortcut submitCommitReveal("KSPR_KRC721", ...) hangs in current KasWare versions
     try {
-      const hasInscribeKRC721 = typeof window.kasware.inscribeKRC721 === "function";
-      
+      // Method 1: buildScript + inscribeKRC721
       if (hasBuildScript && hasInscribeKRC721) {
         console.log("[Wallet] Using two-step flow: buildScript + inscribeKRC721");
         
@@ -492,7 +499,61 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // FALLBACK: Try submitCommitReveal if inscribeKRC721 not available
+      // Method 2: buildScript + submitCommit + submitReveal (separate calls)
+      // This is the most reliable approach for KasWare
+      if (hasBuildScript && hasSubmitCommit && hasSubmitReveal) {
+        console.log("[Wallet] Using three-step flow: buildScript + submitCommit + submitReveal");
+        
+        // Step 1: Build the commit script
+        console.log("[Wallet] Step 1: Calling buildScript...");
+        const buildResult = await window.kasware.buildScript({
+          type: "KSPR_KRC721",
+          data: inscriptionJson
+        });
+        
+        console.log("[Wallet] buildScript result:", JSON.stringify(buildResult, null, 2));
+        
+        if (!buildResult || !buildResult.script) {
+          throw new Error("buildScript failed to return script data");
+        }
+        
+        const { script, p2shAddress, amountSompi } = buildResult;
+        console.log("[Wallet] Got script length:", script?.length || 0);
+        console.log("[Wallet] Got p2shAddress:", p2shAddress);
+        console.log("[Wallet] Got amountSompi:", amountSompi);
+        
+        // Step 2: Submit the commit transaction (sends KAS to P2SH address)
+        console.log("[Wallet] Step 2: Calling submitCommit...");
+        const commitResult = await window.kasware.submitCommit(script);
+        console.log("[Wallet] submitCommit result:", commitResult);
+        
+        const commitTxId = typeof commitResult === "string" ? commitResult : 
+          (commitResult?.txId || commitResult?.hash || commitResult?.sendCommitTxId);
+        
+        if (!commitTxId) {
+          throw new Error("submitCommit failed to return transaction ID");
+        }
+        console.log("[Wallet] Commit successful, txId:", commitTxId);
+        
+        // Step 3: Submit the reveal transaction  
+        console.log("[Wallet] Step 3: Calling submitReveal...");
+        const revealResult = await window.kasware.submitReveal(script);
+        console.log("[Wallet] submitReveal result:", revealResult);
+        
+        const revealTxId = typeof revealResult === "string" ? revealResult :
+          (revealResult?.txId || revealResult?.hash || revealResult?.sendRevealTxId);
+        
+        if (revealTxId) {
+          console.log("[Wallet] Reveal successful, txId:", revealTxId);
+          return { revealTxId, commitTxId };
+        }
+        
+        // If reveal doesn't return ID, use commit as reference
+        console.log("[Wallet] No reveal txId, using commit as reference");
+        return { revealTxId: commitTxId, commitTxId };
+      }
+      
+      // FALLBACK: Try submitCommitReveal (known to hang on some KasWare versions)
       if (hasSubmitCommitReveal) {
         console.log("[Wallet] Fallback: Using submitCommitReveal (may hang on some KasWare versions)");
         
