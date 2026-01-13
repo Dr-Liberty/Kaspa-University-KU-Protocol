@@ -1,0 +1,158 @@
+[Wallet] Waiting 5s for commit tx to propagate...
+index-CS92G2aS.js:8 [Wallet] Step 3: Calling submitReveal (uses cached state from buildScript)...
+index-CS92G2aS.js:8 [Wallet] Trying submitReveal() with no parameters...
+index-CS92G2aS.js:8 [Wallet] submitReveal() no params failed: TypeError: Cannot read properties of undefined (reading 'priorityEntries')
+    at constructor.submitReveal (extensionPageScript.js:109:54658)
+    at index-CS92G2aS.js:8:201828
+    at async ne (index-CS92G2aS.js:69:3586)
+index-CS92G2aS.js:8 [Wallet] Trying submitReveal(commitTxId)...
+index-CS92G2aS.js:8 [Wallet] submitReveal(commitTxId) failed: {code: 4001, message: 'User rejected the request.'}
+index-CS92G2aS.js:8 [Wallet] Trying submitReveal(type, data)...
+index-CS92G2aS.js:8 [Wallet] submitReveal(type, data) failed: {code: 4001, message: 'User rejected the request.'}
+index-CS92G2aS.js:8 [Wallet] All submitReveal attempts failed. Commit succeeded, reveal needs manual completion.
+index-CS92G2aS.js:69 [DiplomaMint] Mint result - revealTxId: 9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 commitTxId: 9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757
+index-CS92G2aS.js:69 [DiplomaMint] Verifying via: https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 1/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 2/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 3/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 4/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 5/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 6/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 7/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 8/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
+index-CS92G2aS.js:69 [DiplomaMint] Verification attempt 9/12...
+index-CS92G2aS.js:69  GET https://mainnet.krc721.stream/api/v1/krc721/mainnet/ops/txid/9a982d44885b9a78353c49e26725e5da16a02ff9299dd3f04f30b4ca75a49757 404 (Not Found)
+ne @ index-CS92G2aS.js:69
+await in ne
+IB @ index-CS92G2aS.js:5
+$B @ index-CS92G2aS.js:5
+LB @ index-CS92G2aS.js:5
+wA @ index-CS92G2aS.js:5
+jA @ index-CS92G2aS.js:5
+(anonymous) @ index-CS92G2aS.js:5
+_y @ index-CS92G2aS.js:8
+TP @ index-CS92G2aS.js:5
+_g @ index-CS92G2aS.js:5
+pg @ index-CS92G2aS.js:5
+ez @ index-CS92G2aS.js:5Understand this error
+index-CS92G2aS.js:69 [DiplomaMint] Response status: 404
