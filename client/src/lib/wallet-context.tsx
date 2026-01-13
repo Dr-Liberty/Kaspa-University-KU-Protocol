@@ -499,12 +499,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // Method 2: buildScript + sendKaspa (manual commit) + submitReveal
-      // submitCommit is internally gated, so use sendKaspa to fund the P2SH address directly
-      if (hasBuildScript && hasSendKaspa && hasSubmitReveal) {
-        console.log("[Wallet] Using manual commit flow: buildScript + sendKaspa + submitReveal");
+      // Method 2: buildScript + submitCommit + submitReveal
+      // buildScript populates internal wallet cache, submitCommit/submitReveal use it
+      if (hasBuildScript && hasSubmitCommit && hasSubmitReveal) {
+        console.log("[Wallet] Using buildScript + submitCommit + submitReveal flow");
         
-        // Step 1: Build the commit script
+        // Step 1: Build the commit script (populates wallet's internal cache)
         console.log("[Wallet] Step 1: Calling buildScript...");
         const buildResult = await window.kasware.buildScript({
           type: "KSPR_KRC721",
@@ -518,132 +518,58 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
         
         const { script, p2shAddress } = buildResult;
-        // KRC-721 mints need: 10 KAS (PoW fee) + 10 KAS (royalty) + ~0.5 KAS (tx fees) = 20.5 KAS total
-        // sendKaspa expects amount in sompi (integer), not KAS
-        const commitAmountSompi = buildResult.amountSompi || 2050000000; // 20.5 KAS = 2,050,000,000 sompi
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
-        console.log("[Wallet] Commit amount:", commitAmountSompi, "sompi (", commitAmountSompi / 100000000, "KAS)");
         
-        // Step 2: Send KAS to P2SH address using sendKaspa (this triggers wallet popup!)
-        // sendKaspa(toAddress, amount) - amount should be in sompi as a number
-        console.log("[Wallet] Step 2: Sending", commitAmountSompi, "sompi to P2SH address via sendKaspa...");
-        const commitResult = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
-        console.log("[Wallet] sendKaspa result:", commitResult);
+        // Step 2: Call submitCommit - wallet handles the commit transaction using cached state
+        console.log("[Wallet] Step 2: Calling submitCommit...");
+        let commitResult;
+        try {
+          commitResult = await window.kasware.submitCommit();
+          console.log("[Wallet] submitCommit result:", commitResult);
+        } catch (commitErr) {
+          console.log("[Wallet] submitCommit failed:", commitErr);
+          throw new Error("submitCommit failed: " + (commitErr as Error).message);
+        }
         
-        // Parse the sendKaspa result - it can be a string, object, or JSON string
+        // Extract commit txId
         let commitTxId: string;
-        let commitTxData: any = null;
-        
         if (typeof commitResult === "string") {
-          if (commitResult.startsWith("{")) {
-            try {
-              commitTxData = JSON.parse(commitResult);
-              commitTxId = commitTxData.id || commitTxData.txId || commitTxData.hash;
-            } catch {
-              commitTxId = commitResult;
-            }
-          } else {
-            commitTxId = commitResult;
-          }
+          commitTxId = commitResult;
         } else if (commitResult && typeof commitResult === "object") {
-          commitTxData = commitResult;
-          commitTxId = (commitResult as any).id || (commitResult as any).txId || (commitResult as any).hash;
+          commitTxId = (commitResult as any).txId || (commitResult as any).id || (commitResult as any).hash || 
+                       (commitResult as any).sendCommitTxId || (commitResult as any).commitTxId;
         } else {
-          throw new Error("sendKaspa failed to return transaction ID");
+          throw new Error("submitCommit returned no transaction ID");
         }
         
-        console.log("[Wallet] Extracted commit txId:", commitTxId);
-        console.log("[Wallet] Commit tx data available:", !!commitTxData);
+        console.log("[Wallet] Commit txId:", commitTxId);
         
-        if (!commitTxId) {
-          throw new Error("Could not extract transaction ID from sendKaspa result");
-        }
+        // Wait for commit to propagate
+        console.log("[Wallet] Waiting 3s for commit to propagate...");
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Find the P2SH output index from the transaction
-        let p2shOutputIndex = 0;
-        let p2shScriptPublicKey = "";
-        if (commitTxData?.outputs) {
-          for (let i = 0; i < commitTxData.outputs.length; i++) {
-            const output = commitTxData.outputs[i];
-            if (output.address === p2shAddress) {
-              p2shOutputIndex = i;
-              p2shScriptPublicKey = output.scriptPublicKey?.scriptPublicKey || output.scriptPublicKey || "";
-              console.log("[Wallet] Found P2SH output at index", i, "scriptPublicKey:", p2shScriptPublicKey);
-              break;
-            }
-          }
-        }
-        
-        // Wait for commit tx to propagate
-        console.log("[Wallet] Waiting 5s for commit tx to propagate...");
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        // Step 3: Submit the reveal transaction
+        // Step 3: Call submitReveal - wallet handles the reveal using cached state
         console.log("[Wallet] Step 3: Calling submitReveal...");
-        
-        // Construct UTXO entry for submitReveal
-        const priorityEntry = {
-          address: p2shAddress,
-          amount: String(commitAmountSompi),
-          outpoint: {
-            transactionId: commitTxId,
-            index: p2shOutputIndex
-          },
-          scriptPublicKey: p2shScriptPublicKey,
-          blockDaaScore: "0"
-        };
-        console.log("[Wallet] Constructed priority entry:", JSON.stringify(priorityEntry));
-        
-        // Try multiple parameter formats for submitReveal
         let revealResult;
         try {
-          // Try with full reveal options including type, data, and priorityEntries
-          console.log("[Wallet] Trying submitReveal with full options...");
-          const revealOptions = {
-            type: "KSPR_KRC721",
-            data: inscriptionJson,
-            script: script,
-            priorityEntries: [priorityEntry]
-          };
-          console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
-          revealResult = await window.kasware.submitReveal(revealOptions);
-        } catch (e1) {
-          console.log("[Wallet] submitReveal with full options failed:", e1);
-          try {
-            // Try with type + data + priorityEntries only
-            console.log("[Wallet] Trying submitReveal with type+data+priorityEntries...");
-            revealResult = await window.kasware.submitReveal({
-              type: "KSPR_KRC721",
-              data: inscriptionJson,
-              priorityEntries: [priorityEntry]
-            });
-          } catch (e2) {
-            console.log("[Wallet] submitReveal with type+data+priorityEntries failed:", e2);
-            try {
-              // Try with just the script
-              console.log("[Wallet] Trying submitReveal(script)...");
-              revealResult = await window.kasware.submitReveal(script);
-            } catch (e3) {
-              console.log("[Wallet] submitReveal(script) failed:", e3);
-              // Last resort: return commit info and let user retry
-              console.log("[Wallet] All submitReveal attempts failed. Commit succeeded, reveal needs manual completion.");
-              return { revealTxId: commitTxId, commitTxId, revealPending: true };
-            }
-          }
+          revealResult = await window.kasware.submitReveal();
+          console.log("[Wallet] submitReveal result:", revealResult);
+        } catch (revealErr) {
+          console.log("[Wallet] submitReveal failed:", revealErr);
+          // Commit succeeded, reveal failed
+          return { revealTxId: commitTxId, commitTxId, revealPending: true };
         }
-        console.log("[Wallet] submitReveal result:", revealResult);
         
+        // Extract reveal txId
         const revealTxId = typeof revealResult === "string" ? revealResult :
-          (revealResult?.txId || revealResult?.hash || revealResult?.sendRevealTxId);
+          (revealResult?.txId || revealResult?.hash || revealResult?.sendRevealTxId || revealResult?.revealTxId);
         
         if (revealTxId) {
-          console.log("[Wallet] Reveal successful, txId:", revealTxId);
+          console.log("[Wallet] Mint complete! revealTxId:", revealTxId, "commitTxId:", commitTxId);
           return { revealTxId, commitTxId };
         }
         
-        // If reveal doesn't return ID, commit succeeded but reveal may need completion
-        console.log("[Wallet] No reveal txId returned. Commit succeeded, reveal may need manual retry.");
         return { revealTxId: commitTxId, commitTxId };
       }
       
