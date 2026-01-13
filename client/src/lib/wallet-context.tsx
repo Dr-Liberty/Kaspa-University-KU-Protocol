@@ -499,13 +499,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // Method 2: buildScript + sendKaspa + submitReveal (PRIMARY - shows exact amount!)
-      // This shows the 20.5 KAS amount clearly in the wallet popup
-      if (hasBuildScript && hasSendKaspa && hasSubmitReveal) {
-        console.log("[Wallet] Using buildScript + sendKaspa + submitReveal (shows exact amount)");
+      // Method 2: buildScript + submitCommitReveal with extraOutputs (shows proper UI!)
+      // This produces the "Commit & Reveal" popup showing inscription + amounts
+      if (hasBuildScript && hasSubmitCommitReveal) {
+        console.log("[Wallet] Using buildScript + submitCommitReveal (proper Commit & Reveal UI)");
         
-        // Step 1: Build the commit script
-        console.log("[Wallet] Step 1: Calling buildScript...");
+        // Step 1: Build the commit script to get P2SH address
+        console.log("[Wallet] Step 1: Calling buildScript to get P2SH address...");
         const buildResult = await window.kasware.buildScript({
           type: "KSPR_KRC721",
           data: inscriptionJson
@@ -513,110 +513,83 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         console.log("[Wallet] buildScript result:", JSON.stringify(buildResult, null, 2));
         
-        if (!buildResult || !buildResult.p2shAddress || !buildResult.script) {
-          throw new Error("buildScript failed to return p2shAddress/script");
+        if (!buildResult || !buildResult.p2shAddress) {
+          throw new Error("buildScript failed to return p2shAddress");
         }
         
-        const { p2shAddress, script } = buildResult;
-        // KRC-721 needs: 10 KAS PoW + 10 KAS royalty + ~0.5 KAS fees = 20.5 KAS
-        const commitAmountSompi = 2050000000; // 20.5 KAS in sompi
+        const { p2shAddress } = buildResult;
         
-        console.log("[Wallet] Step 2: Sending", commitAmountSompi / 100000000, "KAS to P2SH:", p2shAddress);
-        console.log("[Wallet] This popup will show the exact amount being spent!");
+        // KRC-721 mint costs:
+        // - 10 KAS PoW fee (to P2SH commit address)
+        // - 10 KAS royalty (to collection owner)
+        // - ~0.5 KAS transaction fees
+        const commitAmountSompi = 1000000000; // 10 KAS for PoW
+        const royaltyAmountSompi = options?.royaltyFeeSompi ? 
+          parseInt(options.royaltyFeeSompi, 10) : 1000000000; // 10 KAS royalty
         
-        // Step 2: Send KAS to P2SH address (COMMIT tx - shows amount in wallet popup!)
-        const commitResult = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
-        console.log("[Wallet] sendKaspa (commit) result:", commitResult);
+        // Build extraOutputs for the proper Commit & Reveal UI
+        const extraOutputs: Array<{ address: string; amount: number }> = [
+          { address: p2shAddress, amount: commitAmountSompi }
+        ];
         
-        // Extract commit tx data - we need the full tx string for reveal
-        let commitTxId: string;
-        let commitTxStr: string = "";
-        
-        if (typeof commitResult === "string") {
-          if (commitResult.startsWith("{")) {
-            // It's a JSON string - this is the full tx data
-            commitTxStr = commitResult;
-            try {
-              const parsed = JSON.parse(commitResult);
-              commitTxId = parsed.id || parsed.txId || parsed.hash;
-            } catch {
-              commitTxId = commitResult;
-            }
-          } else {
-            // Just a txId string
-            commitTxId = commitResult;
-          }
-        } else if (commitResult && typeof commitResult === "object") {
-          const resultObj = commitResult as Record<string, any>;
-          commitTxId = resultObj.id || resultObj.txId || resultObj.hash;
-          // Try to serialize the full tx for submitReveal
-          commitTxStr = JSON.stringify(resultObj);
-        } else {
-          throw new Error("sendKaspa failed to return result");
+        // Add royalty output if provided
+        if (options?.royaltyTo) {
+          extraOutputs.push({ 
+            address: options.royaltyTo, 
+            amount: royaltyAmountSompi 
+          });
         }
         
-        console.log("[Wallet] Commit txId:", commitTxId);
-        console.log("[Wallet] Commit tx string length:", commitTxStr.length);
+        console.log("[Wallet] Step 2: Calling submitCommitReveal with extraOutputs...");
+        console.log("[Wallet] extraOutputs:", JSON.stringify(extraOutputs));
         
-        // Wait a moment for commit to propagate
-        console.log("[Wallet] Waiting 2s for commit to propagate...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const submitParams = {
+          type: "KSPR_KRC721",
+          data: inscriptionJson,
+          extraOutputs: extraOutputs,
+          priorityFee: 0
+        };
         
-        // Step 3: Submit the reveal transaction
-        console.log("[Wallet] Step 3: Calling submitReveal with commitTxStr...");
+        console.log("[Wallet] submitCommitReveal params:", JSON.stringify(submitParams, null, 2));
         
-        try {
-          // Pass the commit transaction data to submitReveal so it can build the reveal
-          const revealParams: any = {
-            type: "KSPR_KRC721",
-            data: inscriptionJson
-          };
-          
-          // Add the commit tx string if we have it
-          if (commitTxStr) {
-            revealParams.commitTxStr = commitTxStr;
+        const MINT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minute timeout
+        
+        const mintPromise = window.kasware.submitCommitReveal(submitParams);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Mint timed out. Please try again.")), MINT_TIMEOUT_MS);
+        });
+        
+        const result = await Promise.race([mintPromise, timeoutPromise]);
+        
+        console.log("[Wallet] submitCommitReveal result:", result);
+        
+        // Parse result
+        let parsedResult: any = result;
+        if (typeof result === "string") {
+          try {
+            parsedResult = JSON.parse(result);
+          } catch {
+            return { revealTxId: result };
           }
+        }
+        
+        if (parsedResult && typeof parsedResult === "object") {
+          const revealTxId = parsedResult.revealId || parsedResult.revealTxId || 
+                            parsedResult.sendRevealTxId || parsedResult.txId || parsedResult.hash;
+          const commitTxId = parsedResult.commitId || parsedResult.commitTxId || 
+                            parsedResult.sendCommitTxId;
           
-          console.log("[Wallet] submitReveal params:", JSON.stringify({
-            ...revealParams,
-            commitTxStr: commitTxStr ? `[${commitTxStr.length} chars]` : "none"
-          }));
-          
-          const revealResult = await window.kasware.submitReveal(revealParams);
-          console.log("[Wallet] submitReveal result:", revealResult);
-          
-          // Extract reveal txId
-          let revealTxId: string | undefined;
-          if (typeof revealResult === "string") {
-            if (revealResult.startsWith("{")) {
-              try {
-                const parsed = JSON.parse(revealResult);
-                revealTxId = parsed.revealId || parsed.txId || parsed.hash || parsed.id;
-              } catch {
-                revealTxId = revealResult;
-              }
-            } else {
-              revealTxId = revealResult;
-            }
-          } else if (revealResult && typeof revealResult === "object") {
-            const resultObj = revealResult as Record<string, any>;
-            revealTxId = resultObj.revealId || resultObj.txId || resultObj.hash || resultObj.id;
-          }
+          console.log("[Wallet] Mint complete! commitTxId:", commitTxId, "revealTxId:", revealTxId);
           
           if (revealTxId) {
-            console.log("[Wallet] Mint complete! commitTxId:", commitTxId, "revealTxId:", revealTxId);
             return { revealTxId, commitTxId };
           }
-          
-          // If no reveal txId, return commit as reference
-          console.log("[Wallet] No revealTxId, using commitTxId as reference");
-          return { revealTxId: commitTxId, commitTxId };
-          
-        } catch (revealErr: any) {
-          console.log("[Wallet] submitReveal failed:", revealErr.message);
-          // Commit succeeded but reveal failed - return commit info
-          return { revealTxId: commitTxId, commitTxId, revealPending: true };
+          if (commitTxId) {
+            return { revealTxId: commitTxId, commitTxId };
+          }
         }
+        
+        throw new Error("submitCommitReveal returned no transaction ID");
       }
       
       // Method 3: signKRC20Transaction (FALLBACK - doesn't show amount in popup)
