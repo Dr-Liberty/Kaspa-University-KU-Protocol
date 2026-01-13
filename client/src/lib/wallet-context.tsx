@@ -457,16 +457,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             throw new Error("KasWare wallet not available");
           }
           
-          // Use positional arguments: submitCommitReveal(type, data, psktExtraOutput, priorityFee)
-          // According to KasWare docs, this returns { txJsonString, sendCommitTxId }
-          console.log("[Wallet] Calling submitCommitReveal(type, data, psktExtraOutput, priorityFee)");
-          console.log("[Wallet] psktExtraOutput:", JSON.stringify(psktExtraOutput));
+          // Try simple call first (just type and data) - this is most compatible
+          console.log("[Wallet] Calling submitCommitReveal with minimal params (type, data only)");
+          console.log("[Wallet] type: KSPR_KRC721");
+          console.log("[Wallet] data:", inscriptionJson);
           
+          // KasWare KRC-721 minting - using minimal parameters for maximum compatibility
+          // The royalty/discount is handled by the KRC-721 indexer based on whitelist status
           return await window.kasware.submitCommitReveal(
             "KSPR_KRC721",
-            inscriptionJson,
-            psktExtraOutput.length > 0 ? psktExtraOutput : undefined,
-            options?.priorityFee || 0
+            inscriptionJson
           );
         };
         
