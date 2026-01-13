@@ -429,139 +429,105 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     console.log("[Wallet] Capability detection: submitCommitReveal=" + hasSubmitCommitReveal + 
       ", buildScript=" + hasBuildScript);
     
-    // Primary method: submitCommitReveal with options object for KSPR_KRC721
-    // KasWare requires extraOutputs to build the reveal transaction with royalty payment
+    // PRIMARY METHOD: Two-step buildScript + inscribeKRC721 flow
+    // This is the proven approach used by kaspa.com/nft/marketplace
+    // The shortcut submitCommitReveal("KSPR_KRC721", ...) hangs in current KasWare versions
     try {
-      if (hasSubmitCommitReveal) {
-        // Build psktExtraOutput for royalty payment if provided
-        // IMPORTANT: KasWare expects amount in KAS, not sompi!
-        const psktExtraOutput: { address: string; amount: number }[] = [];
-        if (options?.royaltyTo && options?.royaltyFeeSompi) {
-          const royaltySompi = parseInt(options.royaltyFeeSompi, 10);
-          const royaltyKas = royaltySompi / 100_000_000; // Convert sompi to KAS
-          if (royaltyKas > 0) {
-            psktExtraOutput.push({
-              address: options.royaltyTo,
-              amount: royaltyKas // KasWare expects KAS, not sompi!
-            });
-            console.log("[Wallet] Adding royalty output:", options.royaltyTo, royaltyKas, "KAS");
-          }
-        }
+      const hasInscribeKRC721 = typeof window.kasware.inscribeKRC721 === "function";
+      
+      if (hasBuildScript && hasInscribeKRC721) {
+        console.log("[Wallet] Using two-step flow: buildScript + inscribeKRC721");
         
-        // Add a timeout to prevent infinite hanging (5 minutes for commit-reveal cycle)
-        const MINT_TIMEOUT_MS = 5 * 60 * 1000;
-        let result: any;
-        
-        const mintPromise = async () => {
-          if (!window.kasware) {
-            throw new Error("KasWare wallet not available");
-          }
-          
-          // Try simple call first (just type and data) - this is most compatible
-          console.log("[Wallet] Calling submitCommitReveal with minimal params (type, data only)");
-          console.log("[Wallet] type: KSPR_KRC721");
-          console.log("[Wallet] data:", inscriptionJson);
-          
-          // KasWare KRC-721 minting - using minimal parameters for maximum compatibility
-          // The royalty/discount is handled by the KRC-721 indexer based on whitelist status
-          return await window.kasware.submitCommitReveal(
-            "KSPR_KRC721",
-            inscriptionJson
-          );
-        };
-        
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Mint transaction timed out. The transaction may still be processing - please check your wallet and the blockchain explorer.")), MINT_TIMEOUT_MS);
+        // Step 1: Build the commit script
+        console.log("[Wallet] Step 1: Calling buildScript...");
+        const buildResult = await window.kasware.buildScript({
+          type: "KSPR_KRC721",
+          data: inscriptionJson
         });
         
-        try {
-          result = await Promise.race([mintPromise(), timeoutPromise]);
-        } catch (raceErr: any) {
-          console.error("[Wallet] submitCommitReveal race error:", raceErr);
-          throw raceErr;
+        console.log("[Wallet] buildScript result:", JSON.stringify(buildResult, null, 2));
+        
+        if (!buildResult || !buildResult.script || !buildResult.p2shAddress) {
+          throw new Error("buildScript failed to return script/p2shAddress");
         }
         
-        console.log("[Wallet] submitCommitReveal raw result:", result);
-        console.log("[Wallet] Result type:", typeof result);
-        if (result && typeof result === "object") {
-          console.log("[Wallet] Result keys:", Object.keys(result));
-          console.log("[Wallet] Result JSON:", JSON.stringify(result, null, 2));
+        const { script, p2shAddress, amountSompi } = buildResult;
+        console.log("[Wallet] Got script:", script.slice(0, 50) + "...");
+        console.log("[Wallet] Got p2shAddress:", p2shAddress);
+        console.log("[Wallet] Got amountSompi:", amountSompi);
+        
+        // Step 2: Complete the inscription (commit + reveal)
+        console.log("[Wallet] Step 2: Calling inscribeKRC721...");
+        const inscribeResult = await window.kasware.inscribeKRC721(script, p2shAddress);
+        
+        console.log("[Wallet] inscribeKRC721 result:", inscribeResult);
+        console.log("[Wallet] Result type:", typeof inscribeResult);
+        
+        // Handle different return formats
+        if (typeof inscribeResult === "string" && inscribeResult.length > 0) {
+          console.log("[Wallet] Mint successful (string txId):", inscribeResult);
+          return { revealTxId: inscribeResult };
         }
         
-        if (typeof result === "string" && result.length > 0) {
-          console.log("[Wallet] Mint successful (string):", result);
-          return { revealTxId: result };
-        }
-        
-        if (result && typeof result === "object") {
-          const resultObj = result as Record<string, any>;
-          console.log("[Wallet] Result object fields:", Object.keys(resultObj));
+        if (inscribeResult && typeof inscribeResult === "object") {
+          const resultObj = inscribeResult as Record<string, any>;
+          console.log("[Wallet] Result keys:", Object.keys(resultObj));
           
-          // KasWare returns { txJsonString, sendCommitTxId } according to docs
-          // The sendCommitTxId is the commit transaction, we need to find the reveal txId
-          const commitTxId = resultObj.sendCommitTxId || resultObj.commitId || resultObj.commitTxId || resultObj.commit;
-          
-          // Check all possible field names for the reveal transaction ID
-          const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId || 
-                            resultObj.reveal || resultObj.hash || resultObj.txHash ||
-                            resultObj.transactionId || resultObj.id || resultObj.sendRevealTxId;
+          const commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId || resultObj.commit;
+          const revealTxId = resultObj.revealTxId || resultObj.sendRevealTxId || resultObj.reveal || 
+                            resultObj.txId || resultObj.hash;
           
           if (revealTxId) {
             console.log("[Wallet] Mint successful - revealTxId:", revealTxId, "commitTxId:", commitTxId);
             return { revealTxId, commitTxId };
           }
           
-          // If we have a commit but no reveal, the wallet may have only returned commit info
-          // The reveal happens after commit is confirmed - wallet may handle this automatically
+          // If only commit returned, use it as reference
           if (commitTxId) {
-            console.log("[Wallet] Got commitTxId but no revealTxId - using commit as reference:", commitTxId);
-            // Return commit as the reference - the reveal should follow automatically
+            console.log("[Wallet] Got commitTxId, reveal should follow:", commitTxId);
             return { revealTxId: commitTxId, commitTxId };
           }
-          
-          // If result is an object but we can't find a txId, check if it has any string values
-          for (const [key, value] of Object.entries(resultObj)) {
-            if (typeof value === "string" && value.length === 64) {
-              console.log("[Wallet] Found potential txId in field", key, ":", value);
-              return { revealTxId: value };
-            }
-          }
         }
         
-        // If we got undefined or null, the transaction may have succeeded but wallet didn't return ID
-        if (result === undefined || result === null) {
-          console.error("[Wallet] submitCommitReveal returned undefined/null - transaction may have succeeded");
-          throw new Error("Wallet returned no result. The transaction may have been broadcast - please check your wallet history and the blockchain explorer for a recent mint transaction.");
-        }
-        
-        throw new Error("submitCommitReveal returned unexpected result: " + JSON.stringify(result));
+        throw new Error("inscribeKRC721 returned no transaction ID");
       }
       
-      // Fallback: Try signKRC20Transaction with type 3 (mint)
-      const hasSignKRC20 = typeof window.kasware.signKRC20Transaction === "function";
-      if (hasSignKRC20) {
-        console.log("[Wallet] Fallback: signKRC20Transaction type=3 for KRC-721");
-        console.log("[Wallet] Inscription:", inscriptionJson);
+      // FALLBACK: Try submitCommitReveal if inscribeKRC721 not available
+      if (hasSubmitCommitReveal) {
+        console.log("[Wallet] Fallback: Using submitCommitReveal (may hang on some KasWare versions)");
         
-        const txId = await window.kasware.signKRC20Transaction(inscriptionJson, 3);
+        const MINT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minute timeout
         
-        console.log("[Wallet] signKRC20Transaction result:", txId);
+        const mintPromise = window.kasware.submitCommitReveal(
+          "KSPR_KRC721",
+          inscriptionJson
+        );
         
-        if (typeof txId === "string" && txId.length > 0) {
-          console.log("[Wallet] Mint successful via signKRC20Transaction:", txId);
-          return { revealTxId: txId };
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Mint timed out. Please try again or update KasWare.")), MINT_TIMEOUT_MS);
+        });
+        
+        const result = await Promise.race([mintPromise, timeoutPromise]);
+        
+        console.log("[Wallet] submitCommitReveal result:", result);
+        
+        if (typeof result === "string" && result.length > 0) {
+          return { revealTxId: result };
         }
         
-        if (txId && typeof txId === "object") {
-          const resultObj = txId as Record<string, any>;
-          const revealTxId = resultObj.revealId || resultObj.revealTxId || resultObj.txId;
-          const commitTxId = resultObj.commitId || resultObj.commitTxId;
+        if (result && typeof result === "object") {
+          const resultObj = result as Record<string, any>;
+          const revealTxId = resultObj.revealTxId || resultObj.txId || resultObj.hash;
+          const commitTxId = resultObj.commitTxId || resultObj.sendCommitTxId;
           if (revealTxId) {
             return { revealTxId, commitTxId };
           }
+          if (commitTxId) {
+            return { revealTxId: commitTxId, commitTxId };
+          }
         }
         
-        throw new Error("signKRC20Transaction returned no transaction ID");
+        throw new Error("submitCommitReveal returned no transaction ID");
       }
       
       throw new Error(
