@@ -557,25 +557,70 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           throw new Error("Could not extract transaction ID from sendKaspa result");
         }
         
-        // Wait for the commit tx to propagate before reveal
-        console.log("[Wallet] Waiting 5s for commit tx to propagate...");
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Wait for the commit tx to propagate and be visible in UTXOs
+        console.log("[Wallet] Waiting for commit UTXO to be visible...");
+        const maxWaitTime = 30000; // 30 seconds max
+        const pollInterval = 2000; // Check every 2 seconds
+        let utxoVisible = false;
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+          try {
+            const utxos = await window.kasware.getUtxoEntries();
+            // Check if P2SH address has our commit output
+            const p2shUtxo = utxos?.find((u: any) => 
+              u.address === p2shAddress || 
+              u.scriptPublicKey?.includes(p2shAddress?.replace("kaspa:", ""))
+            );
+            if (p2shUtxo) {
+              console.log("[Wallet] Commit UTXO found:", p2shUtxo);
+              utxoVisible = true;
+              break;
+            }
+          } catch (e) {
+            console.log("[Wallet] getUtxoEntries error:", e);
+          }
+          console.log("[Wallet] Commit UTXO not yet visible, waiting...");
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+        
+        if (!utxoVisible) {
+          console.log("[Wallet] Commit UTXO not visible after 30s, proceeding anyway...");
+        }
         
         // Step 3: Submit the reveal transaction  
-        console.log("[Wallet] Step 3: Calling submitReveal...");
+        // Include original KRC-721 payload type and data for wallet cache consistency
+        console.log("[Wallet] Step 3: Calling submitReveal with full payload...");
         const revealOptions = {
+          type: "KSPR_KRC721",
+          data: inscriptionJson,
           scriptHex: script,
           commitTxId: commitTxId
         };
         console.log("[Wallet] submitReveal options:", JSON.stringify(revealOptions));
         
-        // Try submitReveal with options object first, then string
+        // Try multiple parameter formats for submitReveal
         let revealResult;
         try {
+          // Try with full options object first
           revealResult = await window.kasware.submitReveal(revealOptions);
         } catch (e1) {
-          console.log("[Wallet] submitReveal with options failed, trying with script only:", e1);
-          revealResult = await window.kasware.submitReveal(script);
+          console.log("[Wallet] submitReveal with full options failed:", e1);
+          try {
+            // Try with just type and data (like submitCommitReveal)
+            revealResult = await window.kasware.submitReveal("KSPR_KRC721", inscriptionJson);
+          } catch (e2) {
+            console.log("[Wallet] submitReveal with type+data failed:", e2);
+            try {
+              // Try with just script
+              revealResult = await window.kasware.submitReveal(script);
+            } catch (e3) {
+              console.log("[Wallet] submitReveal with script failed:", e3);
+              // Last resort: return commit info and let user retry
+              console.log("[Wallet] All submitReveal attempts failed. Commit succeeded, reveal needs manual completion.");
+              return { revealTxId: commitTxId, commitTxId, revealPending: true };
+            }
+          }
         }
         console.log("[Wallet] submitReveal result:", revealResult);
         
@@ -587,7 +632,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           return { revealTxId, commitTxId };
         }
         
-        // If reveal doesn't return ID, user may need to wait and retry
+        // If reveal doesn't return ID, commit succeeded but reveal may need completion
         console.log("[Wallet] No reveal txId returned. Commit succeeded, reveal may need manual retry.");
         return { revealTxId: commitTxId, commitTxId };
       }
