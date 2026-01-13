@@ -519,16 +519,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         
         const { script, p2shAddress } = buildResult;
         // KRC-721 mints need ~0.3 KAS for commit (covers storage + reveal fees)
-        const commitAmountKAS = buildResult.amountSompi 
-          ? (buildResult.amountSompi / 100000000).toFixed(8)
-          : "0.3";
+        // sendKaspa expects amount in sompi (integer), not KAS
+        const commitAmountSompi = buildResult.amountSompi || 30000000; // 0.3 KAS = 30,000,000 sompi
         console.log("[Wallet] Got script length:", script?.length || 0);
         console.log("[Wallet] Got p2shAddress:", p2shAddress);
-        console.log("[Wallet] Commit amount:", commitAmountKAS, "KAS");
+        console.log("[Wallet] Commit amount:", commitAmountSompi, "sompi (", commitAmountSompi / 100000000, "KAS)");
         
         // Step 2: Send KAS to P2SH address using sendKaspa (this triggers wallet popup!)
-        console.log("[Wallet] Step 2: Sending", commitAmountKAS, "KAS to P2SH address via sendKaspa...");
-        const commitTxId = await window.kasware.sendKaspa(p2shAddress, commitAmountKAS);
+        // sendKaspa(toAddress, amount) - amount should be in sompi as a number
+        console.log("[Wallet] Step 2: Sending", commitAmountSompi, "sompi to P2SH address via sendKaspa...");
+        const commitTxId = await window.kasware.sendKaspa(p2shAddress, commitAmountSompi);
         console.log("[Wallet] Commit transaction sent! TxId:", commitTxId);
         
         if (!commitTxId) {

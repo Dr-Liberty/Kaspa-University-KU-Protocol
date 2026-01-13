@@ -1,0 +1,15 @@
+{p: 'krc-721', op: 'mint', tick: 'KUDIPLOMA', to: 'kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel'}
+index-DEeHoGKV.js:8 [Wallet] Royalty options: {"royaltyTo":"kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er","royaltyFeeSompi":"1000000000"}
+index-DEeHoGKV.js:8 [Wallet] Available KasWare methods: initialize, keepAlive, _requestPromiseCheckVisibility, _handleBackgroundMessage, _request, requestAccounts, getNetwork, switchNetwork, getAccounts, getPublicKey, getBalance, getKRC20Balance, getUtxoEntries, getP2shAddress, createKRC20Order, cancelKRC20Order, signCancelKRC20Order, buyKRC20Token, signBuyKRC20Token, submitCommit, submitReveal, submitCommitReveal, signMessage, verifyMessage, verifyMessageECDSA, buildScript, sendKaspa, signKRC20Transaction, signKRC20BatchTransferTransaction, krc20BatchTransferTransaction, cancelKRC20BatchTransfer, pushTx, disconnect, signPskt, getVersion
+index-DEeHoGKV.js:8 [Wallet] KRC-721 mint: ticker=KUDIPLOMA, op=mint, to=kaspa:qrmzgsh8chv72q
+index-DEeHoGKV.js:8 [Wallet] Capability detection: submitCommitReveal=true, buildScript=true, inscribeKRC721=false, submitCommit=true, submitReveal=true, sendKaspa=true
+index-DEeHoGKV.js:8 [Wallet] Using manual commit flow: buildScript + sendKaspa + submitReveal
+index-DEeHoGKV.js:8 [Wallet] Step 1: Calling buildScript...
+index-DEeHoGKV.js:8 [Wallet] buildScript result: {
+  "script": "20f62442e7c5d9e501ab1902bc808713b9b4a8db2f8435d1dfaea70a69bee033ccac0063046b737072004c797b2270223a226b72632d373231222c226f70223a226d696e74222c227469636b223a224b554449504c4f4d41222c22746f223a226b617370613a71726d7a67736838636876373271647472797074657179387a77756d6632786d39377a727435776c34366e733536643775716575636579636c6a64656c227d68",
+  "p2shAddress": "kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74"
+}
+index-DEeHoGKV.js:8 [Wallet] Got script length: 332
+index-DEeHoGKV.js:8 [Wallet] Got p2shAddress: kaspa:prt5u39kwt46jkgcjh794fuq82lh07vpzna0zytk87wgvhykd5wcw072pnl74
+index-DEeHoGKV.js:8 [Wallet] Commit amount: 0.3 KAS
+index-DEeHoGKV.js:8 [Wallet] Step 2: Sending 0.3 KAS to P2SH address via sendKaspa...
