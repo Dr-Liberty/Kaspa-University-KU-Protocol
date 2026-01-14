@@ -1144,6 +1144,7 @@ class KasiaIndexer {
   /**
    * Update conversation status
    * Persists to database for durability
+   * Searches by conversation.id (not Map key, which may be composite)
    */
   async updateConversationStatus(
     id: string, 
@@ -1151,16 +1152,34 @@ class KasiaIndexer {
     responseTxHash?: string,
     recipientAlias?: string
   ): Promise<void> {
-    const conv = this.conversations.get(id);
+    // Find conversation by ID (Map keys may be composite: id:initiator:recipient)
+    let conv: IndexedConversation | undefined;
+    let mapKey: string | undefined;
+    
+    // First try direct lookup (for simple ID keys)
+    conv = this.conversations.get(id);
     if (conv) {
+      mapKey = id;
+    } else {
+      // Search through all conversations for matching ID
+      for (const [key, c] of Array.from(this.conversations.entries())) {
+        if (c.id === id) {
+          conv = c;
+          mapKey = key;
+          break;
+        }
+      }
+    }
+    
+    if (conv && mapKey) {
       const oldStatus = conv.status;
       conv.status = status;
       if (responseTxHash) conv.responseTxHash = responseTxHash;
       if (recipientAlias) conv.recipientAlias = recipientAlias;
       conv.updatedAt = new Date();
-      this.conversations.set(id, conv);
+      this.conversations.set(mapKey, conv);
       
-      console.log(`[Kasia Indexer] updateConversationStatus: ${id} status ${oldStatus} -> ${status}`);
+      console.log(`[Kasia Indexer] updateConversationStatus: ${id} status ${oldStatus} -> ${status} (mapKey: ${mapKey.slice(0,30)}...)`);
       console.log(`[Kasia Indexer] Updating wallet caches for initiator=${conv.initiatorAddress.slice(0,20)}..., recipient=${conv.recipientAddress.slice(0,20)}...`);
       
       // Update per-wallet caches for both participants
@@ -1176,19 +1195,38 @@ class KasiaIndexer {
         }
       }
     } else {
-      console.error(`[Kasia Indexer] updateConversationStatus: conversation ${id} NOT FOUND in global Map`);
+      console.error(`[Kasia Indexer] updateConversationStatus: conversation ${id} NOT FOUND in global Map (checked ${this.conversations.size} entries)`);
     }
   }
 
   /**
    * Delete a conversation (for cleaning up stale records without on-chain proof)
+   * Searches by conversation.id (not Map key, which may be composite)
    */
   async deleteConversation(id: string): Promise<void> {
-    // Get conversation before deleting to know which wallet caches to update
-    const conv = this.conversations.get(id);
+    // Find conversation by ID (Map keys may be composite: id:initiator:recipient)
+    let conv: IndexedConversation | undefined;
+    let mapKey: string | undefined;
+    
+    // First try direct lookup
+    conv = this.conversations.get(id);
+    if (conv) {
+      mapKey = id;
+    } else {
+      // Search through all conversations for matching ID
+      for (const [key, c] of Array.from(this.conversations.entries())) {
+        if (c.id === id) {
+          conv = c;
+          mapKey = key;
+          break;
+        }
+      }
+    }
     
     // Remove from in-memory cache
-    this.conversations.delete(id);
+    if (mapKey) {
+      this.conversations.delete(mapKey);
+    }
     
     // Remove from per-wallet caches
     if (conv) {
@@ -1196,10 +1234,10 @@ class KasiaIndexer {
       const recipientNorm = this.normalizeAddress(conv.recipientAddress);
       
       const initiatorCache = this.walletConversations.get(initiatorNorm);
-      if (initiatorCache) initiatorCache.delete(id);
+      if (initiatorCache) initiatorCache.delete(conv.id);
       
       const recipientCache = this.walletConversations.get(recipientNorm);
-      if (recipientCache) recipientCache.delete(id);
+      if (recipientCache) recipientCache.delete(conv.id);
     }
     
     // Remove from database
