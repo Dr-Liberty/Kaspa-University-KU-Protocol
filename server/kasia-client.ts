@@ -436,7 +436,15 @@ export async function isConversationActive(
 }
 
 /**
+ * Convert a string to hex encoding
+ */
+function stringToHex(str: string): string {
+  return Buffer.from(str, 'utf-8').toString('hex');
+}
+
+/**
  * Fetch contextual messages sent by an address for a specific conversation alias from the Kasia indexer
+ * NOTE: The Kasia indexer expects the alias parameter to be HEX-ENCODED
  */
 export async function getContextualMessagesBySender(
   address: string,
@@ -444,7 +452,14 @@ export async function getContextualMessagesBySender(
   limit: number = 100
 ): Promise<ContextualMessageResponse[]> {
   const baseUrl = getIndexerUrl(address);
-  const url = `${baseUrl}/contextual-messages/by-sender?address=${encodeURIComponent(address)}&alias=${encodeURIComponent(alias)}&limit=${limit}`;
+  
+  // The Kasia indexer requires alias to be hex-encoded
+  // If alias is already hex (all hex chars and even length), use as-is
+  // Otherwise, hex-encode the alias string
+  const isAlreadyHex = /^[0-9a-fA-F]+$/.test(alias) && alias.length % 2 === 0;
+  const hexAlias = isAlreadyHex ? alias : stringToHex(alias);
+  
+  const url = `${baseUrl}/contextual-messages/by-sender?address=${encodeURIComponent(address)}&alias=${hexAlias}&limit=${limit}`;
   
   console.log(`[Kasia Client] Fetching contextual messages from ${url}`);
   
