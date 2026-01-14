@@ -53,15 +53,16 @@ if (isKUTransaction(txPayloadHex)) {
 }
 ```
 
-## Protocol Specifications
+## Documentation
 
-See [PROTOCOL_SPECIFICATIONS.md](./PROTOCOL_SPECIFICATIONS.md) for detailed protocol documentation.
+- **[Protocol Specifications](./PROTOCOL_SPECIFICATIONS.md)** - Detailed protocol format and field descriptions
+- **[Integration Guide](./docs/INTEGRATION.md)** - Step-by-step integration instructions
+- **[Examples](./examples/)** - Working code examples
+- **[Indexer](./indexer/README.md)** - Blockchain indexer documentation
 
 ## Indexer
 
 The KU Indexer scans the Kaspa blockchain for KU protocol transactions and provides a queryable API for educational platforms.
-
-See [indexer/README.md](./indexer/README.md) for indexer documentation.
 
 ## Integration
 
