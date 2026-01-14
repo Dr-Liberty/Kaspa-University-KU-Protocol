@@ -461,7 +461,10 @@ export async function getContextualMessagesBySender(
   
   const url = `${baseUrl}/contextual-messages/by-sender?address=${encodeURIComponent(address)}&alias=${hexAlias}&limit=${limit}`;
   
-  console.log(`[Kasia Client] Fetching contextual messages from ${url}`);
+  console.log(`[Kasia Client] Fetching contextual messages:`);
+  console.log(`[Kasia Client]   - Original alias: "${alias}"`);
+  console.log(`[Kasia Client]   - Hex alias: "${hexAlias}"`);
+  console.log(`[Kasia Client]   - URL: ${url}`);
   
   try {
     const response = await fetch(url);
@@ -471,7 +474,10 @@ export async function getContextualMessagesBySender(
       return [];
     }
     const data = await response.json();
-    console.log(`[Kasia Client] Found ${data.length} contextual messages sent by ${address.slice(0, 20)}... for alias ${alias}`);
+    console.log(`[Kasia Client] Found ${data.length} contextual messages sent by ${address.slice(0, 20)}... for alias "${alias}"`);
+    if (data.length > 0) {
+      console.log(`[Kasia Client] First message tx_id: ${data[0].tx_id}`);
+    }
     return data;
   } catch (error: any) {
     console.error(`[Kasia Client] Fetch error: ${error.message}`);

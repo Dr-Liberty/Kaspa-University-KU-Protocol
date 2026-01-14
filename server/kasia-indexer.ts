@@ -342,7 +342,7 @@ class KasiaIndexer {
           }
         }
         
-        console.log(`[Kasia Indexer] Processing on-chain conversation: id=${conv.id}, initiator=${trueInitiator.slice(0, 20)}..., recipient=${trueRecipient.slice(0, 20)}..., status=${conv.status}`);
+        console.log(`[Kasia Indexer] Processing on-chain conversation: id=${conv.id}, initiator=${trueInitiator.slice(0, 20)}..., recipient=${trueRecipient.slice(0, 20)}..., status=${conv.status}, alias=${trueInitiatorAlias || 'none'}`);
         const isAdminConv = this.supportAddress ? 
           (trueInitiator === this.supportAddress || trueRecipient === this.supportAddress) : false;
         
