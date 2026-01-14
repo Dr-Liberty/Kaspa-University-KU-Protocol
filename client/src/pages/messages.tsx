@@ -13,6 +13,7 @@ import { useWallet } from "@/lib/wallet-context";
 import { queryClient, apiRequest, getAuthToken, getWalletAddress } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useConversationKeys } from "@/hooks/use-conversation-keys";
+import { storeContactEciesPubkey, isValidEciesPublicKey } from "@/lib/ecies-crypto";
 const kasiaLogo = "/thumbnails/kasia_encrypted_messaging.png";
 
 interface UserProfile {
@@ -49,6 +50,8 @@ interface Conversation {
   isAdminConversation: boolean;
   createdAt: string;
   updatedAt: string;
+  initiatorEciesPubkey?: string;
+  recipientEciesPubkey?: string;
 }
 
 interface PrivateMessage {
@@ -1037,6 +1040,29 @@ export default function Messages() {
   useEffect(() => {
     console.log(`[Messages] Conversations state: count=${conversations?.length || 0}, data=`, conversations);
   }, [conversations]);
+  
+  // Extract and store ECIES pubkeys from conversations for cross-platform E2E encryption
+  useEffect(() => {
+    if (!conversations || !effectiveWalletAddress) return;
+    
+    const storeContactPubkeys = async () => {
+      for (const conv of conversations) {
+        // Determine which address is the "other party" (not us)
+        const isInitiator = conv.initiatorAddress.toLowerCase() === effectiveWalletAddress.toLowerCase();
+        const otherAddress = isInitiator ? conv.recipientAddress : conv.initiatorAddress;
+        const otherPubkey = isInitiator ? conv.recipientEciesPubkey : conv.initiatorEciesPubkey;
+        
+        // Store the other party's ECIES pubkey if present and valid
+        if (otherPubkey && isValidEciesPublicKey(otherPubkey)) {
+          await storeContactEciesPubkey(otherAddress, otherPubkey);
+        }
+      }
+    };
+    
+    storeContactPubkeys().catch(err => 
+      console.error("[Messages] Failed to store contact ECIES pubkeys:", err)
+    );
+  }, [conversations, effectiveWalletAddress]);
   
   // Fetch profiles for all addresses in conversations
   useEffect(() => {
