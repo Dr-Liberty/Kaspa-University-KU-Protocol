@@ -384,7 +384,7 @@ export async function getConversationsFromIndexer(
   const sentToAddresses = new Set(sentHandshakes.map(hs => hs.receiver.toLowerCase()));
   const receivedFromAddresses = new Set(receivedHandshakes.map(hs => hs.sender.toLowerCase()));
   
-  for (const [convId, conv] of conversationsMap.entries()) {
+  for (const [convId, conv] of Array.from(conversationsMap.entries())) {
     if (conv.status === "pending" && !conv.hasResponse) {
       const otherParty = conv.initiatorAddress === walletAddress 
         ? conv.recipientAddress.toLowerCase()
