@@ -1,0 +1,131 @@
+afa8bea2
+System
+main done, exiting
+2026-01-13 21:39:21.30
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:39:21.30
+7fe84dde
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:21.30
+7fe84dde
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:21.30
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:39:22.04
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-13 21:39:22.14
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:22.24
+7fe84dde
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-13 21:39:23.64
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=Anonymous
+2026-01-13 21:39:25.37
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active, alias=Anonymous
+2026-01-13 21:39:26.84
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=Anonymous
+2026-01-13 21:39:28.04
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=none
+2026-01-13 21:39:51.31
+7fe84dde
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:51.31
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:39:51.31
+7fe84dde
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:51.31
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:39:52.24
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-13 21:39:52.44
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...

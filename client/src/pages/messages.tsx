@@ -471,7 +471,8 @@ function ConversationView({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      // Invalidate ALL conversation queries (partial match)
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"], exact: false });
       toast({
         title: "Handshake Accepted",
         description: "Your response was broadcast on-chain. You can now exchange encrypted messages.",
@@ -546,7 +547,7 @@ function ConversationView({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/conversations"], exact: false });
                 }}
                 data-testid="button-sync-pending-recipient"
               >
@@ -577,7 +578,7 @@ function ConversationView({
             size="sm"
             className="mt-3"
             onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/conversations"], exact: false });
             }}
             data-testid="button-sync-pending-initiator"
           >
@@ -837,7 +838,7 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
     onSuccess: (data) => {
       setSigningStep("idle");
       setVerifyAttempts(0);
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"], exact: false });
       
       if (data?.existing) {
         toast({
