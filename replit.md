@@ -48,6 +48,15 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-14**: Added ECIES encryption for Kasia cross-platform compatibility:
+    - **Library**: `eciesjs` - secp256k1-based ECIES (same curve as Kasia app)
+    - **Dual Encryption Support**: Both ECDH (`sym:` prefix) and ECIES (`ecies:` prefix) are now supported
+    - **ECIES Flow**: Each message encrypts with recipient's public key; no key exchange needed
+    - **Keypair Derivation**: ECIES keypair derived from wallet signature, stored in IndexedDB per wallet
+    - **Format**: ECIES uses compressed secp256k1 public keys (66 hex chars) vs X25519 (64 hex chars)
+    - **Auto-Detection**: `tryDecryptMessage` automatically detects and handles both encryption formats
+    - **New Functions**: `initializeEciesKeypair`, `encryptWithEcies`, `decryptWithEcies`, `getEciesPublicKey`
+    - **Backward Compatible**: Existing ECDH-encrypted messages continue to work
 - **2026-01-14**: Implemented single-signature ECDH for E2E encryption:
     - **Before**: Required BOTH parties to sign to derive shared key (coordination required)
     - **After**: Each party signs ONCE to derive their X25519 keypair; ECDH computes shared secret locally
