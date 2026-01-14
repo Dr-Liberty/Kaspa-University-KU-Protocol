@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from "react";
 import { chacha20poly1305 } from "@noble/ciphers/chacha.js";
+import { x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { randomBytes } from "@noble/hashes/utils.js";
@@ -31,15 +32,63 @@ function bytesToHex(bytes: Uint8Array): string {
     .join("");
 }
 
+/**
+ * Validate that a string is a valid X25519 public key (64 hex chars).
+ * Legacy signatures are longer and don't match this format.
+ */
+function isValidX25519PublicKey(hex: string | null): boolean {
+  if (!hex) return false;
+  // X25519 public keys are exactly 32 bytes = 64 hex chars
+  if (hex.length !== 64) return false;
+  // Must be valid hex
+  return /^[a-fA-F0-9]{64}$/.test(hex);
+}
+
+/**
+ * Derive an X25519 keypair from a signature.
+ * The signature acts as entropy to derive a deterministic keypair.
+ * This allows ECDH key exchange without exposing wallet private keys.
+ */
+function deriveX25519KeypairFromSignature(
+  signature: string,
+  conversationId: string
+): { privateKey: Uint8Array; publicKey: Uint8Array } {
+  const signatureBytes = new TextEncoder().encode(signature);
+  const salt = new TextEncoder().encode(`kasia:x25519:v1:${conversationId}`);
+  const info = new TextEncoder().encode("kasia-ecdh-keypair");
+  
+  const privateKey = hkdf(sha256, signatureBytes, salt, info, 32);
+  const publicKey = x25519.getPublicKey(privateKey);
+  
+  return { privateKey, publicKey };
+}
+
+/**
+ * Perform X25519 ECDH to derive a shared secret.
+ * Uses my private key + their public key.
+ */
+function computeSharedSecret(
+  myPrivateKey: Uint8Array,
+  theirPublicKey: Uint8Array,
+  conversationId: string
+): Uint8Array {
+  const rawShared = x25519.getSharedSecret(myPrivateKey, theirPublicKey);
+  const salt = new TextEncoder().encode(`kasia:shared:v4:${conversationId}`);
+  const info = new TextEncoder().encode("kasia-e2ee-symmetric");
+  
+  return hkdf(sha256, rawShared, salt, info, KEY_LENGTH);
+}
+
 export function useConversationKeys(walletAddress: string | null) {
   const keysCache = useRef<Map<string, Uint8Array>>(new Map());
+  const keypairCache = useRef<Map<string, { privateKey: Uint8Array; publicKey: Uint8Array }>>(new Map());
   const dbRef = useRef<IDBDatabase | null>(null);
 
   useEffect(() => {
     if (!walletAddress) return;
 
     const dbName = `${DB_NAME}-${walletAddress.slice(-8)}`;
-    const request = indexedDB.open(dbName, 1);
+    const request = indexedDB.open(dbName, 2);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -75,29 +124,8 @@ export function useConversationKeys(walletAddress: string | null) {
       keys.forEach((k) => {
         keysCache.current.set(k.conversationId, k.symmetricKey);
       });
+      console.log(`[ConversationKeys] Loaded ${keys.length} keys from IndexedDB`);
     };
-  }, []);
-
-  const deriveSharedKeyFromSignatures = useCallback((
-    conversationId: string,
-    initiatorAddress: string,
-    recipientAddress: string,
-    initiatorSignature: string,
-    recipientSignature: string
-  ): Uint8Array => {
-    const sig1Bytes = new TextEncoder().encode(initiatorSignature);
-    const sig2Bytes = new TextEncoder().encode(recipientSignature);
-    const addressBytes = new TextEncoder().encode(`${initiatorAddress}:${recipientAddress}`);
-    
-    const combinedInput = new Uint8Array(sig1Bytes.length + sig2Bytes.length + addressBytes.length);
-    combinedInput.set(sig1Bytes, 0);
-    combinedInput.set(sig2Bytes, sig1Bytes.length);
-    combinedInput.set(addressBytes, sig1Bytes.length + sig2Bytes.length);
-    
-    const salt = new TextEncoder().encode(`kasia:shared:v3:${conversationId}`);
-    const info = new TextEncoder().encode("kasia-e2ee-shared");
-    
-    return hkdf(sha256, combinedInput, salt, info, KEY_LENGTH);
   }, []);
 
   const storeKey = useCallback(async (conversationId: string, key: Uint8Array) => {
@@ -122,9 +150,12 @@ export function useConversationKeys(walletAddress: string | null) {
     return keysCache.current.has(conversationId);
   }, []);
 
-  const fetchE2eKeys = useCallback(async (conversationId: string): Promise<{
-    e2eInitiatorSig: string | null;
-    e2eRecipientSig: string | null;
+  /**
+   * Fetch ECDH public keys from server for key exchange.
+   */
+  const fetchEcdhKeys = useCallback(async (conversationId: string): Promise<{
+    initiatorPublicKey: string | null;
+    recipientPublicKey: string | null;
     keyExchangeComplete: boolean;
   } | null> => {
     try {
@@ -134,17 +165,20 @@ export function useConversationKeys(walletAddress: string | null) {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error("[ConversationKeys] Failed to fetch E2E keys:", error);
+      console.error("[ConversationKeys] Failed to fetch ECDH keys:", error);
       return null;
     }
   }, []);
 
-  const submitE2eSignature = useCallback(async (
+  /**
+   * Submit my ECDH public key to server and get the other party's if available.
+   */
+  const submitEcdhPublicKey = useCallback(async (
     conversationId: string,
-    signature: string
+    publicKeyHex: string
   ): Promise<{
-    e2eInitiatorSig: string | null;
-    e2eRecipientSig: string | null;
+    initiatorPublicKey: string | null;
+    recipientPublicKey: string | null;
     keyExchangeComplete: boolean;
   } | null> => {
     try {
@@ -152,16 +186,28 @@ export function useConversationKeys(walletAddress: string | null) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ signature }),
+        body: JSON.stringify({ publicKey: publicKeyHex }),
       });
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error("[ConversationKeys] Failed to submit E2E signature:", error);
+      console.error("[ConversationKeys] Failed to submit ECDH public key:", error);
       return null;
     }
   }, []);
 
+  /**
+   * Initialize E2E encryption key using single-signature ECDH.
+   * 
+   * Flow:
+   * 1. User signs a deterministic message for this conversation
+   * 2. Signature is used to derive an X25519 keypair locally
+   * 3. Public key is sent to server for the other party
+   * 4. When both public keys are available, ECDH derives the shared secret
+   * 
+   * Key insight: Only YOUR signature is needed. The shared secret is derived
+   * from your private key + their public key, which is standard ECDH.
+   */
   const initializeKey = useCallback(async (
     conversationId: string,
     myAddress: string,
@@ -170,37 +216,63 @@ export function useConversationKeys(walletAddress: string | null) {
     isInitiator: boolean
   ): Promise<Uint8Array | null> => {
     const existing = keysCache.current.get(conversationId);
-    if (existing) return existing;
+    if (existing) {
+      console.log("[ConversationKeys] Using cached symmetric key");
+      return existing;
+    }
 
-    const initiatorAddress = isInitiator ? myAddress : otherAddress;
-    const recipientAddress = isInitiator ? otherAddress : myAddress;
-    const messageToSign = `kasia:e2ee:${initiatorAddress}:${recipientAddress}:${conversationId}`;
-    const mySignature = await signMessage(messageToSign);
+    let keypair = keypairCache.current.get(conversationId);
     
-    const result = await submitE2eSignature(conversationId, mySignature);
+    if (!keypair) {
+      const initiatorAddress = isInitiator ? myAddress : otherAddress;
+      const recipientAddress = isInitiator ? otherAddress : myAddress;
+      const messageToSign = `kasia:ecdh:v1:${initiatorAddress}:${recipientAddress}:${conversationId}`;
+      
+      console.log("[ConversationKeys] Requesting signature for ECDH keypair derivation...");
+      const mySignature = await signMessage(messageToSign);
+      
+      keypair = deriveX25519KeypairFromSignature(mySignature, conversationId);
+      keypairCache.current.set(conversationId, keypair);
+      console.log("[ConversationKeys] Derived X25519 keypair from signature");
+    }
+    
+    const myPublicKeyHex = bytesToHex(keypair.publicKey);
+    const result = await submitEcdhPublicKey(conversationId, myPublicKeyHex);
+    
     if (!result) {
-      console.error("[ConversationKeys] Failed to submit signature to server");
+      console.error("[ConversationKeys] Failed to submit public key to server");
       return null;
     }
     
     if (result.keyExchangeComplete) {
-      const initiatorSig = result.e2eInitiatorSig!;
-      const recipientSig = result.e2eRecipientSig!;
-      const derivedKey = deriveSharedKeyFromSignatures(
-        conversationId,
-        initiatorAddress,
-        recipientAddress,
-        initiatorSig,
-        recipientSig
-      );
-      await storeKey(conversationId, derivedKey);
-      return derivedKey;
+      const theirPublicKeyHex = isInitiator 
+        ? result.recipientPublicKey! 
+        : result.initiatorPublicKey!;
+      
+      // Validate that the other party's key is a valid X25519 public key (not a legacy signature)
+      if (!isValidX25519PublicKey(theirPublicKeyHex)) {
+        console.warn("[ConversationKeys] Other party has legacy signature, not X25519 public key. Waiting for upgrade.");
+        return null;
+      }
+      
+      const theirPublicKey = hexToBytes(theirPublicKeyHex);
+      
+      const sharedKey = computeSharedSecret(keypair.privateKey, theirPublicKey, conversationId);
+      await storeKey(conversationId, sharedKey);
+      
+      console.log("[ConversationKeys] ECDH complete - symmetric key derived");
+      return sharedKey;
     }
     
-    console.log("[ConversationKeys] Waiting for other party to complete key exchange");
+    console.log("[ConversationKeys] Waiting for other party's public key");
     return null;
-  }, [deriveSharedKeyFromSignatures, storeKey, submitE2eSignature]);
+  }, [storeKey, submitEcdhPublicKey]);
 
+  /**
+   * Try to load/derive the key from server if the other party has already
+   * submitted their public key. Requires that we've already signed and have
+   * our keypair cached.
+   */
   const tryLoadKeyFromServer = useCallback(async (
     conversationId: string,
     myAddress: string,
@@ -210,25 +282,34 @@ export function useConversationKeys(walletAddress: string | null) {
     const existing = keysCache.current.get(conversationId);
     if (existing) return existing;
 
-    const result = await fetchE2eKeys(conversationId);
+    const keypair = keypairCache.current.get(conversationId);
+    if (!keypair) {
+      return null;
+    }
+
+    const result = await fetchEcdhKeys(conversationId);
     if (!result || !result.keyExchangeComplete) {
       return null;
     }
 
-    const initiatorAddress = isInitiator ? myAddress : otherAddress;
-    const recipientAddress = isInitiator ? otherAddress : myAddress;
-    const initiatorSig = result.e2eInitiatorSig!;
-    const recipientSig = result.e2eRecipientSig!;
-    const derivedKey = deriveSharedKeyFromSignatures(
-      conversationId,
-      initiatorAddress,
-      recipientAddress,
-      initiatorSig,
-      recipientSig
-    );
-    await storeKey(conversationId, derivedKey);
-    return derivedKey;
-  }, [deriveSharedKeyFromSignatures, storeKey, fetchE2eKeys]);
+    const theirPublicKeyHex = isInitiator 
+      ? result.recipientPublicKey! 
+      : result.initiatorPublicKey!;
+    
+    // Validate that the other party's key is a valid X25519 public key (not a legacy signature)
+    if (!isValidX25519PublicKey(theirPublicKeyHex)) {
+      console.warn("[ConversationKeys] Other party has legacy signature, not X25519 public key. Cannot compute shared key.");
+      return null;
+    }
+    
+    const theirPublicKey = hexToBytes(theirPublicKeyHex);
+    
+    const sharedKey = computeSharedSecret(keypair.privateKey, theirPublicKey, conversationId);
+    await storeKey(conversationId, sharedKey);
+    
+    console.log("[ConversationKeys] ECDH complete (from server check) - symmetric key derived");
+    return sharedKey;
+  }, [storeKey, fetchEcdhKeys]);
 
   const encryptContent = useCallback((conversationId: string, plaintext: string): string | null => {
     const key = keysCache.current.get(conversationId);

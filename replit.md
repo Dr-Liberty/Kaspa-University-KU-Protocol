@@ -48,12 +48,14 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
-- **2026-01-14**: Improved E2E encryption UX with automatic signature request:
-    - **Before**: Users had to manually click "Initialize E2EE" button to start the signing process
-    - **After**: Wallet popup appears automatically when viewing a conversation for the first time
-    - **Security**: Still uses Schnorr signatures for key derivation (private key material required)
-    - **Key Exchange**: Requires both parties to sign; shows "Waiting for other party" if pending
-    - **UX Improvement**: Seamless flow - wallet popup appears automatically, no button click needed
+- **2026-01-14**: Implemented single-signature ECDH for E2E encryption:
+    - **Before**: Required BOTH parties to sign to derive shared key (coordination required)
+    - **After**: Each party signs ONCE to derive their X25519 keypair; ECDH computes shared secret locally
+    - **Cryptography**: X25519 ECDH from @noble/curves - industry standard Diffie-Hellman
+    - **Flow**: Sign message → derive keypair → submit public key → compute shared = my_priv × their_pub
+    - **Benefit**: Only YOUR signature is needed; no coordination with other party after initial exchange
+    - **Auto-Prompt**: Wallet popup appears automatically when viewing a conversation for the first time
+    - **Retry UX**: If user rejects signature, shows "Sign for E2EE" button to retry
 - **2026-01-14**: Fixed Kasia handshake payload encoding for dual-path consistency:
     - **Official Format**: `ciph_msg:{{SealedHandshake_as_json_string_as_hex}}` per PROTO.md
     - **Creation Functions**: `createHandshakePayload` and `createHandshakeResponse` return raw protocol strings

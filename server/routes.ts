@@ -5129,7 +5129,9 @@ export async function registerRoutes(
     }
   });
 
-  // E2EE Key Exchange: Submit signature for shared key derivation
+  // E2EE Key Exchange: Submit ECDH public key for key derivation (single-signature approach)
+  // Each party signs once to derive their X25519 keypair, then submits their public key
+  // ECDH is computed locally: my_private_key + their_public_key = shared_secret
   app.post("/api/conversations/:conversationId/e2e-key", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -5138,10 +5140,17 @@ export async function registerRoutes(
       }
 
       const { conversationId } = req.params;
-      const { signature, signedMessage } = req.body;
+      const { publicKey, signature } = req.body;
       
-      if (!signature) {
-        return res.status(400).json({ error: "Signature required" });
+      // Support both new publicKey format and legacy signature format
+      const keyToStore = publicKey || signature;
+      if (!keyToStore) {
+        return res.status(400).json({ error: "Public key or signature required" });
+      }
+      
+      // Validate public key format (64 hex chars for X25519)
+      if (publicKey && !/^[a-fA-F0-9]{64}$/.test(publicKey)) {
+        return res.status(400).json({ error: "Invalid public key format (expected 64 hex chars)" });
       }
       
       const conversation = await kasiaIndexer.getConversation(conversationId);
@@ -5156,19 +5165,26 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized for this conversation" });
       }
       
-      // Store the signature in the appropriate field
+      // Store the public key in the appropriate field (reusing signature fields for backwards compat)
       const updateField = isInitiator ? "e2eInitiatorSig" : "e2eRecipientSig";
-      await storage.updateConversationE2eKey(conversationId, updateField, signature);
+      await storage.updateConversationE2eKey(conversationId, updateField, keyToStore);
       
-      console.log(`[E2EE] Stored ${isInitiator ? "initiator" : "recipient"} signature for conversation ${conversationId}`);
+      console.log(`[E2EE] Stored ${isInitiator ? "initiator" : "recipient"} ECDH public key for conversation ${conversationId}`);
       
-      // Return both signatures if available
+      // Return both public keys if available
       const updatedConversation = await kasiaIndexer.getConversation(conversationId);
+      const initiatorPubKey = updatedConversation?.e2eInitiatorSig || null;
+      const recipientPubKey = updatedConversation?.e2eRecipientSig || null;
+      
       res.json({
         success: true,
-        e2eInitiatorSig: updatedConversation?.e2eInitiatorSig || null,
-        e2eRecipientSig: updatedConversation?.e2eRecipientSig || null,
-        keyExchangeComplete: !!(updatedConversation?.e2eInitiatorSig && updatedConversation?.e2eRecipientSig),
+        // New ECDH format
+        initiatorPublicKey: initiatorPubKey,
+        recipientPublicKey: recipientPubKey,
+        // Legacy format (for backwards compat)
+        e2eInitiatorSig: initiatorPubKey,
+        e2eRecipientSig: recipientPubKey,
+        keyExchangeComplete: !!(initiatorPubKey && recipientPubKey),
       });
     } catch (error: any) {
       console.error("[E2EE] Failed to store key:", error);
@@ -5176,7 +5192,7 @@ export async function registerRoutes(
     }
   });
 
-  // E2EE Key Exchange: Get signatures for shared key derivation
+  // E2EE Key Exchange: Get ECDH public keys for key derivation
   app.get("/api/conversations/:conversationId/e2e-key", generalRateLimiter, async (req: Request, res: Response) => {
     try {
       const authenticatedWallet = getAuthenticatedWallet(req);
@@ -5196,10 +5212,17 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized for this conversation" });
       }
       
+      const initiatorPubKey = conversation.e2eInitiatorSig || null;
+      const recipientPubKey = conversation.e2eRecipientSig || null;
+      
       res.json({
-        e2eInitiatorSig: conversation.e2eInitiatorSig || null,
-        e2eRecipientSig: conversation.e2eRecipientSig || null,
-        keyExchangeComplete: !!(conversation.e2eInitiatorSig && conversation.e2eRecipientSig),
+        // New ECDH format
+        initiatorPublicKey: initiatorPubKey,
+        recipientPublicKey: recipientPubKey,
+        // Legacy format (for backwards compat)
+        e2eInitiatorSig: initiatorPubKey,
+        e2eRecipientSig: recipientPubKey,
+        keyExchangeComplete: !!(initiatorPubKey && recipientPubKey),
       });
     } catch (error: any) {
       console.error("[E2EE] Failed to get keys:", error);
