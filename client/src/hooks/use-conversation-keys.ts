@@ -102,7 +102,15 @@ export function useConversationKeys(walletAddress: string | null) {
   const dbRef = useRef<IDBDatabase | null>(null);
 
   useEffect(() => {
-    if (!walletAddress) return;
+    keysCache.current.clear();
+    keypairCache.current.clear();
+    eciesKeypairCache.current = null;
+    
+    if (!walletAddress) {
+      dbRef.current?.close();
+      dbRef.current = null;
+      return;
+    }
 
     const dbName = `${DB_NAME}-${walletAddress.slice(-8)}`;
     const request = indexedDB.open(dbName, 3);
