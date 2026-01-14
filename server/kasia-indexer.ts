@@ -362,36 +362,20 @@ class KasiaIndexer {
         };
         
         // UPSERT: Update in-memory cache with on-chain data (blockchain is source of truth)
-        // BUT: Don't let stale on-chain "pending" overwrite local "active" status
-        // This prevents race condition when user accepts and on-chain indexer hasn't caught up
-        const existing = this.conversations.get(conv.id);
+        // Generate a unique storage key that includes both participants to prevent ID collisions
+        // Same conversation ID can occur when same initiator messages multiple recipients with same alias
+        const initiatorNorm = this.normalizeAddress(trueInitiator);
+        const recipientNorm = this.normalizeAddress(trueRecipient);
+        const storageKey = `${conv.id}:${initiatorNorm}:${recipientNorm}`;
+        
+        // Check existing by storage key (not just conversation ID)
+        const existing = this.conversations.get(storageKey);
         
         // Skip update if local is "active" but on-chain is still "pending"
         // Trust local state until on-chain confirms (prevents reversion after accept)
-        // BUT: Only skip if the recipient matches - different recipients mean different conversations
-        // (same ID can occur when same initiator messages multiple recipients with same alias)
         if (existing?.status === "active" && conv.status === "pending") {
-          const existingRecipientNorm = this.normalizeAddress(existing.recipientAddress);
-          const incomingRecipientNorm = this.normalizeAddress(trueRecipient);
-          
-          if (existingRecipientNorm === incomingRecipientNorm) {
-            console.log(`[Kasia Indexer] Skipping on-chain update for ${conv.id}: local is active, on-chain is pending (tx not indexed yet)`);
-            continue;
-          } else {
-            // Different recipient - this is a DIFFERENT conversation with a colliding ID
-            // We need to store both - use a composite key
-            console.log(`[Kasia Indexer] Conversation ${conv.id} has different recipient (local: ${existingRecipientNorm?.slice(0,15)}..., incoming: ${incomingRecipientNorm?.slice(0,15)}...) - storing as separate entry`);
-            // Create a unique key for this participant pair
-            const uniqueKey = `${conv.id}:${incomingRecipientNorm}`;
-            const indexedWithUniqueKey: IndexedConversation = {
-              ...indexed,
-              id: uniqueKey, // Use composite key for storage
-            };
-            this.conversations.set(uniqueKey, indexedWithUniqueKey);
-            this.addToBothWalletCaches(indexedWithUniqueKey);
-            syncedCount++;
-            continue;
-          }
+          console.log(`[Kasia Indexer] Skipping on-chain update for ${conv.id}: local is active, on-chain is pending (tx not indexed yet)`);
+          continue;
         }
         
         const isNewOrUpdated = !existing || 
@@ -400,33 +384,16 @@ class KasiaIndexer {
           existing.initiatorAlias !== conv.initiatorAlias;
         
         if (isNewOrUpdated) {
-          // Check if existing has a different recipient - if so, store separately
+          // Preserve local data if it's newer
           if (existing) {
-            const existingRecipientNorm = this.normalizeAddress(existing.recipientAddress);
-            const incomingRecipientNorm = this.normalizeAddress(trueRecipient);
-            
-            if (existingRecipientNorm !== incomingRecipientNorm) {
-              // Different recipient - store as separate conversation with composite key
-              console.log(`[Kasia Indexer] Storing ${conv.id} separately: existing recipient=${existingRecipientNorm?.slice(0,15)}..., incoming=${incomingRecipientNorm?.slice(0,15)}...`);
-              const uniqueKey = `${conv.id}:${incomingRecipientNorm}`;
-              const indexedWithUniqueKey: IndexedConversation = {
-                ...indexed,
-                id: uniqueKey,
-              };
-              this.conversations.set(uniqueKey, indexedWithUniqueKey);
-              this.addToBothWalletCaches(indexedWithUniqueKey);
-              syncedCount++;
-              continue;
-            }
-            
-            // Same recipient - preserve local data if it's newer
             indexed.recipientAlias = existing.recipientAlias || indexed.recipientAlias;
             // Also preserve initiator if existing has a non-treasury initiator
             if (existing.initiatorAddress !== this.supportAddress) {
               indexed.initiatorAddress = existing.initiatorAddress;
             }
           }
-          this.conversations.set(conv.id, indexed);
+          // Store with composite key to prevent collisions, but keep original ID in object
+          this.conversations.set(storageKey, indexed);
           
           // Add to per-wallet caches for both participants
           this.addToBothWalletCaches(indexed);
