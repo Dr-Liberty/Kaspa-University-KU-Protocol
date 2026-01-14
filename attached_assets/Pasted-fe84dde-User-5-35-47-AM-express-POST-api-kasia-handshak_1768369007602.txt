@@ -1,0 +1,175 @@
+fe84dde
+User
+5:35:47 AM [express] POST /api/kasia/handshake/prepare-response 404 in 339ms :: {"error":"Conversation not found"}
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia] GET /api/conversations for wallet: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia Client] Getting conversations for kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel&limit=50
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia] Syncing conversations from Kasia indexer for kaspa:qrmzgsh8chv72qdtrypteqy8...
+2026-01-13 21:35:50.16
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel&limit=50
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Found 1 handshakes received by kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Found 1 conversations (0 active)
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Adding incoming handshake as pending conversation: 00000000539b4351 from kaspa:qzkugh57jyns7y...
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qzkugh57jyns7y..., tx=810ab00a1167d017...
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Found 1 handshakes received by kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.51
+7fe84dde
+User
+[Kasia Client] Found 0 handshakes sent by kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.54
+7fe84dde
+User
+[Kasia Indexer] - 00000000539b4351: status=pending, initiator=kaspa:qzkugh57j..., recipient=kaspa:qrmzgsh8c...
+2026-01-13 21:35:50.54
+7fe84dde
+User
+[Kasia] Synced 0 conversations from on-chain
+2026-01-13 21:35:50.54
+7fe84dde
+User
+[Kasia Indexer] getConversationsForWallet: returning 1 conversations for kaspa:qrmzgsh8chv72q... (cache: 1, global: 1)
+2026-01-13 21:35:50.54
+7fe84dde
+User
+[Kasia] Returning 1 conversations for wallet kaspa:qrmzgsh8chv72q...
+2026-01-13 21:35:50.54
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrmzgsh8chv72q..., status=pending, alias=User pr73sa9e
+2026-01-13 21:35:50.55
+7fe84dde
+User
+5:35:50 AM [express] GET /api/conversations 304 in 523ms :: {"conversations":[{"id":"00000000539b4351","initiatorAddress":"kaspa:qzkugh57jyns7y9dwxzumzpwgppm0lqrqpdfhca6rgz2vpywynf0gpr73sa9e","recipientAddress":"kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel","initiatorAlias":"User pr73sa9e","alias":"User pr73sa9e","status":"pending","handshakeTxHash":"810ab00a1167d0177f1a76ff0dc821493ac02bd25816fce6e7521fa3915b62b0","createdAt":"2026-01-07T04:41:16.688Z","updatedAt":"2026-01-14T05:35:20.733Z","isAdminConversation":false}],"source":"cache_filtered"}
+2026-01-13 21:35:50.94
+7fe84dde
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:50.94
+7fe84dde
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:50.94
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:35:51.24
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-13 21:35:51.74
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-13 21:35:52.34
+7fe84dde
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-13 21:35:52.44
+7fe84dde
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-13 21:35:54.94
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000002bcfcf63, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=Anonymous
+2026-01-13 21:35:55.24
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=0000000007f4a77e, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qpnf857x8tkgzc..., status=active, alias=Anonymous
+2026-01-13 21:35:57.07
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=000000004d5e12fc, initiator=kaspa:qrewk7s6gnzuzx..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=Anonymous
+2026-01-13 21:35:58.74
+7fe84dde
+User
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=none
+2026-01-13 21:36:01.03
+7fe84dde
+User
+[Kasia Client] Getting conversations for kaspa:qrmzgsh8chv72q...
+2026-01-13 21:36:01.03
+7fe84dde
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel&limit=50
+2026-01-13 21:36:01.03
+7fe84dde
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrmzgsh8chv72q...
+2026-01-13 21:36:01.03
+7fe84dde
+User
+[Kasia] GET /api/conversations for wallet: kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel

@@ -4715,7 +4715,8 @@ export async function registerRoutes(
       }
       
       // Get the conversation to find the initiator (we send response TO them)
-      const conversation = await kasiaIndexer.getConversation(conversationId);
+      // Pass authenticatedWallet to ensure we get the correct conversation when IDs collide
+      const conversation = await kasiaIndexer.getConversation(conversationId, authenticatedWallet);
       
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });

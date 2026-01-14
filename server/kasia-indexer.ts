@@ -965,17 +965,50 @@ class KasiaIndexer {
    * Get a conversation by ID (memory cache only - populated from on-chain sync)
    * STRICT MODE: No database fallback - only on-chain verified data is returned
    */
-  async getConversation(id: string): Promise<IndexedConversation | undefined> {
+  async getConversation(id: string, participantWallet?: string): Promise<IndexedConversation | undefined> {
     // STRICT: Only return conversations that are in memory cache
     // Memory cache is populated from on-chain sync - no database fallback
-    return this.conversations.get(id);
+    // With composite storage keys, we need to search by conversation ID, not storage key
+    const normalizedParticipant = participantWallet ? this.normalizeAddress(participantWallet) : null;
+    
+    for (const conv of Array.from(this.conversations.values())) {
+      if (conv.id === id) {
+        // If a participant wallet is specified, only return if they're a participant
+        if (normalizedParticipant) {
+          const initiatorNorm = this.normalizeAddress(conv.initiatorAddress);
+          const recipientNorm = this.normalizeAddress(conv.recipientAddress);
+          if (initiatorNorm === normalizedParticipant || recipientNorm === normalizedParticipant) {
+            return conv;
+          }
+        } else {
+          return conv;
+        }
+      }
+    }
+    return undefined;
   }
 
   /**
    * Get a conversation by ID (sync version for quick checks)
    */
-  getConversationSync(id: string): IndexedConversation | undefined {
-    return this.conversations.get(id);
+  getConversationSync(id: string, participantWallet?: string): IndexedConversation | undefined {
+    const normalizedParticipant = participantWallet ? this.normalizeAddress(participantWallet) : null;
+    
+    for (const conv of Array.from(this.conversations.values())) {
+      if (conv.id === id) {
+        // If a participant wallet is specified, only return if they're a participant
+        if (normalizedParticipant) {
+          const initiatorNorm = this.normalizeAddress(conv.initiatorAddress);
+          const recipientNorm = this.normalizeAddress(conv.recipientAddress);
+          if (initiatorNorm === normalizedParticipant || recipientNorm === normalizedParticipant) {
+            return conv;
+          }
+        } else {
+          return conv;
+        }
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -998,7 +1031,7 @@ class KasiaIndexer {
     // This handles the case where the Kasia indexer returns empty for this wallet
     // but conversations exist from another participant's sync (e.g., treasury sync)
     const globalMatches: IndexedConversation[] = [];
-    for (const conv of this.conversations.values()) {
+    for (const conv of Array.from(this.conversations.values())) {
       const initiatorNorm = this.normalizeAddress(conv.initiatorAddress);
       const recipientNorm = this.normalizeAddress(conv.recipientAddress);
       if (initiatorNorm === normalizedWallet || recipientNorm === normalizedWallet) {
@@ -1012,7 +1045,7 @@ class KasiaIndexer {
     const conversationsMap = new Map<string, IndexedConversation>();
     
     if (walletCache) {
-      for (const conv of walletCache.values()) {
+      for (const conv of Array.from(walletCache.values())) {
         conversationsMap.set(conv.id, conv);
       }
     }
