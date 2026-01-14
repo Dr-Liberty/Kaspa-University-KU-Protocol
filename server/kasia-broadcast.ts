@@ -126,9 +126,12 @@ class KasiaBroadcastService {
    * 
    * For user-initiated broadcasts, the frontend handles the transaction
    * via KasWare - users sign and pay their own fees.
+   * 
+   * NOTE: The payload parameter is a raw protocol string (e.g., "ciph_msg:7b22...")
+   * This function hex-encodes it before passing to sendQuizProof (WASM SDK requires hex)
    */
   async broadcastHandshake(
-    payloadHex: string,
+    payload: string,
     recipientAddress: string
   ): Promise<KasiaBroadcastResult> {
     try {
@@ -143,6 +146,10 @@ class KasiaBroadcastService {
         };
       }
 
+      // Hex-encode the raw payload for WASM SDK (treasury broadcasts)
+      // KasWare sendKaspa uses raw strings, but WASM createTransactions needs hex
+      const payloadHex = stringToHex(payload);
+      
       // Broadcast via treasury (for admin auto-accept only)
       const result = await kaspaService.sendQuizProof(payloadHex, recipientAddress);
       
@@ -161,9 +168,12 @@ class KasiaBroadcastService {
   /**
    * Broadcast a signed message to the Kaspa blockchain (admin only)
    * Regular users broadcast via KasWare directly
+   * 
+   * NOTE: The payload parameter is a raw protocol string
+   * This function hex-encodes it before passing to sendQuizProof (WASM SDK requires hex)
    */
   async broadcastMessage(
-    payloadHex: string,
+    payload: string,
     recipientAddress: string
   ): Promise<KasiaBroadcastResult> {
     try {
@@ -178,6 +188,9 @@ class KasiaBroadcastService {
         };
       }
 
+      // Hex-encode the raw payload for WASM SDK (treasury broadcasts)
+      const payloadHex = stringToHex(payload);
+      
       const result = await kaspaService.sendQuizProof(payloadHex, recipientAddress);
       
       if (result.success) {

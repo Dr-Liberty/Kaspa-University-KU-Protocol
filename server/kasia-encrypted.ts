@@ -148,11 +148,13 @@ export function createHandshakePayload(
   const sealedHex = stringToHex(jsonString);
   
   // Official format: ciph_msg:{sealed_hex}
+  // Return RAW payload string - NOT hex-encoded again!
+  // KasWare's sendKaspa payload option handles encoding internally
   const rawPayload = `${KASIA_PREFIX}:${sealedHex}`;
   
   console.log(`[Kasia] Handshake payload: ${rawPayload.length} bytes (official format)`);
   
-  return stringToHex(rawPayload);
+  return rawPayload;
 }
 
 /**
@@ -180,11 +182,13 @@ export function createHandshakeResponse(
   const sealedHex = stringToHex(jsonString);
   
   // Official format: ciph_msg:{sealed_hex}
+  // Return RAW payload string - NOT hex-encoded again!
+  // KasWare's sendKaspa payload option handles encoding internally
   const rawPayload = `${KASIA_PREFIX}:${sealedHex}`;
   
   console.log(`[Kasia] Handshake response payload: ${rawPayload.length} bytes (official format)`);
   
-  return stringToHex(rawPayload);
+  return rawPayload;
 }
 
 // Maximum message length in bytes (Kaspa storage mass limit ~80 bytes for OP_RETURN)

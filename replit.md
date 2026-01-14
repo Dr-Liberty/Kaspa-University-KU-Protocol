@@ -48,6 +48,13 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-14**: Fixed Kasia handshake payload encoding for dual-path consistency:
+    - **Official Format**: `ciph_msg:{{SealedHandshake_as_json_string_as_hex}}` per PROTO.md
+    - **Creation Functions**: `createHandshakePayload` and `createHandshakeResponse` return raw protocol strings
+    - **KasWare Path** (user broadcasts): Raw string passed to `sendKaspa` payload option - KasWare handles encoding
+    - **Treasury/WASM Path** (admin broadcasts): `broadcastHandshake/Message` hex-encode raw string before passing to WASM SDK's `createTransactions`
+    - **Key Insight**: Protocol strings contain hex (e.g., `ciph_msg:7b22...`), but entire string must be hex-encoded for WASM SDK storage
+    - **Spec Authority**: https://github.com/K-Kluster/kasia-indexer/blob/main/protocol/src/PROTO.md
 - **2026-01-13**: Fixed KRC-721 minting PoW fee issue:
     - **Root Cause**: Reveal transaction had only ~0.5 KAS fee, but KRC-721 requires 10 KAS minimum PoW fee (`feeRev`)
     - **Fix**: Set reveal `priorityFee` to 10 KAS in the KCOM submitCommitReveal call
