@@ -114,7 +114,8 @@ export async function getHandshakesByReceiver(
  * 2. Double hex-encoded (hex-encoded "hex-encoded JSON")
  * 3. Full format with prefix: ciph_msg:{hex_encoded_json}
  * 
- * JSON has: { alias, timestamp, conversation_id, version, recipient_address, send_to_recipient, is_response }
+ * JSON has: { alias, timestamp, conversation_id, version, recipient_address, send_to_recipient, is_response, ecies_pubkey }
+ * Note: ecies_pubkey is a KU extension for cross-platform ECIES encryption
  */
 export function parseHandshakePayload(hexPayload: string): {
   conversationId?: string;
@@ -122,6 +123,7 @@ export function parseHandshakePayload(hexPayload: string): {
   alias?: string;
   timestamp?: number;
   isResponse: boolean;
+  eciesPubkey?: string;
 } | null {
   try {
     // First decode from hex
@@ -143,6 +145,7 @@ export function parseHandshakePayload(hexPayload: string): {
           alias: jsonData.alias,
           timestamp: jsonData.timestamp ? new Date(jsonData.timestamp).getTime() : undefined,
           isResponse: jsonData.is_response === true,
+          eciesPubkey: jsonData.ecies_pubkey,
         };
       } catch (e) {
         console.log(`[Kasia Parser] JSON parse failed: ${e}`);
@@ -166,6 +169,7 @@ export function parseHandshakePayload(hexPayload: string): {
             alias: jsonData.alias,
             timestamp: jsonData.timestamp ? new Date(jsonData.timestamp).getTime() : undefined,
             isResponse: jsonData.is_response === true,
+            eciesPubkey: jsonData.ecies_pubkey,
           };
         } catch (e) {
           console.log(`[Kasia Parser] Official format parse failed: ${e}`);
@@ -206,6 +210,8 @@ export async function getConversationsFromIndexer(
   handshakeTxHash?: string;
   responseTxHash?: string;
   createdAt: Date;
+  initiatorEciesPubkey?: string;
+  recipientEciesPubkey?: string;
 }[]> {
   console.log(`[Kasia Client] Getting conversations for ${walletAddress.slice(0, 20)}...`);
   
@@ -232,6 +238,8 @@ export async function getConversationsFromIndexer(
     responseTxHash?: string;
     createdAt: Date;
     hasResponse: boolean;
+    initiatorEciesPubkey?: string;
+    recipientEciesPubkey?: string;
   }>();
   
   // Helper function to generate a deterministic conversation ID from two addresses
@@ -310,6 +318,7 @@ export async function getConversationsFromIndexer(
         handshakeTxHash: hs.tx_id,
         createdAt: new Date(hs.block_time),
         hasResponse: false,
+        initiatorEciesPubkey: parsed?.eciesPubkey,
       });
     }
   }
@@ -329,6 +338,10 @@ export async function getConversationsFromIndexer(
         existing.status = "active";
         existing.responseTxHash = hs.tx_id;
         existing.hasResponse = true;
+        // The response contains the recipient's ECIES pubkey (responder = original recipient)
+        if (parsed.eciesPubkey) {
+          existing.recipientEciesPubkey = parsed.eciesPubkey;
+        }
       }
     } else {
       // Initial handshake received - someone wants to start a conversation with us
@@ -340,6 +353,9 @@ export async function getConversationsFromIndexer(
         existing.initiatorAddress = hs.sender;
         existing.initiatorAlias = parsed?.alias;
         existing.handshakeTxHash = hs.tx_id;
+        if (parsed?.eciesPubkey) {
+          existing.initiatorEciesPubkey = parsed.eciesPubkey;
+        }
         if (!existing.createdAt || new Date(hs.block_time) < existing.createdAt) {
           existing.createdAt = new Date(hs.block_time);
         }
@@ -356,6 +372,7 @@ export async function getConversationsFromIndexer(
           handshakeTxHash: hs.tx_id,
           createdAt: new Date(hs.block_time),
           hasResponse: false,
+          initiatorEciesPubkey: parsed?.eciesPubkey,
         });
       }
     }
