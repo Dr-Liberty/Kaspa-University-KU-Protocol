@@ -63,6 +63,7 @@ export interface HandshakeData {
   recipientAddress: string;
   sendToRecipient: boolean;
   isResponse?: boolean;
+  eciesPubkey?: string;
 }
 
 /**
@@ -121,8 +122,13 @@ export interface PrivateMessage {
  *   "version": 1,
  *   "recipient_address": "kaspa:...",
  *   "send_to_recipient": true,
- *   "is_response": null | true
+ *   "is_response": null | true,
+ *   "ecies_pubkey": "optional_hex_pubkey_for_ecies_encryption"
  * }
+ * 
+ * NOTE: ecies_pubkey is a KU extension for cross-platform compatibility.
+ * It allows the recipient to encrypt messages using the sender's ECIES public key
+ * without requiring access to the sender's wallet private key.
  * 
  * NOTE: This format is larger than 80 bytes, but Kasia uses transaction
  * script data (not OP_RETURN) which has higher limits.
@@ -130,10 +136,11 @@ export interface PrivateMessage {
 export function createHandshakePayload(
   senderAlias: string,
   recipientAddress: string,
-  conversationId: string
+  conversationId: string,
+  eciesPubkey?: string
 ): string {
-  // Official Kasia handshake JSON structure
-  const handshakeData = {
+  // Official Kasia handshake JSON structure with optional ECIES pubkey
+  const handshakeData: Record<string, unknown> = {
     alias: senderAlias,
     timestamp: new Date().toISOString(),
     conversation_id: conversationId,
@@ -142,6 +149,11 @@ export function createHandshakePayload(
     send_to_recipient: true,
     is_response: null
   };
+  
+  // Add ECIES public key for cross-platform E2E encryption
+  if (eciesPubkey) {
+    handshakeData.ecies_pubkey = eciesPubkey;
+  }
   
   // Hex-encode the JSON string
   const jsonString = JSON.stringify(handshakeData);
@@ -152,7 +164,7 @@ export function createHandshakePayload(
   // KasWare's sendKaspa payload option handles encoding internally
   const rawPayload = `${KASIA_PREFIX}:${sealedHex}`;
   
-  console.log(`[Kasia] Handshake payload: ${rawPayload.length} bytes (official format)`);
+  console.log(`[Kasia] Handshake payload: ${rawPayload.length} bytes (official format${eciesPubkey ? ', with ECIES pubkey' : ''})`);
   
   return rawPayload;
 }
@@ -164,10 +176,11 @@ export function createHandshakePayload(
 export function createHandshakeResponse(
   senderAlias: string,
   recipientAddress: string,
-  conversationId: string
+  conversationId: string,
+  eciesPubkey?: string
 ): string {
-  // Official Kasia handshake response JSON structure
-  const handshakeData = {
+  // Official Kasia handshake response JSON structure with optional ECIES pubkey
+  const handshakeData: Record<string, unknown> = {
     alias: senderAlias,
     timestamp: new Date().toISOString(),
     conversation_id: conversationId,
@@ -176,6 +189,11 @@ export function createHandshakeResponse(
     send_to_recipient: true,
     is_response: true
   };
+  
+  // Add ECIES public key for cross-platform E2E encryption
+  if (eciesPubkey) {
+    handshakeData.ecies_pubkey = eciesPubkey;
+  }
   
   // Hex-encode the JSON string
   const jsonString = JSON.stringify(handshakeData);
@@ -186,7 +204,7 @@ export function createHandshakeResponse(
   // KasWare's sendKaspa payload option handles encoding internally
   const rawPayload = `${KASIA_PREFIX}:${sealedHex}`;
   
-  console.log(`[Kasia] Handshake response payload: ${rawPayload.length} bytes (official format)`);
+  console.log(`[Kasia] Handshake response payload: ${rawPayload.length} bytes (official format${eciesPubkey ? ', with ECIES pubkey' : ''})`);
   
   return rawPayload;
 }
