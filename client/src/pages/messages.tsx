@@ -205,37 +205,52 @@ function ConversationView({
   const [keyInitialized, setKeyInitialized] = useState(false);
   
   const { hasKey, initializeKey, tryLoadKeyFromServer, encryptContent, tryDecryptMessage } = useConversationKeys(walletAddress);
+  const [autoSignAttempted, setAutoSignAttempted] = useState(false);
+  const [signFailed, setSignFailed] = useState(false);
+  const [waitingForOtherParty, setWaitingForOtherParty] = useState(false);
 
   const isInitiator = conversation.initiatorAddress === walletAddress;
   const otherAddress = isInitiator ? conversation.recipientAddress : conversation.initiatorAddress;
   const otherAlias = isInitiator ? conversation.recipientAlias : conversation.initiatorAlias;
   const truncatedAddress = `${otherAddress.slice(0, 10)}...${otherAddress.slice(-4)}`;
 
+  // Auto-initialize E2E key when conversation is active
+  // Signature is required for security, but we trigger the wallet popup automatically
   useEffect(() => {
     const initKey = async () => {
       if (conversation.status === "active" && !hasKey(conversation.id)) {
+        // First try to load existing key from server (if both signatures already submitted)
         const loadedKey = await tryLoadKeyFromServer(conversation.id, walletAddress, otherAddress, isInitiator);
         if (loadedKey) {
           setKeyInitialized(true);
           return;
         }
         
-        if (window.kasware) {
+        // Auto-trigger signature request via wallet popup
+        // This is secure (uses private key) but seamless UX (no button click needed)
+        if (window.kasware && !autoSignAttempted) {
+          setAutoSignAttempted(true);
           try {
+            console.log("[E2EE] Auto-requesting signature from wallet...");
             const key = await initializeKey(
               conversation.id, 
               walletAddress, 
               otherAddress,
-              async (msg) => {
+              async (msg: string) => {
                 return await window.kasware!.signMessage(msg, { type: "schnorr" });
               },
               isInitiator
             );
             if (key) {
               setKeyInitialized(true);
+              console.log("[E2EE] E2E key initialized via wallet signature");
+            } else {
+              setWaitingForOtherParty(true);
+              console.log("[E2EE] Waiting for other party to complete key exchange");
             }
           } catch (error) {
-            console.error("[E2EE] Failed to initialize conversation key:", error);
+            console.error("[E2EE] Auto-signature failed:", error);
+            setSignFailed(true);
           }
         }
       } else if (hasKey(conversation.id)) {
@@ -243,7 +258,32 @@ function ConversationView({
       }
     };
     initKey();
-  }, [conversation.id, conversation.status, hasKey, initializeKey, tryLoadKeyFromServer, walletAddress, otherAddress, isInitiator]);
+  }, [conversation.id, conversation.status, hasKey, initializeKey, tryLoadKeyFromServer, walletAddress, otherAddress, isInitiator, autoSignAttempted]);
+
+  // Retry signature function
+  const retrySignature = async () => {
+    if (!window.kasware) return;
+    setSignFailed(false);
+    try {
+      const key = await initializeKey(
+        conversation.id, 
+        walletAddress, 
+        otherAddress,
+        async (msg: string) => {
+          return await window.kasware!.signMessage(msg, { type: "schnorr" });
+        },
+        isInitiator
+      );
+      if (key) {
+        setKeyInitialized(true);
+      } else {
+        setWaitingForOtherParty(true);
+      }
+    } catch (error) {
+      console.error("[E2EE] Retry signature failed:", error);
+      setSignFailed(true);
+    }
+  };
 
   const { data: messagesData, isLoading, refetch } = useQuery<{ messages: PrivateMessage[]; conversation: Conversation; source: string }>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
@@ -655,50 +695,42 @@ function ConversationView({
       {conversation.status === "active" && (
         <div className="border-t border-border/50 p-4 w-full shrink-0">
           {!keyInitialized && (
-            <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                <Lock className="h-4 w-4" />
-                <span className="text-sm font-medium">E2EE Key Required</span>
+            <div className={`mb-3 p-3 rounded-lg ${signFailed ? "bg-destructive/10 border border-destructive/20" : "bg-primary/10 border border-primary/20"}`}>
+              <div className={`flex items-center gap-2 ${signFailed ? "text-destructive" : "text-primary"}`}>
+                <Lock className={`h-4 w-4 ${!signFailed && !waitingForOtherParty ? "animate-pulse" : ""}`} />
+                <span className="text-sm font-medium">
+                  {signFailed 
+                    ? "Signature Required" 
+                    : waitingForOtherParty 
+                      ? "Waiting for other party..." 
+                      : "Initializing E2E Encryption..."}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Sign a message to initialize end-to-end encryption for this conversation.
+                {signFailed 
+                  ? "Please sign the encryption request to enable secure messaging."
+                  : waitingForOtherParty 
+                    ? "You've signed. Waiting for the other party to sign from their app to complete key exchange."
+                    : "Sign the request in your wallet to enable encrypted messaging."}
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2"
-                onClick={async () => {
-                  if (window.kasware) {
-                    try {
-                      const key = await initializeKey(
-                        conversation.id,
-                        walletAddress,
-                        otherAddress,
-                        async (msg) => window.kasware!.signMessage(msg, { type: "schnorr" }),
-                        isInitiator
-                      );
-                      if (key) {
-                        setKeyInitialized(true);
-                        toast({ title: "E2EE Enabled", description: "Your messages are now end-to-end encrypted." });
-                      } else {
-                        toast({ title: "Waiting for other party", description: "Both parties need to initialize E2EE. Please wait for the other user.", variant: "default" });
-                      }
-                    } catch (error) {
-                      toast({ title: "Key Initialization Failed", description: "Please try again.", variant: "destructive" });
-                    }
-                  }
-                }}
-                data-testid="button-init-e2ee"
-              >
-                <Lock className="h-3 w-3 mr-2" />
-                Initialize E2EE
-              </Button>
+              {signFailed && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={retrySignature}
+                  data-testid="button-retry-e2ee"
+                >
+                  <Lock className="h-3 w-3 mr-2" />
+                  Sign for E2EE
+                </Button>
+              )}
             </div>
           )}
           <div className="flex items-end gap-3 w-full">
             <div className="flex-1 min-w-0">
               <Textarea
-                placeholder={keyInitialized ? "Type your encrypted message..." : "Initialize E2EE first..."}
+                placeholder={keyInitialized ? "Type your encrypted message..." : "Initializing encryption..."}
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value.slice(0, 25))}
                 className="min-h-[80px] max-h-[120px] resize-y text-sm w-full"
@@ -741,7 +773,7 @@ function ConversationView({
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {keyInitialized ? "End-to-end encrypted via ChaCha20-Poly1305" : "Sign to enable E2EE messaging"}
+            {keyInitialized ? "End-to-end encrypted via ChaCha20-Poly1305" : "Encryption initializing automatically..."}
           </p>
         </div>
       )}
@@ -1000,6 +1032,11 @@ export default function Messages() {
   }, [effectiveWalletAddress, refetch]);
   
   const conversations = conversationsData?.conversations;
+  
+  // Debug log conversations data
+  useEffect(() => {
+    console.log(`[Messages] Conversations state: count=${conversations?.length || 0}, data=`, conversations);
+  }, [conversations]);
   
   // Fetch profiles for all addresses in conversations
   useEffect(() => {
