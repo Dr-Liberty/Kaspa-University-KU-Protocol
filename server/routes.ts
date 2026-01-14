@@ -5010,16 +5010,18 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
       
-      console.log(`[Kasia] GET /api/conversations for wallet: ${authenticatedWallet.slice(0, 20)}...`);
+      console.log(`[Kasia] GET /api/conversations for wallet: ${authenticatedWallet}`);
       
       // Sync from on-chain to update cache for this wallet
-      await kasiaIndexer.syncForWallet(authenticatedWallet);
+      console.log(`[Kasia] Syncing conversations from Kasia indexer for ${authenticatedWallet.slice(0, 30)}...`);
+      const syncedCount = await kasiaIndexer.syncForWallet(authenticatedWallet);
+      console.log(`[Kasia] Synced ${syncedCount} conversations from on-chain`);
       
       // getConversationsForWallet already filters by participant - use it directly
       // This method uses full address matching, not partial string comparison
       const userConversations = kasiaIndexer.getConversationsForWallet(authenticatedWallet);
       
-      console.log(`[Kasia] Returning ${userConversations.length} conversations for wallet`);
+      console.log(`[Kasia] Returning ${userConversations.length} conversations for wallet ${authenticatedWallet.slice(0, 20)}...`);
       
       res.json({ conversations: userConversations, source: "cache_filtered" });
     } catch (error: any) {

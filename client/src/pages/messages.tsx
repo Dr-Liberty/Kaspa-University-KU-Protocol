@@ -940,23 +940,42 @@ export default function Messages() {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, UserProfile>>({});
   
+  // Debug logging for auth state
+  useEffect(() => {
+    console.log(`[Messages] Auth state: wallet=${wallet?.address?.slice(0, 20) || "null"}, isAuthenticated=${isAuthenticated}`);
+  }, [wallet, isAuthenticated]);
+  
   const { data: conversationsData, isLoading, refetch, isFetching } = useQuery<{ conversations: Conversation[], source?: string }>({
-    queryKey: ["/api/conversations", "onchain", isAuthenticated ? "auth" : "noauth"],
+    queryKey: ["/api/conversations", "onchain", wallet?.address || "noWallet"],
     queryFn: async () => {
+      console.log("[Messages] Fetching conversations from server...");
       const url = "/api/conversations?source=onchain";
       const headers: Record<string, string> = {};
       const token = getAuthToken();
       const walletAddress = getWalletAddress();
+      console.log(`[Messages] Headers: token=${token ? "yes" : "no"}, wallet=${walletAddress?.slice(0, 20) || "null"}`);
       if (token) headers["x-auth-token"] = token;
       if (walletAddress) headers["x-wallet-address"] = walletAddress;
       
       const res = await fetch(url, { credentials: "include", headers });
       if (!res.ok) throw new Error("Failed to fetch conversations");
-      return res.json();
+      const data = await res.json();
+      console.log(`[Messages] Received ${data.conversations?.length || 0} conversations`);
+      return data;
     },
     enabled: !!wallet && isAuthenticated,
     refetchInterval: 10000,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
+  
+  // Force refetch when authentication becomes available
+  useEffect(() => {
+    if (wallet && isAuthenticated) {
+      console.log("[Messages] Auth ready, triggering refetch...");
+      refetch();
+    }
+  }, [wallet, isAuthenticated, refetch]);
   
   const conversations = conversationsData?.conversations;
   
