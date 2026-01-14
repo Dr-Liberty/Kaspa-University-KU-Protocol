@@ -4,11 +4,20 @@ import { x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { randomBytes } from "@noble/hashes/utils.js";
+import {
+  deriveEciesKeypairFromSignature,
+  eciesEncrypt,
+  eciesDecrypt,
+  isEciesEncrypted,
+  isValidEciesPublicKey,
+  type EciesKeypair,
+} from "@/lib/ecies-crypto";
 
 const NONCE_LENGTH = 12;
 const KEY_LENGTH = 32;
 const DB_NAME = "kasia-keys";
 const STORE_NAME = "conversation-keys";
+const ECIES_STORE_NAME = "ecies-keypairs";
 
 interface ConversationKey {
   conversationId: string;
@@ -16,6 +25,13 @@ interface ConversationKey {
   createdAt: number;
   myAddress: string;
   otherAddress: string;
+}
+
+interface StoredEciesKeypair {
+  walletAddress: string;
+  privateKeyHex: string;
+  publicKeyHex: string;
+  createdAt: number;
 }
 
 function hexToBytes(hex: string): Uint8Array {
@@ -82,24 +98,29 @@ function computeSharedSecret(
 export function useConversationKeys(walletAddress: string | null) {
   const keysCache = useRef<Map<string, Uint8Array>>(new Map());
   const keypairCache = useRef<Map<string, { privateKey: Uint8Array; publicKey: Uint8Array }>>(new Map());
+  const eciesKeypairCache = useRef<EciesKeypair | null>(null);
   const dbRef = useRef<IDBDatabase | null>(null);
 
   useEffect(() => {
     if (!walletAddress) return;
 
     const dbName = `${DB_NAME}-${walletAddress.slice(-8)}`;
-    const request = indexedDB.open(dbName, 2);
+    const request = indexedDB.open(dbName, 3);
 
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "conversationId" });
       }
+      if (!db.objectStoreNames.contains(ECIES_STORE_NAME)) {
+        db.createObjectStore(ECIES_STORE_NAME, { keyPath: "walletAddress" });
+      }
     };
 
     request.onsuccess = () => {
       dbRef.current = request.result;
       loadAllKeys();
+      loadEciesKeypair();
     };
 
     request.onerror = () => {
@@ -127,6 +148,49 @@ export function useConversationKeys(walletAddress: string | null) {
       console.log(`[ConversationKeys] Loaded ${keys.length} keys from IndexedDB`);
     };
   }, []);
+
+  const loadEciesKeypair = useCallback(async () => {
+    if (!dbRef.current || !walletAddress) return;
+
+    try {
+      const tx = dbRef.current.transaction(ECIES_STORE_NAME, "readonly");
+      const store = tx.objectStore(ECIES_STORE_NAME);
+      const request = store.get(walletAddress);
+
+      request.onsuccess = () => {
+        const stored = request.result as StoredEciesKeypair | undefined;
+        if (stored) {
+          eciesKeypairCache.current = {
+            privateKeyHex: stored.privateKeyHex,
+            publicKeyHex: stored.publicKeyHex,
+          };
+          console.log("[ConversationKeys] Loaded ECIES keypair from IndexedDB");
+        }
+      };
+    } catch (error) {
+      console.error("[ConversationKeys] Failed to load ECIES keypair:", error);
+    }
+  }, [walletAddress]);
+
+  const storeEciesKeypair = useCallback(async (keypair: EciesKeypair) => {
+    if (!dbRef.current || !walletAddress) return;
+
+    eciesKeypairCache.current = keypair;
+
+    try {
+      const tx = dbRef.current.transaction(ECIES_STORE_NAME, "readwrite");
+      const store = tx.objectStore(ECIES_STORE_NAME);
+      store.put({
+        walletAddress,
+        privateKeyHex: keypair.privateKeyHex,
+        publicKeyHex: keypair.publicKeyHex,
+        createdAt: Date.now(),
+      } as StoredEciesKeypair);
+      console.log("[ConversationKeys] Stored ECIES keypair to IndexedDB");
+    } catch (error) {
+      console.error("[ConversationKeys] Failed to store ECIES keypair:", error);
+    }
+  }, [walletAddress]);
 
   const storeKey = useCallback(async (conversationId: string, key: Uint8Array) => {
     keysCache.current.set(conversationId, key);
@@ -311,6 +375,50 @@ export function useConversationKeys(walletAddress: string | null) {
     return sharedKey;
   }, [storeKey, fetchEcdhKeys]);
 
+  /**
+   * Initialize ECIES keypair from wallet signature.
+   * This is a global keypair per wallet (not per conversation).
+   */
+  const initializeEciesKeypair = useCallback(async (
+    signMessage: (msg: string) => Promise<string>
+  ): Promise<EciesKeypair | null> => {
+    if (!walletAddress) return null;
+    
+    if (eciesKeypairCache.current) {
+      console.log("[ConversationKeys] Using cached ECIES keypair");
+      return eciesKeypairCache.current;
+    }
+
+    try {
+      const messageToSign = `kasia:ecies:v1:${walletAddress}`;
+      console.log("[ConversationKeys] Requesting signature for ECIES keypair derivation...");
+      const signature = await signMessage(messageToSign);
+      
+      const keypair = deriveEciesKeypairFromSignature(signature, walletAddress);
+      await storeEciesKeypair(keypair);
+      
+      console.log("[ConversationKeys] Derived ECIES keypair from signature");
+      return keypair;
+    } catch (error) {
+      console.error("[ConversationKeys] Failed to initialize ECIES keypair:", error);
+      return null;
+    }
+  }, [walletAddress, storeEciesKeypair]);
+
+  /**
+   * Get ECIES public key (if initialized).
+   */
+  const getEciesPublicKey = useCallback((): string | null => {
+    return eciesKeypairCache.current?.publicKeyHex || null;
+  }, []);
+
+  /**
+   * Check if ECIES keypair is initialized.
+   */
+  const hasEciesKeypair = useCallback((): boolean => {
+    return eciesKeypairCache.current !== null;
+  }, []);
+
   const encryptContent = useCallback((conversationId: string, plaintext: string): string | null => {
     const key = keysCache.current.get(conversationId);
     if (!key) {
@@ -331,6 +439,24 @@ export function useConversationKeys(walletAddress: string | null) {
       return `sym:${bytesToHex(combined)}`;
     } catch (error) {
       console.error("[ConversationKeys] Encryption failed:", error);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Encrypt with ECIES using recipient's public key.
+   * This can be used to encrypt messages for any recipient.
+   */
+  const encryptWithEcies = useCallback((recipientPublicKeyHex: string, plaintext: string): string | null => {
+    if (!isValidEciesPublicKey(recipientPublicKeyHex)) {
+      console.error("[ConversationKeys] Invalid ECIES public key:", recipientPublicKeyHex);
+      return null;
+    }
+
+    try {
+      return eciesEncrypt(recipientPublicKeyHex, plaintext);
+    } catch (error) {
+      console.error("[ConversationKeys] ECIES encryption failed:", error);
       return null;
     }
   }, []);
@@ -362,6 +488,23 @@ export function useConversationKeys(walletAddress: string | null) {
     }
   }, []);
 
+  /**
+   * Decrypt ECIES-encrypted content using my private key.
+   */
+  const decryptWithEcies = useCallback((encryptedHex: string): string | null => {
+    if (!eciesKeypairCache.current) {
+      console.warn("[ConversationKeys] No ECIES keypair available for decryption");
+      return null;
+    }
+
+    try {
+      return eciesDecrypt(eciesKeypairCache.current.privateKeyHex, encryptedHex);
+    } catch (error) {
+      console.error("[ConversationKeys] ECIES decryption failed:", error);
+      return null;
+    }
+  }, []);
+
   const tryDecryptMessage = useCallback((conversationId: string, content: string): { decrypted: boolean; content: string } => {
     if (!content) {
       return { decrypted: false, content: "" };
@@ -375,12 +518,20 @@ export function useConversationKeys(walletAddress: string | null) {
       return { decrypted: false, content: "[Encrypted - Key Required]" };
     }
 
+    if (isEciesEncrypted(content)) {
+      const decrypted = decryptWithEcies(content);
+      if (decrypted !== null) {
+        return { decrypted: true, content: decrypted };
+      }
+      return { decrypted: false, content: "[ECIES Encrypted - Key Required]" };
+    }
+
     if (content.startsWith("ciph_msg:")) {
       return { decrypted: false, content: "[Legacy E2EE - Cannot Decrypt]" };
     }
 
     return { decrypted: false, content };
-  }, [decryptContent]);
+  }, [decryptContent, decryptWithEcies]);
 
   return {
     hasKey,
@@ -390,5 +541,10 @@ export function useConversationKeys(walletAddress: string | null) {
     encryptContent,
     decryptContent,
     tryDecryptMessage,
+    initializeEciesKeypair,
+    getEciesPublicKey,
+    hasEciesKeypair,
+    encryptWithEcies,
+    decryptWithEcies,
   };
 }
