@@ -4613,10 +4613,17 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const { recipientAddress, senderAlias } = req.body;
+      const { recipientAddress, senderAlias, eciesPubkey } = req.body;
       
       if (!recipientAddress) {
         return res.status(400).json({ error: "Recipient address required" });
+      }
+      
+      // Validate ECIES pubkey format if provided (66 hex chars = compressed secp256k1 pubkey)
+      if (eciesPubkey !== undefined && eciesPubkey !== null) {
+        if (typeof eciesPubkey !== "string" || !/^[a-fA-F0-9]{66}$/.test(eciesPubkey)) {
+          return res.status(400).json({ error: "Invalid ECIES public key format (expected 66 hex characters)" });
+        }
       }
 
       // Validate recipient address format
@@ -4663,6 +4670,7 @@ export async function registerRoutes(
       }
       
       // Create the handshake payload for signing
+      // Include ECIES pubkey for cross-platform E2E encryption (KU extension)
       const alias = senderAlias || "Anonymous";
       const handshakeData = kasiaBroadcast.createHandshakeForSigning({
         senderAddress: authenticatedWallet,
@@ -4670,6 +4678,7 @@ export async function registerRoutes(
         recipientAddress,
         conversationId,
         isResponse: false,
+        eciesPubkey,
       });
       
       // Create inscription JSON for KasWare signKRC20Transaction
@@ -4708,10 +4717,17 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const { conversationId, recipientAlias } = req.body;
+      const { conversationId, recipientAlias, eciesPubkey } = req.body;
       
       if (!conversationId) {
         return res.status(400).json({ error: "Conversation ID required" });
+      }
+      
+      // Validate ECIES pubkey format if provided (66 hex chars = compressed secp256k1 pubkey)
+      if (eciesPubkey !== undefined && eciesPubkey !== null) {
+        if (typeof eciesPubkey !== "string" || !/^[a-fA-F0-9]{66}$/.test(eciesPubkey)) {
+          return res.status(400).json({ error: "Invalid ECIES public key format (expected 66 hex characters)" });
+        }
       }
       
       // Get the conversation to find the initiator (we send response TO them)
@@ -4734,6 +4750,7 @@ export async function registerRoutes(
       }
       
       // Create the response handshake payload for signing
+      // Include ECIES pubkey for cross-platform E2E encryption (KU extension)
       const alias = recipientAlias || "Anonymous";
       const handshakeData = kasiaBroadcast.createHandshakeForSigning({
         senderAddress: authenticatedWallet,
@@ -4741,6 +4758,7 @@ export async function registerRoutes(
         recipientAddress: conversation.initiatorAddress,
         conversationId,
         isResponse: true,
+        eciesPubkey,
       });
       
       // Create inscription JSON for KasWare signKRC20Transaction

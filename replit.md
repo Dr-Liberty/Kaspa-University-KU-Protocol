@@ -48,6 +48,14 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-14**: Embedded ECIES public keys in Kasia handshakes for zero-coordination encryption:
+    - **Problem Solved**: Recipients can now encrypt messages without signing first
+    - **Handshake Extension**: Added `ecies_pubkey` field to SealedHandshake JSON (KU extension)
+    - **Flow**: Sender's ECIES pubkey embedded on-chain → Recipient extracts it → Can encrypt immediately
+    - **Server-Side**: `parseHandshakePayload` extracts `eciesPubkey`, conversations return `initiatorEciesPubkey` and `recipientEciesPubkey`
+    - **Client-Side**: IndexedDB storage for contact ECIES pubkeys (`storeContactEciesPubkey`, `getContactEciesPubkey`)
+    - **Auto-Initialization**: ECIES keypair initialized when creating/accepting handshakes
+    - **Preparation Endpoints**: `/api/kasia/handshake/prepare` and `/api/kasia/handshake/prepare-response` accept optional `eciesPubkey`
 - **2026-01-14**: Added ECIES encryption for Kasia cross-platform compatibility:
     - **Library**: `eciesjs` - secp256k1-based ECIES (same curve as Kasia app)
     - **Dual Encryption Support**: Both ECDH (`sym:` prefix) and ECIES (`ecies:` prefix) are now supported

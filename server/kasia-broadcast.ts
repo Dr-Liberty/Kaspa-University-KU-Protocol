@@ -36,6 +36,7 @@ export interface HandshakeParams {
   recipientAddress: string;
   conversationId: string;
   isResponse?: boolean;
+  eciesPubkey?: string;
 }
 
 export interface MessageParams {
@@ -75,12 +76,13 @@ class KasiaBroadcastService {
     messageToSign: string;
     protocol: string;
   } {
-    const { senderAlias, recipientAddress, conversationId, isResponse } = params;
+    const { senderAlias, recipientAddress, conversationId, isResponse, eciesPubkey } = params;
     
     // Create the Kasia protocol payload
+    // Include ECIES public key for cross-platform E2E encryption (KU extension)
     const payloadHex = isResponse 
-      ? createHandshakeResponse(senderAlias, recipientAddress, conversationId)
-      : createHandshakePayload(senderAlias, recipientAddress, conversationId);
+      ? createHandshakeResponse(senderAlias, recipientAddress, conversationId, eciesPubkey)
+      : createHandshakePayload(senderAlias, recipientAddress, conversationId, eciesPubkey);
     
     // Create message for wallet signature
     const timestamp = Date.now();

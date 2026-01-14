@@ -207,7 +207,7 @@ function ConversationView({
   const [isSigning, setIsSigning] = useState(false);
   const [keyInitialized, setKeyInitialized] = useState(false);
   
-  const { hasKey, initializeKey, tryLoadKeyFromServer, encryptContent, tryDecryptMessage } = useConversationKeys(walletAddress);
+  const { hasKey, initializeKey, tryLoadKeyFromServer, encryptContent, tryDecryptMessage, initializeEciesKeypair } = useConversationKeys(walletAddress);
   const [autoSignAttempted, setAutoSignAttempted] = useState(false);
   const [signFailed, setSignFailed] = useState(false);
   const [waitingForOtherParty, setWaitingForOtherParty] = useState(false);
@@ -441,10 +441,26 @@ function ConversationView({
     mutationFn: async () => {
       setIsAccepting(true);
       try {
+        // Step 0: Initialize ECIES keypair for cross-platform encryption
+        let eciesPubkey: string | undefined;
+        try {
+          if (window.kasware?.signMessage) {
+            const signMessage = async (message: string): Promise<string> => {
+              return window.kasware!.signMessage(message, { type: "schnorr" });
+            };
+            const keypair = await initializeEciesKeypair(signMessage);
+            eciesPubkey = keypair?.publicKeyHex;
+            console.log("[AcceptHandshake] ECIES pubkey for response:", eciesPubkey?.slice(0, 20) + "...");
+          }
+        } catch (e) {
+          console.warn("[AcceptHandshake] Could not initialize ECIES keypair:", e);
+        }
+        
         // Step 1: Prepare the response handshake payload
         const prepareResponse = await apiRequest("POST", "/api/kasia/handshake/prepare-response", {
           conversationId: conversation.id,
           recipientAlias: "Anonymous",
+          eciesPubkey,
         });
         const prepareData = await prepareResponse.json();
         
@@ -786,11 +802,17 @@ function ConversationView({
 
 function NewConversationView({ onBack }: { onBack: () => void }) {
   const { toast } = useToast();
-  const { signKasiaHandshake } = useWallet();
+  const { wallet, signKasiaHandshake } = useWallet();
+  const { initializeEciesKeypair, getEciesPublicKey } = useConversationKeys(wallet?.address || null);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [isAdminConversation, setIsAdminConversation] = useState(false);
   const [signingStep, setSigningStep] = useState<"idle" | "preparing" | "signing" | "confirming" | "verifying">("idle");
   const [verifyAttempts, setVerifyAttempts] = useState(0);
+  
+  const signMessage = async (message: string): Promise<string> => {
+    if (!window.kasware?.signMessage) throw new Error("KasWare wallet not available");
+    return window.kasware.signMessage(message, { type: "schnorr" });
+  };
 
   // Fetch support address
   const { data: supportData, isLoading: supportLoading } = useQuery<{ address: string }>({
@@ -818,11 +840,25 @@ function NewConversationView({ onBack }: { onBack: () => void }) {
     mutationFn: async () => {
       const trimmedAddress = recipientAddress.trim();
       
+      // Step 0: Initialize ECIES keypair for cross-platform encryption
+      // This will be embedded in the handshake so the other party can encrypt messages to us
+      let eciesPubkey: string | undefined;
+      try {
+        if (window.kasware?.signMessage) {
+          const keypair = await initializeEciesKeypair(signMessage);
+          eciesPubkey = keypair?.publicKeyHex;
+          console.log("[NewConversation] ECIES pubkey for handshake:", eciesPubkey?.slice(0, 20) + "...");
+        }
+      } catch (e) {
+        console.warn("[NewConversation] Could not initialize ECIES keypair, continuing without it:", e);
+      }
+      
       // Step 1: Prepare the handshake (check for existing conversation)
       setSigningStep("preparing");
       const prepareResponse = await apiRequest("POST", "/api/kasia/handshake/prepare", {
         recipientAddress: trimmedAddress,
         senderAlias: "Anonymous",
+        eciesPubkey,
       });
       const prepareData = await prepareResponse.json();
       
