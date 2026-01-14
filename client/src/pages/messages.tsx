@@ -940,19 +940,39 @@ export default function Messages() {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, UserProfile>>({});
   
+  // Check for stored wallet address even if wallet context hasn't restored yet
+  // Try multiple sources: direct address key, or parse from wallet object
+  const getStoredWalletAddress = (): string | null => {
+    if (typeof window === "undefined") return null;
+    // First try the direct address key
+    const directAddress = localStorage.getItem("kaspa-university-wallet-address");
+    if (directAddress) return directAddress;
+    // Fallback: parse from wallet object
+    const walletJson = localStorage.getItem("kaspa-university-wallet");
+    if (walletJson) {
+      try {
+        const parsed = JSON.parse(walletJson);
+        return parsed?.address || null;
+      } catch { return null; }
+    }
+    return null;
+  };
+  const storedWalletAddress = getStoredWalletAddress();
+  const effectiveWalletAddress = wallet?.address || storedWalletAddress;
+  
   // Debug logging for auth state
   useEffect(() => {
-    console.log(`[Messages] Auth state: wallet=${wallet?.address?.slice(0, 20) || "null"}, isAuthenticated=${isAuthenticated}`);
-  }, [wallet, isAuthenticated]);
+    console.log(`[Messages] Auth state: wallet=${wallet?.address?.slice(0, 20) || "null"}, stored=${storedWalletAddress?.slice(0, 20) || "null"}, isAuthenticated=${isAuthenticated}`);
+  }, [wallet, isAuthenticated, storedWalletAddress]);
   
   const { data: conversationsData, isLoading, refetch, isFetching } = useQuery<{ conversations: Conversation[], source?: string }>({
-    queryKey: ["/api/conversations", "onchain", wallet?.address || "noWallet"],
+    queryKey: ["/api/conversations", "onchain", effectiveWalletAddress || "noWallet"],
     queryFn: async () => {
       console.log("[Messages] Fetching conversations from server...");
       const url = "/api/conversations?source=onchain";
       const headers: Record<string, string> = {};
-      const token = getAuthToken();
-      const walletAddress = getWalletAddress();
+      const token = getAuthToken() || localStorage.getItem("kaspa-university-auth-token");
+      const walletAddress = getWalletAddress() || localStorage.getItem("kaspa-university-wallet-address");
       console.log(`[Messages] Headers: token=${token ? "yes" : "no"}, wallet=${walletAddress?.slice(0, 20) || "null"}`);
       if (token) headers["x-auth-token"] = token;
       if (walletAddress) headers["x-wallet-address"] = walletAddress;
@@ -960,22 +980,23 @@ export default function Messages() {
       const res = await fetch(url, { credentials: "include", headers });
       if (!res.ok) throw new Error("Failed to fetch conversations");
       const data = await res.json();
-      console.log(`[Messages] Received ${data.conversations?.length || 0} conversations`);
+      console.log(`[Messages] Received ${data.conversations?.length || 0} conversations from source: ${data.source}`);
       return data;
     },
-    enabled: !!wallet && isAuthenticated,
+    // Fire query as soon as we have ANY wallet address (from context OR localStorage)
+    enabled: !!effectiveWalletAddress,
     refetchInterval: 10000,
     refetchOnMount: "always",
     staleTime: 0,
   });
   
-  // Force refetch when authentication becomes available
+  // Force refetch when wallet context becomes available
   useEffect(() => {
-    if (wallet && isAuthenticated) {
-      console.log("[Messages] Auth ready, triggering refetch...");
+    if (effectiveWalletAddress) {
+      console.log("[Messages] Wallet address available, triggering refetch...");
       refetch();
     }
-  }, [wallet, isAuthenticated, refetch]);
+  }, [effectiveWalletAddress, refetch]);
   
   const conversations = conversationsData?.conversations;
   
@@ -1014,7 +1035,8 @@ export default function Messages() {
     }
   }, [conversations, selectedConversation]);
 
-  if (!wallet) {
+  // Only block if no wallet address at all (neither from context nor localStorage)
+  if (!effectiveWalletAddress) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-20">
         <div className="text-center">
@@ -1130,7 +1152,7 @@ export default function Messages() {
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
-                          walletAddress={wallet.address}
+                          walletAddress={effectiveWalletAddress}
                           isActive={selectedConversation?.id === conv.id}
                           onClick={() => {
                             setSelectedConversation(conv);
@@ -1168,7 +1190,7 @@ export default function Messages() {
               ) : selectedConversation ? (
                 <ConversationView
                   conversation={selectedConversation}
-                  walletAddress={wallet.address}
+                  walletAddress={effectiveWalletAddress}
                   onBack={() => setSelectedConversation(null)}
                 />
               ) : (

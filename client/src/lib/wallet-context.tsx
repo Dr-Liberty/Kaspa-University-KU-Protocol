@@ -203,11 +203,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (wallet) {
       localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(wallet));
+      localStorage.setItem("kaspa-university-wallet-address", wallet.address);
       setWalletAddress(wallet.address);
       localStorage.removeItem(DEMO_MODE_KEY);
       setIsDemoMode(false);
     } else {
       localStorage.removeItem(WALLET_STORAGE_KEY);
+      localStorage.removeItem("kaspa-university-wallet-address");
       setWalletAddress(null);
     }
   }, [wallet]);
