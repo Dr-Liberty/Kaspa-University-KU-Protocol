@@ -132,4 +132,114 @@ export function getPublicKeyFromPrivate(privateKeyHex: string): string {
   return privateKey.publicKey.toHex();
 }
 
+const CONTACT_KEYS_STORE = "kasia-contact-keys";
+const CONTACT_KEYS_DB = "kaspa-university-contacts";
+
+interface ContactKeyEntry {
+  walletAddress: string;
+  eciesPubkey: string;
+  updatedAt: number;
+}
+
+function openContactKeysDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(CONTACT_KEYS_DB, 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(CONTACT_KEYS_STORE)) {
+        db.createObjectStore(CONTACT_KEYS_STORE, { keyPath: "walletAddress" });
+      }
+    };
+  });
+}
+
+export async function storeContactEciesPubkey(
+  walletAddress: string,
+  eciesPubkey: string
+): Promise<void> {
+  if (!walletAddress || !eciesPubkey) return;
+  
+  const normalized = walletAddress.toLowerCase();
+  
+  try {
+    const db = await openContactKeysDb();
+    const tx = db.transaction(CONTACT_KEYS_STORE, "readwrite");
+    const store = tx.objectStore(CONTACT_KEYS_STORE);
+    
+    const entry: ContactKeyEntry = {
+      walletAddress: normalized,
+      eciesPubkey,
+      updatedAt: Date.now()
+    };
+    
+    store.put(entry);
+    
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    
+    console.log(`[ECIES] Stored contact pubkey for ${normalized.slice(0, 16)}...`);
+  } catch (error) {
+    console.error("[ECIES] Failed to store contact pubkey:", error);
+  }
+}
+
+export async function getContactEciesPubkey(
+  walletAddress: string
+): Promise<string | null> {
+  if (!walletAddress) return null;
+  
+  const normalized = walletAddress.toLowerCase();
+  
+  try {
+    const db = await openContactKeysDb();
+    const tx = db.transaction(CONTACT_KEYS_STORE, "readonly");
+    const store = tx.objectStore(CONTACT_KEYS_STORE);
+    
+    const request = store.get(normalized);
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const entry = request.result as ContactKeyEntry | undefined;
+        resolve(entry?.eciesPubkey ?? null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error("[ECIES] Failed to get contact pubkey:", error);
+    return null;
+  }
+}
+
+export async function getAllContactEciesPubkeys(): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  
+  try {
+    const db = await openContactKeysDb();
+    const tx = db.transaction(CONTACT_KEYS_STORE, "readonly");
+    const store = tx.objectStore(CONTACT_KEYS_STORE);
+    
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const entries = request.result as ContactKeyEntry[];
+        for (const entry of entries) {
+          result.set(entry.walletAddress, entry.eciesPubkey);
+        }
+        resolve(result);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error("[ECIES] Failed to get all contact pubkeys:", error);
+    return result;
+  }
+}
+
 export { PrivateKey };
