@@ -657,14 +657,11 @@ export class DbStorage implements IStorage {
       }
       
       // Update all expired reservations
-      const expiredIds = expiredReservations.map(r => r.id);
+      const expiredIds = expiredReservations.map(r => r.id) as string[];
       if (expiredIds.length > 0) {
-        const idList = expiredIds.map(id => `'${id}'`).join(',');
-        await tx.execute(sql.raw(`
-          UPDATE user_signed_mint_reservations
-          SET status = 'expired'
-          WHERE id IN (${idList})
-        `));
+        await tx.update(schema.userSignedMintReservations)
+          .set({ status: "expired" })
+          .where(inArray(schema.userSignedMintReservations.id, expiredIds));
       }
       
       return expiredReservations.length;
