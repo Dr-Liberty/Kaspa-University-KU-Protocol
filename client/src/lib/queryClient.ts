@@ -84,8 +84,6 @@ export async function apiRequest(
     headers["x-auth-token"] = authToken;
   }
 
-  console.log(`[API] ${method} ${url}`, { hasWallet: !!walletAddress, hasAuth: !!authToken, walletPreview: walletAddress?.slice(0, 15) });
-
   try {
     const res = await fetch(url, {
       method,
