@@ -344,7 +344,6 @@ class DiscountService {
     }
 
     if (!this.isLive()) {
-      console.log(`[DiscountService] Not live - Treasury: ${this.treasuryAddress || 'none'}, RPC: ${!!this.rpcClient}, PrivateKey: ${!!this.privateKey}`);
       return {
         success: false,
         error: "Whitelist service not available. Treasury credentials or RPC connection missing. Please try again later.",
