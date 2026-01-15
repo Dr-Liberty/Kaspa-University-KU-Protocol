@@ -55,7 +55,6 @@ const hasTreasury = !!process.env.KASPA_TREASURY_MNEMONIC || !!process.env.KASPA
 const hasPinata = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
 const hasSession = !!process.env.SESSION_SECRET;
 
-console.log(`  PINATA_API_KEY:           ${hasPinata ? "SET" : "MISSING"}`);
 console.log(`  SESSION_SECRET:           ${hasSession ? "SET" : "MISSING"}`);
 console.log("");
 
