@@ -1045,7 +1045,6 @@ export default function Messages() {
       const headers: Record<string, string> = {};
       const token = getAuthToken() || localStorage.getItem("kaspa-university-auth-token");
       const walletAddress = getWalletAddress() || localStorage.getItem("kaspa-university-wallet-address");
-      console.log(`[Messages] Headers: token=${token ? "yes" : "no"}, wallet=${walletAddress?.slice(0, 20) || "null"}`);
       if (token) headers["x-auth-token"] = token;
       if (walletAddress) headers["x-wallet-address"] = walletAddress;
       
