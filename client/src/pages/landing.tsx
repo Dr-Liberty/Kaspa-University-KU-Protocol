@@ -241,13 +241,13 @@ export default function Landing() {
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                This is a beta platform and open source utility for the kaspa ecosystem
+                <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
               </p>
             </div>
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
+                This is a Beta platform and open source utility for the kaspa ecosystem
               </p>
             </div>
           </div>
