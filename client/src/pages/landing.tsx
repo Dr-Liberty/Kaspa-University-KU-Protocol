@@ -66,12 +66,6 @@ export default function Landing() {
         "Public Q&A via K Protocol for ecosystem discovery, plus end-to-end encrypted P2P messaging via Kasia Protocol for private discussions.",
     },
     {
-      icon: Signature,
-      title: "Wallet-Signed Messages",
-      description:
-        "Every message is signed by your wallet for cryptographic attribution. Your contributions are verifiable and permanently tied to your identity.",
-    },
-    {
       icon: ShieldCheck,
       title: "Quiz Proofs On-Chain",
       description:
