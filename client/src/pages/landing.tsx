@@ -172,10 +172,6 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="w-full max-w-4xl">
-            <StatsBar />
-          </div>
-
           <h1
             className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl"
             data-testid="text-hero-title"
@@ -230,6 +226,10 @@ export default function Landing() {
                 Try Demo
               </Button>
             )}
+          </div>
+
+          <div className="w-full max-w-4xl mt-4">
+            <StatsBar />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
