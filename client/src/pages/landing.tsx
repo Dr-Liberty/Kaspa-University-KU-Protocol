@@ -236,11 +236,11 @@ export default function Landing() {
 
           <div 
             className="mt-6 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-2"
-            data-testid="banner-vpn-warning"
+            data-testid="banner-beta-notice"
           >
             <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <p className="text-xs text-amber-800 dark:text-amber-300">
-              <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
+              This is a beta platform and open source utility for the kaspa ecosystem
             </p>
           </div>
         </div>
