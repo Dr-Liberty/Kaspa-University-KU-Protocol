@@ -235,13 +235,21 @@ export default function Landing() {
           </div>
 
           <div 
-            className="mt-6 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-2"
-            data-testid="banner-beta-notice"
+            className="mt-6 flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/50 px-4 py-3"
+            data-testid="banner-notices"
           >
-            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <p className="text-xs text-amber-800 dark:text-amber-300">
-              This is a beta platform and open source utility for the kaspa ecosystem
-            </p>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                This is a beta platform and open source utility for the kaspa ecosystem
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-semibold">Important:</span> Please disable your VPN before connecting your wallet. VPN usage may flag your account.
+              </p>
+            </div>
           </div>
         </div>
       </section>
