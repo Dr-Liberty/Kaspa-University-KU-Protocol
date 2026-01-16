@@ -577,6 +577,18 @@ export default function Landing() {
               GitHub
             </a>
           </div>
+          <a
+            href="https://kas.coffee/drliberty"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2"
+            data-testid="link-donate"
+          >
+            <Button variant="outline" size="sm" className="gap-2">
+              <Coins className="h-4 w-4" />
+              Donate to Builder
+            </Button>
+          </a>
         </div>
       </footer>
     </div>
