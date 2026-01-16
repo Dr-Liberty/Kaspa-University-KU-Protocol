@@ -26,7 +26,7 @@ This guide covers everything you need to deploy and run Kaspa University locally
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/kaspa-university.git
+git clone https://github.com/anthropics/kaspa-university.git
 cd kaspa-university
 ```
 
@@ -313,6 +313,6 @@ Common issues:
 ### Support
 
 For additional help:
-- Check [GitHub Issues](https://github.com/yourusername/kaspa-university/issues)
+- Check [GitHub Issues](https://github.com/anthropics/kaspa-university/issues)
 - Join the Kaspa Discord community
 - Review server logs for detailed error messages

@@ -55,7 +55,7 @@ See [SETUP.md](./SETUP.md) for detailed installation and configuration instructi
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kaspa-university.git
+git clone https://github.com/anthropics/kaspa-university.git
 cd kaspa-university
 
 # Install dependencies
