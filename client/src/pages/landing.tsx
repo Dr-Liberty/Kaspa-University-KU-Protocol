@@ -172,6 +172,10 @@ export default function Landing() {
             </div>
           </div>
 
+          <div className="w-full max-w-4xl">
+            <StatsBar />
+          </div>
+
           <h1
             className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl"
             data-testid="text-hero-title"
@@ -267,12 +271,6 @@ export default function Landing() {
               Report Bugs
             </Button>
           </a>
-        </div>
-      </section>
-
-      <section className="border-y border-border/50 bg-card/30 px-4 py-12">
-        <div className="mx-auto max-w-6xl">
-          <StatsBar />
         </div>
       </section>
 
