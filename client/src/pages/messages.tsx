@@ -36,6 +36,7 @@ import {
   RefreshCw,
   Inbox,
   ExternalLink,
+  Construction,
 } from "lucide-react";
 
 interface Conversation {
@@ -1213,6 +1214,12 @@ export default function Messages() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="mt-4 flex items-center justify-center gap-3 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+            <Construction className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-primary">Under Construction - Coming Soon</span>
+            <Construction className="h-5 w-5 text-primary" />
+          </div>
           
         </div>
 
