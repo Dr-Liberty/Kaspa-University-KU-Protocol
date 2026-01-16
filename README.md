@@ -2,7 +2,7 @@
 
 [![Kaspa](https://img.shields.io/badge/Built%20on-Kaspa-49EACB)](https://kaspa.org)
 [![KRC-721](https://img.shields.io/badge/NFT-KRC--721-purple)](https://github.com/aspectron/krc721)
-[![License](https://img.shields.io/badge/License-ISC-blue)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue)](LICENSE)
 
 **Learn-to-Earn on the Kaspa BlockDAG**
 
@@ -200,7 +200,9 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 ## License
 
-ISC License - see [LICENSE](./LICENSE) for details.
+**AGPL-3.0** - This project is open source but requires that any modifications or services built on it also share their source code. See [LICENSE](./LICENSE) for details.
+
+This software is a public utility for the Kaspa ecosystem. Commercial exploitation without contributing back is discouraged.
 
 ## Community
 
