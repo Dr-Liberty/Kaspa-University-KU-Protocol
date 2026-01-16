@@ -26,6 +26,7 @@ import {
   Signature,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
+import { SiGithub } from "react-icons/si";
 
 interface SecurityCheck {
   isFlagged: boolean;
@@ -563,6 +564,17 @@ export default function Landing() {
               className="text-primary hover:underline"
             >
               Learn about Kaspa
+            </a>
+            <span className="text-primary/50">|</span>
+            <a
+              href="https://github.com/your-repo/kaspa-university"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-primary hover:underline"
+              data-testid="link-github"
+            >
+              <SiGithub className="h-4 w-4" />
+              GitHub
             </a>
           </div>
         </div>
