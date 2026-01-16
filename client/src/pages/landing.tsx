@@ -25,6 +25,7 @@ import {
   Key,
   Signature,
   Bug,
+  ShieldCheck,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import { SiGithub } from "react-icons/si";
@@ -69,6 +70,12 @@ export default function Landing() {
       title: "Wallet-Signed Messages",
       description:
         "Every message is signed by your wallet for cryptographic attribution. Your contributions are verifiable and permanently tied to your identity.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Quiz Proofs On-Chain",
+      description:
+        "Every quiz completion is recorded on Kaspa L1 with cryptographic proof. Verifiable credentials that can never be faked, lost, or revoked.",
     },
   ];
 
@@ -120,7 +127,7 @@ export default function Landing() {
       name: "K Protocol",
       tagline: "Public Comments",
       icon: Globe,
-      color: "from-accent to-accent/70",
+      color: "from-emerald-500 to-emerald-500/70",
       format: "k:1:post:{content}",
       description: "Public Q&A indexed by ecosystem K-indexers. Your comments are discoverable across the Kaspa ecosystem.",
       features: ["Ecosystem indexing", "Cross-platform discovery", "Public attribution"],
