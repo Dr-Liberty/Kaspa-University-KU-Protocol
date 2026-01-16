@@ -28,7 +28,8 @@ Kaspa University is a decentralized educational platform that rewards learners w
 
 ### Security
 - **Wallet-Based Auth** - Sign-In with Kaspa (SIWK) standard
-- **Anti-Sybil Protection** - Quiz cooldowns, VPN detection, multi-wallet tracking
+- **Anti-Sybil Protection** - Multi-wallet detection (2+ per IP = blocked), multi-IP detection (3+ = warned), VPN blocking
+- **Daily Caps** - 5 KAS maximum daily rewards, 3 quiz attempts per lesson per day
 - **Rate Limiting** - Endpoint-specific protection against abuse
 
 ## Tech Stack
@@ -124,8 +125,8 @@ End-to-end encrypted P2P messaging via on-chain handshakes.
 The KUDIPLOMA collection is deployed on Kaspa mainnet:
 - **Ticker**: KUDIPLOMA
 - **Max Supply**: 10,000
-- **Royalty Fee**: 0 KAS (discounted for eligible users)
-- **PoW Fee**: 10 KAS (paid by minter)
+- **Royalty Fee**: 0 KAS (whitelisted graduates)
+- **PoW Fee**: ~10 KAS (covers platform + network costs)
 
 Eligibility requires completion of all courses in the curriculum.
 

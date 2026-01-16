@@ -607,7 +607,14 @@ export async function registerRoutes(
     const vpnCheck = await checkVpn(clientIP);
     const securityFlags = getSecurityFlags(req);
     
-    const isFlagged = securityFlags.length > 0 || vpnCheck.isVpn;
+    // Determine blocking vs warning status
+    // BLOCKED: Multi-wallet per IP (2+), VPN detected
+    // WARNED: Multi-IP per wallet (3+) - still allowed to claim
+    const isBlocked = securityFlags.includes("MULTI_WALLET_IP") || 
+                      securityFlags.includes("VPN_DETECTED") || 
+                      securityFlags.includes("VPN_SUSPECTED") ||
+                      vpnCheck.isVpn;
+    const isWarned = securityFlags.includes("MULTI_IP_WALLET");
     
     // Record metrics
     metrics.recordRequest(clientIP, req.headers["x-wallet-address"] as string);
@@ -615,15 +622,30 @@ export async function registerRoutes(
       metrics.recordVpnDetection(clientIP, vpnCheck.score);
     }
     
+    // Build warning message for user
+    let warningMessage: string | undefined;
+    if (isBlocked) {
+      if (securityFlags.includes("MULTI_WALLET_IP")) {
+        warningMessage = "Multiple wallets detected from your network. Rewards are blocked to prevent abuse.";
+      } else {
+        warningMessage = "VPN or proxy detected. Please disable to claim rewards.";
+      }
+    } else if (isWarned) {
+      warningMessage = "Your wallet has been accessed from multiple IPs. This has been logged for review.";
+    }
+    
     res.json({
-      isFlagged,
+      isFlagged: isBlocked || isWarned,
+      isBlocked,
+      isWarned,
       isVpn: vpnCheck.isVpn,
       vpnScore: vpnCheck.score,
       vpnSource: vpnCheck.source,
       flags: vpnCheck.isVpn && !securityFlags.includes("VPN_DETECTED") 
         ? [...securityFlags, "VPN_DETECTED"] 
         : securityFlags,
-      rewardsBlocked: isFlagged,
+      rewardsBlocked: isBlocked,
+      warningMessage,
     });
   });
 
@@ -967,13 +989,25 @@ export async function registerRoutes(
     }
 
     const securityFlags = getSecurityFlags(req);
-    const isFlagged = securityFlags.includes("MULTI_WALLET_IP") || 
+    // Block rewards for multi-wallet per IP (Sybil attack prevention)
+    // Allow but warn for multi-IP per wallet (legitimate VPN/mobile use)
+    const isBlocked = securityFlags.includes("MULTI_WALLET_IP") || 
                       securityFlags.includes("VPN_DETECTED") || 
-                      securityFlags.includes("VPN_SUSPECTED") ||
-                      securityFlags.includes("MULTI_IP_WALLET");
+                      securityFlags.includes("VPN_SUSPECTED");
+    const isWarned = securityFlags.includes("MULTI_IP_WALLET");
     
-    if (isFlagged) {
+    if (isBlocked) {
       console.log(`[Security] Blocked rewards for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")}, VPN score: ${vpnCheck.score.toFixed(2)}`);
+      antiSybil.releaseSubmissionLock(walletAddress, lessonId);
+      return res.status(403).json({
+        error: "Rewards blocked due to security concerns. Multiple wallets detected from your network.",
+        code: "MULTI_WALLET_BLOCKED",
+        flags: securityFlags,
+      });
+    }
+    
+    if (isWarned) {
+      console.log(`[Security] Warning for ${walletAddress.slice(0, 20)}... flags: ${securityFlags.join(", ")} - allowing claim`);
     }
 
     let user = await storage.getUserByWalletAddress(walletAddress);
@@ -1100,7 +1134,7 @@ export async function registerRoutes(
         // Check if reward already exists for this course
         const existingReward = await storage.getCourseRewardForCourse(user.id, lesson.courseId);
         
-        if (!existingReward && !isFlagged) {
+        if (!existingReward && !isBlocked) {
           // Always use full course reward (0.1 KAS for reward, proof tx sent separately)
           await storage.createCourseReward({
             courseId: lesson.courseId,

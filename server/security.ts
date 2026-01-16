@@ -35,8 +35,11 @@ interface WalletIPBinding {
 const ipActivityCache: Map<string, IPActivity> = new Map();
 const walletIpBindingsCache: Map<string, WalletIPBinding> = new Map();
 
-const MULTI_WALLET_THRESHOLD = 3;
-const MULTI_IP_THRESHOLD = 5;
+// ANTI-SYBIL THRESHOLDS
+// Multi-wallet per IP: Block 2nd wallet from claiming rewards
+const MULTI_WALLET_THRESHOLD = 2;
+// Multi-IP per wallet: Warn on 2nd IP, flag on 3rd (still allowed to claim)
+const MULTI_IP_THRESHOLD = 3;
 
 const KNOWN_VPN_ASN_PREFIXES = [
   "AS9009",

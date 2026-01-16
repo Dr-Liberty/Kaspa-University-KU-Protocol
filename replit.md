@@ -25,7 +25,7 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **KRC-721 Diploma NFT**:
     - **Architecture**: Single collection (KUDIPLOMA, 1,000 max supply).
     - **Eligibility**: Requires completion of all 16 courses for minting.
-    - **Minting**: User-signed minting via whitelisting mechanism (0 KAS discount fee for eligible users + PoW fee) managed by a `discount-service`.
+    - **Minting**: User-signed minting via whitelisting (0 KAS royalty for graduates + ~10 KAS PoW fee for platform costs) managed by `discount-service`.
     - **Lifecycle**: Reservation, signing, confirmation, cancellation, and expiration of diploma mints.
     - **Source of Truth**: Blockchain indexer is authoritative, database acts as a cache.
 - **Dual-Protocol Messaging System**:
@@ -40,14 +40,22 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`).
 - **Security**:
     - **SIWK**: Challenge-response authentication, nonce replay prevention, challenge expiry.
-    - **Anti-Sybil**: Quiz cooldowns, min completion times, daily reward caps, concurrent quiz submission locking.
+    - **Anti-Sybil**: Quiz cooldowns, min completion times, daily reward caps (5 KAS), concurrent quiz submission locking.
+    - **Multi-Wallet Detection**: 2+ wallets per IP = blocked from rewards (Sybil prevention).
+    - **Multi-IP Detection**: 3+ IPs per wallet = warned but allowed (flagged for review).
     - **Rate Limiting**: Endpoint-specific rate limits.
-    - **Threat Detection**: IP tracking, multi-wallet/IP detection, VPN detection.
+    - **Threat Detection**: IP tracking, VPN detection with warning banner.
     - **UTXO Management**: Mutex-based locking to prevent double-spending. UTXO transformer with unit tests (`server/__tests__/utxo-transformer.test.ts`) normalizes RPC response formats for WASM SDK compatibility.
 - **Performance**: Job queue for async ops, in-memory TTL caching.
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
 ## Recent Changes
+- **2026-01-16**: Enhanced anti-Sybil thresholds and security UI:
+    - **Multi-Wallet per IP**: Threshold lowered from 3 to 2; second wallet is now blocked from claiming rewards
+    - **Multi-IP per Wallet**: Threshold lowered from 5 to 3; user is warned but allowed to claim (flagged for review)
+    - **UI Warnings**: Dashboard shows red "Rewards Blocked" banner for blocked users, amber "Security Notice" banner for warned users
+    - **API Enhancement**: `/api/security/check` now returns `isBlocked`, `isWarned`, and `warningMessage` fields
+    - **Mint Fee Update**: Documentation updated to reflect ~10 KAS PoW fee for diploma minting (covers platform costs)
 - **2026-01-14**: Embedded ECIES public keys in Kasia handshakes for zero-coordination encryption:
     - **Problem Solved**: Recipients can now encrypt messages without signing first
     - **Handshake Extension**: Added `ecies_pubkey` field to SealedHandshake JSON (KU extension)

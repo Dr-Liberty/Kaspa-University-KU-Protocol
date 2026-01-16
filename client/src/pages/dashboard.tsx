@@ -30,10 +30,13 @@ import { useMemo, useState, useEffect, useRef } from "react";
 
 interface SecurityCheck {
   isFlagged: boolean;
+  isBlocked: boolean;
+  isWarned: boolean;
   isVpn: boolean;
   vpnScore: number;
   flags: string[];
   rewardsBlocked: boolean;
+  warningMessage?: string;
 }
 
 interface EnrichedReward extends CourseReward {
@@ -255,17 +258,32 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen pt-20">
-      {securityCheck?.isFlagged && (
+      {securityCheck?.isBlocked && (
         <div 
           className="sticky top-16 z-50 flex items-center justify-center gap-3 bg-destructive px-4 py-3 text-destructive-foreground"
-          data-testid="banner-vpn-warning"
+          data-testid="banner-security-blocked"
         >
           <ShieldAlert className="h-5 w-5 flex-shrink-0" />
           <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-2">
-            <span className="font-semibold">VPN/Proxy Detected</span>
+            <span className="font-semibold">Rewards Blocked</span>
             <span className="hidden sm:inline">-</span>
             <span>
-              Rewards are disabled while using VPN or proxy services. Please disable your VPN to earn KAS rewards.
+              {securityCheck.warningMessage || "Security concerns detected. Rewards are disabled."}
+            </span>
+          </div>
+        </div>
+      )}
+      {securityCheck?.isWarned && !securityCheck?.isBlocked && (
+        <div 
+          className="sticky top-16 z-50 flex items-center justify-center gap-3 bg-amber-500/90 px-4 py-3 text-white"
+          data-testid="banner-security-warning"
+        >
+          <Shield className="h-5 w-5 flex-shrink-0" />
+          <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-2">
+            <span className="font-semibold">Security Notice</span>
+            <span className="hidden sm:inline">-</span>
+            <span>
+              {securityCheck.warningMessage || "Your activity has been flagged for review."}
             </span>
           </div>
         </div>
