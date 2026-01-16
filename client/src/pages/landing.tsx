@@ -98,7 +98,7 @@ export default function Landing() {
 
   const benefits = [
     "Open sourced",
-    "KU Protocol achievements",
+    "KU Protocol On-Chain Proofs",
     "K Protocol public Q&A",
     "Kasia encrypted messaging",
     "KRC-721 diploma NFTs",
