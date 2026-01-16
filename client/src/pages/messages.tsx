@@ -1138,13 +1138,41 @@ export default function Messages() {
   // Only block if no wallet address at all (neither from context nor localStorage)
   if (!effectiveWalletAddress) {
     return (
-      <div className="flex min-h-screen items-center justify-center pt-20">
-        <div className="text-center">
-          <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h2 className="mt-4 text-xl font-semibold">Connect Your Wallet</h2>
-          <p className="mt-2 text-muted-foreground">
-            Connect your Kaspa wallet to access encrypted messages
-          </p>
+      <div className="min-h-screen pt-20">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-4">
+              <img 
+                src={kasiaLogo} 
+                alt="Kasia Protocol" 
+                className="h-14 w-14 rounded-lg object-cover"
+              />
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+                  Private Messages
+                </h1>
+                <p className="mt-1 text-muted-foreground">
+                  Powered by Kasia Protocol
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-center gap-3 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+              <Construction className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-primary">Under Construction - Coming Soon</span>
+              <Construction className="h-5 w-5 text-primary" />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h2 className="mt-4 text-xl font-semibold">Connect Your Wallet</h2>
+              <p className="mt-2 text-muted-foreground">
+                Connect your Kaspa wallet to access encrypted messages
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
