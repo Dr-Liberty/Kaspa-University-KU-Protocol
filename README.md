@@ -55,8 +55,8 @@ See [SETUP.md](./SETUP.md) for detailed installation and configuration instructi
 
 ```bash
 # Clone the repository
-git clone https://github.com/anthropics/kaspa-university.git
-cd kaspa-university
+git clone https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol.git
+cd Kaspa-university-KU-Protocol
 
 # Install dependencies
 npm install

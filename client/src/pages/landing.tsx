@@ -567,7 +567,7 @@ export default function Landing() {
             </a>
             <span className="text-primary/50">|</span>
             <a
-              href="https://github.com/anthropics/kaspa-university"
+              href="https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-primary hover:underline"
