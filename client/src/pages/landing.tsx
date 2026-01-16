@@ -24,6 +24,7 @@ import {
   MessagesSquare,
   Key,
   Signature,
+  Bug,
 } from "lucide-react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import { SiGithub } from "react-icons/si";
@@ -185,8 +186,8 @@ export default function Landing() {
             data-testid="text-hero-subtitle"
           >
             Master BlockDAG technology while earning real cryptocurrency rewards.
-            Powered by 4 on-chain protocols: KU for achievements, K for public Q&A, 
-            Kasia for encrypted messaging, and KRC-721 for diploma NFTs.
+            An open source utility for the Kaspa ecosystem, powered by 4 on-chain protocols: 
+            KU for achievements, K for public Q&A, Kasia for encrypted messaging, and KRC-721 for diploma NFTs.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -248,10 +249,23 @@ export default function Landing() {
             <div className="flex items-center justify-center gap-2">
               <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                This is a Beta platform and open source utility for the kaspa ecosystem
+                This is a Beta platform - please use a fresh wallet
               </p>
             </div>
           </div>
+
+          <a
+            href="https://x.com/KasUniversity"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4"
+            data-testid="link-report-bugs"
+          >
+            <Button size="lg" variant="outline" className="gap-2 text-base">
+              <Bug className="h-5 w-5" />
+              Report Bugs
+            </Button>
+          </a>
         </div>
       </section>
 
