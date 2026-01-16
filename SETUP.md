@@ -82,6 +82,9 @@ KRC721_TESTNET=false
 
 # Support Wallet (for P2P messaging)
 SUPPORT_ADDRESS=kaspa:qz...
+
+# Archival Node (for historical payload data beyond 30h)
+# ARCHIVAL_RPC_ENDPOINT=archival.example.com:16110
 ```
 
 ## Database Setup

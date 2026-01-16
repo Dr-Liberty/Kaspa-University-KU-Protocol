@@ -3506,6 +3506,21 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get archival node status (for historical payload data)
+  app.get("/api/admin/archival-status", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const kaspa = await getKaspaService();
+      const archivalStatus = kaspa.getArchivalNodeStatus();
+      res.json({
+        ...archivalStatus,
+        pruningNote: "Post-Crescendo (10 BPS), regular nodes prune transaction payloads after ~30 hours",
+        setupHint: "Set ARCHIVAL_RPC_ENDPOINT environment variable to 'host:port' of an archival node",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
   // Admin: Get current network mode (testnet/mainnet)
   app.get("/api/admin/network-mode", adminAuth, async (_req: Request, res: Response) => {
     try {

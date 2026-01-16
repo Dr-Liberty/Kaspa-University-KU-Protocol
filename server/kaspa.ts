@@ -93,6 +93,9 @@ class KaspaService {
   private wasmRpcConnected: boolean = false;    // WASM RpcClient connection status
   private rpcClient: any = null;                // kaspa-rpc-client (npm) for UTXO fetching
   private wasmRpcClient: any = null;            // WASM RpcClient for PendingTransaction.submit()
+  private archivalRpcClient: any = null;        // Archival node for historical payload data
+  private archivalRpcConnected: boolean = false;
+  private archivalEndpoint: string | null = null;
   private kaspaModule: any = null;
 
   constructor(config: Partial<KaspaConfig> = {}) {
@@ -137,6 +140,9 @@ class KaspaService {
       if (!this.rpcConnected) {
         await this.tryRestApiConnection();
       }
+      
+      // Try archival node connection if configured (for historical payload data)
+      await this.tryArchivalNodeConnection();
 
       // CRITICAL: Only enable live mode if we have kaspa-rpc-client connected and treasury keys
       // WASM RpcClient is no longer required - we use serializeToObject() + rpcClient.submitTransaction()
@@ -556,6 +562,73 @@ class KaspaService {
       console.log(`[Kaspa] REST API failed: ${apiError.message}`);
       console.log("[Kaspa] Running in pending transaction mode");
     }
+  }
+
+  /**
+   * Try to connect to an archival node for historical payload data
+   * 
+   * Post-Crescendo (10 BPS), regular nodes prune transaction payloads after ~30 hours.
+   * Archival nodes retain full history and are needed for historical verification.
+   * 
+   * Configure via ARCHIVAL_RPC_ENDPOINT environment variable:
+   * - Format: "host:port" (e.g., "archival.kaspa.example.com:16110")
+   * - The archival node must be running with --archival flag
+   */
+  private async tryArchivalNodeConnection(): Promise<void> {
+    this.archivalEndpoint = process.env.ARCHIVAL_RPC_ENDPOINT || null;
+    
+    if (!this.archivalEndpoint) {
+      console.log("[Kaspa] No ARCHIVAL_RPC_ENDPOINT configured - historical payload verification limited to ~30 hours");
+      console.log("[Kaspa] Set ARCHIVAL_RPC_ENDPOINT to enable long-term payload data retrieval");
+      return;
+    }
+    
+    try {
+      console.log(`[Kaspa] Trying archival node connection to ${this.archivalEndpoint}...`);
+      
+      const { ClientWrapper } = require("kaspa-rpc-client");
+      
+      const wrapper = new ClientWrapper({
+        hosts: [this.archivalEndpoint],
+        verbose: false
+      });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Archival connection timeout (10s)")), 10000)
+      );
+      
+      await Promise.race([wrapper.initialize(), timeoutPromise]);
+      this.archivalRpcClient = await wrapper.getClient();
+      
+      // Test connection
+      const info = await this.archivalRpcClient.getBlockDagInfo();
+      console.log(`[Kaspa] Archival node connected! Block count: ${info?.blockCount || 'unknown'}`);
+      this.archivalRpcConnected = true;
+      
+    } catch (error: any) {
+      console.log(`[Kaspa] Archival node connection failed: ${error.message}`);
+      console.log("[Kaspa] Historical payload verification will be limited");
+      this.archivalRpcConnected = false;
+    }
+  }
+
+  /**
+   * Get archival node status (for admin dashboard)
+   */
+  getArchivalNodeStatus(): {
+    configured: boolean;
+    endpoint: string | null;
+    connected: boolean;
+    note: string;
+  } {
+    return {
+      configured: !!this.archivalEndpoint,
+      endpoint: this.archivalEndpoint,
+      connected: this.archivalRpcConnected,
+      note: this.archivalEndpoint 
+        ? (this.archivalRpcConnected ? "Connected - historical payloads available" : "Configured but not connected")
+        : "Not configured - set ARCHIVAL_RPC_ENDPOINT for historical data (post-30h)",
+    };
   }
 
   /**
@@ -2384,6 +2457,34 @@ class KaspaService {
         }
       };
 
+      // Helper to try archival node for missing payload
+      const tryArchivalForPayload = async (senderAddress: string | undefined): Promise<{ 
+        exists: boolean; 
+        payload?: string; 
+        senderAddress?: string;
+      } | null> => {
+        if (!this.archivalRpcConnected || !this.archivalRpcClient) return null;
+        
+        try {
+          console.log(`[Kaspa] TX payload pruned, trying archival node...`);
+          const archivalResult = await this.archivalRpcClient.request("getTransactionsByIdsRequest", {
+            transactionIds: [txHash]
+          });
+          
+          if (archivalResult?.transactions?.[0]?.payload) {
+            console.log(`[Kaspa] Archival node returned payload for ${txHash.slice(0, 16)}...`);
+            return {
+              exists: true,
+              payload: archivalResult.transactions[0].payload,
+              senderAddress,
+            };
+          }
+        } catch (archivalError: any) {
+          console.log(`[Kaspa] Archival node query failed: ${archivalError.message}`);
+        }
+        return null;
+      };
+
       // Try RPC client first
       if (this.rpcConnected && this.rpcClient) {
         try {
@@ -2394,6 +2495,13 @@ class KaspaService {
           if (rpcResult?.transactions && rpcResult.transactions.length > 0) {
             const tx = rpcResult.transactions[0];
             const senderAddress = await extractSenderFromTx(tx);
+            
+            // If tx exists but payload is missing/pruned, try archival node
+            if (!tx.payload) {
+              const archivalResult = await tryArchivalForPayload(senderAddress);
+              if (archivalResult) return archivalResult;
+            }
+            
             return { 
               exists: true, 
               payload: tx.payload || undefined,
@@ -2413,6 +2521,13 @@ class KaspaService {
           if (wasmResult?.transactions && wasmResult.transactions.length > 0) {
             const tx = wasmResult.transactions[0];
             const senderAddress = await extractSenderFromTx(tx);
+            
+            // If tx exists but payload is missing/pruned, try archival node
+            if (!tx.payload) {
+              const archivalResult = await tryArchivalForPayload(senderAddress);
+              if (archivalResult) return archivalResult;
+            }
+            
             return { 
               exists: true, 
               payload: tx.payload || undefined,
@@ -2428,12 +2543,23 @@ class KaspaService {
       const txData = await this.apiCall(`/transactions/${txHash}`);
       if (txData) {
         const senderAddress = await extractSenderFromTx(txData);
+        
+        // If REST API returned tx but no payload, try archival node
+        if (!txData.payload) {
+          const archivalResult = await tryArchivalForPayload(senderAddress);
+          if (archivalResult) return archivalResult;
+        }
+        
         return { 
           exists: true, 
           payload: txData.payload || undefined,
           senderAddress,
         };
       }
+
+      // Last resort: try archival node directly if tx not found anywhere
+      const archivalOnlyResult = await tryArchivalForPayload(undefined);
+      if (archivalOnlyResult) return archivalOnlyResult;
 
       return { exists: false };
     } catch (error: any) {
