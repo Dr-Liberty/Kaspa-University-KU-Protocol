@@ -97,6 +97,7 @@ export default function Landing() {
   ];
 
   const benefits = [
+    "Open sourced",
     "KU Protocol achievements",
     "K Protocol public Q&A",
     "Kasia encrypted messaging",
