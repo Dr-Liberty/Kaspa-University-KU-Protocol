@@ -116,6 +116,7 @@ export default function Landing() {
       format: "ku:1:quiz:{data}",
       description: "Records quiz completions on-chain. Each passing score generates a verifiable proof transaction.",
       features: ["Quiz result verification", "Score attestation", "Reward eligibility"],
+      github: "https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol",
     },
     {
       id: "k",
@@ -126,6 +127,7 @@ export default function Landing() {
       format: "k:1:post:{content}",
       description: "Public Q&A indexed by ecosystem K-indexers. Your comments are discoverable across the Kaspa ecosystem.",
       features: ["Ecosystem indexing", "Cross-platform discovery", "Public attribution"],
+      github: "https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol",
     },
     {
       id: "kasia",
@@ -136,6 +138,7 @@ export default function Landing() {
       format: "ciph_msg:1:comm:{encrypted}",
       description: "End-to-end encrypted P2P messaging with handshake-based key exchange. Private conversations on-chain.",
       features: ["E2E encryption", "Handshake key exchange", "Private P2P chat"],
+      github: "https://github.com/K-Kluster/Kasia",
     },
     {
       id: "krc721",
@@ -146,6 +149,7 @@ export default function Landing() {
       format: "{p:\"krc-721\",op:\"mint\",...}",
       description: "Diploma NFTs for graduates. Whitelist-based pricing: 0 KAS for graduates, 20,000 KAS deterrent for others.",
       features: ["Verifiable credentials", "Whitelist pricing", "10,000 max supply"],
+      github: "https://github.com/aspectron/krc721",
     },
   ];
 
@@ -374,7 +378,7 @@ export default function Landing() {
                     {protocol.format}
                   </div>
                   
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 mb-3">
                     {protocol.features.map((feature) => (
                       <span
                         key={feature}
@@ -384,6 +388,17 @@ export default function Landing() {
                       </span>
                     ))}
                   </div>
+                  
+                  <a
+                    href={protocol.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    data-testid={`link-github-${protocol.id}`}
+                  >
+                    <SiGithub className="h-3.5 w-3.5" />
+                    View on GitHub
+                  </a>
                 </div>
               ))}
             </div>
