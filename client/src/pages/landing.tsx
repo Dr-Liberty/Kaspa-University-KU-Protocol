@@ -139,7 +139,7 @@ export default function Landing() {
     },
     {
       id: "krc721",
-      name: "KRC-721",
+      name: "KRC-721 Protocol",
       tagline: "NFT Diplomas",
       icon: Award,
       color: "from-amber-500 to-amber-500/70",
