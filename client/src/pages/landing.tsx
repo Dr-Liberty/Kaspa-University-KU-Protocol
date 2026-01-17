@@ -255,7 +255,7 @@ export default function Landing() {
             <div className="flex items-center justify-center gap-2">
               <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                This is a Beta platform - please use a fresh wallet
+                This is a Beta platform - Please use a fresh Kasware wallet
               </p>
             </div>
           </div>
@@ -570,15 +570,6 @@ export default function Landing() {
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>Built for Kaspathon 2026</span>
-            <span className="text-primary/50">|</span>
-            <a
-              href="https://kaspa.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Learn about Kaspa
-            </a>
             <span className="text-primary/50">|</span>
             <a
               href="https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol"
