@@ -746,7 +746,7 @@ export default function AdminPage() {
               Treasury {treasuryStatus?.needsFunding && "(!)"}
             </TabsTrigger>
             <TabsTrigger value="certificates" data-testid="tab-certificates">
-              Certificates ({certificates.length})
+              Completions ({certificates.length})
             </TabsTrigger>
             <TabsTrigger value="demo" data-testid="tab-demo">
               Demo {demoCerts && demoCerts.count > 0 && `(${demoCerts.count})`}
@@ -773,7 +773,7 @@ export default function AdminPage() {
                   Treasury Status
                 </CardTitle>
                 <CardDescription>
-                  Monitor treasury UTXO availability for KRC-721 whitelisting operations
+                  Treasury funds for quiz rewards (0.1 KAS per course). Diploma NFT minting is user-signed with whitelist pricing.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -806,23 +806,9 @@ export default function AdminPage() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 border rounded-md">
-                        <div className="text-xs text-muted-foreground">Spendable UTXOs</div>
-                        <div className={`text-xl font-bold ${
-                          treasuryStatus.spendableUtxos > 0 ? "text-green-400" : "text-red-400"
-                        }`}>
-                          {treasuryStatus.spendableUtxos}
-                        </div>
-                      </div>
-                      <div className="p-3 border rounded-md">
-                        <div className="text-xs text-muted-foreground">Locked P2SH</div>
-                        <div className="text-xl font-bold text-yellow-400">
-                          {treasuryStatus.lockedP2shUtxos}
-                        </div>
-                      </div>
-                      <div className="p-3 border rounded-md">
-                        <div className="text-xs text-muted-foreground">Spendable Balance</div>
+                        <div className="text-xs text-muted-foreground">Available Balance</div>
                         <div className={`text-xl font-bold ${
                           Number(treasuryStatus.spendableBalance) > 0 ? "text-green-400" : "text-red-400"
                         }`}>
@@ -830,9 +816,11 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="p-3 border rounded-md">
-                        <div className="text-xs text-muted-foreground">Locked Balance</div>
-                        <div className="text-xl font-bold text-yellow-400">
-                          {(Number(treasuryStatus.lockedBalance) / 100000000).toFixed(2)} KAS
+                        <div className="text-xs text-muted-foreground">Spendable UTXOs</div>
+                        <div className={`text-xl font-bold ${
+                          treasuryStatus.spendableUtxos > 0 ? "text-green-400" : "text-red-400"
+                        }`}>
+                          {treasuryStatus.spendableUtxos}
                         </div>
                       </div>
                     </div>
@@ -845,7 +833,7 @@ export default function AdminPage() {
                         {treasuryStatus.address}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Send KAS directly to this address to create spendable P2PK UTXOs for whitelisting operations.
+                        Send KAS to this address to fund quiz rewards (0.1 KAS per course completion).
                       </p>
                     </div>
 
@@ -893,8 +881,8 @@ export default function AdminPage() {
           <TabsContent value="certificates" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Certificates</CardTitle>
-                <CardDescription>View and manage all NFT certificates</CardDescription>
+                <CardTitle>Course Completions</CardTitle>
+                <CardDescription>Individual course completion records. The KRC-721 Diploma NFT is minted separately after completing all 16 courses.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
