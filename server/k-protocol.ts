@@ -2,7 +2,7 @@
  * K Protocol Implementation
  * 
  * Implements the K microblogging protocol for public comments and Q&A.
- * Based on https://github.com/thesheepcat/K-indexer
+ * Based on https://github.com/thesheepcat/K
  * 
  * Protocol format: k:1:{action}:{sender_pubkey}:{sender_signature}:{base64_message}:{mentioned_pubkeys}:{reference_tx_id}
  * 

@@ -194,7 +194,8 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 ## Related Projects
 
 - [KU Protocol](./ku-protocol/) - On-chain educational achievement protocol
-- [Kasia Protocol](https://github.com/aspect-trading/kasia-protocol) - Encrypted P2P messaging
+- [K Protocol](https://github.com/thesheepcat/K) - Decentralized microblogging protocol
+- [Kasia Protocol](https://github.com/K-Kluster/Kasia) - Encrypted P2P messaging
 - [KRC-721](https://github.com/aspectron/krc721) - Kaspa NFT standard
 - [rusty-kaspa](https://github.com/kaspanet/rusty-kaspa) - Kaspa node implementation
 

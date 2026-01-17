@@ -127,7 +127,7 @@ export default function Landing() {
       format: "k:1:post:{content}",
       description: "Public Q&A indexed by ecosystem K-indexers. Your comments are discoverable across the Kaspa ecosystem.",
       features: ["Ecosystem indexing", "Cross-platform discovery", "Public attribution"],
-      github: "https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol",
+      github: "https://github.com/thesheepcat/K",
     },
     {
       id: "kasia",
