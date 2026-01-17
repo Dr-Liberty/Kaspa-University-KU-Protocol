@@ -57,7 +57,7 @@ export default function Landing() {
       icon: Award,
       title: "KRC-721 NFT Diploma",
       description:
-        "Complete all 16 courses to earn your diploma NFT. Whitelist-based minting means graduates pay only network fees while others pay 20,000 KAS.",
+        "Complete all 16 courses to earn your diploma NFT. Whitelist-based minting means graduates pay only network fees and operational costs (Aprox. 20 KAS) while others pay 20,000 KAS as a deterrent for off platform minting.",
     },
     {
       icon: MessagesSquare,
