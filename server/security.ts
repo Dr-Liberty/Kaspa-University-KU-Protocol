@@ -313,6 +313,65 @@ export function getIPStats(ip: string): {
   };
 }
 
+export async function unflagWallet(walletAddress: string): Promise<{ success: boolean; message: string }> {
+  const normalizedWallet = walletAddress.toLowerCase();
+  
+  const binding = walletIpBindingsCache.get(normalizedWallet);
+  if (binding) {
+    binding.flagged = false;
+    walletIpBindingsCache.set(normalizedWallet, binding);
+  }
+  
+  const entries = Array.from(ipActivityCache.entries());
+  for (const [ip, activity] of entries) {
+    if (activity.wallets.has(normalizedWallet)) {
+      activity.flagged = false;
+      activity.flags = activity.flags.filter((f: string) => f !== "MULTI_WALLET_IP");
+      ipActivityCache.set(ip, activity);
+      
+      try {
+        const storage = await getSecurityStorage();
+        await storage.upsertIpActivity({
+          ipAddress: ip,
+          wallets: Array.from(activity.wallets),
+          requestCount: activity.requestCount,
+          flagged: false,
+          flags: activity.flags,
+          isVpn: activity.isVpn,
+          vpnScore: activity.vpnScore,
+        });
+      } catch (error: any) {
+        console.error("[Security] Failed to persist unflag:", error.message);
+      }
+    }
+  }
+  
+  try {
+    const storage = await getSecurityStorage();
+    if (binding) {
+      await storage.upsertWalletIpBinding({
+        walletAddress: normalizedWallet,
+        ips: Array.from(binding.ips),
+        primaryIp: binding.primaryIp,
+        flagged: false,
+      });
+    }
+    
+    await storage.logSecurityEvent({
+      walletAddress: normalizedWallet,
+      ipAddress: "admin",
+      action: "WALLET_UNFLAGGED",
+      flags: [],
+      metadata: { by: "admin" },
+    });
+  } catch (error: any) {
+    console.error("[Security] Failed to persist unflag event:", error.message);
+  }
+  
+  console.log(`[Security] Admin unflagged wallet: ${walletAddress.slice(0, 30)}...`);
+  return { success: true, message: `Wallet ${walletAddress.slice(0, 20)}... unflagged successfully` };
+}
+
 export async function isPaymentTxUsed(txHash: string): Promise<boolean> {
   try {
     const storage = await getSecurityStorage();

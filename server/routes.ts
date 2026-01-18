@@ -719,6 +719,25 @@ export async function registerRoutes(
     res.json({ success: true, message: `All data reset for ${walletAddress}` });
   });
 
+  // Unflag a wallet from anti-Sybil blocks
+  app.post("/api/admin/unflag-wallet", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ error: "walletAddress required" });
+    }
+    
+    const { unflagWallet } = await import("./security.js");
+    const result = await unflagWallet(walletAddress);
+    
+    console.log(`[Admin] Unflagged wallet: ${walletAddress}`);
+    res.json(result);
+  });
+
   // Test WASM RPC with Resolver connection
   app.get("/api/admin/wasm-rpc-test", async (req: Request, res: Response) => {
     const adminKey = req.headers["x-admin-key"];
