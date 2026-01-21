@@ -198,13 +198,13 @@ export default function Landing() {
 
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/courses">
-              <Button size="lg" className="gap-2 text-base min-w-[160px] justify-center" data-testid="button-start-learning">
+              <Button size="lg" className="gap-2 text-base w-[180px] justify-center" data-testid="button-start-learning">
                 Start Learning
                 <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
             <Link href="/analytics">
-              <Button size="lg" className="gap-2 text-base min-w-[160px] justify-center" data-testid="button-analytics-hero">
+              <Button size="lg" className="gap-2 text-base w-[180px] justify-center" data-testid="button-analytics-hero">
                 <BarChart3 className="h-5 w-5" />
                 Analytics
               </Button>
@@ -212,7 +212,7 @@ export default function Landing() {
             <Link href="/dashboard">
               <Button
                 size="lg"
-                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground min-w-[160px] justify-center"
+                className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground w-[180px] justify-center"
                 data-testid="button-dashboard-hero"
               >
                 <LayoutDashboard className="h-5 w-5" />
@@ -224,7 +224,7 @@ export default function Landing() {
                 variant="outline"
                 size="lg"
                 onClick={enterDemoMode}
-                className="gap-2 text-base min-w-[160px] justify-center"
+                className="gap-2 text-base w-[180px] justify-center"
                 data-testid="button-try-demo-hero"
               >
                 <Zap className="h-5 w-5" />
