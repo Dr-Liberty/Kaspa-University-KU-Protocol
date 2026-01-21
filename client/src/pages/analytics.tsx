@@ -187,6 +187,31 @@ export default function Analytics() {
   // Use on-chain data when available (more accurate than database)
   const onChainQuizProofs = explorerData?.transactions?.filter(t => t.type === "quiz").length || 0;
   const onChainKasDistributed = onChainQuizProofs * 0.101;
+  
+  // Build recent verifications from blockchain data (source of truth)
+  const onChainRecentActivity = (explorerData?.transactions || [])
+    .filter((t: any) => t.type === "quiz")
+    .slice(0, 5)
+    .map((tx: any) => ({
+      type: "verification" as const,
+      description: `Quiz verified: '${tx.courseTitle || "Course"}'`,
+      timestamp: "",
+      fullTimestamp: new Date(tx.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
+      txHash: tx.txHash,
+      txStatus: tx.confirmed ? "confirmed" : "pending",
+      score: tx.score,
+      courseTitle: tx.courseTitle,
+      walletAddress: tx.walletAddress,
+      verified: tx.confirmed === true,
+      reconciled: false,
+    }));
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -463,11 +488,14 @@ export default function Analytics() {
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Recent Verifications
+            {onChainRecentActivity.length > 0 && (
+              <Badge variant="outline" className="text-xs ml-2">On-Chain</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {analytics.recentActivity.map((activity, index) => (
+            {(onChainRecentActivity.length > 0 ? onChainRecentActivity : analytics.recentActivity).map((activity, index) => (
               <div
                 key={index}
                 className="flex flex-col gap-2 p-4 rounded-lg border border-border/50"
@@ -558,7 +586,7 @@ export default function Analytics() {
               </div>
             ))}
             
-            {analytics.recentActivity.length === 0 && (
+            {onChainRecentActivity.length === 0 && analytics.recentActivity.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No recent verifications</p>
