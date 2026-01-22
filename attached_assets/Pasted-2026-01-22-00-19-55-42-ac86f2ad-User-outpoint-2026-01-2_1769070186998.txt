@@ -1,0 +1,180 @@
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+"outpoint": {
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+}
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+"blockDaaScore": "336499749",
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+"scriptPublicKey": {
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+"isCoinbase": false
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+[Kaspa] Creating WASM RpcClient with Resolver for payload submission...
+2026-01-22 00:19:55.42
+ac86f2ad
+User
+[Kaspa] Created 1 payload transaction(s) with 148 bytes
+2026-01-22 00:19:55.76
+ac86f2ad
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-22 00:19:55.76
+ac86f2ad
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-22 00:19:55.76
+ac86f2ad
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-22 00:19:55.76
+ac86f2ad
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-22 00:19:55.79
+ac86f2ad
+User
+[Kaspa] Payload transaction 1 submitted: d25604daa8384f978d50f76d874d0c41ce62f13f9b78f887042cc4de8e3e7782
+2026-01-22 00:19:55.79
+ac86f2ad
+User
+[UTXO] Marked 1 UTXOs as spent in tx d25604daa8384f97...
+2026-01-22 00:19:55.79
+ac86f2ad
+User
+[Kaspa] Quiz proof tx: d25604daa8384f978d50f76d874d0c41ce62f13f9b78f887042cc4de8e3e7782
+2026-01-22 00:19:55.96
+ac86f2ad
+User
+[Kasia Client] Getting conversations for kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:55.96
+ac86f2ad
+User
+[Kasia Client] Fetching handshakes by sender from https://indexer.kasia.fyi/handshakes/by-sender?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-22 00:19:55.96
+ac86f2ad
+User
+[Kasia Indexer] Syncing from on-chain for kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:55.96
+ac86f2ad
+User
+[Kasia Client] Fetching handshakes by receiver from https://indexer.kasia.fyi/handshakes/by-receiver?address=kaspa%3Aqrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er&limit=50
+2026-01-22 00:19:56.30
+ac86f2ad
+User
+[Kaspa] Step 2: Sending reward 0.1 KAS to kaspa:qrmzgsh8chv72qdtryp...
+2026-01-22 00:19:56.30
+ac86f2ad
+User
+[Kaspa] Hybrid transaction: 0.1 KAS to kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=862f83a6d3957a45...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=35a67c7af2b88e99...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=2babd7df0e913959...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=6efa5465d7f3b8d0...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Found 7 handshakes received by kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Found 7 handshakes sent by kaspa:qrewk7s6gnzuzx...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=..., tx=1053f8a6cf5dbac3...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=63a76b4339c07934...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Received handshake: from=kaspa:qrewk7s6gnzuzx..., tx=47675ed7803aeb69...
+2026-01-22 00:19:56.31
+ac86f2ad
+User
+[Kasia Client] Found 4 conversations (4 active)
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+"amount": "20000000",
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+"scriptPublicKey": {
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+"outpoint": {
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] RPC entry keys: [ 'address', 'outpoint', 'utxoEntry' ]
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+"utxoEntry": {
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] RAW RPC UTXO structure: {
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] Found 3 UTXOs in treasury
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+},
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] scriptPublicKey type: object
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] utxoEntry keys: [ 'amount', 'scriptPublicKey', 'blockDaaScore', 'isCoinbase' ]
+2026-01-22 00:19:56.34
+ac86f2ad
+User
+[Kaspa] Using 1 reserved entries for transaction
