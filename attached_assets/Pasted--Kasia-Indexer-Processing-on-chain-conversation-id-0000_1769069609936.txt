@@ -1,0 +1,158 @@
+
+[Kasia Indexer] Processing on-chain conversation: id=00000000539b4351, initiator=kaspa:qzkugh57jyns7y..., recipient=kaspa:qrewk7s6gnzuzx..., status=active, alias=none
+2026-01-22 00:13:02.43
+ac86f2ad
+User
+[Kaspa] WASM RpcClient connected for payload transaction
+2026-01-22 00:13:02.43
+ac86f2ad
+User
+[Kaspa] Signing payload transaction 1/1...
+2026-01-22 00:13:02.43
+ac86f2ad
+User
+[Kaspa] Submitting payload via WASM SDK...
+2026-01-22 00:13:02.43
+ac86f2ad
+User
+[Kaspa] Payload transaction 1 signed
+2026-01-22 00:13:02.46
+ac86f2ad
+User
+[Kaspa] Payload transaction 1 submitted: f466803163434331665283bd71ee2fb59d73a96454681925e665e27ca1c67fcb
+2026-01-22 00:13:02.47
+ac86f2ad
+User
+[UTXO] Marked 1 UTXOs as spent in tx f466803163434331...
+2026-01-22 00:13:02.47
+ac86f2ad
+User
+[Kaspa] Quiz proof tx: f466803163434331665283bd71ee2fb59d73a96454681925e665e27ca1c67fcb
+2026-01-22 00:13:02.97
+ac86f2ad
+User
+[Kaspa] Step 2: Sending reward 0.1 KAS to kaspa:qrmzgsh8chv72qdtryp...
+2026-01-22 00:13:02.97
+ac86f2ad
+User
+[Kaspa] Hybrid transaction: 0.1 KAS to kaspa:qrmzgsh8chv72qdtrypteqy8zwumf2xm97zrt5wl46ns56d7uqeuceycljdel
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] Found 2 UTXOs in treasury
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"address": "kaspa:qrewk7s6gnzuzxvces8t7v669k2w4p9djhmuy62294mmgtj3d0yluueqwv2er",
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"scriptPublicKey": "20f2eb7a1a44c5c11998cc0ebf335a2d94ea84ad95f7c2694a2d77b42e516bc9feac"
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"utxoEntry": {
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"amount": "36806410921",
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"transactionId": "c24805aac664266632ebc9f9efab51dda97f3f5f634bcec0ae2c73354bc13259",
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] RAW RPC UTXO structure: {
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"version": 0,
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"blockDaaScore": "336494324",
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"index": 0
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"isCoinbase": false
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+},
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] RPC entry keys: [ 'address', 'outpoint', 'utxoEntry' ]
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+}
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] utxoEntry keys: [ 'amount', 'scriptPublicKey', 'blockDaaScore', 'isCoinbase' ]
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"outpoint": {
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+"scriptPublicKey": {
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+},
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+}
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] scriptPublicKey keys: [ 'version', 'scriptPublicKey' ]
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] scriptPublicKey type: object
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[Kaspa] Total treasury balance: 368.0735 KAS
+2026-01-22 00:13:03.13
+ac86f2ad
+User
+[UTXO] Insufficient funds: need 10010000, available 943182
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+[Kaspa] Transaction failed: Failed to reserve UTXOs for 0.1001 KAS - concurrent transaction limit reached Error: Failed to reserve UTXOs for 0.1001 KAS - concurrent transaction limit reached
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+at async /home/runner/workspace/dist/index.cjs:1181:90003
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+[Kaspa] All transaction methods failed: Transaction failed: Failed to reserve UTXOs for 0.1001 KAS - concurrent transaction limit reached
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+at async Ul.sendReward (/home/runner/workspace/dist/index.cjs:1062:43887)
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-22 00:13:03.14
+ac86f2ad
+User
+at Ul.sendTransactionHybrid (/home/runner/workspace/dist/index.cjs:1062:47193)
+2026-01-22 00:13:03.38
+ac86f2ad
+User
+[Claim] Failed: Transaction failed: Failed to reserve UTXOs for 0.1001 KAS - concurrent transaction limit reached

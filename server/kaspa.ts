@@ -1195,25 +1195,45 @@ class KaspaService {
         proofTxHash = await this.sendPayloadTransaction(quizPayload, recipientAddress);
         console.log(`[Kaspa] Quiz proof tx: ${proofTxHash}`);
         
-        // Small delay between transactions to let UTXO manager update
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for UTXO set to update (mempool needs to process and change UTXO needs to be visible)
+        // Kaspa has fast block times (~1 second), so we wait a bit longer to ensure change is available
+        console.log(`[Kaspa] Waiting for UTXO refresh after quiz proof tx...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Step 2: Send reward to user (NO payload - keeps storage mass low)
+        // Retry up to 3 times with increasing delays if UTXO reservation fails
         console.log(`[Kaspa] Step 2: Sending reward ${amountKas} KAS to ${recipientAddress.slice(0, 25)}...`);
-        const rewardResult = await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score);
-        
-        if (rewardResult.success) {
-          console.log(`[Kaspa] Reward sent: ${rewardResult.txHash}, proof: ${proofTxHash}`);
+        let rewardResult: TransactionResult = { success: false, error: "Not attempted" };
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            rewardResult = await this.sendTransactionHybrid(recipientAddress, amountKas, lessonId, score);
+            if (rewardResult.success) break;
+            
+            // If failed due to UTXO issues, wait and retry
+            if (rewardResult.error?.includes("UTXO") || rewardResult.error?.includes("concurrent")) {
+              console.log(`[Kaspa] Reward attempt ${attempt} failed (UTXO issue), waiting before retry...`);
+              await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+            } else {
+              break; // Non-UTXO error, don't retry
+            }
+          } catch (err: any) {
+            if (attempt === 3) throw err;
+            console.log(`[Kaspa] Reward attempt ${attempt} exception: ${err.message}, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          }
+        }
+        if (rewardResultFinal.success) {
+          console.log(`[Kaspa] Reward sent: ${rewardResultFinal.txHash}, proof: ${proofTxHash}`);
           // Return the reward tx hash (user cares about this one)
           return { 
             success: true, 
-            txHash: rewardResult.txHash,
+            txHash: rewardResultFinal.txHash,
             proofTxHash // Include proof tx for verification
           };
         } else {
           // Reward failed after proof succeeded - return failure but include proof hash
           console.error(`[Kaspa] Reward tx failed after proof succeeded. Proof: ${proofTxHash}`);
-          lastError = rewardResult.error || "Reward transaction failed";
+          lastError = rewardResultFinal.error || "Reward transaction failed";
           // Fall through to error return, but we'll include proofTxHash there too
         }
       } catch (error: any) {
