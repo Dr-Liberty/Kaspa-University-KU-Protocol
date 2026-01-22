@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap, MessageSquare } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw, Check, Lock, AlertTriangle, FileText, Database, Shield, Wallet, Zap, MessageSquare, Layers, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Certificate {
@@ -503,6 +503,35 @@ export default function AdminPage() {
     },
   });
 
+  // UTXO consolidation mutation
+  const [consolidationResult, setConsolidationResult] = useState<string | null>(null);
+  const consolidateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/consolidate-utxos", {
+        method: "POST",
+        headers,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setConsolidationResult(data.message || "Consolidation completed");
+      toast({
+        title: data.success ? "Consolidation Complete" : "Consolidation Issue",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      refetchTreasury();
+    },
+    onError: (error: any) => {
+      setConsolidationResult(`Error: ${error.message}`);
+      toast({
+        title: "Consolidation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const refreshAll = () => {
     refetchStats();
     refetchCerts();
@@ -858,7 +887,26 @@ export default function AdminPage() {
                       >
                         Copy Address
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => consolidateMutation.mutate()}
+                        disabled={consolidateMutation.isPending || treasuryStatus.totalUtxos <= 5}
+                        data-testid="button-consolidate-utxos"
+                      >
+                        {consolidateMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <Layers className="w-4 h-4 mr-1" />
+                        )}
+                        Consolidate UTXOs ({treasuryStatus.totalUtxos})
+                      </Button>
                     </div>
+                    {consolidationResult && (
+                      <p className="text-xs text-muted-foreground mt-2" title={consolidationResult}>
+                        Last result: {consolidationResult}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center text-muted-foreground py-8">

@@ -2577,7 +2577,8 @@ class KaspaService {
     message: string;
     utxosBefore: number;
     utxosAfter?: number;
-    txHash?: string;
+    txHashes?: string[];
+    batchesProcessed?: number;
     error?: string;
   }> {
     // Check treasury configuration (same as sendReward)
@@ -2602,8 +2603,8 @@ class KaspaService {
         addresses: [this.treasuryAddress]
       });
 
-      const entries = utxoResult?.entries || [];
-      const utxosBefore = entries.length;
+      const allEntries = utxoResult?.entries || [];
+      const utxosBefore = allEntries.length;
 
       if (utxosBefore <= 5) {
         return { 
@@ -2613,7 +2614,7 @@ class KaspaService {
         };
       }
 
-      console.log(`[Kaspa] Starting UTXO consolidation: ${utxosBefore} UTXOs to consolidate`);
+      console.log(`[Kaspa] Starting UTXO consolidation: ${utxosBefore} UTXOs to consolidate (batching ALL)`);
 
       const { 
         PrivateKey, 
@@ -2623,189 +2624,153 @@ class KaspaService {
         Resolver,
       } = this.kaspaModule;
 
-      // Build UTXO entries for WASM SDK using IUtxoEntry flat format (same as reward sending)
-      // For proper consolidation (N→1), storage mass penalty doesn't apply
       // Compute mass limit: ~83 inputs max (each input ~1118 grams, limit 100k)
       // Use 50 to be safe and leave room for output mass
       const MAX_UTXOS_PER_TX = 50;
-      const utxosToConsolidate = entries.slice(0, MAX_UTXOS_PER_TX);
       
-      const wasmEntries: any[] = [];
-      let consolidatedAmount = BigInt(0);
+      // Process ALL UTXOs in batches
+      const allTxHashes: string[] = [];
+      let totalConsolidated = 0;
+      let batchNum = 0;
       
-      // Log first UTXO structure for debugging
-      if (utxosToConsolidate.length > 0) {
-        const sample = utxosToConsolidate[0];
-        console.log(`[Kaspa] Sample UTXO structure:`, JSON.stringify({
-          outpoint: sample.outpoint,
-          utxoEntry: sample.utxoEntry ? {
-            amount: sample.utxoEntry.amount,
-            scriptPublicKey: sample.utxoEntry.scriptPublicKey,
-            blockDaaScore: sample.utxoEntry.blockDaaScore,
-          } : undefined,
-          address: sample.address,
-        }, (_, v) => typeof v === 'bigint' ? v.toString() : v).slice(0, 1000));
-      }
-
-      for (const e of utxosToConsolidate) {
-        try {
-          // Extract scriptPublicKey - RPC response has nested structure:
-          // utxoEntry.scriptPublicKey.scriptPublicKey (the inner one is the hex script)
-          const spk = e.utxoEntry?.scriptPublicKey || e.scriptPublicKey;
-          
-          // Get hex string for script - note the nested 'scriptPublicKey' field
-          let spkHex = "";
-          if (typeof spk === "string") {
-            spkHex = spk;
-          } else if (spk?.scriptPublicKey) {
-            // RPC format: scriptPublicKey.scriptPublicKey contains the hex
-            spkHex = typeof spk.scriptPublicKey === "string" ? spk.scriptPublicKey : 
-                     String(spk.scriptPublicKey);
-          } else if (spk?.script) {
-            // WASM SDK format: scriptPublicKey.script
-            spkHex = typeof spk.script === "string" ? spk.script : String(spk.script);
-          } else if (spk?.toString) {
-            spkHex = spk.toString();
-          }
-          
-          // Skip if no valid script
-          if (!spkHex || spkHex === "[object Object]" || spkHex.length < 10) {
-            console.warn(`[Kaspa] Skipping UTXO with invalid scriptPublicKey: ${spkHex}`);
-            continue;
-          }
-          
-          const spkVersion = e.utxoEntry?.scriptPublicKey?.version ?? 
-                            e.scriptPublicKey?.version ?? 0;
-          
-          const amount = BigInt(e.utxoEntry?.amount || e.amount || 0);
-          consolidatedAmount += amount;
-          
-          // Build IUtxoEntry with FLAT structure (per kaspa.d.ts)
-          const entry = {
-            address: e.address || this.treasuryAddress,
-            outpoint: {
-              transactionId: e.outpoint?.transactionId || "",
-              index: e.outpoint?.index ?? 0
-            },
-            amount,
-            scriptPublicKey: {
-              version: spkVersion,
-              script: spkHex
-            },
-            blockDaaScore: BigInt(e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0),
-            isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
-          };
-          
-          wasmEntries.push(entry);
-        } catch (err: any) {
-          console.warn(`[Kaspa] Skipping malformed UTXO: ${err.message}`);
-        }
-      }
-
-      if (wasmEntries.length < 2) {
-        return { 
-          success: true, 
-          message: "Not enough valid UTXOs to consolidate", 
-          utxosBefore 
-        };
-      }
-
-      console.log(`[Kaspa] Prepared ${wasmEntries.length} UTXOs for consolidation, total: ${consolidatedAmount} sompi`);
-
-      // For proper consolidation (N→1), send ALL funds to ONE output minus fees
-      // KIP-0009: No storage mass penalty when inputs ≥ outputs
-      // Reserve ~0.01 KAS for network fee (generous estimate)
-      const estimatedFee = kaspaToSompi("0.01");
-      const outputAmount = consolidatedAmount - estimatedFee;
-
-      if (outputAmount <= BigInt(0)) {
-        return { 
-          success: false, 
-          message: "Insufficient amount for consolidation (need fees)", 
-          utxosBefore 
-        };
-      }
-
-      // Create consolidation: N inputs → 1 output (all to self)
-      console.log(`[Kaspa] Creating consolidation: ${wasmEntries.length} inputs -> 1 output (${outputAmount} sompi)`);
-      
-      // For true consolidation (N→1), use ONE output with all value
-      // No change address needed - everything goes to the single output
-      const txSettings: any = {
-        networkId: "mainnet",
-        entries: wasmEntries,
-        outputs: [{
-          address: this.treasuryAddress,
-          amount: outputAmount,
-        }],
-        changeAddress: this.treasuryAddress,
-        priorityFee: BigInt(0), // Fee comes from the difference
-      };
-
-      let result;
-      try {
-        result = await createTransactions(txSettings);
-      } catch (createErr: any) {
-        console.error(`[Kaspa] Consolidation createTransactions error:`, createErr?.message || createErr);
-        throw new Error(`createTransactions failed: ${createErr?.message || String(createErr)}`);
-      }
-      
-      const { transactions } = result;
-
-      if (!transactions || transactions.length === 0) {
-        return { 
-          success: false, 
-          message: "Failed to create consolidation transaction", 
-          utxosBefore 
-        };
-      }
-
-      // Sign all transactions with PrivateKey object (same pattern as reward sending)
-      const privateKeyHex = this.treasuryPrivateKey.toString('hex');
-      const privateKey = new PrivateKey(privateKeyHex);
-      
-      for (const tx of transactions) {
-        tx.sign([privateKey]);
-      }
-      console.log(`[Kaspa] Signed ${transactions.length} consolidation transaction(s)`);
-
-      // Submit via WASM RPC - use string networkId directly
+      // Setup WASM RPC once for all batches
       const network = this.config.network === "testnet-10" ? "testnet-10" : "mainnet";
       const resolver = new Resolver();
       const wasmRpc = new RpcClient({
         resolver,
         networkId: network,
       });
-
       await wasmRpc.connect();
-      let finalTxHash: string | null = null;
-
+      
+      const privateKeyHex = this.treasuryPrivateKey.toString('hex');
+      const privateKey = new PrivateKey(privateKeyHex);
+      
       try {
-        for (const tx of transactions) {
-          const txId = await tx.submit(wasmRpc);
-          finalTxHash = txId;
-          console.log(`[Kaspa] Consolidation tx submitted: ${txId}`);
+        // Process in batches
+        for (let i = 0; i < allEntries.length; i += MAX_UTXOS_PER_TX) {
+          const batch = allEntries.slice(i, i + MAX_UTXOS_PER_TX);
+          if (batch.length < 2) continue; // Need at least 2 UTXOs to consolidate
+          
+          batchNum++;
+          console.log(`[Kaspa] Processing batch ${batchNum}: ${batch.length} UTXOs`);
+          
+          const wasmEntries: any[] = [];
+          let batchAmount = BigInt(0);
+          
+          for (const e of batch) {
+            try {
+              const spk = e.utxoEntry?.scriptPublicKey || e.scriptPublicKey;
+              
+              let spkHex = "";
+              if (typeof spk === "string") {
+                spkHex = spk;
+              } else if (spk?.scriptPublicKey) {
+                spkHex = typeof spk.scriptPublicKey === "string" ? spk.scriptPublicKey : 
+                         String(spk.scriptPublicKey);
+              } else if (spk?.script) {
+                spkHex = typeof spk.script === "string" ? spk.script : String(spk.script);
+              } else if (spk?.toString) {
+                spkHex = spk.toString();
+              }
+              
+              if (!spkHex || spkHex === "[object Object]" || spkHex.length < 10) {
+                continue;
+              }
+              
+              const spkVersion = e.utxoEntry?.scriptPublicKey?.version ?? 
+                                e.scriptPublicKey?.version ?? 0;
+              
+              const amount = BigInt(e.utxoEntry?.amount || e.amount || 0);
+              batchAmount += amount;
+              
+              wasmEntries.push({
+                address: e.address || this.treasuryAddress,
+                outpoint: {
+                  transactionId: e.outpoint?.transactionId || "",
+                  index: e.outpoint?.index ?? 0
+                },
+                amount,
+                scriptPublicKey: {
+                  version: spkVersion,
+                  script: spkHex
+                },
+                blockDaaScore: BigInt(e.utxoEntry?.blockDaaScore || e.blockDaaScore || 0),
+                isCoinbase: e.utxoEntry?.isCoinbase || e.isCoinbase || false
+              });
+            } catch (err: any) {
+              console.warn(`[Kaspa] Skipping malformed UTXO: ${err.message}`);
+            }
+          }
+          
+          if (wasmEntries.length < 2) continue;
+          
+          // Reserve fee per batch
+          const estimatedFee = kaspaToSompi("0.01");
+          const outputAmount = batchAmount - estimatedFee;
+          
+          if (outputAmount <= BigInt(0)) continue;
+          
+          console.log(`[Kaspa] Batch ${batchNum}: ${wasmEntries.length} inputs -> 1 output`);
+          
+          const txSettings: any = {
+            networkId: "mainnet",
+            entries: wasmEntries,
+            outputs: [{
+              address: this.treasuryAddress,
+              amount: outputAmount,
+            }],
+            changeAddress: this.treasuryAddress,
+            priorityFee: BigInt(0),
+          };
+          
+          try {
+            const result = await createTransactions(txSettings);
+            const { transactions } = result;
+            
+            if (!transactions || transactions.length === 0) continue;
+            
+            for (const tx of transactions) {
+              tx.sign([privateKey]);
+              const txId = await tx.submit(wasmRpc);
+              allTxHashes.push(txId);
+              console.log(`[Kaspa] Batch ${batchNum} tx submitted: ${txId}`);
+            }
+            
+            totalConsolidated += wasmEntries.length;
+            
+            // Small delay between batches to avoid overwhelming the network
+            if (i + MAX_UTXOS_PER_TX < allEntries.length) {
+              await new Promise(r => setTimeout(r, 500));
+            }
+          } catch (batchErr: any) {
+            console.warn(`[Kaspa] Batch ${batchNum} failed: ${batchErr.message}`);
+            // Continue with other batches
+          }
         }
       } finally {
         try { await wasmRpc.disconnect(); } catch { }
       }
 
-      if (!finalTxHash) {
+      if (allTxHashes.length === 0) {
         return { 
           success: false, 
-          message: "Transaction submission failed - no hash returned", 
+          message: "No transactions were submitted", 
           utxosBefore 
         };
       }
 
-      console.log(`[Kaspa] UTXO consolidation complete: ${wasmEntries.length} UTXOs -> 1 UTXO`);
+      // Each batch of N UTXOs becomes 1 UTXO
+      const utxosAfter = utxosBefore - totalConsolidated + allTxHashes.length;
+      
+      console.log(`[Kaspa] UTXO consolidation complete: ${totalConsolidated} UTXOs -> ${allTxHashes.length} UTXOs`);
       
       return {
         success: true,
-        message: `Consolidated ${wasmEntries.length} UTXOs into 1. Remaining: ${utxosBefore - wasmEntries.length + 1}`,
+        message: `Consolidated ${totalConsolidated} UTXOs into ${allTxHashes.length} (${batchNum} batches). Remaining: ~${utxosAfter}`,
         utxosBefore,
-        utxosAfter: utxosBefore - wasmEntries.length + 1,
-        txHash: finalTxHash,
+        utxosAfter,
+        txHashes: allTxHashes,
+        batchesProcessed: batchNum,
       };
     } catch (error: any) {
       console.error(`[Kaspa] UTXO consolidation failed: ${error.message}`);
