@@ -792,6 +792,59 @@ export async function registerRoutes(
     }
   });
 
+  // Get UTXO status for treasury wallet
+  app.get("/api/admin/utxo-status", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    try {
+      const kaspaService = await getKaspaService();
+      const utxoInfo = await kaspaService.getUtxoCount();
+      
+      res.json({
+        success: true,
+        utxoCount: utxoInfo.count,
+        totalBalance: utxoInfo.totalBalance,
+        needsConsolidation: utxoInfo.count > 50,
+        recommendation: utxoInfo.count > 50 
+          ? "Run POST /api/admin/consolidate-utxos to reduce UTXO count" 
+          : "UTXO count is healthy",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  // Consolidate UTXOs in treasury wallet (fixes storage mass limit errors)
+  app.post("/api/admin/consolidate-utxos", async (req: Request, res: Response) => {
+    const adminKey = req.headers["x-admin-key"];
+    if (adminKey !== process.env.ADMIN_API_KEY && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    try {
+      const kaspaService = await getKaspaService();
+      const result = await kaspaService.consolidateUtxos();
+      
+      if (result.success) {
+        console.log(`[Admin] UTXO consolidation: ${result.message}`);
+        res.json(result);
+      } else {
+        console.error(`[Admin] UTXO consolidation failed: ${result.message}`);
+        res.status(500).json(result);
+      }
+    } catch (error: any) {
+      console.error("[Admin] UTXO consolidation error:", error.message);
+      res.status(500).json({ 
+        success: false, 
+        error: sanitizeError(error),
+        message: "UTXO consolidation failed",
+      });
+    }
+  });
+
   // Transaction monitoring with bitmasks
   app.get("/api/admin/tx-monitor", async (req: Request, res: Response) => {
     const adminKey = req.headers["x-admin-key"];

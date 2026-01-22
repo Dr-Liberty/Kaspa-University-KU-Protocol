@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,8 +19,13 @@ import {
   CheckCircle2,
   FileQuestion,
   MessageSquare,
+  Loader2,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   AreaChart,
   Area,
@@ -175,6 +180,9 @@ interface ExplorerScanResult {
 }
 
 export default function Analytics() {
+  const { toast } = useToast();
+  const [consolidationResult, setConsolidationResult] = useState<string | null>(null);
+  
   const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/analytics"],
   });
@@ -182,6 +190,29 @@ export default function Analytics() {
   const { data: explorerData } = useQuery<ExplorerScanResult>({
     queryKey: ["/api/explorer/scan"],
     refetchInterval: 30000,
+  });
+
+  const consolidateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/consolidate-utxos");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setConsolidationResult(data.message || "Consolidation completed");
+      toast({
+        title: data.success ? "Consolidation Complete" : "Consolidation Issue",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      setConsolidationResult(`Error: ${error.message}`);
+      toast({
+        title: "Consolidation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Use on-chain data when available (more accurate than database)
@@ -229,13 +260,42 @@ export default function Analytics() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold" data-testid="text-analytics-title">
-          Platform Analytics
-        </h1>
-        <p className="text-muted-foreground">
-          Real-time insights into Kaspa University learning activity
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold" data-testid="text-analytics-title">
+            Platform Analytics
+          </h1>
+          <p className="text-muted-foreground">
+            Real-time insights into Kaspa University learning activity
+          </p>
+        </div>
+        
+        <Card className="p-4 border-dashed">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Admin Tools</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => consolidateMutation.mutate()}
+                disabled={consolidateMutation.isPending}
+                data-testid="button-consolidate-utxos"
+              >
+                {consolidateMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Layers className="h-4 w-4 mr-2" />
+                )}
+                Consolidate UTXOs
+              </Button>
+            </div>
+            {consolidationResult && (
+              <p className="text-xs text-muted-foreground max-w-xs truncate" title={consolidationResult}>
+                {consolidationResult}
+              </p>
+            )}
+          </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
