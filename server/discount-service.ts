@@ -732,9 +732,22 @@ class DiscountService {
     for (const utxo of allUtxos) {
       const amount = BigInt(utxo.utxoEntry?.amount ?? utxo.amount ?? 0);
       const spkRaw = utxo.utxoEntry?.scriptPublicKey ?? utxo.scriptPublicKey ?? "";
-      const scriptHex = typeof spkRaw === 'object' && spkRaw.scriptPublicKey 
-        ? spkRaw.scriptPublicKey 
-        : spkRaw;
+      
+      // Extract hex script from various possible formats:
+      // - RPC format: scriptPublicKey.scriptPublicKey (hex string)
+      // - WASM SDK format: scriptPublicKey.script (hex string)
+      // - Direct string: just the hex
+      let scriptHex = "";
+      if (typeof spkRaw === 'string') {
+        scriptHex = spkRaw;
+      } else if (typeof spkRaw === 'object' && spkRaw !== null) {
+        // Try various field names
+        scriptHex = spkRaw.scriptPublicKey || spkRaw.script || "";
+        // Handle nested object case
+        if (typeof scriptHex === 'object') {
+          scriptHex = (scriptHex as any).scriptPublicKey || (scriptHex as any).script || "";
+        }
+      }
       
       // Kaspa P2PK (pay-to-public-key) scripts use 32-byte x-only Schnorr pubkeys:
       // - 68 hex chars (34 bytes): 0x20 (length prefix 32) + 32-byte pubkey + OP_CHECKSIG (0xac)
