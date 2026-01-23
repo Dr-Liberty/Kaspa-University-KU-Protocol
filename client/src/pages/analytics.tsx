@@ -43,6 +43,7 @@ interface AnalyticsData {
     totalCertificates: number;
     totalKasDistributed: number;
     totalQuizzes: number;
+    totalCourseCompletions: number;
     avgScore: number;
   };
   activityData: Array<{
@@ -268,11 +269,18 @@ export default function Analytics() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard
+          title="Course Completions"
+          value={analytics.overview.totalCourseCompletions}
+          icon={BookOpen}
+          description="Unique user+course pairs"
+        />
         <StatCard
           title="Quizzes Completed"
           value={analytics.overview.totalQuizzes}
           icon={Zap}
+          description="On-chain proofs"
         />
         <StatCard
           title="Average Score"

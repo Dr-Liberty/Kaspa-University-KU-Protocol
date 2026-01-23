@@ -375,8 +375,42 @@ export async function registerRoutes(
       const kuStats = kuIndexer.getStats();
       stats.quizProofsOnChain = kuStats.totalQuizProofs;
       
-      // Get on-chain quiz proofs for accurate data
-      const onChainQuizProofs = kuIndexer.getQuizProofs();
+      // Get on-chain quiz proofs directly from Kaspa API (same as explorer/scan)
+      let onChainQuizProofs: Array<{walletAddress?: string, courseId?: string, timestamp?: number}> = [];
+      try {
+        const kaspaService = await getKaspaService();
+        const treasuryAddress = kaspaService.getTreasuryAddress();
+        if (treasuryAddress) {
+          const apiUrl = `https://api.kaspa.org/addresses/${treasuryAddress}/full-transactions?limit=100`;
+          const response = await fetch(apiUrl);
+          if (response.ok) {
+            const transactions = await response.json();
+            for (const tx of transactions) {
+              if (tx.payload) {
+                const parsed = parseKUPayload(tx.payload);
+                if (parsed && parsed.type === 'quiz' && parsed.quiz) {
+                  onChainQuizProofs.push({
+                    walletAddress: parsed.quiz.walletAddress,
+                    courseId: parsed.quiz.courseId,
+                    timestamp: tx.block_time || Date.now()
+                  });
+                }
+              }
+            }
+            stats.quizProofsOnChain = onChainQuizProofs.length;
+          }
+        }
+      } catch (e) {
+        console.log('[Analytics] Blockchain fetch failed, using indexer');
+      }
+      
+      // Fallback to indexer if API fetch returned empty
+      if (onChainQuizProofs.length === 0) {
+        onChainQuizProofs = kuIndexer.getAllProofs(500, 0);
+        if (onChainQuizProofs.length > 0) {
+          stats.quizProofsOnChain = onChainQuizProofs.length;
+        }
+      }
       
       const courses = await storage.getCourses();
       const topLearnersData = await storage.getTopLearners(5);
@@ -566,7 +600,8 @@ export async function registerRoutes(
           totalCourses: stats.coursesAvailable,
           totalCertificates: stats.certificatesMinted,
           totalKasDistributed: stats.totalKasDistributed,
-          totalQuizzes,
+          totalQuizzes: onChainQuizProofs.length || totalQuizzes,
+          totalCourseCompletions,
           avgScore,
           quizProofsOnChain: stats.quizProofsOnChain || 0,
         },
@@ -577,7 +612,10 @@ export async function registerRoutes(
         recentActivity: recentActivity.slice(0, 5),
       };
       
-      analyticsCache.set("platform_analytics", analyticsData);
+      // Only cache if we have real data (avoid caching zeros while waiting for blockchain)
+      if (onChainQuizProofs.length > 0 || allQuizResults.length > 0) {
+        analyticsCache.set("platform_analytics", analyticsData);
+      }
       res.json(analyticsData);
     } catch (error) {
       console.error("[Analytics] Error fetching analytics:", error);
