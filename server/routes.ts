@@ -375,6 +375,9 @@ export async function registerRoutes(
       const kuStats = kuIndexer.getStats();
       stats.quizProofsOnChain = kuStats.totalQuizProofs;
       
+      // Get on-chain quiz proofs for accurate data
+      const onChainQuizProofs = kuIndexer.getQuizProofs();
+      
       const courses = await storage.getCourses();
       const topLearnersData = await storage.getTopLearners(5);
       const totalQuizzes = await storage.getTotalQuizResults();
@@ -384,13 +387,35 @@ export async function registerRoutes(
       const recentQuizResults = await storage.getRecentQuizResults(5);
       const recentQAPosts = await storage.getRecentQAPosts(5);
       
-      // Build activity data from ALL quiz results (real data)
+      // Calculate total course completions (unique user+course combinations from on-chain)
+      const courseCompletionsSet = new Set<string>();
+      onChainQuizProofs.forEach(proof => {
+        if (proof.walletAddress && proof.courseId) {
+          courseCompletionsSet.add(`${proof.walletAddress}:${proof.courseId}`);
+        }
+      });
+      const totalCourseCompletions = courseCompletionsSet.size;
+      
+      // Build activity data from on-chain quiz proofs (real blockchain data)
       const activityData = (() => {
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const dayStats = new Map<string, { users: Set<string>, completions: number }>();
         
         days.forEach(d => dayStats.set(d, { users: new Set(), completions: 0 }));
         
+        // Use on-chain quiz proofs for accurate activity data
+        onChainQuizProofs.forEach(proof => {
+          if (proof.timestamp) {
+            const dayName = days[new Date(proof.timestamp).getDay()];
+            const dayStat = dayStats.get(dayName)!;
+            if (proof.walletAddress) {
+              dayStat.users.add(proof.walletAddress);
+            }
+            dayStat.completions += 1;
+          }
+        });
+        
+        // Also include DB quiz results for completeness
         allQuizResults.forEach(result => {
           const dayName = days[new Date(result.completedAt).getDay()];
           const dayStat = dayStats.get(dayName)!;
