@@ -14,6 +14,8 @@ import type {
   CourseTokenCounter,
   MintReservation,
   InsertMintReservation,
+  OnChainQuizProof,
+  InsertOnChainQuizProof,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
@@ -847,6 +849,34 @@ export class DbStorage implements IStorage {
       totalMinted: row.totalMinted,
       updatedAt: row.updatedAt,
     }));
+  }
+
+  // On-chain quiz proof storage (in-memory for now, DB table can be added later)
+  private onChainQuizProofsCache: Map<string, OnChainQuizProof> = new Map();
+
+  async saveOnChainQuizProof(proof: InsertOnChainQuizProof): Promise<OnChainQuizProof> {
+    const existing = Array.from(this.onChainQuizProofsCache.values())
+      .find(p => p.txHash === proof.txHash);
+    if (existing) return existing;
+    
+    const newProof: OnChainQuizProof = {
+      id: randomUUID(),
+      ...proof,
+      syncedAt: new Date(),
+    };
+    this.onChainQuizProofsCache.set(newProof.id, newProof);
+    return newProof;
+  }
+
+  async getOnChainQuizProofs(limit: number = 500): Promise<OnChainQuizProof[]> {
+    return Array.from(this.onChainQuizProofsCache.values())
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
+  }
+
+  async getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined> {
+    return Array.from(this.onChainQuizProofsCache.values())
+      .find(p => p.txHash === txHash);
   }
 
   async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {

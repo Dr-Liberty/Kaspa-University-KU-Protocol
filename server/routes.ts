@@ -376,7 +376,9 @@ export async function registerRoutes(
       stats.quizProofsOnChain = kuStats.totalQuizProofs;
       
       // Get on-chain quiz proofs directly from Kaspa API (same as explorer/scan)
+      // Also save to DB as fallback for when blockchain data is pruned
       let onChainQuizProofs: Array<{walletAddress?: string, courseId?: string, timestamp?: number}> = [];
+      let fetchedFromBlockchain = false;
       try {
         const kaspaService = await getKaspaService();
         const treasuryAddress = kaspaService.getTreasuryAddress();
@@ -389,25 +391,44 @@ export async function registerRoutes(
               if (tx.payload) {
                 const parsed = parseKUPayload(tx.payload);
                 if (parsed && parsed.type === 'quiz' && parsed.quiz) {
-                  onChainQuizProofs.push({
+                  const proofData = {
                     walletAddress: parsed.quiz.walletAddress,
                     courseId: parsed.quiz.courseId,
                     timestamp: tx.block_time || Date.now()
-                  });
+                  };
+                  onChainQuizProofs.push(proofData);
+                  
+                  // Save to DB as fallback (deduplicates by txHash)
+                  storage.saveOnChainQuizProof({
+                    txHash: tx.transaction_id,
+                    walletAddress: parsed.quiz.walletAddress,
+                    courseId: parsed.quiz.courseId,
+                    lessonId: parsed.quiz.lessonId,
+                    score: parsed.quiz.score,
+                    maxScore: parsed.quiz.maxScore,
+                    timestamp: tx.block_time || Date.now(),
+                    contentHash: parsed.quiz.contentHash,
+                  }).catch(() => {}); // Fire and forget, don't block
                 }
               }
             }
             stats.quizProofsOnChain = onChainQuizProofs.length;
+            fetchedFromBlockchain = true;
           }
         }
       } catch (e) {
-        console.log('[Analytics] Blockchain fetch failed, using indexer');
+        console.log('[Analytics] Blockchain fetch failed, using DB fallback');
       }
       
-      // Fallback to indexer if API fetch returned empty
-      if (onChainQuizProofs.length === 0) {
-        onChainQuizProofs = kuIndexer.getAllProofs(500, 0);
-        if (onChainQuizProofs.length > 0) {
+      // Fallback to DB stored proofs if blockchain fetch failed
+      if (!fetchedFromBlockchain || onChainQuizProofs.length === 0) {
+        const dbProofs = await storage.getOnChainQuizProofs(500);
+        if (dbProofs.length > 0) {
+          onChainQuizProofs = dbProofs.map(p => ({
+            walletAddress: p.walletAddress,
+            courseId: p.courseId,
+            timestamp: p.timestamp
+          }));
           stats.quizProofsOnChain = onChainQuizProofs.length;
         }
       }

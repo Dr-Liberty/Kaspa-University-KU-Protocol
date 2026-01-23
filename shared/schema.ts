@@ -359,5 +359,23 @@ export type KPublicComment = z.infer<typeof kPublicCommentSchema>;
 export const insertKPublicCommentSchema = kPublicCommentSchema.omit({ id: true, createdAt: true, votes: true });
 export type InsertKPublicComment = z.infer<typeof insertKPublicCommentSchema>;
 
+// On-chain quiz proof schema (fallback storage for pruned blockchain data)
+export const onChainQuizProofSchema = z.object({
+  id: z.string(),
+  txHash: z.string(),
+  walletAddress: z.string(),
+  courseId: z.string(),
+  lessonId: z.string().optional(),
+  score: z.number(),
+  maxScore: z.number(),
+  timestamp: z.number(), // Block time in milliseconds
+  contentHash: z.string().optional(),
+  syncedAt: z.date(),
+});
+
+export type OnChainQuizProof = z.infer<typeof onChainQuizProofSchema>;
+export const insertOnChainQuizProofSchema = onChainQuizProofSchema.omit({ id: true, syncedAt: true });
+export type InsertOnChainQuizProof = z.infer<typeof insertOnChainQuizProofSchema>;
+
 // Re-export Drizzle table definitions for database migrations
 export * from "../server/db/schema";

@@ -14,6 +14,8 @@ import type {
   CourseTokenCounter,
   MintReservation,
   InsertMintReservation,
+  OnChainQuizProof,
+  InsertOnChainQuizProof,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { courses as seedCourses, lessons as seedLessons, quizQuestions as seedQuizQuestions } from "./seed-data";
@@ -96,6 +98,11 @@ export interface IStorage {
   getRecyclePoolDepth(courseId: string): Promise<number>;
   getAllCourseCounters(): Promise<CourseTokenCounter[]>;
   
+  // On-chain quiz proof storage (fallback for pruned blockchain data)
+  saveOnChainQuizProof(proof: InsertOnChainQuizProof): Promise<OnChainQuizProof>;
+  getOnChainQuizProofs(limit?: number): Promise<OnChainQuizProof[]>;
+  getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined>;
+  
   // Whitelist methods for discounted minting
   setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined>;
   isUserWhitelisted(userId: string): Promise<boolean>;
@@ -163,6 +170,7 @@ export class MemStorage implements IStorage {
   private qaPosts: Map<string, QAPost> = new Map();
   private courseTokenCounters: Map<string, CourseTokenCounter> = new Map();
   private mintReservations: Map<string, MintReservation> = new Map();
+  private onChainQuizProofs: Map<string, OnChainQuizProof> = new Map();
 
   constructor() {
     this.seedData();
@@ -709,6 +717,33 @@ export class MemStorage implements IStorage {
 
   async getAllCourseCounters(): Promise<CourseTokenCounter[]> {
     return Array.from(this.courseTokenCounters.values());
+  }
+
+  // On-chain quiz proof storage (fallback for pruned blockchain data)
+  async saveOnChainQuizProof(proof: InsertOnChainQuizProof): Promise<OnChainQuizProof> {
+    // Check if already exists by txHash
+    const existing = Array.from(this.onChainQuizProofs.values())
+      .find(p => p.txHash === proof.txHash);
+    if (existing) return existing;
+    
+    const newProof: OnChainQuizProof = {
+      id: randomUUID(),
+      ...proof,
+      syncedAt: new Date(),
+    };
+    this.onChainQuizProofs.set(newProof.id, newProof);
+    return newProof;
+  }
+
+  async getOnChainQuizProofs(limit: number = 500): Promise<OnChainQuizProof[]> {
+    return Array.from(this.onChainQuizProofs.values())
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
+  }
+
+  async getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined> {
+    return Array.from(this.onChainQuizProofs.values())
+      .find(p => p.txHash === txHash);
   }
 
   async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {
