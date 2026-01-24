@@ -245,7 +245,9 @@ export class MemStorage implements IStorage {
   }
 
   async getQuizQuestionsByLesson(lessonId: string): Promise<QuizQuestion[]> {
-    return Array.from(this.quizQuestions.values()).filter((q) => q.lessonId === lessonId);
+    return Array.from(this.quizQuestions.values())
+      .filter((q) => q.lessonId === lessonId)
+      .sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async saveQuizResult(result: Omit<QuizResult, "id" | "completedAt">): Promise<QuizResult> {
