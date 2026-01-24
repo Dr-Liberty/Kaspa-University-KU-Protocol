@@ -79,6 +79,15 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Force HTTPS redirect in production
+  app.use((req, res, next) => {
+    const proto = req.headers["x-forwarded-proto"];
+    if (proto === "http" && process.env.NODE_ENV === "production") {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+
   // Initialize Kasia indexer with storage for persistence (cache)
   // On-chain first architecture: blockchain is source of truth, DB is cache
   kasiaIndexer.setStorage(storage);
