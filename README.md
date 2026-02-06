@@ -18,7 +18,7 @@ Kaspa University is a decentralized educational platform that rewards learners w
 ### On-Chain Verification
 - **KU Protocol** - Quiz completions recorded on-chain with cryptographic proofs
 - **K Protocol** - Public Q&A discussions stored on the blockchain
-- **Kasia Protocol** - End-to-end encrypted private messaging
+- **Kasia Protocol** - End-to-end encrypted private messaging--Under consruction 
 
 ### KRC-721 Diploma NFTs
 - **KUDIPLOMA Collection** - Limited supply of 10,000 NFTs
