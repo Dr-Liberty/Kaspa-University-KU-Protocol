@@ -40,12 +40,7 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
-# Replit-specific (not needed in external repos)
-.replit
-replit.md
-.upm/
-.config/
-.local/
+
 
 # Design guidelines (internal use)
 design_guidelines.md
