@@ -477,7 +477,44 @@ export default function CourseDetail() {
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <Card className="border-border/50">
               <CardContent className="p-2">
-                <nav className="space-y-1">
+                <div className="flex items-center justify-between px-3 py-2 lg:hidden">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Lesson {selectedLessonIndex + 1} of {lessons.length}
+                  </span>
+                  <Badge variant="outline" className="text-xs">
+                    {completedCount}/{totalLessons} done
+                  </Badge>
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto px-2 py-2 lg:hidden">
+                  {lessons.map((lesson, index) => {
+                    const isCompleted = completedSet.has(lesson.id);
+                    const isActive = index === selectedLessonIndex;
+                    return (
+                      <button
+                        key={lesson.id}
+                        onClick={() => {
+                          setSelectedLessonIndex(index);
+                          setShowQuiz(false);
+                        }}
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs transition-colors ${
+                          isCompleted
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : isActive
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-muted-foreground/30"
+                        }`}
+                        data-testid={`lesson-dot-${lesson.id}`}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <nav className="hidden space-y-1 lg:block">
                   {lessons.map((lesson, index) => {
                     const isCompleted = completedSet.has(lesson.id);
                     const isActive = index === selectedLessonIndex;

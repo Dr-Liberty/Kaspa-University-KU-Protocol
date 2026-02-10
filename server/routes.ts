@@ -88,15 +88,9 @@ export async function registerRoutes(
     next();
   });
 
-  // Initialize Kasia indexer with storage for persistence (cache)
-  // On-chain first architecture: blockchain is source of truth, DB is cache
-  kasiaIndexer.setStorage(storage);
-  const supportAddress = process.env.SUPPORT_ADDRESS || "";
-  if (supportAddress) {
-    kasiaIndexer.setSupportAddress(supportAddress);
-    console.log(`[Kasia] Support address set for on-chain sync: ${supportAddress.slice(0, 25)}...`);
-  }
-  await kasiaIndexer.start();
+  // Kasia indexer disabled - messaging feature removed from UI
+  // kasiaIndexer.setStorage(storage);
+  // await kasiaIndexer.start();
   
   // Apply security middleware globally for API routes
   app.use("/api", securityMiddleware);
@@ -6128,19 +6122,9 @@ export async function registerRoutes(
       // Get stats from the indexer (populated when transactions are broadcast)
       const stats = kuIndexer.getStats();
       
-      // Also get Kasia indexer stats for cross-protocol view
-      const kasiaStats = kasiaIndexer.getStats();
-      
-      // Merge stats for complete view
-      const mergedStats = {
-        ...stats,
-        kasiaConversations: kasiaStats.activeConversations + kasiaStats.pendingHandshakes,
-        kasiaMessages: kasiaStats.totalMessages,
-      };
-      
       res.json({
         success: true,
-        stats: mergedStats,
+        stats,
         source: "indexer",
         note: "Stats populated from transaction broadcasts. Full blockchain scan not implemented.",
       });

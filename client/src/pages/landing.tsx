@@ -6,16 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Coins,
   Award,
-  MessageSquare,
   Zap,
   ArrowRight,
   CheckCircle2,
   LayoutDashboard,
   Shield,
-  AlertTriangle,
   ShieldAlert,
   BarChart3,
-  Link2,
   FileText,
   Layers,
   Globe,
@@ -23,9 +20,10 @@ import {
   MessagesSquare,
   Key,
   Wallet,
-  Signature,
   Bug,
   ShieldCheck,
+  BookOpen,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
@@ -216,11 +214,11 @@ export default function Landing() {
                   variant="outline"
                   size="lg"
                   onClick={enterDemoMode}
-                  className="gap-2 text-base w-[180px] justify-center"
+                  className="gap-2 text-base w-[240px] justify-center"
                   data-testid="button-try-demo-hero"
                 >
-                  <Zap className="h-5 w-5" />
-                  Try Demo
+                  <Eye className="h-5 w-5" />
+                  Learn without a wallet
                 </Button>
                 <Button
                   size="lg"
@@ -306,6 +304,71 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-16 border-b border-border/50" id="demo-vs-wallet">
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-2xl border border-border/50 bg-card/50 p-6 md:p-8">
+            <h3 className="text-xl font-semibold mb-2 text-center">Two Ways to Learn</h3>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              Explore the full curriculum instantly, or connect a wallet for the complete on-chain experience
+            </p>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-xl border border-border/50 bg-background p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="rounded-lg bg-muted p-2">
+                    <Eye className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <h4 className="font-semibold">Without a Wallet</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Browse all 23 courses and 97 lessons</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Take quizzes and see your scores</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>No installation or extension required</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-muted-foreground/60">
+                    <Shield className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>No KAS rewards or on-chain proofs</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <Wallet className="h-5 w-5 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">With a Wallet</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Earn 0.1 KAS per course completion</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Quiz proofs recorded on Kaspa L1</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Mint your KRC-721 diploma NFT</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span>Public Q&A via K Protocol</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -502,10 +565,10 @@ export default function Landing() {
                   KU Protocol Explorer
                 </Button>
               </Link>
-              <Link href="/messages">
-                <Button variant="outline" className="gap-2" data-testid="button-messages-cta">
-                  <MessageSquare className="h-4 w-4" />
-                  Encrypted Messages
+              <Link href="/courses">
+                <Button variant="outline" className="gap-2" data-testid="button-courses-cta">
+                  <BookOpen className="h-4 w-4" />
+                  Browse Courses
                 </Button>
               </Link>
             </div>

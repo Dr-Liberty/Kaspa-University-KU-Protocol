@@ -6,30 +6,57 @@
 
 **Learn-to-Earn on the Kaspa BlockDAG**
 
-Kaspa University is a decentralized educational platform that rewards learners with KAS tokens for completing courses and quizzes. Built on the Kaspa L1 blockchain, it features verifiable on-chain quiz proofs, KRC-721 diploma NFTs, and public Q&A discussions.
+Kaspa University is a decentralized educational platform where learners earn real KAS tokens for completing courses and quizzes. Every achievement is recorded on Kaspa L1 with cryptographic proofs, graduates can mint KRC-721 diploma NFTs, and lesson discussions happen on-chain via K Protocol.
+
+> Built for the Kaspathon 2026 hackathon. Try it now: connect a KasWare or Kastle wallet, or browse without one.
+
+---
+
+## What Makes It Different
+
+| Feature | How It Works |
+|---------|-------------|
+| **Real token rewards** | 0.1 KAS per course, sent directly to your wallet |
+| **On-chain quiz proofs** | KU Protocol records every passing score on Kaspa L1 |
+| **NFT diplomas** | KRC-721 KUDIPLOMA collection, whitelisted minting for graduates |
+| **Public Q&A** | K Protocol posts indexed by ecosystem K-indexers |
+| **No signup required** | Wallet-based auth via SIWK standard, or browse without a wallet |
+
+---
 
 ## Features
 
-### Learn & Earn
-- **23 Courses, 97 Lessons** covering Kaspa fundamentals, BlockDAG technology, and cryptocurrency concepts
-- **KAS Token Rewards** for completing quizzes with passing scores (70%+)
-- **Gamified Progress** with visual BlockDAG representation of your learning journey
+### Curriculum
+- 23 courses and 97 lessons covering Kaspa fundamentals, BlockDAG technology, smart contracts, and crypto concepts
+- Gamified BlockDAG progress visualization showing courses as blocks in a DAG
+- Pass quizzes at 70%+ to complete lessons and unlock rewards
 
-### On-Chain Verification
-- **KU Protocol** - Quiz completions recorded on-chain with cryptographic proofs
-- **K Protocol** - Public Q&A discussions stored on the blockchain
+### Three Protocols
 
-### KRC-721 Diploma NFTs
-- **KUDIPLOMA Collection** - Limited supply of 10,000 NFTs
-- **Eligibility** - Complete all courses to qualify for minting
-- **User-Signed Minting** - Decentralized minting via KasWare wallet
-- **On-Chain Source of Truth** - Indexer verification ensures authenticity
+**KU Protocol** (custom) - Educational achievement proofs stored on-chain:
+```
+ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{hash}
+```
+
+**K Protocol** - Public microblogging for lesson Q&A:
+```
+k:1:post:{content}
+k:1:reply:{parentId}:{content}
+```
+
+**KRC-721** - Diploma NFT collection:
+- Ticker: KUDIPLOMA, max supply 1,000
+- Graduates pay only ~10 KAS (PoW + operational costs)
+- Non-graduates pay 20,000 KAS deterrent fee
+- Blockchain indexer is the authoritative source for NFT status
 
 ### Security
-- **Wallet-Based Auth** - Sign-In with Kaspa (SIWK) standard
-- **Anti-Sybil Protection** - Multi-wallet detection (2+ per IP = blocked), multi-IP detection (3+ = warned), VPN blocking
-- **Daily Caps** - 5 KAS maximum daily rewards, 3 quiz attempts per lesson per day
-- **Rate Limiting** - Endpoint-specific protection against abuse
+- Sign-In with Kaspa (SIWK) wallet-based authentication
+- Anti-Sybil: multi-wallet detection (2+ per IP = blocked), VPN detection
+- Daily reward cap of 5 KAS, 3 quiz attempts per lesson per day
+- Rate limiting per endpoint, minimum completion time enforcement
+
+---
 
 ## Tech Stack
 
@@ -38,39 +65,37 @@ Kaspa University is a decentralized educational platform that rewards learners w
 | Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
 | Backend | Node.js, Express, Drizzle ORM |
 | Blockchain | Kaspa WASM (rusty-kaspa v1.0.1), kaspa-rpc-client |
-| Database | PostgreSQL |
-| NFT | KRC-721, KSPR Indexer |
-| Storage | IPFS (Pinata) |
+| Database | PostgreSQL (in-memory for dev) |
+| Wallets | KasWare, Kastle |
+| NFT Indexer | KSPR KRC-721 indexer |
+| Storage | IPFS via Pinata |
 
-## Requirements
-
-- **Node.js** v20+ (LTS recommended)
-- **PostgreSQL** 14+
-- **KasWare Wallet** (browser extension for testing)
-- **Kaspa RPC** access (public nodes available)
+---
 
 ## Quick Start
 
-See [SETUP.md](./SETUP.md) for detailed installation and configuration instructions.
-
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol.git
 cd Kaspa-university-KU-Protocol
-
-# Install dependencies
 npm install
 
-# Set up environment variables
+# Configure environment
 cp .env.example .env
-# Edit .env with your configuration
-
-# Run database migrations
-npm run db:push
+# Edit .env with your keys
 
 # Start development server
 npm run dev
 ```
+
+See [SETUP.md](./SETUP.md) for detailed configuration including wallet setup, RPC endpoints, and treasury configuration.
+
+### Requirements
+- Node.js v20+
+- PostgreSQL 14+ (optional, in-memory storage available)
+- KasWare or Kastle wallet extension (for testing with rewards)
+
+---
 
 ## Project Structure
 
@@ -78,19 +103,19 @@ npm run dev
 kaspa-university/
 ├── client/                 # React frontend
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route pages
-│   │   ├── lib/            # Utilities and wallet context
-│   │   └── hooks/          # Custom React hooks
+│   │   ├── components/     # UI components (BlockDAG viz, Q&A, wallet dialog)
+│   │   ├── pages/          # Landing, Courses, Dashboard, Analytics
+│   │   ├── lib/            # Wallet context, API client
+│   │   └── hooks/          # Diploma, whitelist, toast hooks
 ├── server/                 # Express backend
-│   ├── routes.ts           # API endpoints
-│   ├── storage.ts          # Data access layer
+│   ├── routes.ts           # API endpoints (~6000 lines)
+│   ├── storage.ts          # Data access layer (IStorage interface)
 │   ├── kaspa.ts            # Kaspa blockchain integration
 │   ├── krc721.ts           # NFT minting service
-│   ├── ku-protocol.ts      # On-chain quiz proofs
-│   └── wasm/               # Kaspa WASM module
+│   ├── ku-protocol.ts      # On-chain quiz proof encoding
+│   └── wasm/               # Kaspa WASM module (rusty-kaspa)
 ├── shared/                 # Shared types and schemas
-│   └── schema.ts           # Drizzle ORM schemas
+│   └── schema.ts           # Drizzle ORM schemas + Zod validation
 ├── ku-protocol/            # KU Protocol specification
 │   ├── README.md           # Protocol overview
 │   ├── PROTOCOL_SPECIFICATIONS.md
@@ -98,79 +123,55 @@ kaspa-university/
 └── scripts/                # Deployment utilities
 ```
 
-## Protocols
-
-### KU Protocol
-On-chain educational achievement proofs. See [ku-protocol/README.md](./ku-protocol/README.md).
-
-```
-ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{hash}
-```
-
-### K Protocol
-Public microblogging for Q&A discussions.
-
-```
-k:1:post:{content}
-k:1:reply:{parentId}:{content}
-```
-
-## KRC-721 Diploma
-
-The KUDIPLOMA collection is deployed on Kaspa mainnet:
-- **Ticker**: KUDIPLOMA
-- **Max Supply**: 10,000
-- **Royalty Fee**: 0 KAS (whitelisted graduates)
-- **PoW Fee**: ~10 KAS (covers platform + network costs)
-
-Eligibility requires completion of all courses in the curriculum.
+---
 
 ## API Reference
 
-### Stats
+### Authentication
 ```
-GET /api/stats
-```
-Returns platform statistics including active learners, KAS distributed, and diplomas minted.
-
-### Courses
-```
-GET /api/courses
-GET /api/courses/:id
-GET /api/courses/:courseId/lessons
+POST /api/auth/challenge    # Request SIWK challenge
+POST /api/auth/verify       # Verify signed challenge
+GET  /api/user/profile      # Get user profile
 ```
 
-### Quiz
+### Courses & Quizzes
 ```
-GET /api/quiz/:lessonId
-POST /api/quiz/:lessonId/submit
-```
-
-### Wallet
-```
-POST /api/auth/challenge
-POST /api/auth/verify
-GET /api/user/profile
+GET  /api/courses           # List all courses
+GET  /api/courses/:id       # Course details
+GET  /api/courses/:id/lessons  # Course lessons
+GET  /api/quiz/:lessonId    # Get quiz questions
+POST /api/quiz/:lessonId/submit  # Submit quiz answers
 ```
 
-### NFT
+### Rewards & NFTs
 ```
-GET /api/diploma/eligibility
-POST /api/diploma/reserve
-POST /api/diploma/confirm
+GET  /api/rewards           # User reward history
+POST /api/rewards/:id/claim # Claim pending reward
+GET  /api/diploma/eligibility  # Check NFT eligibility
+POST /api/diploma/reserve   # Reserve diploma slot
+POST /api/diploma/confirm   # Confirm minting
 ```
+
+### Analytics & Explorer
+```
+GET  /api/analytics         # Platform analytics
+GET  /api/stats             # Public stats bar data
+GET  /api/explorer/scan     # On-chain transaction scan
+```
+
+---
 
 ## Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | For persistence |
 | `SESSION_SECRET` | Express session secret | Yes |
-| `KASPA_TREASURY_MNEMONIC` | Treasury wallet mnemonic (or raw key) | Yes |
+| `KASPA_TREASURY_MNEMONIC` | Treasury wallet mnemonic | For rewards |
 | `FILEBASE_ACCESS_KEY` | IPFS storage access key | For NFTs |
 | `FILEBASE_SECRET_KEY` | IPFS storage secret key | For NFTs |
 
-See [SETUP.md](./SETUP.md) for complete configuration guide.
+---
 
 ## Scripts
 
@@ -179,12 +180,9 @@ See [SETUP.md](./SETUP.md) for complete configuration guide.
 | `npm run dev` | Start development server |
 | `npm run build` | Build for production |
 | `npm start` | Run production build |
-| `npm test` | Run tests |
 | `npm run db:push` | Push schema to database |
 
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+---
 
 ## Related Projects
 
@@ -195,9 +193,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 ## License
 
-**AGPL-3.0** - This project is open source but requires that any modifications or services built on it also share their source code. See [LICENSE](./LICENSE) for details.
-
-This software is a public utility for the Kaspa ecosystem. Commercial exploitation without contributing back is discouraged.
+**AGPL-3.0** - Open source with copyleft. Any modifications or services built on this code must also share their source. See [LICENSE](./LICENSE).
 
 ## Community
 

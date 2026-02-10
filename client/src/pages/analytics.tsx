@@ -269,7 +269,7 @@ export default function Analytics() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="Course Completions"
           value={analytics.overview.totalCourseCompletions}

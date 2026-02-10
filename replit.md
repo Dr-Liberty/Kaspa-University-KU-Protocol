@@ -29,6 +29,14 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Performance**: Job queue for async operations, in-memory TTL caching.
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
 
+## Recent Changes (Feb 2026)
+- Removed Messages page and Kasia Protocol references from UI
+- Disabled Kasia backend indexer (messaging feature removed)
+- Changed hero CTA to "Learn without a wallet" with demo mode explanation section
+- Added mobile-responsive lesson navigation (horizontal dots on mobile, sidebar on desktop)
+- Improved analytics grid responsiveness on tablet/mobile
+- Polished README for hackathon judging
+
 ## External Dependencies
 - **Database**: PostgreSQL.
 - **Kaspa Blockchain**: Mainnet, `kaspa-rpc-client`, rusty-kaspa WASM module.
