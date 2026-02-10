@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/stats-bar";
 import { useWallet } from "@/lib/wallet-context";
@@ -40,6 +40,7 @@ interface SecurityCheck {
 
 export default function Landing() {
   const { wallet, isDemoMode, enterDemoMode } = useWallet();
+  const [, setLocation] = useLocation();
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
@@ -213,7 +214,7 @@ export default function Landing() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={enterDemoMode}
+                  onClick={() => { enterDemoMode(); setLocation("/courses"); }}
                   className="gap-2 text-base w-[240px] justify-center"
                   data-testid="button-try-demo-hero"
                 >
