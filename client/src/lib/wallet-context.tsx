@@ -491,7 +491,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     
     const balance = await window.kasware.getBalance();
     return balance.total / 100000000;
-  }, [isDemoMode]);
+  }, [isDemoMode, walletType]);
 
   const signKRC721Mint = useCallback(async (
     inscriptionJson: string, 
@@ -796,7 +796,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         "KRC-721 minting failed. Please try again or contact support."
       );
     }
-  }, [isDemoMode]);
+  }, [isDemoMode, walletType]);
 
   const signKasiaHandshake = useCallback(async (recipientAddress: string, amountKas: number = 0.2): Promise<string> => {
     if (isDemoMode) {
