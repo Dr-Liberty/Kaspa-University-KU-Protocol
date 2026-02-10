@@ -45,7 +45,7 @@ k:1:reply:{parentId}:{content}
 ```
 
 **KRC-721** - Diploma NFT collection:
-- Ticker: KUDIPLOMA, max supply 1,000
+- Ticker: KUDIPLOMA, max supply 10,000
 - Graduates pay only ~10 KAS (PoW + operational costs)
 - Non-graduates pay 20,000 KAS deterrent fee
 - Blockchain indexer is the authoritative source for NFT status

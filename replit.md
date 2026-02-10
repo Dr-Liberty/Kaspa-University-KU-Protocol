@@ -22,7 +22,7 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Data Layer**: Drizzle ORM for PostgreSQL (in-memory, with future migration path).
 - **Authentication**: Wallet-based using KasWare via Sign-In with Kaspa (SIWK) standard (`@kluster/kaspa-auth`).
 - **Blockchain Integration**: Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations, utilizing PNN Resolver for RPC connections and an optional archival node fallback for historical data.
-- **KRC-721 Diploma NFT**: Single collection (KUDIPLOMA, 1,000 max supply). Eligibility requires completion of all 16 courses. Minting is user-signed via whitelisting (0 KAS royalty for graduates + ~10 KAS PoW fee). The blockchain indexer is the authoritative source for NFT status.
+- **KRC-721 Diploma NFT**: Single collection (KUDIPLOMA, 10,000 max supply). Eligibility requires completion of all 16 courses. Minting is user-signed via whitelisting (0 KAS royalty for graduates + ~10 KAS PoW fee). The blockchain indexer is the authoritative source for NFT status.
 - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A (`k:1:post`, `k:1:reply`).
 - **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`).
 - **Security**: SIWK challenge-response authentication, anti-Sybil measures (quiz cooldowns, min completion times, daily reward caps, multi-wallet/IP detection), rate limiting, and VPN detection. UTXO management uses mutex-based locking.
