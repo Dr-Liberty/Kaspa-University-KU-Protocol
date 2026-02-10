@@ -146,28 +146,40 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isKastleInstalled) return;
 
-    const handleAccountsChanged = async (accounts: string[]) => {
-      if (accounts.length === 0) {
-        setWallet(null);
-        setWalletAddress(null);
-        setWalletType(null);
-      } else if (walletType === "kastle") {
-        const newWallet: WalletConnection = {
-          address: accounts[0],
-          connected: true,
-          network: "mainnet", // Kastle default or detected
-        };
-        setWallet(newWallet);
-        setWalletAddress(accounts[0]);
+    const handleAccountChanged = async () => {
+      try {
+        const addr = await kastle.getWalletAddress();
+        if (!addr) {
+          setWallet(null);
+          setWalletAddress(null);
+          setWalletType(null);
+        } else if (walletType === "kastle") {
+          const newWallet: WalletConnection = {
+            address: addr,
+            connected: true,
+            network: "mainnet",
+          };
+          setWallet(newWallet);
+          setWalletAddress(addr);
+        }
+        queryClient.invalidateQueries();
+      } catch (err) {
+        console.error("[Wallet] Kastle account change handler error:", err);
       }
-      queryClient.invalidateQueries();
     };
 
-    // Assuming Kastle follows standard EIP-1193 or has similar event emitter
-    kastle.on("accountsChanged", handleAccountsChanged);
+    try {
+      kastle.setEventListener("kas:account_changed", handleAccountChanged);
+    } catch (err) {
+      console.error("[Wallet] Failed to set Kastle event listener:", err);
+    }
 
     return () => {
-      kastle.removeListener("accountsChanged", handleAccountsChanged);
+      try {
+        kastle.removeEventListener("kas:account_changed", handleAccountChanged);
+      } catch (err) {
+        console.error("[Wallet] Failed to remove Kastle event listener:", err);
+      }
     };
   }, [isKastleInstalled, walletType]);
 
@@ -294,15 +306,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       };
 
       const tryKastle = async () => {
-        if (await kastle.isWalletInstalled()) {
-          const connected = await kastle.connect();
-          if (connected) {
-            const accounts = await kastle.getAccounts();
-            if (accounts && accounts.length > 0) {
-              const walletAddr = accounts[0];
-              await authenticateWallet(walletAddr, "mainnet", "kastle");
-              return true;
-            }
+        const installed = await Promise.race([
+          kastle.isWalletInstalled(),
+          new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000))
+        ]).catch(() => false);
+        
+        if (installed) {
+          await kastle.connect();
+          const walletAddr = await kastle.getWalletAddress();
+          if (walletAddr) {
+            const network = await kastle.getNetwork().catch(() => "mainnet");
+            const networkName = typeof network === "string" ? (network as KaspaNetwork) : "mainnet";
+            await authenticateWallet(walletAddr, networkName, "kastle");
+            return true;
           }
         }
         return false;
@@ -431,7 +447,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     if (walletType === "kastle") {
-      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+      const sompiAmount = BigInt(Math.floor(amountKas * 100000000));
+      return await kastle.sendKaspa(toAddress, sompiAmount);
     }
 
     if (!window.kasware) {
@@ -446,7 +463,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const txHash = await window.kasware.sendKaspa(toAddress, sompi);
     console.log(`[Wallet] Sent ${amountKas} KAS to ${toAddress}, txHash: ${txHash}`);
     return txHash;
-  }, [isDemoMode]);
+  }, [isDemoMode, walletType]);
 
   const getBalance = useCallback(async (): Promise<number> => {
     if (isDemoMode) {
@@ -454,9 +471,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     if (walletType === "kastle") {
-      // Kastle SDK doesn't expose a simple getBalance yet in the docs
-      // but we could try to implement it if needed. For now, return 0 or placeholder
-      return 0;
+      try {
+        const balanceSompi = await kastle.getBalance();
+        return Number(balanceSompi) / 100000000;
+      } catch (err) {
+        console.warn("[Wallet] Kastle getBalance failed:", err);
+        return 0;
+      }
     }
 
     if (!window.kasware) {
@@ -783,7 +804,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     if (walletType === "kastle") {
-      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+      const sompiAmount = BigInt(Math.floor(amountKas * 100000000));
+      return await kastle.sendKaspa(recipientAddress, sompiAmount);
     }
 
     if (!window.kasware) {
@@ -799,7 +821,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const txHash = await window.kasware.sendKaspa(recipientAddress, sompi);
     console.log(`[Wallet] Kasia handshake sent, txHash: ${txHash}`);
     return txHash;
-  }, [isDemoMode]);
+  }, [isDemoMode, walletType]);
 
   const truncatedAddress = wallet?.address
     ? `${wallet.address.slice(0, 12)}...${wallet.address.slice(-6)}`
