@@ -39,7 +39,7 @@ interface SecurityCheck {
 }
 
 export default function Landing() {
-  const { wallet, isDemoMode, enterDemoMode } = useWallet();
+  const { wallet, isDemoMode, enterDemoMode, connect } = useWallet();
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
     queryKey: ["/api/security/check"],
@@ -220,16 +220,27 @@ export default function Landing() {
               </Button>
             </Link>
             {!wallet && !isDemoMode && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={enterDemoMode}
-                className="gap-2 text-base w-[180px] justify-center"
-                data-testid="button-try-demo-hero"
-              >
-                <Zap className="h-5 w-5" />
-                Try Demo
-              </Button>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={enterDemoMode}
+                  className="gap-2 text-base w-[180px] justify-center"
+                  data-testid="button-try-demo-hero"
+                >
+                  <Zap className="h-5 w-5" />
+                  Try Demo
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={connect}
+                  className="gap-2 text-base w-[180px] justify-center"
+                  data-testid="button-connect-wallet"
+                >
+                  <Key className="h-5 w-5" />
+                  Connect Wallet
+                </Button>
+              </div>
             )}
           </div>
 

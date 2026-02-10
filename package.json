@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.969.0",
     "@filebase/sdk": "^1.0.6",
+    "@forbole/kastle-sdk": "^1.13.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@kluster/kaspa-address": "^0.1.5",

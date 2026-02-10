@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import * as kastle from "@forbole/kastle-sdk";
 import type { WalletConnection } from "@shared/schema";
 import { setWalletAddress, setAuthToken, queryClient } from "@/lib/queryClient";
 
@@ -69,8 +70,9 @@ interface WalletContextType {
   isConnecting: boolean;
   isDemoMode: boolean;
   isAuthenticated: boolean;
-  walletType: "kasware" | "mock" | null;
+  walletType: "kasware" | "kastle" | "mock" | null;
   isWalletInstalled: boolean;
+  isKastleInstalled: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
   enterDemoMode: () => void;
@@ -109,14 +111,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
-  const [walletType, setWalletType] = useState<"kasware" | "mock" | null>(null);
+  const [walletType, setWalletType] = useState<"kasware" | "kastle" | "mock" | null>(null);
   const [isWalletInstalled, setIsWalletInstalled] = useState(false);
+  const [isKastleInstalled, setIsKastleInstalled] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkWalletInstalled = () => {
-      const installed = typeof window !== "undefined" && typeof window.kasware !== "undefined";
-      setIsWalletInstalled(installed);
+    const checkWalletInstalled = async () => {
+      const kaswareInstalled = typeof window !== "undefined" && typeof window.kasware !== "undefined";
+      setIsWalletInstalled(kaswareInstalled);
+      
+      const kastleInstalled = await kastle.isWalletInstalled();
+      setIsKastleInstalled(kastleInstalled);
     };
     
     checkWalletInstalled();
@@ -124,6 +130,34 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(checkWalletInstalled, 500);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isKastleInstalled) return;
+
+    const handleAccountsChanged = async (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setWallet(null);
+        setWalletAddress(null);
+        setWalletType(null);
+      } else if (walletType === "kastle") {
+        const newWallet: WalletConnection = {
+          address: accounts[0],
+          connected: true,
+          network: "mainnet", // Kastle default or detected
+        };
+        setWallet(newWallet);
+        setWalletAddress(accounts[0]);
+      }
+      queryClient.invalidateQueries();
+    };
+
+    // Assuming Kastle follows standard EIP-1193 or has similar event emitter
+    kastle.on("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      kastle.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, [isKastleInstalled, walletType]);
 
   useEffect(() => {
     if (!isWalletInstalled || !window.kasware) return;
@@ -232,6 +266,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setConnectionError(null);
 
     try {
+      // Priority 1: KasWare
       if (typeof window.kasware !== "undefined") {
         const accounts = await window.kasware.requestAccounts();
         
@@ -240,81 +275,84 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           const networkId = await window.kasware.getNetwork();
           const networkName = getNetworkName(networkId);
           
-          // SIWK (Sign-In with Kaspa) Authentication Flow
-          // Using standardized @kluster/kaspa-auth protocol
-          
-          // Step 1: Request SIWK challenge from server
-          console.log(`[SIWK] Requesting challenge for ${walletAddr.slice(0, 15)}...`);
-          const challengeRes = await fetch("/api/auth/siwk/challenge", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ walletAddress: walletAddr }),
-          });
-          
-          if (!challengeRes.ok) {
-            const err = await challengeRes.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to get SIWK challenge");
-          }
-          
-          const { fields, message } = await challengeRes.json();
-          
-          // Step 2: Sign the SIWK message with the wallet using Schnorr
-          // @kluster/kaspa-auth expects Schnorr signatures (64-byte)
-          console.log("[SIWK] Signing challenge message with Schnorr...");
-          const signature = await window.kasware.signMessage(message, { type: "schnorr" });
-          
-          // Step 3: Verify signature with server
-          console.log("[SIWK] Verifying signature...");
-          const verifyRes = await fetch("/api/auth/siwk/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fields, signature }),
-          });
-          
-          if (!verifyRes.ok) {
-            const err = await verifyRes.json().catch(() => ({}));
-            throw new Error(err.error || "SIWK verification failed");
-          }
-          
-          const { token } = await verifyRes.json();
-          
-          // Step 4: Store auth token and complete connection
-          setAuthToken(token);
-          setIsAuthenticated(true);
-          
-          const newWallet: WalletConnection = {
-            address: walletAddr,
-            connected: true,
-            network: networkName,
-          };
-          
-          setWallet(newWallet);
-          setWalletAddress(walletAddr);
-          setWalletType("kasware");
-          queryClient.invalidateQueries();
-          
-          console.log(`[SIWK] Authenticated via Sign-In with Kaspa: ${walletAddr.slice(0, 15)}... (${networkName})`);
-        } else {
-          throw new Error("No accounts returned from wallet");
+          await authenticateWallet(walletAddr, networkName, "kasware");
         }
-      } else {
-        setConnectionError("KasWare wallet not installed. Please install it from the Chrome Web Store.");
-        console.log("[Wallet] KasWare not detected, prompting user to install");
+      } 
+      // Priority 2: Kastle
+      else if (await kastle.isWalletInstalled()) {
+        const connected = await kastle.connect();
+        if (connected) {
+          const accounts = await kastle.getAccounts();
+          if (accounts && accounts.length > 0) {
+            const walletAddr = accounts[0];
+            // Kastle SDK doesn't have a simple getNetwork yet in the docs, 
+            // but we can assume mainnet or add a switch
+            await authenticateWallet(walletAddr, "mainnet", "kastle");
+          }
+        }
+      }
+      else {
+        setConnectionError("No Kaspa wallet detected. Please install KasWare or Kastle wallet.");
       }
     } catch (error: any) {
-      console.error("[SIWK] Connection failed:", error);
-      
-      if (error.message?.includes("User rejected")) {
-        setConnectionError("Connection rejected. Please approve the request in your wallet.");
-      } else if (error.message?.includes("No accounts")) {
-        setConnectionError("No accounts found. Please unlock your wallet and try again.");
-      } else {
-        setConnectionError(error.message || "Failed to connect wallet. Please try again.");
-      }
+      console.error("[Auth] Connection failed:", error);
+      setConnectionError(error.message || "Failed to connect wallet.");
     } finally {
       setIsConnecting(false);
     }
   }, []);
+
+  const authenticateWallet = async (walletAddr: string, networkName: KaspaNetwork, type: "kasware" | "kastle") => {
+    try {
+      console.log(`[SIWK] Requesting challenge for ${walletAddr.slice(0, 15)}...`);
+      const challengeRes = await fetch("/api/auth/siwk/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: walletAddr }),
+      });
+      
+      if (!challengeRes.ok) {
+        throw new Error("Failed to get SIWK challenge");
+      }
+      
+      const { fields, message } = await challengeRes.json();
+      let signature: string;
+
+      if (type === "kasware") {
+        signature = await window.kasware!.signMessage(message, { type: "schnorr" });
+      } else {
+        // Kastle signMessage implementation
+        signature = await kastle.signMessage(message);
+      }
+      
+      const verifyRes = await fetch("/api/auth/siwk/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields, signature }),
+      });
+      
+      if (!verifyRes.ok) {
+        throw new Error("SIWK verification failed");
+      }
+      
+      const { token } = await verifyRes.json();
+      setAuthToken(token);
+      setIsAuthenticated(true);
+      
+      const newWallet: WalletConnection = {
+        address: walletAddr,
+        connected: true,
+        network: networkName,
+      };
+      
+      setWallet(newWallet);
+      setWalletAddress(walletAddr);
+      setWalletType(type);
+      queryClient.invalidateQueries();
+    } catch (error: any) {
+      throw error;
+    }
+  };
 
   const disconnect = useCallback(async () => {
     try {
@@ -362,6 +400,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("Payment not available in demo mode. Please connect a real wallet.");
     }
     
+    if (walletType === "kastle") {
+      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+    }
+
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
     }
@@ -381,6 +423,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       return 0;
     }
     
+    if (walletType === "kastle") {
+      // Kastle SDK doesn't expose a simple getBalance yet in the docs
+      // but we could try to implement it if needed. For now, return 0 or placeholder
+      return 0;
+    }
+
+    if (walletType === "kastle") {
+      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+    }
+
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
     }
@@ -406,6 +458,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("NFT minting not available in demo mode. Please connect a real wallet.");
     }
     
+    if (walletType === "kastle") {
+      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+    }
+
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
     }
@@ -700,6 +756,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       throw new Error("Kasia messaging not available in demo mode. Please connect a real wallet.");
     }
     
+    if (walletType === "kastle") {
+      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+    }
+
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
     }
