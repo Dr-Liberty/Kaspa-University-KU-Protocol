@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/lib/wallet-context";
-import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play, ExternalLink, AlertCircle, BarChart3, Shield, Mail, User } from "lucide-react";
+import { Wallet, LogOut, Menu, X, BookOpen, Award, LayoutDashboard, Play, ExternalLink, AlertCircle, BarChart3, Shield, User } from "lucide-react";
 import { useState } from "react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import {
@@ -30,7 +30,6 @@ export function Header() {
   const navItems = [
     { href: "/courses", label: "Courses", icon: BookOpen },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/messages", label: "Messages", icon: Mail },
     { href: "/verify", label: "KU Explorer", icon: Shield },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
   ];

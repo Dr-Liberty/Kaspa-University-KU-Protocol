@@ -6,7 +6,7 @@
 
 **Learn-to-Earn on the Kaspa BlockDAG**
 
-Kaspa University is a decentralized educational platform that rewards learners with KAS tokens for completing courses and quizzes. Built on the Kaspa L1 blockchain, it features verifiable on-chain quiz proofs, KRC-721 diploma NFTs, and end-to-end encrypted P2P messaging.
+Kaspa University is a decentralized educational platform that rewards learners with KAS tokens for completing courses and quizzes. Built on the Kaspa L1 blockchain, it features verifiable on-chain quiz proofs, KRC-721 diploma NFTs, and public Q&A discussions.
 
 ## Features
 
@@ -18,7 +18,6 @@ Kaspa University is a decentralized educational platform that rewards learners w
 ### On-Chain Verification
 - **KU Protocol** - Quiz completions recorded on-chain with cryptographic proofs
 - **K Protocol** - Public Q&A discussions stored on the blockchain
-- **Kasia Protocol** - End-to-end encrypted private messaging--Under consruction 
 
 ### KRC-721 Diploma NFTs
 - **KUDIPLOMA Collection** - Limited supply of 10,000 NFTs
@@ -89,7 +88,6 @@ kaspa-university/
 │   ├── kaspa.ts            # Kaspa blockchain integration
 │   ├── krc721.ts           # NFT minting service
 │   ├── ku-protocol.ts      # On-chain quiz proofs
-│   ├── kasia-*.ts          # Encrypted messaging
 │   └── wasm/               # Kaspa WASM module
 ├── shared/                 # Shared types and schemas
 │   └── schema.ts           # Drizzle ORM schemas
@@ -116,9 +114,6 @@ Public microblogging for Q&A discussions.
 k:1:post:{content}
 k:1:reply:{parentId}:{content}
 ```
-
-### Kasia Protocol
-End-to-end encrypted P2P messaging via on-chain handshakes.
 
 ## KRC-721 Diploma
 
@@ -195,7 +190,6 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 - [KU Protocol](./ku-protocol/) - On-chain educational achievement protocol
 - [K Protocol](https://github.com/thesheepcat/K) - Decentralized microblogging protocol
-- [Kasia Protocol](https://github.com/K-Kluster/Kasia) - Encrypted P2P messaging
 - [KRC-721](https://github.com/aspectron/krc721) - Kaspa NFT standard
 - [rusty-kaspa](https://github.com/kaspanet/rusty-kaspa) - Kaspa node implementation
 

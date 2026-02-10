@@ -187,7 +187,6 @@ KU Protocol works alongside:
 |----------|---------|--------|
 | KU Protocol | Educational achievements | `ku:` |
 | K Protocol | Public microblogging/Q&A | `k:` |
-| Kasia Protocol | Encrypted P2P messaging | `ciph_msg:` |
 | KRC-721 | NFT certificates | (inscription format) |
 
 ## Best Practices

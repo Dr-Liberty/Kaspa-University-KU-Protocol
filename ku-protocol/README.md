@@ -68,7 +68,6 @@ The KU Indexer scans the Kaspa blockchain for KU protocol transactions and provi
 
 KU Protocol is designed to work alongside:
 - **K Protocol**: Public microblogging for Q&A discussions
-- **Kasia Protocol**: Encrypted P2P messaging for private tutoring
 - **KRC-721**: NFT certificates for course completions
 
 ## Community

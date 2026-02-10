@@ -421,7 +421,6 @@ KU Protocol is designed to work with:
 | Protocol | Purpose | Integration |
 |----------|---------|-------------|
 | K Protocol | Public Q&A | Share lesson discussions on-chain |
-| Kasia Protocol | Private tutoring | Encrypted 1:1 student-teacher messaging |
 | KRC-721 | NFT certificates | Mint diploma NFTs for completers |
 
 ## Support

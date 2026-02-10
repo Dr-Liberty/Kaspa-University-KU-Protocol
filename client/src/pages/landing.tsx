@@ -18,7 +18,6 @@ import {
   Link2,
   FileText,
   Layers,
-  Lock,
   Globe,
   GraduationCap,
   MessagesSquare,
@@ -65,9 +64,9 @@ export default function Landing() {
     },
     {
       icon: MessagesSquare,
-      title: "Dual-Protocol Messaging",
+      title: "Public Q&A on Kaspa L1",
       description:
-        "Public Q&A via K Protocol for ecosystem discovery, plus end-to-end encrypted P2P messaging via Kasia Protocol for private discussions.",
+        "Ask questions and discuss lessons using K Protocol. Your posts are indexed by ecosystem K-indexers for cross-platform discovery.",
     },
     {
       icon: ShieldCheck,
@@ -104,7 +103,6 @@ export default function Landing() {
     "Open sourced",
     "KU Protocol On-Chain Proofs",
     "K Protocol public Q&A",
-    "Kasia encrypted messaging",
     "KRC-721 diploma NFTs",
     "Anti-Sybil protection",
     "Non-custodial minting",
@@ -132,17 +130,6 @@ export default function Landing() {
       description: "Public Q&A indexed by ecosystem K-indexers. Your comments are discoverable across the Kaspa ecosystem.",
       features: ["Ecosystem indexing", "Cross-platform discovery", "Public attribution"],
       github: "https://github.com/thesheepcat/K",
-    },
-    {
-      id: "kasia",
-      name: "Kasia Protocol",
-      tagline: "Encrypted Messaging",
-      icon: Lock,
-      color: "from-violet-500 to-violet-500/70",
-      format: "ciph_msg:1:comm:{encrypted}",
-      description: "End-to-end encrypted P2P messaging with handshake-based key exchange. Private conversations on-chain.",
-      features: ["E2E encryption", "Handshake key exchange", "Private P2P chat"],
-      github: "https://github.com/K-Kluster/Kasia",
     },
     {
       id: "krc721",
@@ -196,8 +183,8 @@ export default function Landing() {
             data-testid="text-hero-subtitle"
           >
             Master BlockDAG technology while earning real cryptocurrency rewards.
-            An open source utility for the Kaspa ecosystem, powered by 4 on-chain protocols: 
-            KU for achievements, K for public Q&A, Kasia for encrypted messaging, and KRC-721 for diploma NFTs.
+            An open source utility for the Kaspa ecosystem, powered by 3 on-chain protocols: 
+            KU for achievements, K for public Q&A, and KRC-721 for diploma NFTs.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -358,8 +345,8 @@ export default function Landing() {
               The Protocol Stack
             </h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Four interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
-              from achievements to messaging to credentials.
+              Three interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
+              from achievements to public discussion to credentials.
             </p>
           </div>
 
@@ -369,7 +356,7 @@ export default function Landing() {
               <div className="absolute h-[200px] w-[200px] rounded-full border-2 border-dashed border-accent/20" />
             </div>
             
-            <div className="relative grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="relative grid gap-6 md:grid-cols-3">
               {protocols.map((protocol, index) => (
                 <div
                   key={protocol.id}
@@ -422,48 +409,34 @@ export default function Landing() {
           <div className="rounded-2xl border border-border/50 bg-card/50 p-6 md:p-8">
             <h3 className="text-xl font-semibold mb-6 text-center">How They Work Together</h3>
             
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                  <div className="rounded-lg bg-primary p-2 text-primary-foreground">
-                    <GraduationCap className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Learn & Earn</p>
-                    <p className="text-sm text-muted-foreground">Complete quizzes to record achievements via KU Protocol and earn 0.1 KAS per course</p>
-                  </div>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="flex items-start gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="rounded-lg bg-primary p-2 text-primary-foreground">
+                  <GraduationCap className="h-5 w-5" />
                 </div>
-                
-                <div className="flex items-start gap-4 rounded-xl border border-accent/20 bg-accent/5 p-4">
-                  <div className="rounded-lg bg-accent p-2 text-accent-foreground">
-                    <Globe className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Public Discussion</p>
-                    <p className="text-sm text-muted-foreground">Ask questions in lesson Q&A using K Protocol. Your posts are indexed by ecosystem K-indexers for cross-platform discovery</p>
-                  </div>
+                <div>
+                  <p className="font-medium">Learn & Earn</p>
+                  <p className="text-sm text-muted-foreground">Complete quizzes to record achievements via KU Protocol and earn 0.1 KAS per course</p>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-                  <div className="rounded-lg bg-violet-500 p-2 text-white">
-                    <Lock className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Private Encrypted Messaging</p>
-                    <p className="text-sm text-muted-foreground">Use Kasia Protocol for end-to-end encrypted P2P chats: contact admin support, message instructors, or DM other learners privately</p>
-                  </div>
+              <div className="flex items-start gap-4 rounded-xl border border-accent/20 bg-accent/5 p-4">
+                <div className="rounded-lg bg-accent p-2 text-accent-foreground">
+                  <Globe className="h-5 w-5" />
                 </div>
-                
-                <div className="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                  <div className="rounded-lg bg-amber-500 p-2 text-white">
-                    <Award className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Graduate & Mint</p>
-                    <p className="text-sm text-muted-foreground">Complete all 16 courses to unlock your KRC-721 diploma NFT with whitelist pricing (graduates pay only network fees)</p>
-                  </div>
+                <div>
+                  <p className="font-medium">Public Discussion</p>
+                  <p className="text-sm text-muted-foreground">Ask questions in lesson Q&A using K Protocol. Your posts are indexed by ecosystem K-indexers for cross-platform discovery</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                <div className="rounded-lg bg-amber-500 p-2 text-white">
+                  <Award className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium">Graduate & Mint</p>
+                  <p className="text-sm text-muted-foreground">Complete all 16 courses to unlock your KRC-721 diploma NFT with whitelist pricing (graduates pay only network fees)</p>
                 </div>
               </div>
             </div>
