@@ -23,12 +23,15 @@ import {
   GraduationCap,
   MessagesSquare,
   Key,
+  Wallet,
   Signature,
   Bug,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import { SiGithub } from "react-icons/si";
+import { WalletSelectDialog } from "@/components/wallet-select-dialog";
 
 interface SecurityCheck {
   isFlagged: boolean;
@@ -39,7 +42,8 @@ interface SecurityCheck {
 }
 
 export default function Landing() {
-  const { wallet, isDemoMode, enterDemoMode, connect } = useWallet();
+  const { wallet, isDemoMode, enterDemoMode } = useWallet();
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
     queryKey: ["/api/security/check"],
@@ -231,27 +235,15 @@ export default function Landing() {
                   <Zap className="h-5 w-5" />
                   Try Demo
                 </Button>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    size="lg"
-                    onClick={() => connect("kasware")}
-                    className="gap-2 text-base w-[220px] justify-center"
-                    data-testid="button-connect-kasware"
-                  >
-                    <Key className="h-5 w-5" />
-                    Connect KasWare
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    onClick={() => connect("kastle")}
-                    className="gap-2 text-base w-[220px] justify-center"
-                    data-testid="button-connect-kastle"
-                  >
-                    <Key className="h-5 w-5" />
-                    Connect Kastle
-                  </Button>
-                </div>
+                <Button
+                  size="lg"
+                  onClick={() => setWalletDialogOpen(true)}
+                  className="gap-2 bg-gradient-to-r from-primary to-accent text-base text-primary-foreground w-[220px] justify-center"
+                  data-testid="button-connect-wallet-hero"
+                >
+                  <Wallet className="h-5 w-5" />
+                  Connect Wallet
+                </Button>
               </div>
             )}
           </div>
@@ -634,6 +626,11 @@ export default function Landing() {
           </a>
         </div>
       </footer>
+
+      <WalletSelectDialog
+        open={walletDialogOpen}
+        onOpenChange={setWalletDialogOpen}
+      />
     </div>
   );
 }
