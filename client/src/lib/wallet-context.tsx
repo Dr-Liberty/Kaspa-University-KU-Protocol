@@ -73,7 +73,7 @@ interface WalletContextType {
   walletType: "kasware" | "kastle" | "mock" | null;
   isWalletInstalled: boolean;
   isKastleInstalled: boolean;
-  connect: () => Promise<void>;
+  connect: (preferredType?: "kasware" | "kastle") => Promise<void>;
   disconnect: () => void;
   enterDemoMode: () => void;
   exitDemoMode: () => void;
@@ -118,16 +118,28 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkWalletInstalled = async () => {
-      const kaswareInstalled = typeof window !== "undefined" && typeof window.kasware !== "undefined";
-      setIsWalletInstalled(kaswareInstalled);
-      
-      const kastleInstalled = await kastle.isWalletInstalled();
-      setIsKastleInstalled(kastleInstalled);
+      try {
+        const kaswareInstalled = typeof window !== "undefined" && !!window.kasware;
+        setIsWalletInstalled(kaswareInstalled);
+        
+        // Use a safe wrapper for Kastle check
+        let kastleInstalled = false;
+        try {
+          kastleInstalled = await Promise.race([
+            kastle.isWalletInstalled(),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1000))
+          ]);
+        } catch (e) {
+          console.error("[Wallet] Kastle detection failed", e);
+        }
+        setIsKastleInstalled(!!kastleInstalled);
+      } catch (err) {
+        console.error("[Wallet] Installation check error:", err);
+      }
     };
     
     checkWalletInstalled();
-    
-    const timer = setTimeout(checkWalletInstalled, 500);
+    const timer = setTimeout(checkWalletInstalled, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -260,38 +272,56 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [isDemoMode, wallet]);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (preferredType?: "kasware" | "kastle") => {
     setIsConnecting(true);
     setIsDemoMode(false);
     setConnectionError(null);
 
     try {
-      // Priority 1: KasWare
-      if (typeof window.kasware !== "undefined") {
-        const accounts = await window.kasware.requestAccounts();
-        
-        if (accounts && accounts.length > 0) {
-          const walletAddr = accounts[0];
-          const networkId = await window.kasware.getNetwork();
-          const networkName = getNetworkName(networkId);
-          
-          await authenticateWallet(walletAddr, networkName, "kasware");
-        }
-      } 
-      // Priority 2: Kastle
-      else if (await kastle.isWalletInstalled()) {
-        const connected = await kastle.connect();
-        if (connected) {
-          const accounts = await kastle.getAccounts();
+      // Use preferred wallet type if specified, otherwise try KasWare then Kastle
+      const tryKasware = async () => {
+        if (typeof window.kasware !== "undefined") {
+          const accounts = await window.kasware.requestAccounts();
           if (accounts && accounts.length > 0) {
             const walletAddr = accounts[0];
-            // Kastle SDK doesn't have a simple getNetwork yet in the docs, 
-            // but we can assume mainnet or add a switch
-            await authenticateWallet(walletAddr, "mainnet", "kastle");
+            const networkId = await window.kasware.getNetwork();
+            const networkName = getNetworkName(networkId);
+            await authenticateWallet(walletAddr, networkName, "kasware");
+            return true;
           }
         }
+        return false;
+      };
+
+      const tryKastle = async () => {
+        if (await kastle.isWalletInstalled()) {
+          const connected = await kastle.connect();
+          if (connected) {
+            const accounts = await kastle.getAccounts();
+            if (accounts && accounts.length > 0) {
+              const walletAddr = accounts[0];
+              await authenticateWallet(walletAddr, "mainnet", "kastle");
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      let connected = false;
+      if (preferredType === "kasware") {
+        connected = await tryKasware();
+      } else if (preferredType === "kastle") {
+        connected = await tryKastle();
+      } else {
+        // Default sequential check
+        connected = await tryKasware();
+        if (!connected) {
+          connected = await tryKastle();
+        }
       }
-      else {
+
+      if (!connected) {
         setConnectionError("No Kaspa wallet detected. Please install KasWare or Kastle wallet.");
       }
     } catch (error: any) {
@@ -429,10 +459,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       return 0;
     }
 
-    if (walletType === "kastle") {
-      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
-    }
-
     if (!window.kasware) {
       throw new Error("KasWare wallet not installed");
     }
@@ -459,7 +485,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     if (walletType === "kastle") {
-      return await kastle.sendKaspa(toAddress, kastle.kaspaWasm.kaspaToSompi(amountKas.toString())!);
+      throw new Error("KRC-721 minting not yet supported via Kastle SDK. Please use KasWare.");
     }
 
     if (!window.kasware) {

@@ -231,15 +231,27 @@ export default function Landing() {
                   <Zap className="h-5 w-5" />
                   Try Demo
                 </Button>
-                <Button
-                  size="lg"
-                  onClick={connect}
-                  className="gap-2 text-base w-[180px] justify-center"
-                  data-testid="button-connect-wallet"
-                >
-                  <Key className="h-5 w-5" />
-                  Connect Wallet
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    size="lg"
+                    onClick={() => connect("kasware")}
+                    className="gap-2 text-base w-[220px] justify-center"
+                    data-testid="button-connect-kasware"
+                  >
+                    <Key className="h-5 w-5" />
+                    Connect KasWare
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={() => connect("kastle")}
+                    className="gap-2 text-base w-[220px] justify-center"
+                    data-testid="button-connect-kastle"
+                  >
+                    <Key className="h-5 w-5" />
+                    Connect Kastle
+                  </Button>
+                </div>
               </div>
             )}
           </div>
