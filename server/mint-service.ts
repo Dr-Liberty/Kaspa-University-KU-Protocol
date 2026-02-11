@@ -5,7 +5,7 @@ import type { MintReservation, Certificate } from "@shared/schema";
  * Diploma Mint Service for Kaspa University
  * 
  * ARCHITECTURE: Single diploma collection (10,000 max supply)
- * - Users earn ONE diploma NFT after completing ALL 16 courses
+ * - Users earn ONE diploma NFT after completing ALL courses
  * - Token IDs are assigned randomly by the KRC-721 indexer
  * - Whitelist-based pricing: 0 KAS royalty for course completers, 20,000 KAS for others
  * 
@@ -75,7 +75,7 @@ async function checkOnChainOwnership(walletAddress: string): Promise<{ ownsNft: 
 const RESERVATION_TTL_MINUTES = 10;
 const MAX_DIPLOMA_SUPPLY = 10000; // Must match krc721.ts maxSupply
 const DIPLOMA_COURSE_ID = "diploma"; // Special courseId for diploma NFTs
-const REQUIRED_COURSES = 16;
+let REQUIRED_COURSES = 24; // Updated dynamically on init from actual course count
 
 // KRC-721 Mint inscription format per official spec
 // Token IDs are assigned randomly by the indexer ("Full randomization of tokens during minting")
@@ -95,12 +95,17 @@ export class MintService {
     // Initialize diploma token counter
     await storage.initializeCourseTokenCounter(DIPLOMA_COURSE_ID, 0);
     
+    const courses = await storage.getCourses();
+    if (courses.length > 0) {
+      REQUIRED_COURSES = courses.length;
+    }
+    
     this.initialized = true;
-    console.log(`[MintService] Initialized for diploma collection`);
+    console.log(`[MintService] Initialized for diploma collection (${REQUIRED_COURSES} courses required)`);
   }
 
   /**
-   * Check if user is eligible for diploma (completed all 16 courses)
+   * Check if user is eligible for diploma (completed all courses)
    */
   async checkDiplomaEligibility(walletAddress: string): Promise<{ 
     eligible: boolean; 
@@ -151,7 +156,7 @@ export class MintService {
 
   /**
    * Reserve a diploma mint slot
-   * Only users who completed all 16 courses can mint
+   * Only users who completed all courses can mint
    * 
    * SOURCE OF TRUTH: On-chain KRC-721 indexer (database is cache only)
    */

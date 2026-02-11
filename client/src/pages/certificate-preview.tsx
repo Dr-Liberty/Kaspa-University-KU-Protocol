@@ -175,7 +175,7 @@ export default function CertificatePreview() {
               Certificate Preview
             </h1>
             <p className="text-muted-foreground">
-              Preview of all 16 course certificates for the NFT collection
+              Preview of all course certificates for the NFT collection
             </p>
           </div>
         </div>

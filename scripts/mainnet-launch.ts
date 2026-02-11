@@ -95,7 +95,7 @@ console.log("");
 console.log("  User Type              | Royalty    | PoW Fee  | Total");
 console.log("  " + "-".repeat(60));
 console.log("  Non-whitelisted        | 20,000 KAS | ~10 KAS  | ~20,010 KAS");
-console.log("  Whitelisted (16 courses)| 0 KAS     | ~10 KAS  | ~10 KAS");
+console.log("  Whitelisted (all courses)| 0 KAS    | ~10 KAS  | ~10 KAS");
 console.log("");
 
 // Minting Flow
@@ -103,7 +103,7 @@ console.log("=".repeat(70));
 console.log("DIPLOMA MINTING FLOW:");
 console.log("=".repeat(70));
 console.log("");
-console.log("  1. User completes all 16 courses");
+console.log("  1. User completes all courses");
 console.log("  2. User is auto-whitelisted via discount operation");
 console.log("  3. User clicks 'Claim Diploma' on Dashboard");
 console.log("  4. POST /api/diploma/reserve - Creates reservation");

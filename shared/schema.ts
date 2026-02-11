@@ -243,7 +243,7 @@ export type WalletIpBinding = z.infer<typeof walletIpBindingSchema>;
 // Each course has 1000 tokenIds: Course 1 = 1-1000, Course 2 = 1001-2000, etc.
 export const courseTokenCounterSchema = z.object({
   courseId: z.string(),
-  courseIndex: z.number(), // 0-15 for 16 courses
+  courseIndex: z.number(),
   nextTokenOffset: z.number().default(0), // 0-999, offset within course range
   totalMinted: z.number().default(0),
 });
@@ -270,14 +270,14 @@ export type MintReservation = z.infer<typeof mintReservationSchema>;
 export const insertMintReservationSchema = mintReservationSchema.omit({ id: true, createdAt: true });
 export type InsertMintReservation = z.infer<typeof insertMintReservationSchema>;
 
-// Diploma NFT for users who complete all 16 courses
-// Single diploma collection (1,000 supply) instead of per-course NFTs
+// Diploma NFT for users who complete all courses
+// Single diploma collection (10,000 supply)
 export const diplomaSchema = z.object({
   id: z.string(),
   userId: z.string(),
   walletAddress: z.string(),
-  coursesCompleted: z.number(), // Track how many courses completed (16 = diploma ready)
-  totalCoursesRequired: z.number().default(16),
+  coursesCompleted: z.number(),
+  totalCoursesRequired: z.number().default(24),
   isEligible: z.boolean().default(false), // True when all courses completed
   nftStatus: z.enum(["not_eligible", "eligible", "minting", "minted"]).default("not_eligible"),
   nftTxHash: z.string().optional(),

@@ -930,7 +930,7 @@ export default function AdminPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Course Completions</CardTitle>
-                <CardDescription>Individual course completion records. The KRC-721 Diploma NFT is minted separately after completing all 16 courses.</CardDescription>
+                <CardDescription>Individual course completion records. The KRC-721 Diploma NFT is minted separately after completing all courses.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">

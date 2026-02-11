@@ -59,7 +59,7 @@ export default function Landing() {
       icon: Award,
       title: "KRC-721 NFT Diploma",
       description:
-        "Complete all 16 courses to earn your diploma NFT. Whitelist-based minting means graduates pay only network fees and operational costs (Aprox. 20 KAS) while others pay 20,000 KAS as a deterrent for off platform minting.",
+        "Complete all courses to earn your diploma NFT. Whitelist-based minting means graduates pay only network fees and operational costs (Aprox. 20 KAS) while others pay 20,000 KAS as a deterrent for off platform minting.",
     },
     {
       icon: MessagesSquare,
@@ -511,7 +511,7 @@ export default function Landing() {
                 </div>
                 <div>
                   <p className="font-medium">Graduate & Mint</p>
-                  <p className="text-sm text-muted-foreground">Complete all 16 courses to unlock your KRC-721 diploma NFT with whitelist pricing (graduates pay only network fees)</p>
+                  <p className="text-sm text-muted-foreground">Complete all courses to unlock your KRC-721 diploma NFT with whitelist pricing (graduates pay only network fees)</p>
                 </div>
               </div>
             </div>

@@ -189,7 +189,7 @@ export const appSettings = pgTable("app_settings", {
 // Course token counters - tracks minted tokenIds per course for user-signed minting
 export const courseTokenCounters = pgTable("course_token_counters", {
   courseId: text("course_id").primaryKey(),
-  courseIndex: integer("course_index").notNull(), // 0-15 for 16 courses
+  courseIndex: integer("course_index").notNull(),
   nextTokenOffset: integer("next_token_offset").default(0).notNull(), // 0-999 offset within course range
   totalMinted: integer("total_minted").default(0).notNull(), // Count of successfully minted tokens
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

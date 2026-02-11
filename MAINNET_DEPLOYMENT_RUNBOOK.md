@@ -4,7 +4,7 @@ This document provides the complete checklist for deploying the KUDIPLOMA collec
 
 ## Architecture Overview
 
-**Single Diploma Collection**: Users earn ONE diploma NFT after completing ALL 16 courses.
+**Single Diploma Collection**: Users earn ONE diploma NFT after completing ALL courses.
 - Max Supply: 10,000 diplomas (one per student)
 - Whitelist-based pricing: Course completers pay 0 KAS royalty (only ~10 KAS PoW fee)
 - Non-whitelisted: 20,000 KAS royalty deterrent
@@ -105,7 +105,7 @@ Check the collection on the KaspacomDAGs indexer:
 
 ## Diploma Minting Flow
 
-1. User completes all 16 courses
+1. User completes all courses
 2. User is automatically whitelisted via discount operation
 3. User initiates diploma mint from Dashboard
 4. `POST /api/diploma/reserve` - Reserve mint slot, get inscription
@@ -120,7 +120,7 @@ All diploma NFTs include the following on-chain verified disclaimer:
 ```
 KASPA UNIVERSITY DIPLOMA CERTIFICATE
 
-This NFT certifies completion of all 16 courses in the Kaspa University 
+This NFT certifies completion of all courses in the Kaspa University 
 Learn-to-Earn program. Verified on-chain via KU Protocol (ku:1:quiz).
 
 DISCLAIMER: This educational certificate is issued on the Kaspa L1 
@@ -150,8 +150,8 @@ If deployment fails:
 ## Important Notes
 
 1. **One-time operation**: Collection deploy can only happen once per ticker
-2. **Single diploma per student**: 1,000 max supply for entire platform
-3. **Eligibility**: Must complete ALL 16 courses before minting
+2. **Single diploma per student**: 10,000 max supply for entire platform
+3. **Eligibility**: Must complete ALL courses before minting
 4. **No mock data**: All certificates and rewards are real on mainnet
 5. **Treasury security**: Never expose the treasury private key
 

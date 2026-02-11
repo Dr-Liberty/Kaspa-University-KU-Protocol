@@ -36,6 +36,16 @@ const courses: Course[] = [
         category: "Fundamentals",
       },
       {
+        id: "silverscript",
+        title: "Silverscript: L1 Smart Contracts on Kaspa",
+        description: "Discover Silverscript, Kaspa's first high-level smart contract language that brings programmability directly to Layer 1. Learn how this CashScript-inspired compiler enables DeFi, vaults, and native asset management on the UTXO model — a historic milestone for the Kaspa network.",
+        thumbnail: "/thumbnails/silverscript_smart_contracts.png",
+        lessonCount: 4,
+        kasReward: 0.1,
+        difficulty: "advanced",
+        category: "Development",
+      },
+      {
         id: "ku-protocol",
         title: "KU Protocol: On-Chain Achievements",
         description: "Understand how Kaspa University's KU Protocol creates immutable achievement records on the blockchain. Learn about wallet-signed proofs, quiz verification, and how on-chain education credentials work.",
@@ -83,16 +93,6 @@ const courses: Course[] = [
         lessonCount: 5,
         kasReward: 0.1,
         difficulty: "intermediate",
-        category: "Development",
-      },
-      {
-        id: "silverscript",
-        title: "Silverscript: L1 Smart Contracts on Kaspa",
-        description: "Discover Silverscript, Kaspa's first high-level smart contract language that brings programmability directly to Layer 1. Learn how this CashScript-inspired compiler enables DeFi, vaults, and native asset management on the UTXO model — a historic milestone for the Kaspa network.",
-        thumbnail: "/thumbnails/silverscript_smart_contracts.png",
-        lessonCount: 4,
-        kasReward: 0.1,
-        difficulty: "advanced",
         category: "Development",
       },
       {

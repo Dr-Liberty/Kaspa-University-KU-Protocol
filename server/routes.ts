@@ -1541,7 +1541,7 @@ export async function registerRoutes(
       const courses = await storage.getCourses();
       const certificates = await storage.getCertificatesByUser(user.id);
       const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
-      const totalCoursesRequired = Math.max(courses.length, 16);
+      const totalCoursesRequired = courses.length;
       isDiplomaEligible = uniqueCourseIds.size >= totalCoursesRequired;
       
       // Determine source for logging
@@ -1699,22 +1699,20 @@ export async function registerRoutes(
     }
 
     try {
+      const courses = await storage.getCourses();
+      const totalCoursesRequired = courses.length;
+      
       const user = await storage.getUserByWalletAddress(walletAddress);
       if (!user) {
         return res.json({
           isEligible: false,
           coursesCompleted: 0,
-          totalCoursesRequired: 16,
+          totalCoursesRequired,
           progressPercent: 0,
           nftStatus: "not_eligible",
           reason: "No account found - complete courses to earn certificates",
         });
       }
-
-      const courses = await storage.getCourses();
-      // Hardcode 16 courses as the requirement (matches seed data)
-      // Prevents edge case where empty course list causes NaN/immediate eligibility
-      const totalCoursesRequired = Math.max(courses.length, 16);
       
       const certificates = await storage.getCertificatesByUser(user.id);
       const uniqueCourseIds = new Set(certificates.map(c => c.courseId));
