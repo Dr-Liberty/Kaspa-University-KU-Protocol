@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/stats-bar";
 import { useWallet } from "@/lib/wallet-context";
 import { useQuery } from "@tanstack/react-query";
+import type { Course } from "@shared/schema";
 import {
   Coins,
   Award,
@@ -24,11 +25,14 @@ import {
   ShieldCheck,
   BookOpen,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import kuLogo from "@assets/generated_images/ku_hexagon_logo_zoomed.png";
 import { SiGithub } from "react-icons/si";
 import { WalletSelectDialog } from "@/components/wallet-select-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface SecurityCheck {
   isFlagged: boolean;
@@ -42,11 +46,25 @@ export default function Landing() {
   const { wallet, isDemoMode, enterDemoMode } = useWallet();
   const [, setLocation] = useLocation();
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data: securityCheck } = useQuery<SecurityCheck>({
     queryKey: ["/api/security/check"],
     staleTime: 60000,
   });
+
+  const { data: courses } = useQuery<Course[]>({
+    queryKey: ["/api/courses"],
+  });
+
+  const scrollCarousel = useCallback((direction: "left" | "right") => {
+    if (!carouselRef.current) return;
+    const scrollAmount = 320;
+    carouselRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  }, []);
 
   const features = [
     {
@@ -291,6 +309,116 @@ export default function Landing() {
         </div>
       </section>
 
+      {courses && courses.length > 0 && (
+        <section className="border-y border-border/50 bg-card/30 px-4 py-16" data-testid="section-course-carousel">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-8 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Explore Our Courses
+                </h2>
+                <p className="mt-2 text-muted-foreground">
+                  {courses.length} courses covering fundamentals, protocols, and advanced BlockDAG topics
+                </p>
+              </div>
+              <div className="hidden items-center gap-2 md:flex">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => scrollCarousel("left")}
+                  data-testid="button-carousel-left"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => scrollCarousel("right")}
+                  data-testid="button-carousel-right"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div
+              ref={carouselRef}
+              className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {courses.map((course) => {
+                const difficultyColors: Record<string, string> = {
+                  beginner: "bg-green-500/10 text-green-500 border-green-500/20",
+                  intermediate: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                  advanced: "bg-red-500/10 text-red-500 border-red-500/20",
+                };
+                return (
+                  <Link
+                    key={course.id}
+                    href={`/courses/${course.id}`}
+                    className="flex-shrink-0 snap-start"
+                  >
+                    <div
+                      className="group w-[280px] cursor-pointer rounded-2xl border border-border/50 bg-card/80 transition-all hover:border-primary/30 hover:bg-card"
+                      data-testid={`carousel-course-${course.id}`}
+                    >
+                      <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-background">
+                        {course.thumbnail ? (
+                          <img
+                            src={course.thumbnail}
+                            alt={course.title}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <BookOpen className="h-10 w-10 text-primary/40" />
+                          </div>
+                        )}
+                        <div className="absolute right-2 top-2">
+                          <Badge
+                            variant="outline"
+                            className={`${difficultyColors[course.difficulty] || ""} text-[10px] capitalize`}
+                          >
+                            {course.difficulty}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="mb-1 line-clamp-1 text-sm font-semibold group-hover:text-primary">
+                          {course.title}
+                        </h3>
+                        <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">
+                          {course.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="h-3 w-3" />
+                            {course.lessonCount} lessons
+                          </span>
+                          <span className="flex items-center gap-1 text-primary">
+                            <Coins className="h-3 w-3" />
+                            {course.kasReward} KAS
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link href="/courses">
+                <Button variant="outline" className="gap-2" data-testid="button-view-all-courses">
+                  View All Courses
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="px-4 py-20" id="features">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
@@ -338,7 +466,7 @@ export default function Landing() {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <span>Browse all 23 courses and 97 lessons</span>
+                    <span>Browse all 24 courses and 101 lessons</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
