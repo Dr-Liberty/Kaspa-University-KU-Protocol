@@ -44,7 +44,8 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - Added vProgs course (5 lessons) based on official Kaspa Research yellow paper — positioned before Silverscript
 - Generated vProgs course thumbnail
 - Updated Silverscript course to cross-reference vProgs course
-- Updated course counts to 25 courses / 106 lessons
+- Updated course counts to 25 courses / 105 lessons
+- Removed vProgs lesson 5 (Programmability Roadmap) — too many assumptions
 
 ## External Dependencies
 - **Database**: PostgreSQL.

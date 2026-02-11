@@ -40,7 +40,7 @@ const courses: Course[] = [
         title: "vProgs: Verifiable Programs on Kaspa",
         description: "Explore Kaspa's groundbreaking vProgs architecture — sovereign verifiable programs with off-chain execution and on-chain ZK proof verification. Learn how metered on-site execution, proof stitching, and the Computation DAG enable synchronous composability while keeping L1 lean. Based on the official Kaspa Research yellow paper.",
         thumbnail: "/thumbnails/vprogs_verifiable_programs.png",
-        lessonCount: 5,
+        lessonCount: 4,
         kasReward: 0.1,
         difficulty: "advanced",
         category: "Development",
@@ -2133,39 +2133,6 @@ const courses: Course[] = [
 <p><strong>Key Takeaway</strong></p>
 <p>vProgs are not classical rollups — they are an L1-integrated architecture where Kaspa serves as the native sequencer, enabling synchronous composability across all programs. Based rollups are proto-vProgs that will evolve toward full compliance. Understanding the common misconceptions helps developers make informed architectural decisions today.</p>`,
       },
-      {
-        id: "lesson-vp-5",
-        courseId: "vprogs",
-        title: "Kaspa's Programmability Roadmap",
-        order: 5,
-        duration: "5 min",
-        content: `<p><strong>Learning Objectives</strong></p>
-<p>In this lesson you will learn about the three layers of Kaspa programmability, the development timeline, what developers can build at each stage, and how the L2 ecosystem relates to vProgs.</p>
-<p><strong>Three Layers of Kaspa Programmability</strong></p>
-<p>Kaspa's programmability stack consists of three complementary layers:</p>
-<p><strong>1. Covenants (May 5, 2026 mainnet hard fork)</strong> — Conditional spending conditions on UTXOs. Covenants allow transaction outputs to enforce rules on how they can be spent. This is the foundation layer that enables both Silverscript and vProgs.</p>
-<p><strong>2. Silverscript (local state, per-UTXO)</strong> — A high-level L1 contract language that compiles to covenant-based scripts. Silverscript handles contracts where each UTXO maintains independent local state — ideal for tokens, vaults, escrows, and asset management. See our dedicated Silverscript course for a deep dive into syntax, patterns, and development workflow.</p>
-<p><strong>3. vProgs (shared/global state)</strong> — ZK-verified off-chain execution for composable applications. vProgs handle shared state that multiple transactions can read and write, enabling complex DeFi, gaming, and multi-party applications that require global state coordination.</p>
-<p><strong>Timeline</strong></p>
-<p><strong>May 5, 2026</strong> — Covenant hard fork on mainnet. This enables conditional spending conditions and unlocks Silverscript.</p>
-<p><strong>Mid-2026</strong> — vProgs testnet launch. Developers can begin testing verifiable programs with ZK proof submission and the Computation DAG.</p>
-<p><strong>Late 2026+</strong> — vProgs mainnet deployment. Full production ecosystem with prover networks, ScopeGas metering, and cross-program composability.</p>
-<p><strong>What Developers Can Build When</strong></p>
-<p><strong>NOW:</strong> Deploy on Igra EVM rollup for Solidity-based applications. Use KRC-20 for simple token creation. Build on Kasplex for DeFi functionality.</p>
-<p><strong>May 2026:</strong> Silverscript local-state contracts on L1 mainnet. Native vaults, escrows, token splits, and covenant-based logic without L2 infrastructure.</p>
-<p><strong>Mid-2026+:</strong> vProgs testnet for shared-state applications. Begin prototyping composable DeFi, gaming, and multi-party programs with ZK verification.</p>
-<p><strong>Late 2026+:</strong> Full vProg mainnet ecosystem. Production-ready verifiable programs with synchronous composability, prover markets, and unified state management.</p>
-<p><strong>L2 Ecosystem Relationship</strong></p>
-<p>Kasplex, Igra, Silverscript, and vProgs are complementary — not competing. Each serves different use cases and complexity levels:</p>
-<p>- <strong>Kasplex</strong> provides zkEVM rollup capabilities for complex EVM-compatible applications</p>
-<p>- <strong>Igra</strong> offers a based rollup with atomic synchronous composability, evolving toward vProg compliance</p>
-<p>- <strong>Silverscript</strong> handles local-state L1 contracts with zero additional trust assumptions</p>
-<p>- <strong>vProgs</strong> enables shared-state composable programs with ZK verification</p>
-<p>To learn how to write local-state contracts on Kaspa's L1 today, visit our <strong>Silverscript: L1 Smart Contracts on Kaspa</strong> course for hands-on syntax, patterns, and deployment guides.</p>
-<p><strong>Key Takeaway</strong></p>
-<p>Kaspa's programmability roadmap progresses from covenants (May 2026) through Silverscript (local state) to vProgs (shared state). Developers can start building on L2 today and progressively adopt L1 programmability as the stack matures. The entire ecosystem — L2 rollups, Silverscript, and vProgs — is complementary, giving developers the right tool for every application complexity level.</p>`,
-      },
-
       // Course 23: Silverscript - 4 lessons
       {
         id: "lesson-22-1",
@@ -2522,12 +2489,11 @@ contract Token(int max_outs) {
       { id: "q-21-4-1", lessonId: "lesson-21-4", question: "What is Kurve Bridge used for?", options: ["Mining", "Transferring KAS between Layer 1 and Kasplex Layer 2", "Trading NFTs", "Staking"], correctIndex: 1, explanation: "Kurve Bridge enables users to move KAS from Kaspa L1 to Kasplex L2 and back, funded by the Kaspa Ecosystem Foundation." },
       { id: "q-21-5-1", lessonId: "lesson-21-5", question: "What does the Layer 2 ecosystem transform Kaspa into?", options: ["Just a faster Bitcoin", "A comprehensive platform with smart contracts, DeFi, and gaming capabilities", "A stablecoin network", "A centralized exchange"], correctIndex: 1, explanation: "The L2 ecosystem transforms Kaspa from a payment network into a comprehensive platform - L1 provides fast settlement while L2 enables smart contracts, DeFi, and gaming applications." },
 
-      // Course 22: vProgs - 5 lessons
+      // Course 22: vProgs - 4 lessons
       { id: "q-vp-1-1", lessonId: "lesson-vp-1", question: "What is the primary role of Kaspa L1 in the vProgs architecture?", options: ["It executes all vProg smart contract logic directly", "Sequencer and data availability layer that does not execute vProg logic", "It stores complete application state for all vProgs", "It runs a virtual machine for each vProg"], correctIndex: 1, explanation: "In the vProgs architecture, Kaspa L1 serves as the sequencer (ordering operations) and data availability layer (ensuring data accessibility). It verifies ZK proofs but does NOT execute vProg logic — that happens off-chain on each program's own nodes." },
       { id: "q-vp-2-1", lessonId: "lesson-vp-2", question: "What does ScopeGas meter in the vProg system?", options: ["The transaction fee for each vProg operation", "The computational externality imposed by cross-vProg dependencies", "The storage cost of on-chain state", "The bandwidth used by proof submissions"], correctIndex: 1, explanation: "ScopeGas meters the computational externality — the cost that one vProg imposes on others when they need to locally re-execute its logic to verify state they depend on. This prevents any single program from overwhelming the system." },
       { id: "q-vp-3-1", lessonId: "lesson-vp-3", question: "What is the purpose of 'stitching proofs' in the vProg architecture?", options: ["To connect multiple blockchains together", "To submit new verified state commitments to the vProg State Index on L1", "To encrypt vProg state for privacy", "To merge two vProgs into one program"], correctIndex: 1, explanation: "Stitching proofs are ZK proofs that demonstrate a valid state transition from one commitment to the next. They submit new verified state commitments to the vProg State Index on L1, advancing the program's on-chain state." },
       { id: "q-vp-4-1", lessonId: "lesson-vp-4", question: "How do vProgs fundamentally differ from traditional Ethereum L2 rollups?", options: ["vProgs use proof-of-stake instead of proof-of-work", "vProgs use Kaspa L1 as native sequencer with synchronous composability across programs", "vProgs are faster because they skip verification", "vProgs run on Ethereum's Virtual Machine"], correctIndex: 1, explanation: "Unlike Ethereum L2 rollups which have independent sequencers and asynchronous cross-rollup communication, vProgs share Kaspa L1 as a native sequencer. This enables synchronous composability — programs can read each other's state and compose atomically." },
-      { id: "q-vp-5-1", lessonId: "lesson-vp-5", question: "What is the relationship between Silverscript and vProgs?", options: ["Silverscript replaces vProgs entirely", "Silverscript handles local per-UTXO state while vProgs handle shared global state", "They are identical systems with different names", "vProgs is the compiler for Silverscript"], correctIndex: 1, explanation: "Silverscript and vProgs are complementary layers in Kaspa's programmability stack. Silverscript handles local state (per-UTXO contracts like vaults and escrows), while vProgs handle shared global state (composable applications requiring cross-program state coordination)." },
 
       // Course 23: Silverscript - 4 lessons
       { id: "q-22-1-1", lessonId: "lesson-22-1", question: "What is Silverscript's primary significance for Kaspa?", options: ["It replaces Layer 2 solutions entirely", "It is the first high-level language enabling native L1 smart contracts on Kaspa", "It adds proof-of-stake consensus", "It provides a centralized exchange on Kaspa"], correctIndex: 1, explanation: "Silverscript is Kaspa's first high-level smart contract language and compiler, marking a historic milestone by enabling programmable contracts directly on Layer 1 without any L2 infrastructure." },

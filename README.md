@@ -27,7 +27,7 @@ Kaspa University is a decentralized educational platform where learners earn rea
 ## Features
 
 ### Curriculum
-- 25 courses and 106 lessons covering Kaspa fundamentals, BlockDAG technology, vProgs, smart contracts, Silverscript, and crypto concepts
+- 25 courses and 105 lessons covering Kaspa fundamentals, BlockDAG technology, vProgs, smart contracts, Silverscript, and crypto concepts
 - Gamified BlockDAG progress visualization showing courses as blocks in a DAG
 - Pass quizzes at 70%+ to complete lessons and unlock rewards
 
