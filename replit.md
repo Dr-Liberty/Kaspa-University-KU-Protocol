@@ -41,6 +41,10 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - "Learn without a wallet" now navigates directly to courses page in demo mode
 - Changed diploma minting requirement from 16 courses to all courses
 - Generated Silverscript course thumbnail
+- Added vProgs course (5 lessons) based on official Kaspa Research yellow paper — positioned before Silverscript
+- Generated vProgs course thumbnail
+- Updated Silverscript course to cross-reference vProgs course
+- Updated course counts to 25 courses / 106 lessons
 
 ## External Dependencies
 - **Database**: PostgreSQL.

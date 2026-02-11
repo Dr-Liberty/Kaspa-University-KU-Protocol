@@ -177,7 +177,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
-    // Load BMT University peer-reviewed courses (24 courses, 101 lessons)
+    // Load BMT University peer-reviewed courses (25 courses, 106 lessons)
     seedCourses.forEach((c) => this.courses.set(c.id, c));
     seedLessons.forEach((l) => this.lessons.set(l.id, l));
     seedQuizQuestions.forEach((q) => this.quizQuestions.set(q.id, q));

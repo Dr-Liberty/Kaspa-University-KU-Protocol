@@ -213,6 +213,7 @@ export default function Landing() {
             Master BlockDAG technology while earning real cryptocurrency rewards.
             An open source utility for the Kaspa ecosystem, powered by 4 on-chain protocols: 
             KU for achievements, K for public Q&A, KRC-721 for diploma NFTs, and Silverscript for L1 smart contracts.
+            Includes dedicated courses on vProgs and the Kaspa programmability roadmap.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -466,7 +467,7 @@ export default function Landing() {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <span>Browse all 24 courses and 101 lessons</span>
+                    <span>Browse all 25 courses and 106 lessons</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
