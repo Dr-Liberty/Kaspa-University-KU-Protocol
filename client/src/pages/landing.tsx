@@ -141,6 +141,17 @@ export default function Landing() {
       features: ["Verifiable credentials", "Whitelist pricing", "10,000 max supply"],
       github: "https://github.com/aspectron/krc721",
     },
+    {
+      id: "silverscript",
+      name: "Silverscript",
+      tagline: "L1 Smart Contracts",
+      icon: FileText,
+      color: "from-violet-500 to-violet-500/70",
+      format: "pragma silverscript ^0.1.0;",
+      description: "Kaspa's first high-level smart contract language. Enables DeFi, vaults, and native asset management directly on L1.",
+      features: ["UTXO local state", "Loops & arrays", "Testnet-12 live"],
+      github: "https://github.com/kaspanet/silverscript/",
+    },
   ];
 
   return (
@@ -182,8 +193,8 @@ export default function Landing() {
             data-testid="text-hero-subtitle"
           >
             Master BlockDAG technology while earning real cryptocurrency rewards.
-            An open source utility for the Kaspa ecosystem, powered by 3 on-chain protocols: 
-            KU for achievements, K for public Q&A, and KRC-721 for diploma NFTs.
+            An open source utility for the Kaspa ecosystem, powered by 4 on-chain protocols: 
+            KU for achievements, K for public Q&A, KRC-721 for diploma NFTs, and Silverscript for L1 smart contracts.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -409,8 +420,8 @@ export default function Landing() {
               The Protocol Stack
             </h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Three interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
-              from achievements to public discussion to credentials.
+              Four interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
+              from achievements to public discussion to credentials and L1 programmability.
             </p>
           </div>
 
@@ -420,7 +431,7 @@ export default function Landing() {
               <div className="absolute h-[200px] w-[200px] rounded-full border-2 border-dashed border-accent/20" />
             </div>
             
-            <div className="relative grid gap-6 md:grid-cols-3">
+            <div className="relative grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {protocols.map((protocol, index) => (
                 <div
                   key={protocol.id}
@@ -573,6 +584,39 @@ export default function Landing() {
                 </Button>
               </Link>
             </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-primary/5 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="rounded-lg bg-violet-500 p-2 text-white">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">Silverscript: The Future of Kaspa University</h3>
+                <span className="text-xs text-muted-foreground">Powered by Kaspa's new L1 smart contract engine</span>
+              </div>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Silverscript is Kaspa's first high-level smart contract language, enabling DeFi, vaults, and native asset management directly on L1.
+              As it matures from testnet to mainnet, Kaspa University will leverage Silverscript to make education truly trustless:
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <p className="font-medium text-sm mb-1">Trustless Reward Escrow</p>
+                <p className="text-xs text-muted-foreground">Smart contract vaults that release KAS rewards automatically when valid KU Protocol proofs are verified on-chain</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <p className="font-medium text-sm mb-1">On-Chain Diploma Gating</p>
+                <p className="text-xs text-muted-foreground">Silverscript contracts verify course completion proofs and gate KRC-721 diploma minting without server trust</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <p className="font-medium text-sm mb-1">Programmable Fee Splits</p>
+                <p className="text-xs text-muted-foreground">Token split contracts for transparent distribution of diploma fees between treasury, instructors, and community</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              Currently experimental on Testnet-12. Learn more in our advanced Silverscript course.
+            </p>
           </div>
         </div>
       </section>

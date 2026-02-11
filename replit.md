@@ -36,6 +36,9 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - Added mobile-responsive lesson navigation (horizontal dots on mobile, sidebar on desktop)
 - Improved analytics grid responsiveness on tablet/mobile
 - Polished README for hackathon judging
+- Added Silverscript course (Course 22) - Kaspa's first L1 smart contract language
+- Updated landing page with Silverscript as 4th protocol and future vision roadmap section
+- "Learn without a wallet" now navigates directly to courses page in demo mode
 
 ## External Dependencies
 - **Database**: PostgreSQL.

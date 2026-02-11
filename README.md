@@ -27,11 +27,11 @@ Kaspa University is a decentralized educational platform where learners earn rea
 ## Features
 
 ### Curriculum
-- 23 courses and 97 lessons covering Kaspa fundamentals, BlockDAG technology, smart contracts, and crypto concepts
+- 24 courses and 101 lessons covering Kaspa fundamentals, BlockDAG technology, smart contracts, Silverscript, and crypto concepts
 - Gamified BlockDAG progress visualization showing courses as blocks in a DAG
 - Pass quizzes at 70%+ to complete lessons and unlock rewards
 
-### Three Protocols
+### Four Protocols
 
 **KU Protocol** (custom) - Educational achievement proofs stored on-chain:
 ```
@@ -49,6 +49,16 @@ k:1:reply:{parentId}:{content}
 - Graduates pay only ~10 KAS (PoW + operational costs)
 - Non-graduates pay 20,000 KAS deterrent fee
 - Blockchain indexer is the authoritative source for NFT status
+
+**Silverscript** - Kaspa's first high-level L1 smart contract language:
+```
+pragma silverscript ^0.1.0;
+contract Token(int max_outs) { ... }
+```
+- Enables DeFi, vaults, and native asset management directly on Kaspa L1
+- UTXO-based local state contracts complementing vProgs (shared state)
+- Currently experimental on Testnet-12 ([GitHub](https://github.com/kaspanet/silverscript/))
+- Future: trustless reward escrow, on-chain diploma gating, programmable fee splits
 
 ### Security
 - Sign-In with Kaspa (SIWK) wallet-based authentication

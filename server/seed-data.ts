@@ -1,4 +1,4 @@
-// BMT University Course Import - 16 Courses, 69 Lessons
+// BMT University Course Import - 24 Courses, 101 Lessons
 // Peer-reviewed content from bmtuniversity.com
 // Generated for Kaspa University (Kaspathon 2025)
 
@@ -83,6 +83,16 @@ const courses: Course[] = [
         lessonCount: 5,
         kasReward: 0.1,
         difficulty: "intermediate",
+        category: "Development",
+      },
+      {
+        id: "silverscript",
+        title: "Silverscript: L1 Smart Contracts on Kaspa",
+        description: "Discover Silverscript, Kaspa's first high-level smart contract language that brings programmability directly to Layer 1. Learn how this CashScript-inspired compiler enables DeFi, vaults, and native asset management on the UTXO model — a historic milestone for the Kaspa network.",
+        thumbnail: "/thumbnails/silverscript_smart_contracts.png",
+        lessonCount: 4,
+        kasReward: 0.1,
+        difficulty: "advanced",
         category: "Development",
       },
       {
@@ -1999,6 +2009,218 @@ const courses: Course[] = [
 <p><strong>Continued Learning</strong></p>
 <p>This course provides foundational understanding of Kaspa's Layer 2 ecosystem. Further exploration might include detailed study of Kasplex documentation, participation in the Igra Labs developer community, practical experience with small-amount bridging, and smart contract development on the platform. For comprehensive Kaspa education beyond this platform, bmtuniversity.com offers peer-reviewed courses covering BlockDAG fundamentals through advanced consensus mechanics.</p>`,
       },
+
+      // Course 22: Silverscript - 4 lessons
+      {
+        id: "lesson-22-1",
+        courseId: "silverscript",
+        title: "Introduction to Silverscript",
+        order: 1,
+        duration: "5 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson introduces Silverscript, Kaspa's first high-level smart contract language and compiler. You will learn what Silverscript is, why native Layer 1 smart contracts are a historic milestone for Kaspa, and how the language relates to CashScript, the UTXO model, and the broader programmability roadmap including vProgs.</p>
+<p><strong>⚠️ Experimental Status</strong></p>
+<p>Silverscript is currently experimental and deployed only on Testnet-12. The syntax may evolve before mainnet availability. All examples in this course are for educational purposes and should be tested exclusively on testnet infrastructure.</p>
+<p><strong>What is Silverscript?</strong></p>
+<p>Silverscript is a high-level smart contract language and compiler built by a Kaspa core developer. It is the first tool that enables developers to write programmable contracts directly on Kaspa's Layer 1 — without requiring any Layer 2 infrastructure. This represents a fundamental expansion of what the Kaspa network can do natively.</p>
+<p>The language compiles down to Kaspa's script engine opcodes, which were recently enabled on Testnet-12. These new script engine features unlock capabilities such as loops, arrays, and function calls that were previously unavailable on Kaspa's base layer.</p>
+<p><strong>Why L1 Smart Contracts Matter</strong></p>
+<p>Until now, Kaspa's Layer 1 has been optimized for fast, secure value transfer. Any programmable logic — DeFi, vaults, token management — required Layer 2 solutions like Kasplex or Igra. With Silverscript, certain classes of contracts can run directly on L1, inheriting the full security and speed of Kaspa's GHOSTDAG consensus without any additional trust assumptions.</p>
+<p>L1 contracts benefit from Kaspa's sub-second confirmation times, proof-of-work security, and native UTXO model. They do not require bridges, rollups, or external sequencers.</p>
+<p><strong>CashScript Heritage</strong></p>
+<p>Silverscript's syntax is based on CashScript, a well-known smart contract language from the Bitcoin Cash ecosystem. However, Silverscript extends CashScript significantly by adding support for loops, arrays, and function calls — features critical for building more complex on-chain logic.</p>
+<p><strong>UTXO Model vs Account Model</strong></p>
+<p>Silverscript operates on Kaspa's UTXO (Unspent Transaction Output) model, which differs fundamentally from the account-based model used by Ethereum and its L2s. In the UTXO model, each contract instance is tied to a specific output. Contracts manage <strong>local state</strong> — the state embedded within individual UTXOs — rather than global shared state.</p>
+<p>This makes Silverscript contracts inherently parallelizable and well-suited for patterns like token splits, vaults, and escrows where each instance operates independently.</p>
+<p><strong>Relationship to vProgs</strong></p>
+<p>Silverscript complements a broader programmability vision for Kaspa. While Silverscript handles contracts with <strong>local state</strong> (per-UTXO), a future system called vProgs (virtual programs) will handle <strong>shared state</strong> — global state that multiple transactions can read and write. Together, Silverscript and vProgs will form a comprehensive smart contract infrastructure directly on Kaspa's L1.</p>
+<p>Silverscript serves as both a standalone tool and an infrastructure layer for vProgs, providing the foundational contract primitives that shared-state programs can build upon.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Silverscript marks the first time Kaspa has native L1 smart contracts. It brings DeFi, vaults, and asset management directly to the base layer using a familiar, CashScript-inspired syntax extended with modern programming constructs. The project is open-source at <strong>github.com/kaspanet/silverscript</strong> and currently experimental on Testnet-12.</p>`,
+      },
+      {
+        id: "lesson-22-2",
+        courseId: "silverscript",
+        title: "Language Fundamentals",
+        order: 2,
+        duration: "5 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson covers Silverscript's core syntax and language constructs. You will learn about pragma declarations, contract and function definitions, the type system, control flow with for loops and conditionals, and the key built-in functions: require(), yield(), and return().</p>
+<p><strong>⚠️ Experimental Syntax</strong></p>
+<p>The syntax described here is based on Silverscript v0.1.0 running on Testnet-12. The language is under active development and syntax details may change before mainnet release.</p>
+<p><strong>Pragma Declaration</strong></p>
+<p>Every Silverscript file begins with a pragma statement specifying the compiler version:</p>
+<pre><code>pragma silverscript ^0.1.0;</code></pre>
+<p>This ensures your contract is compiled with a compatible version of the Silverscript compiler, similar to Solidity's pragma pattern.</p>
+<p><strong>Contract Definition</strong></p>
+<p>Contracts are the top-level construct in Silverscript. A contract can accept constructor parameters that are fixed when the contract is deployed:</p>
+<pre><code>contract Token(int max_outs) {
+    // functions go here
+}</code></pre>
+<p>Constructor parameters like <strong>max_outs</strong> become constants embedded in the contract's compiled script. A contract with no parameters uses empty parentheses: <strong>contract Sum() { ... }</strong></p>
+<p><strong>Type System</strong></p>
+<p>Silverscript provides several primitive types designed for blockchain operations:</p>
+<p>• <strong>int</strong> — Integer values used for amounts, counters, and arithmetic</p>
+<p>• <strong>bytes</strong> — Raw byte sequences for encoding data</p>
+<p>• <strong>pubkey</strong> — Public keys for ownership verification</p>
+<p>• <strong>sig</strong> — Cryptographic signatures for authorization</p>
+<p>• <strong>int[]</strong> — Integer arrays with push() and length support</p>
+<p>Constants can be declared inside contracts using the <strong>constant</strong> keyword:</p>
+<pre><code>int constant MAX_ARRAY_SIZE = 5;</code></pre>
+<p><strong>Function Definitions</strong></p>
+<p>Functions define the callable operations of a contract. Parameters include their types, and return types are specified after a colon:</p>
+<pre><code>function sumArray(int[] arr) : (int) {
+    // function body
+}</code></pre>
+<p>Functions without return values omit the return type declaration entirely.</p>
+<p><strong>Control Flow: For Loops</strong></p>
+<p>Silverscript supports for loops with a fixed iteration syntax using three arguments — the iterator variable name, start value, and end value:</p>
+<pre><code>for (i, 0, MAX_ARRAY_SIZE) {
+    if (i &lt; arr.length) {
+        sum = sum + arr[i];
+    }
+}</code></pre>
+<p>Because Kaspa's script engine requires bounded execution, loop bounds must be compile-time constants. The <strong>if</strong> guard inside the loop handles dynamic-length data within the fixed iteration range.</p>
+<p><strong>Built-in Functions</strong></p>
+<p><strong>require(condition)</strong> — Asserts that a condition is true. If the condition fails, the entire transaction is rejected. Used for authorization checks and input validation:</p>
+<pre><code>require(checkSig(s, owner_pk));
+require(arr.length &lt;= MAX_ARRAY_SIZE);</code></pre>
+<p><strong>yield(data)</strong> — Produces a transaction output from the contract. The data parameter contains the serialized output (amount + recipient). Multiple yields create multiple outputs:</p>
+<pre><code>yield(out_amount_bytes + recipient_pk);</code></pre>
+<p><strong>return(value)</strong> — Returns a value from a function, enabling function composition:</p>
+<pre><code>return(sum);</code></pre>
+<p><strong>Additional Built-ins</strong></p>
+<p><strong>checkSig(sig, pubkey)</strong> — Verifies a cryptographic signature against a public key. Essential for ownership and authorization patterns.</p>
+<p><strong>OpNum2Bin(int, size)</strong> — Converts an integer to a byte sequence of the specified size. Used for encoding amounts in transaction outputs.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Silverscript provides a concise but powerful syntax for writing UTXO-based smart contracts. The bounded loop model, combined with require/yield/return primitives, enables expressive contracts while maintaining the deterministic execution guarantees required by Kaspa's consensus.</p>`,
+      },
+      {
+        id: "lesson-22-3",
+        courseId: "silverscript",
+        title: "Contract Patterns &amp; Examples",
+        order: 3,
+        duration: "5 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson examines real Silverscript contract patterns using working code examples. You will study the Token split pattern for dividing assets among recipients, the Sum array pattern for aggregate computation, signature-based authorization with checkSig, and how these primitives enable vaults and DeFi on Kaspa's L1.</p>
+<p><strong>⚠️ Testnet Only</strong></p>
+<p>All code examples are from Silverscript v0.1.0 on Testnet-12. Do not deploy these contracts on mainnet. The syntax and compiler are experimental.</p>
+<p><strong>Pattern 1: Token Split Contract</strong></p>
+<p>The Token contract demonstrates how to split a UTXO into multiple outputs — a fundamental primitive for token distribution, payments, and asset management:</p>
+<pre><code>pragma silverscript ^0.1.0;
+
+contract Token(int max_outs) {
+    function split(pubkey owner_pk, sig s, int in_amount, int num_outs, pubkey recipient_pk) {
+        require(checkSig(s, owner_pk));
+        for(i,0,max_outs){
+            if( i &lt; num_outs ){
+                int out_amount = in_amount / num_outs;
+                bytes out_amount_bytes = OpNum2Bin(out_amount, 8);
+                yield(out_amount_bytes + recipient_pk);
+            }
+        }
+    }
+}</code></pre>
+<p><strong>How it works:</strong></p>
+<p>• The contract accepts a constructor parameter <strong>max_outs</strong> that sets the maximum number of outputs at deployment time</p>
+<p>• The <strong>split</strong> function first verifies the caller's signature using <strong>require(checkSig(s, owner_pk))</strong> — only the owner can split their tokens</p>
+<p>• The for loop iterates up to <strong>max_outs</strong> times, but the if guard ensures only <strong>num_outs</strong> outputs are actually created</p>
+<p>• Each output receives an equal share: <strong>in_amount / num_outs</strong></p>
+<p>• <strong>OpNum2Bin</strong> converts the amount to an 8-byte representation, which is concatenated with the recipient's public key to form the output</p>
+<p>• <strong>yield()</strong> emits each output into the transaction</p>
+<p>This pattern is the foundation for token distribution, payroll contracts, and multi-recipient payments directly on L1.</p>
+<p><strong>Pattern 2: Sum Array Contract</strong></p>
+<p>The Sum contract demonstrates arrays, function calls, and return values — showing how Silverscript handles aggregate computation:</p>
+<pre><code>contract Sum() {
+    int constant MAX_ARRAY_SIZE = 5;
+    function sumArray(int[] arr) : (int) {
+        require(arr.length &lt;= MAX_ARRAY_SIZE);
+        int sum = 0;
+        for (i, 0, MAX_ARRAY_SIZE) {
+            if (i &lt; arr.length) {
+                sum = sum + arr[i];
+            }
+        }
+        return(sum);
+    }
+
+    function main() {
+        int[] x;
+        x.push(1);
+        x.push(2);
+        x.push(3);
+        (int total) = sumArray(x);
+        require(total == 6);
+    }
+}</code></pre>
+<p><strong>How it works:</strong></p>
+<p>• <strong>MAX_ARRAY_SIZE</strong> is a compile-time constant that bounds the loop — required for deterministic execution</p>
+<p>• <strong>sumArray</strong> accepts an integer array and returns an integer. The require() call validates the array fits within bounds</p>
+<p>• The for loop uses the constant upper bound, with an if guard to handle arrays shorter than the maximum</p>
+<p>• <strong>return(sum)</strong> passes the result back to the caller</p>
+<p>• <strong>main()</strong> demonstrates array construction with push(), function invocation, and result verification</p>
+<p>This pattern applies to on-chain aggregation, batch validation, and any contract needing to process collections of values.</p>
+<p><strong>Signature Verification with checkSig</strong></p>
+<p>Authorization in Silverscript centers on <strong>checkSig(sig, pubkey)</strong>. This opcode verifies that a cryptographic signature was produced by the holder of the corresponding private key. Combined with require(), it enforces ownership:</p>
+<pre><code>require(checkSig(s, owner_pk));</code></pre>
+<p>This single line ensures that only the legitimate owner can execute the contract function. It is the building block for vaults, escrows, and multi-signature schemes.</p>
+<p><strong>Building Vaults &amp; DeFi Primitives</strong></p>
+<p>By combining these patterns, developers can construct DeFi primitives directly on Kaspa's L1:</p>
+<p>• <strong>Vaults</strong> — Time-locked or signature-gated UTXOs that restrict when and how funds can be spent</p>
+<p>• <strong>Escrow</strong> — Contracts requiring multiple signatures to release funds</p>
+<p>• <strong>Token management</strong> — Split, merge, and transfer native assets with on-chain logic</p>
+<p>• <strong>Conditional payments</strong> — Release funds only when specific conditions (signatures, amounts, counters) are met</p>
+<p>All of these execute natively on L1 with Kaspa's sub-second confirmation times and proof-of-work security.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Silverscript's contract patterns — signature-gated splits, bounded array processing, and yield-based output generation — provide the fundamental building blocks for DeFi and asset management directly on Kaspa's base layer. Each pattern leverages the UTXO model for parallel, independent contract execution.</p>`,
+      },
+      {
+        id: "lesson-22-4",
+        courseId: "silverscript",
+        title: "Building on Silverscript",
+        order: 4,
+        duration: "5 min",
+        content: `<p><strong>Learning Objectives</strong></p>
+<p>This lesson covers the practical aspects of developing with Silverscript: the development workflow, deploying contracts on Testnet-12, the future roadmap for L1 programmability, and how Silverscript fits alongside the Layer 2 ecosystem including Kasplex and Igra.</p>
+<p><strong>⚠️ Testnet-12 Only</strong></p>
+<p>Silverscript is currently available exclusively on Testnet-12 where the new script engine features have been enabled. Do not attempt to deploy Silverscript contracts on mainnet. The compiler and syntax remain experimental and subject to change.</p>
+<p><strong>Development Workflow</strong></p>
+<p>The Silverscript development process follows these steps:</p>
+<p>1. <strong>Write</strong> — Author your contract in a .ss file using the Silverscript syntax covered in previous lessons</p>
+<p>2. <strong>Compile</strong> — Use the Silverscript compiler to translate your high-level code into Kaspa script engine opcodes. The compiler handles optimization and validation</p>
+<p>3. <strong>Test</strong> — Deploy and execute your contract on Testnet-12 using testnet KAS. Verify all code paths and edge cases</p>
+<p>4. <strong>Iterate</strong> — Refine your contract based on testing results. The experimental nature of the language means frequent iteration is expected</p>
+<p>The compiler and tools are open-source and available at <strong>github.com/kaspanet/silverscript</strong>. Community contributions and bug reports are encouraged as the project matures.</p>
+<p><strong>Testnet-12 Deployment</strong></p>
+<p>Testnet-12 is the first Kaspa testnet with the expanded script engine opcodes that Silverscript requires. To deploy contracts:</p>
+<p>• Connect to a Testnet-12 node (the kaspanet GitHub provides testnet infrastructure details)</p>
+<p>• Obtain testnet KAS from the Kaspa testnet faucet</p>
+<p>• Compile your Silverscript contract to produce the deployment script</p>
+<p>• Submit the transaction containing your compiled contract to the testnet</p>
+<p>• Interact with the deployed contract by constructing transactions that call its functions with the appropriate parameters</p>
+<p>Because Silverscript contracts compile to native script opcodes, they execute with the same performance characteristics as any other Kaspa transaction — benefiting from GHOSTDAG's sub-second confirmations.</p>
+<p><strong>Future of L1 Programmability</strong></p>
+<p>Silverscript is the first step in a broader L1 programmability roadmap for Kaspa:</p>
+<p>• <strong>Silverscript (local state)</strong> — Available now on Testnet-12. Handles contracts where each UTXO maintains its own independent state. Ideal for tokens, vaults, escrows, and asset management</p>
+<p>• <strong>vProgs (shared state)</strong> — A planned system for contracts that need to read and write global shared state. This enables DEXs, lending protocols, and other DeFi applications requiring a shared order book or liquidity pool</p>
+<p>• Together, Silverscript and vProgs will provide a complete smart contract stack on Kaspa's L1, covering both local-state and shared-state use cases without requiring Layer 2 infrastructure</p>
+<p>The timeline for mainnet deployment depends on testnet validation, security audits, and community review of the new script engine features.</p>
+<p><strong>Relationship to L2 Ecosystem</strong></p>
+<p>Silverscript does not replace Kaspa's Layer 2 solutions — it complements them:</p>
+<p>• <strong>Kasplex (zkEVM L2)</strong> — Provides full EVM compatibility for Solidity developers. Best for complex DeFi protocols, existing Ethereum application migration, and use cases requiring EVM tooling</p>
+<p>• <strong>Igra Labs (ZK-rollup L2)</strong> — Optimized for gaming with atomic synchronous composability. Best for real-time applications requiring multiple contract interactions in a single transaction</p>
+<p>• <strong>Silverscript (L1)</strong> — Native contract execution without bridges or rollups. Best for simple-to-moderate contracts that benefit from L1 security, speed, and zero additional trust assumptions</p>
+<p>Developers should choose the appropriate layer based on their application's complexity, state requirements, and security needs. L1 contracts via Silverscript are ideal when minimizing trust assumptions is paramount, while L2 solutions offer richer programming environments for complex applications.</p>
+<p><strong>Getting Started</strong></p>
+<p>To begin building with Silverscript:</p>
+<p>• Study the contract patterns from the previous lesson and experiment with modifications</p>
+<p>• Clone the repository at <strong>github.com/kaspanet/silverscript</strong> and explore the example contracts</p>
+<p>• Connect to Testnet-12 and deploy your first contract</p>
+<p>• Join the Kaspa developer community to share findings, report issues, and contribute to the language's evolution</p>
+<p>Remember: Silverscript is experimental. Expect breaking changes, embrace iteration, and help shape the future of L1 smart contracts on Kaspa.</p>
+<p><strong>Key Takeaway</strong></p>
+<p>Silverscript opens a new chapter for Kaspa — native L1 programmability. Combined with the Layer 2 ecosystem and the future vProgs system, Kaspa is evolving into a multi-layered platform where developers can choose the right execution environment for their application. The journey starts on Testnet-12 today.</p>`,
+      },
     ];
 
     const allQuestions: QuizQuestion[] = [
@@ -2144,6 +2366,12 @@ const courses: Course[] = [
       { id: "q-21-3-1", lessonId: "lesson-21-3", question: "What is Igra Labs' defining innovation?", options: ["Faster block times", "Atomic synchronous composability—executing multiple contracts in one atomic transaction", "Lower gas fees", "More validators"], correctIndex: 1, explanation: "Igra's atomic synchronous composability enables multiple smart contract operations to execute atomically in a single transaction without risk of partial failure, unlocking DeFi applications previously impossible. to support multiple VMs beyond just EVM." },
       { id: "q-21-4-1", lessonId: "lesson-21-4", question: "What is Kurve Bridge used for?", options: ["Mining", "Transferring KAS between Layer 1 and Kasplex Layer 2", "Trading NFTs", "Staking"], correctIndex: 1, explanation: "Kurve Bridge enables users to move KAS from Kaspa L1 to Kasplex L2 and back, funded by the Kaspa Ecosystem Foundation." },
       { id: "q-21-5-1", lessonId: "lesson-21-5", question: "What does the Layer 2 ecosystem transform Kaspa into?", options: ["Just a faster Bitcoin", "A comprehensive platform with smart contracts, DeFi, and gaming capabilities", "A stablecoin network", "A centralized exchange"], correctIndex: 1, explanation: "The L2 ecosystem transforms Kaspa from a payment network into a comprehensive platform - L1 provides fast settlement while L2 enables smart contracts, DeFi, and gaming applications." },
+
+      // Course 22: Silverscript - 4 lessons
+      { id: "q-22-1-1", lessonId: "lesson-22-1", question: "What is Silverscript's primary significance for Kaspa?", options: ["It replaces Layer 2 solutions entirely", "It is the first high-level language enabling native L1 smart contracts on Kaspa", "It adds proof-of-stake consensus", "It provides a centralized exchange on Kaspa"], correctIndex: 1, explanation: "Silverscript is Kaspa's first high-level smart contract language and compiler, marking a historic milestone by enabling programmable contracts directly on Layer 1 without any L2 infrastructure." },
+      { id: "q-22-2-1", lessonId: "lesson-22-2", question: "Why must Silverscript for-loop bounds be compile-time constants?", options: ["To make code easier to read", "Because Kaspa's script engine requires bounded, deterministic execution", "To reduce file size", "Because JavaScript requires it"], correctIndex: 1, explanation: "Kaspa's script engine requires all execution to be bounded and deterministic. Compile-time constant loop bounds guarantee that every contract execution terminates within known limits." },
+      { id: "q-22-3-1", lessonId: "lesson-22-3", question: "What does the yield() function do in a Silverscript contract?", options: ["Pauses execution until the next block", "Produces a transaction output from the contract", "Deletes a UTXO from the chain", "Sends a network request"], correctIndex: 1, explanation: "yield() emits a transaction output from the contract. Each yield call creates one output with serialized amount and recipient data, enabling patterns like token splits." },
+      { id: "q-22-4-1", lessonId: "lesson-22-4", question: "How does Silverscript relate to vProgs in Kaspa's programmability roadmap?", options: ["Silverscript replaces vProgs", "Silverscript handles local state (per-UTXO) while vProgs will handle shared global state", "They are identical systems", "vProgs is the compiler for Silverscript"], correctIndex: 1, explanation: "Silverscript manages local state within individual UTXOs, while vProgs (planned) will handle shared global state. Together they form a complete L1 smart contract stack for Kaspa." },
     ];
 
 export { courses, allLessons as lessons, allQuestions as quizQuestions };
