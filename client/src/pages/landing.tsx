@@ -211,9 +211,9 @@ export default function Landing() {
             data-testid="text-hero-subtitle"
           >
             Master BlockDAG technology while earning real cryptocurrency rewards.
-            An open source utility for the Kaspa ecosystem, powered by 4 on-chain protocols: 
-            KU for achievements, K for public Q&A, KRC-721 for diploma NFTs, and Silverscript for L1 smart contracts.
-            Includes dedicated courses on vProgs and Kaspa's programmability stack.
+            An open source utility for the Kaspa ecosystem, powered by 3 on-chain protocols: 
+            KU for achievements, K for public Q&A, and KRC-721 for diploma NFTs.
+            Includes dedicated courses on vProgs, Silverscript, and Kaspa's programmability stack.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -549,7 +549,7 @@ export default function Landing() {
               The Protocol Stack
             </h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Four interconnected protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
+              These protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
               from achievements to public discussion to credentials and L1 programmability.
             </p>
           </div>
@@ -572,7 +572,12 @@ export default function Landing() {
                   </div>
                   
                   <div className="mb-2">
-                    <h3 className="text-lg font-semibold">{protocol.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-semibold">{protocol.name}</h3>
+                      {protocol.id === "silverscript" && (
+                        <Badge variant="outline" className="text-[10px] border-violet-500/50 text-violet-400">Coming Soon</Badge>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">{protocol.tagline}</span>
                   </div>
                   
