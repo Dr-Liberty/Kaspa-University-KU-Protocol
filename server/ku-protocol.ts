@@ -227,7 +227,11 @@ export const KU_PROTOCOL = {
 
 /**
  * Quiz Result Payload
- * Format: ku:1:quiz:{walletAddress}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}
+ * Format: ku:1:quiz:{walletAddress}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}:{startBlockHash}:{startBlueScore}:{endBlockHash}:{endBlueScore}
+ * 
+ * Block anchors are optional for backward compatibility.
+ * When present, they provide verifiable time anchors from the Kaspa BlockDAG
+ * that prove the quiz was taken during a specific time window.
  */
 export interface QuizPayload {
   walletAddress: string;
@@ -236,7 +240,11 @@ export interface QuizPayload {
   score: number;
   maxScore: number;
   timestamp: number;
-  contentHash: string; // Hash of quiz answers for verification
+  contentHash: string;
+  startBlockHash?: string;
+  startBlueScore?: number;
+  endBlockHash?: string;
+  endBlueScore?: number;
 }
 
 /**
@@ -272,24 +280,26 @@ export function createContentHash(content: string): string {
 
 /**
  * Create quiz result payload for on-chain storage
+ * Now includes optional block anchors for verifiable time windows (anti-cheat)
  */
 export function createQuizPayload(data: Omit<QuizPayload, "contentHash">, answers: number[]): string {
-  // Create hash of answers array for verification
   const answerString = answers.join(",");
   const contentHash = createContentHash(`${data.lessonId}:${answerString}:${data.score}`);
   
   const payload: QuizPayload = { ...data, contentHash };
   
-  // Format: ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{hash}
-  // Note: header already includes trailing ":" so we join remaining fields with ":"
   const dataFields = [
-    payload.walletAddress, // Full address for verification
+    payload.walletAddress,
     payload.courseId,
     payload.lessonId,
     payload.score.toString(),
     payload.maxScore.toString(),
     payload.timestamp.toString(),
     payload.contentHash,
+    payload.startBlockHash || "none",
+    (payload.startBlueScore ?? 0).toString(),
+    payload.endBlockHash || "none",
+    (payload.endBlueScore ?? 0).toString(),
   ].join(KU_DELIM);
   
   const payloadStr = KU_PROTOCOL.headers.QUIZ.string + dataFields;
@@ -393,20 +403,35 @@ export function parseKUPayload(payloadHex: string): ParsedKUMessage | null {
 
     const result: ParsedKUMessage = { type, version, rawData };
 
-    // Parse based on message type using reverse indexing for trailing fixed fields
-    // This handles wallet addresses that contain ":" (e.g., kaspa:address)
     if (type === "quiz" && parts.length >= 10) {
-      // Format: ku:1:quiz:{walletAddress}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}
-      // Last 4 parts are always: score, maxScore, timestamp, contentHash
+      // Format: ku:1:quiz:{wallet}:{courseId}:{lessonId}:{score}:{maxScore}:{timestamp}:{contentHash}[:{startBlockHash}:{startBlueScore}:{endBlockHash}:{endBlueScore}]
+      // Block anchors are optional (4 trailing fields)
       const n = parts.length;
-      const contentHash = parts[n - 1];
-      const timestamp = parseInt(parts[n - 2], 10);
-      const maxScore = parseInt(parts[n - 3], 10);
-      const score = parseInt(parts[n - 4], 10);
-      const lessonId = parts[n - 5];
-      const courseId = parts[n - 6];
-      // Wallet address may contain ":" so join all remaining parts
-      const walletAddress = parts.slice(3, n - 6).join(KU_DELIM);
+      const hasBlockAnchors = n >= 14;
+      
+      let endIdx: number;
+      let startBlockHash: string | undefined;
+      let startBlueScore: number | undefined;
+      let endBlockHash: string | undefined;
+      let endBlueScore: number | undefined;
+      
+      if (hasBlockAnchors) {
+        endBlueScore = parseInt(parts[n - 1], 10) || undefined;
+        endBlockHash = parts[n - 2] !== "none" ? parts[n - 2] : undefined;
+        startBlueScore = parseInt(parts[n - 3], 10) || undefined;
+        startBlockHash = parts[n - 4] !== "none" ? parts[n - 4] : undefined;
+        endIdx = n - 4;
+      } else {
+        endIdx = n;
+      }
+      
+      const contentHash = parts[endIdx - 1];
+      const timestamp = parseInt(parts[endIdx - 2], 10);
+      const maxScore = parseInt(parts[endIdx - 3], 10);
+      const score = parseInt(parts[endIdx - 4], 10);
+      const lessonId = parts[endIdx - 5];
+      const courseId = parts[endIdx - 6];
+      const walletAddress = parts.slice(3, endIdx - 6).join(KU_DELIM);
       
       result.quiz = {
         walletAddress,
@@ -416,6 +441,10 @@ export function parseKUPayload(payloadHex: string): ParsedKUMessage | null {
         maxScore,
         timestamp,
         contentHash,
+        startBlockHash,
+        startBlueScore,
+        endBlockHash,
+        endBlueScore,
       };
     } else if (type === "qa_q" && parts.length >= 7) {
       // Format: ku:1:qa_q:{lessonId}:{authorAddress}:{timestamp}:{contentHash}:{content}

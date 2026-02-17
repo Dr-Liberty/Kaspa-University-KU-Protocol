@@ -22,7 +22,7 @@ import {
   Play,
   Lock,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 function QuizSection({
   lessonId,
@@ -42,10 +42,24 @@ function QuizSection({
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [demoResult, setDemoResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [startBlock, setStartBlock] = useState<{ blockHash: string; blueScore: number } | null>(null);
 
   const { data: questions, isLoading } = useQuery<QuizQuestion[]>({
     queryKey: ["/api/quiz", lessonId],
   });
+
+  useEffect(() => {
+    if (questions && questions.length > 0 && !startBlock && !isDemoMode) {
+      fetch("/api/kaspa/dag-tip")
+        .then(r => r.json())
+        .then(tip => {
+          if (tip?.blockHash && tip.blockHash !== "none") {
+            setStartBlock({ blockHash: tip.blockHash, blueScore: tip.blueScore });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [questions, startBlock, isDemoMode]);
 
   const submitQuiz = useMutation({
     mutationFn: async () => {
@@ -65,6 +79,8 @@ function QuizSection({
         const response = await apiRequest("POST", `/api/quiz/${lessonId}/submit`, {
           lessonId,
           answers: answerArray,
+          startBlockHash: startBlock?.blockHash,
+          startBlueScore: startBlock?.blueScore,
         });
         const data = await response.json();
         console.log("[Quiz] Response received", data);

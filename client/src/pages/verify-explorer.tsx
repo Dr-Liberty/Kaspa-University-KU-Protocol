@@ -72,6 +72,10 @@ interface BlockchainTransaction {
   blockHash?: string;
   confirmed?: boolean;
   source?: "blockchain" | "database";
+  startBlockHash?: string;
+  startBlueScore?: number;
+  endBlockHash?: string;
+  endBlueScore?: number;
 }
 
 interface ExplorerScanResult {
@@ -193,6 +197,12 @@ function TransactionCard({ tx }: { tx: BlockchainTransaction }) {
                 On-chain
               </Badge>
             )}
+            {tx.startBlockHash && tx.startBlockHash !== "none" && tx.endBlockHash && tx.endBlockHash !== "none" && (
+              <Badge variant="outline" className="text-xs gap-1 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                <Shield className="h-3 w-3" />
+                Block-Anchored
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-4 mt-1 flex-wrap">
             {tx.walletAddress && (
@@ -209,6 +219,11 @@ function TransactionCard({ tx }: { tx: BlockchainTransaction }) {
             {tx.score !== undefined && tx.maxScore !== undefined && (
               <span className="text-xs font-medium text-green-600 dark:text-green-400">
                 Score: {tx.score}/{tx.maxScore} ({Math.round((tx.score / tx.maxScore) * 100)}%)
+              </span>
+            )}
+            {tx.startBlueScore && tx.endBlueScore && (
+              <span className="text-xs text-muted-foreground font-mono">
+                DAG: {tx.startBlueScore.toLocaleString()}{" -> "}{tx.endBlueScore.toLocaleString()}
               </span>
             )}
           </div>

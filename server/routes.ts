@@ -686,6 +686,20 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/kaspa/dag-tip", async (_req: Request, res: Response) => {
+    try {
+      const kaspaService = await getKaspaService();
+      const tip = await kaspaService.getDagTipBlock();
+      if (tip) {
+        res.json(tip);
+      } else {
+        res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now() });
+      }
+    } catch (error: any) {
+      res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now() });
+    }
+  });
+
   app.get("/api/security/check", async (req: Request, res: Response) => {
     const clientIP = getClientIP(req);
     const metrics = getSecurityMetrics();
@@ -1089,7 +1103,7 @@ export async function registerRoutes(
 
   app.post("/api/quiz/:lessonId/submit", quizRateLimiter, async (req: Request, res: Response) => {
     const { lessonId } = req.params;
-    const { answers } = req.body;
+    const { answers, startBlockHash, startBlueScore } = req.body;
 
     console.log(`[Quiz] Submit request for lesson ${lessonId}`, {
       answers,
@@ -1217,6 +1231,20 @@ export async function registerRoutes(
       
       try {
         const kaspaService = await getKaspaService();
+        const endTip = await kaspaService.getDagTipBlock();
+        const parsedStartBlueScore = startBlueScore ? parseInt(startBlueScore, 10) : undefined;
+        const endBlueScore = endTip?.blueScore;
+        
+        if (parsedStartBlueScore && endBlueScore) {
+          const blueScoreDelta = endBlueScore - parsedStartBlueScore;
+          if (blueScoreDelta < 0) {
+            console.warn(`[Quiz] Block anchor anomaly: end (${endBlueScore}) < start (${parsedStartBlueScore}) for ${walletAddress.slice(0, 20)}...`);
+          }
+          if (blueScoreDelta > 50000) {
+            console.warn(`[Quiz] Block anchor stale: delta ${blueScoreDelta} exceeds max for ${walletAddress.slice(0, 20)}...`);
+          }
+        }
+        
         const quizPayload = createQuizPayload({
           walletAddress,
           courseId: lesson.courseId,
@@ -1224,6 +1252,10 @@ export async function registerRoutes(
           score,
           maxScore: 100,
           timestamp: Date.now(),
+          startBlockHash: startBlockHash || undefined,
+          startBlueScore: parsedStartBlueScore,
+          endBlockHash: endTip?.blockHash || undefined,
+          endBlueScore,
         }, answers);
         
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -2926,6 +2958,10 @@ export async function registerRoutes(
               kuTx.score = parsed.quiz.score;
               kuTx.maxScore = parsed.quiz.maxScore;
               kuTx.contentHash = parsed.quiz.contentHash;
+              kuTx.startBlockHash = parsed.quiz.startBlockHash;
+              kuTx.startBlueScore = parsed.quiz.startBlueScore;
+              kuTx.endBlockHash = parsed.quiz.endBlockHash;
+              kuTx.endBlueScore = parsed.quiz.endBlueScore;
             } else if (parsed.question) {
               kuTx.walletAddress = parsed.question.authorAddress;
               kuTx.lessonId = parsed.question.lessonId;
@@ -3417,6 +3453,30 @@ export async function registerRoutes(
       };
       
       res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  app.get("/api/admin/verified-transactions", adminAuth, async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const transactions = kuIndexer.getVerifiedTransactions(limit, offset);
+      res.json({
+        transactions,
+        total: kuIndexer.getVerifiedCount(),
+        blockAnchored: kuIndexer.getBlockAnchoredCount(),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: sanitizeError(error) });
+    }
+  });
+
+  app.post("/api/admin/batch-verify", adminAuth, async (_req: Request, res: Response) => {
+    try {
+      const result = await kuIndexer.batchVerifyProofs(10);
+      res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: sanitizeError(error) });
     }

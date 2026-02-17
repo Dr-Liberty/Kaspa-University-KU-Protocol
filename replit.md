@@ -49,6 +49,14 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - Added Kasanova Wallet as third wallet partner (alongside KasWare and Kastle)
 - Kasanova uses KasWare-compatible window.kasware API; detected via window.kasanova namespace
 - Airbridge link (kasanova.app/dapp?url=...) for mobile browser users to open inside Kasanova app
+- Implemented block-anchored quiz proofs: KU Protocol now embeds start/end BlockDAG tip (hash + blueScore) into on-chain quiz payloads for verifiable time windows (anti-cheat)
+- Added `/api/kaspa/dag-tip` endpoint for fetching current DAG tip block info
+- Updated `createQuizPayload` and `parseKUPayload` to handle block anchor fields (backward-compatible with "none" defaults)
+- Client fetches DAG tip when quiz loads, sends startBlockHash/startBlueScore with submission; server fetches endBlock at submission time
+- Added `VerifiedTransaction` interface and verified transaction log to KU Indexer for admin panel
+- Added batch verification method (`batchVerifyProofs`) for active blockchain scanning (inspired by minKasWasm Intelligence Layer)
+- Added admin endpoints: `/api/admin/verified-transactions` and `/api/admin/batch-verify`
+- Explorer UI shows "Block-Anchored" badge and DAG blueScore range on transactions with block anchors
 
 ## External Dependencies
 - **Database**: PostgreSQL.

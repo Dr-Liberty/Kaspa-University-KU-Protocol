@@ -37,6 +37,24 @@ export interface IndexedQuizProof {
   contentHash: string;
   verified: boolean;
   blockHeight?: number;
+  startBlockHash?: string;
+  startBlueScore?: number;
+  endBlockHash?: string;
+  endBlueScore?: number;
+}
+
+export interface VerifiedTransaction {
+  txHash: string;
+  protocol: string;
+  type: string;
+  walletAddress: string;
+  courseId?: string;
+  lessonId?: string;
+  score?: number;
+  verifiedAt: Date;
+  blockAnchored: boolean;
+  startBlueScore?: number;
+  endBlueScore?: number;
 }
 
 export interface OnChainStats {
@@ -64,6 +82,7 @@ export interface OnChainStats {
  */
 class KUIndexer {
   private quizProofs: Map<string, IndexedQuizProof> = new Map();
+  private verifiedTxLog: VerifiedTransaction[] = [];
   private isRunning = false;
   private stats: OnChainStats = {
     totalQuizProofs: 0,
@@ -163,7 +182,10 @@ class KUIndexer {
     
     this.quizProofs.set(proof.txHash, proof);
     
-    // Update stats
+    if (proof.verified) {
+      this.addToVerifiedLog(proof);
+    }
+    
     this.stats.totalQuizProofs++;
     this.stats.protocolBreakdown.ku++;
     this.stats.lastUpdated = new Date();
@@ -277,6 +299,91 @@ class KUIndexer {
     return Array.from(this.quizProofs.values())
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(offset, offset + limit);
+  }
+
+  /**
+   * Get the verified transaction log for admin panel
+   */
+  getVerifiedTransactions(limit = 50, offset = 0): VerifiedTransaction[] {
+    return this.verifiedTxLog
+      .sort((a, b) => b.verifiedAt.getTime() - a.verifiedAt.getTime())
+      .slice(offset, offset + limit);
+  }
+
+  /**
+   * Get verified transaction count
+   */
+  getVerifiedCount(): number {
+    return this.verifiedTxLog.length;
+  }
+
+  /**
+   * Get block-anchored transaction count
+   */
+  getBlockAnchoredCount(): number {
+    return this.verifiedTxLog.filter(t => t.blockAnchored).length;
+  }
+
+  /**
+   * Batch verify unverified quiz proofs against the blockchain
+   * Similar to minKasWasm's Intelligence Layer active scanning
+   */
+  async batchVerifyProofs(batchSize = 10): Promise<{ verified: number; failed: number; skipped: number }> {
+    const unverified = Array.from(this.quizProofs.values())
+      .filter(p => !p.verified && p.txHash);
+    
+    let verified = 0;
+    let failed = 0;
+    let skipped = 0;
+    
+    const batch = unverified.slice(0, batchSize);
+    
+    for (const proof of batch) {
+      try {
+        const result = await this.verifyOnChain(proof.txHash, "quiz");
+        if (result.valid) {
+          proof.verified = true;
+          this.addToVerifiedLog(proof);
+          verified++;
+        } else {
+          failed++;
+        }
+      } catch {
+        skipped++;
+      }
+    }
+    
+    if (batch.length > 0) {
+      console.log(`[KU Indexer] Batch verification: ${verified} verified, ${failed} failed, ${skipped} skipped`);
+    }
+    
+    return { verified, failed, skipped };
+  }
+
+  /**
+   * Add a verified proof to the persistent transaction log
+   */
+  private addToVerifiedLog(proof: IndexedQuizProof): void {
+    const isAnchored = !!proof.startBlockHash && proof.startBlockHash !== "none" && 
+                       !!proof.endBlockHash && proof.endBlockHash !== "none";
+    
+    this.verifiedTxLog.push({
+      txHash: proof.txHash,
+      protocol: "ku",
+      type: "quiz",
+      walletAddress: proof.walletAddress,
+      courseId: proof.courseId,
+      lessonId: proof.lessonId,
+      score: proof.score,
+      verifiedAt: new Date(),
+      blockAnchored: isAnchored,
+      startBlueScore: proof.startBlueScore,
+      endBlueScore: proof.endBlueScore,
+    });
+    
+    if (this.verifiedTxLog.length > 1000) {
+      this.verifiedTxLog = this.verifiedTxLog.slice(-500);
+    }
   }
 
   /**

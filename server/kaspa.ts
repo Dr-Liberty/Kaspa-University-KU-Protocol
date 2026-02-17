@@ -1685,6 +1685,54 @@ class KaspaService {
   }
 
   /**
+   * Get current DAG tip block info (hash + blueScore) for block-anchored quiz proofs
+   * Returns the latest block hash and blue score from the BlockDAG.
+   * Used to anchor quiz start/end times to verifiable on-chain data.
+   */
+  async getDagTipBlock(): Promise<{ blockHash: string; blueScore: number; timestamp: number } | null> {
+    try {
+      if (this.rpcConnected && this.rpcClient) {
+        const info = await Promise.race([
+          this.rpcClient.getBlockDagInfo(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
+        ]) as any;
+        
+        if (info?.tipHashes?.length > 0) {
+          return {
+            blockHash: info.tipHashes[0],
+            blueScore: parseInt(info.virtualDaaScore || info.headerCount || "0", 10),
+            timestamp: Date.now(),
+          };
+        }
+        
+        if (info?.blockCount) {
+          return {
+            blockHash: info.pruningPointHash || `tip_${info.blockCount}`,
+            blueScore: parseInt(info.blockCount, 10),
+            timestamp: Date.now(),
+          };
+        }
+      }
+      
+      if (this.apiConnected) {
+        const tipData = await this.apiCall("/info/virtual-chain-blue-score").catch(() => null);
+        if (tipData?.blueScore) {
+          return {
+            blockHash: "none",
+            blueScore: parseInt(tipData.blueScore, 10),
+            timestamp: Date.now(),
+          };
+        }
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error("[Kaspa] Failed to get DAG tip:", error.message);
+      return null;
+    }
+  }
+
+  /**
    * Get network info
    */
   async getNetworkInfo(): Promise<any> {
