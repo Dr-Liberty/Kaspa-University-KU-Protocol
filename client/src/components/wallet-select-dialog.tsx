@@ -34,11 +34,7 @@ export function WalletSelectDialog({ open, onOpenChange }: WalletSelectDialogPro
   const handleConnect = async (type: "kasware" | "kastle" | "kasanova") => {
     setConnectingType(type);
     try {
-      if (type === "kasanova") {
-        await connect("kasware");
-      } else {
-        await connect(type);
-      }
+      await connect(type);
       onOpenChange(false);
     } catch {
     } finally {
@@ -60,7 +56,7 @@ export function WalletSelectDialog({ open, onOpenChange }: WalletSelectDialogPro
         </DialogHeader>
 
         <div className="flex flex-col gap-3 pt-2">
-          {isKasanovaDetected ? (
+          {isKasanovaDetected && (
             <button
               onClick={() => handleConnect("kasanova")}
               disabled={isConnecting}
@@ -82,52 +78,54 @@ export function WalletSelectDialog({ open, onOpenChange }: WalletSelectDialogPro
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               )}
             </button>
-          ) : (
-            <>
-              <button
-                onClick={() => handleConnect("kasware")}
-                disabled={isConnecting}
-                className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate disabled:opacity-50 disabled:pointer-events-none"
-                data-testid="button-select-kasware"
-              >
-                <img
-                  src={kaswareLogo}
-                  alt="KasWare"
-                  className="h-12 w-12 rounded-lg"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold">KasWare</p>
-                  <p className="text-sm text-muted-foreground">
-                    Browser extension wallet
-                  </p>
-                </div>
-                {connectingType === "kasware" && (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                )}
-              </button>
+          )}
 
-              <button
-                onClick={() => handleConnect("kastle")}
-                disabled={isConnecting}
-                className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate disabled:opacity-50 disabled:pointer-events-none"
-                data-testid="button-select-kastle"
-              >
-                <img
-                  src={kastleLogo}
-                  alt="Kastle"
-                  className="h-12 w-12 rounded-lg"
-                />
-                <div className="flex-1">
-                  <p className="font-semibold">Kastle</p>
-                  <p className="text-sm text-muted-foreground">
-                    Browser extension wallet
-                  </p>
-                </div>
-                {connectingType === "kastle" && (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                )}
-              </button>
+          <button
+            onClick={() => handleConnect("kasware")}
+            disabled={isConnecting}
+            className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate disabled:opacity-50 disabled:pointer-events-none"
+            data-testid="button-select-kasware"
+          >
+            <img
+              src={kaswareLogo}
+              alt="KasWare"
+              className="h-12 w-12 rounded-lg"
+            />
+            <div className="flex-1">
+              <p className="font-semibold">KasWare</p>
+              <p className="text-sm text-muted-foreground">
+                Browser extension wallet
+              </p>
+            </div>
+            {connectingType === "kasware" && (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            )}
+          </button>
 
+          <button
+            onClick={() => handleConnect("kastle")}
+            disabled={isConnecting}
+            className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate disabled:opacity-50 disabled:pointer-events-none"
+            data-testid="button-select-kastle"
+          >
+            <img
+              src={kastleLogo}
+              alt="Kastle"
+              className="h-12 w-12 rounded-lg"
+            />
+            <div className="flex-1">
+              <p className="font-semibold">Kastle</p>
+              <p className="text-sm text-muted-foreground">
+                Browser extension wallet
+              </p>
+            </div>
+            {connectingType === "kastle" && (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            )}
+          </button>
+
+          {!isKasanovaDetected && (
+            isMobile ? (
               <a
                 href={kasanovaAirbridgeUrl}
                 className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate"
@@ -141,12 +139,33 @@ export function WalletSelectDialog({ open, onOpenChange }: WalletSelectDialogPro
                 <div className="flex-1">
                   <p className="font-semibold">Kasanova</p>
                   <p className="text-sm text-muted-foreground">
-                    {isMobile ? "Open in Kasanova app" : "Mobile wallet"}
+                    Open in Kasanova app
                   </p>
                 </div>
                 <Smartphone className="h-5 w-5 text-muted-foreground" />
               </a>
-            </>
+            ) : (
+              <a
+                href="https://kasanova.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover-elevate"
+                data-testid="button-select-kasanova-desktop"
+              >
+                <img
+                  src={kasanovaLogo}
+                  alt="Kasanova"
+                  className="h-12 w-12 rounded-full"
+                />
+                <div className="flex-1">
+                  <p className="font-semibold">Kasanova</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mobile wallet
+                  </p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+              </a>
+            )
           )}
         </div>
 

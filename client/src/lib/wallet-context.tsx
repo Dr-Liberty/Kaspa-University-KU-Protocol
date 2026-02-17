@@ -78,7 +78,7 @@ interface WalletContextType {
   isWalletInstalled: boolean;
   isKastleInstalled: boolean;
   isKasanovaDetected: boolean;
-  connect: (preferredType?: "kasware" | "kastle") => Promise<void>;
+  connect: (preferredType?: "kasware" | "kastle" | "kasanova") => Promise<void>;
   disconnect: () => void;
   enterDemoMode: () => void;
   exitDemoMode: () => void;
@@ -93,6 +93,7 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 const WALLET_STORAGE_KEY = "kaspa-university-wallet";
+const WALLET_TYPE_KEY = "kaspa-university-wallet-type";
 const DEMO_MODE_KEY = "kaspa-university-demo";
 
 type KaspaNetwork = "mainnet" | "testnet-10" | "testnet-11";
@@ -222,7 +223,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         };
         setWallet(newWallet);
         setWalletAddress(accounts[0]);
-        setWalletType(window.kasanova ? "kasanova" : "kasware");
+        setWalletType((prev) => prev === "kasanova" || prev === "kasware" ? prev : (window.kasanova ? "kasanova" : "kasware"));
       }
       queryClient.invalidateQueries();
     };
@@ -258,9 +259,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             network: networkName,
           };
           
+          const storedType = localStorage.getItem(WALLET_TYPE_KEY);
+          const restoredType = (storedType === "kasanova" || storedType === "kasware") ? storedType : (window.kasanova ? "kasanova" : "kasware");
+          
           setWallet(restoredWallet);
           setWalletAddress(accounts[0]);
-          setWalletType(window.kasanova ? "kasanova" : "kasware");
+          setWalletType(restoredType as "kasware" | "kasanova");
           setIsAuthenticated(true);
           
           console.log(`[Wallet] Auto-restored connection: ${accounts[0].slice(0, 15)}...`);
@@ -284,15 +288,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (wallet) {
       localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(wallet));
       localStorage.setItem("kaspa-university-wallet-address", wallet.address);
+      if (walletType) {
+        localStorage.setItem(WALLET_TYPE_KEY, walletType);
+      }
       setWalletAddress(wallet.address);
       localStorage.removeItem(DEMO_MODE_KEY);
       setIsDemoMode(false);
     } else {
       localStorage.removeItem(WALLET_STORAGE_KEY);
       localStorage.removeItem("kaspa-university-wallet-address");
+      localStorage.removeItem(WALLET_TYPE_KEY);
       setWalletAddress(null);
     }
-  }, [wallet]);
+  }, [wallet, walletType]);
 
   useEffect(() => {
     if (isDemoMode) {
@@ -306,7 +314,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [isDemoMode, wallet]);
 
-  const connect = useCallback(async (preferredType?: "kasware" | "kastle") => {
+  const connect = useCallback(async (preferredType?: "kasware" | "kastle" | "kasanova") => {
     setIsConnecting(true);
     setIsDemoMode(false);
     setConnectionError(null);
@@ -320,8 +328,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             const walletAddr = accounts[0];
             const networkId = await window.kasware.getNetwork();
             const networkName = getNetworkName(networkId);
-            const detectedType = window.kasanova ? "kasanova" : "kasware";
-            await authenticateWallet(walletAddr, networkName, detectedType);
+            const resolvedType = preferredType === "kasanova" ? "kasanova" : "kasware";
+            await authenticateWallet(walletAddr, networkName, resolvedType);
             return true;
           }
         }
@@ -348,7 +356,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       };
 
       let connected = false;
-      if (preferredType === "kasware") {
+      if (preferredType === "kasware" || preferredType === "kasanova") {
         connected = await tryKasware();
       } else if (preferredType === "kastle") {
         connected = await tryKastle();
