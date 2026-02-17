@@ -1,0 +1,216 @@
+INTRO:
+
+Replace Section 1: Script Engine Capabilities
+"The language compiles down to Kaspa's script engine opcodes, which were recently enabled on Testnet-12. These new script engine features unlock capabilities such as loops, arrays, and function calls that were previously unavailable on Kaspa's base layer."
+
+With:
+
+"The language compiles down to Kaspa's existing script engine opcodes. KIP-10 transaction introspection opcodes provide access to transaction data that enables covenant functionality. SilverScript provides syntactic sugar for implementing patterns like loops-like behavior, data structures, and code reuse using these existing script constructs."
+
+Replace Section 2: What is SilverScript
+"Silverscript is a high-level smart contract language and compiler built by a Kaspa core developer. It is the first tool that enables developers to write programmable contracts directly on Kaspa's Layer 1 — without requiring any Layer 2 infrastructure."
+
+With:
+
+"Silverscript is a high-level smart contract language and compiler that makes it easier to write programmable contracts on Kaspa's Layer 1. While Kaspa's script engine already supports complex contracts, SilverScript provides the first user-friendly, high-level syntax for creating them."
+
+Replace Section 3: Why L1 Smart Contracts Matter
+"Until now, Kaspa's Layer 1 has been optimized for fast, secure value transfer. Any programmable logic — DeFi, vaults, token management — required Layer 2 solutions like Kasplex or Igra."
+
+With:
+
+"Until now, creating programmable logic on Kaspa's Layer 1 required writing complex script bytecode directly. While Layer 2 solutions like Kasplex or Igra enable more complex applications, SilverScript allows certain classes of contracts to run directly on L1 with simpler development."
+
+Replace Section 4: CashScript Heritage
+"However, Silverscript extends CashScript significantly by adding support for loops, arrays, and function calls — features critical for building more complex on-chain logic."
+
+With:
+
+"SilverScript adapts CashScript's syntax for Kaspa's script engine, using compiler techniques to implement patterns that resemble loops, arrays, and functions using the existing opcode set."
+
+Remove Section 5: Relationship to vProgs
+Remove the entire "Relationship to vProgs" section as vProgs are not present in the codebase and this is speculative.
+
+Replace Section 6: Key Takeaway
+"Silverscript marks the first time Kaspa has native L1 smart contracts."
+
+With:
+
+"SilverScript makes Kaspa's existing L1 smart contract capabilities accessible through a high-level language, lowering the barrier to entry for developers."
+
+LAUNGUAGE FUNDAMENTALS:
+
+Learning Objectives
+
+This lesson covers SilverScript's core syntax and language constructs. You will learn about pragma declarations, contract and function definitions, the type system, control flow patterns including loop-like constructs using conditionals, and key language features: require() for validation, yield() for covenant outputs, and return() for function composition.
+
+⚠️ Experimental Syntax
+
+The syntax described here is based on SilverScript v0.1.0 running on Testnet-12. The language is under active development and syntax details may change before mainnet release.
+
+Pragma Declaration
+Every SilverScript file begins with a pragma statement specifying the compiler version:
+
+pragma silverscript ^0.1.0;
+This ensures your contract is compiled with a compatible version of the SilverScript compiler.
+
+Contract Definition
+Contracts are the top-level construct in SilverScript. A contract can accept constructor parameters that are fixed when the contract is deployed:
+
+contract Token(int max_outs) {  
+    // functions go here  
+}
+Constructor parameters become constants embedded in the contract's compiled script.
+
+Type System
+SilverScript provides primitive types that compile to byte vectors on the script engine stack:
+
+int — Integer values (compiled to little-endian bytes)
+bytes — Raw byte sequences
+pubkey — Public keys (32 bytes for Schnorr, 33 for ECDSA)
+sig — Signatures (64-65 bytes)
+Note: Arrays like int[] are implemented through stack manipulation, not as native types.
+
+Function Definitions
+Functions define callable operations:
+
+function sumArray(int[] arr) : (int) {  
+    // function body  
+}
+Control Flow
+Conditionals: Use if/else statements
+
+if (condition) {  
+    // true branch  
+} else {  
+    // false branch  
+}
+Loops: SilverScript provides loop syntax that compiles to IF/ELSE/ENDIF patterns:
+
+for (i, 0, MAX_ARRAY_SIZE) {  
+    if (i < arr.length) {  
+        sum = sum + arr[i];  
+    }  
+}
+These are compiler-level abstractions, not native loop opcodes.
+
+Core Functions
+Script Engine Primitives
+require(condition) — Compiles to OP_VERIFY (0x69)
+checkSig(sig, pubkey) — Compiles to OP_CHECKSIG (0xac) or OP_CHECKSIGECDSA (0xab)
+SilverScript Abstractions
+return(value) — Language-level return (compiles to stack manipulation)
+yield(data) — Covenant abstraction for creating outputs (compiles to output introspection)
+Type Conversion
+bytes(value) — Converts values to bytes using ScriptBuilder's canonical encoding
+
+CONTRACT PATTERNS:
+
+Learning Objectives
+This lesson examines real SilverScript contract patterns using working code examples. You will study the Token split pattern for dividing assets among recipients, the Sum array pattern for aggregate computation, signature-based authorization with checkSig, and how these primitives enable vaults and DeFi on Kaspa's L1.
+
+⚠️ Testnet Only
+
+All code examples are from SilverScript v0.1.0 on Testnet-12. Do not deploy these contracts on mainnet. The syntax and compiler are experimental.
+
+Pattern 1: Token Split Contract
+The Token contract demonstrates how to split a UTXO into multiple outputs — a fundamental primitive for token distribution, payments, and asset management:
+
+pragma silverscript ^0.1.0;  
+  
+contract Token(int max_outs) {  
+    function split(pubkey owner_pk, sig s, int in_amount, int num_outs, pubkey recipient_pk) {  
+        require(checkSig(s, owner_pk));  
+        for(i,0,max_outs){  
+            if( i < num_outs ){  
+                int out_amount = in_amount / num_outs;  
+                bytes out_amount_bytes = bytes(out_amount);  
+                yield(out_amount_bytes + recipient_pk);  
+            }  
+        }  
+    }  
+}
+How it works:
+• The contract accepts a constructor parameter max_outs that sets the maximum number of outputs at deployment time
+
+• The split function first verifies the caller's signature using require(checkSig(s, owner_pk)) — only the owner can split their tokens mod.rs:768-789
+
+• The for loop compiles to IF/ELSE/ENDIF patterns using the script engine's conditional flow
+
+• The if guard ensures only num_outs outputs are actually created, even though the loop iterates up to max_outs times
+
+• Each output receives an equal share: in_amount / num_outs
+
+• bytes(out_amount) converts the amount using ScriptBuilder's canonical encoding rules
+
+• yield() is a SilverScript abstraction that compiles to output introspection opcodes for creating transaction outputs
+
+This pattern is the foundation for token distribution, payroll contracts, and multi-recipient payments directly on L1.
+
+Pattern 2: Sum Array Contract
+The Sum contract demonstrates array-like patterns, function calls, and return values — showing how SilverScript handles aggregate computation:
+
+contract Sum() {  
+    int constant MAX_ARRAY_SIZE = 5;  
+    function sumArray(int[] arr) : (int) {  
+        require(arr.length <= MAX_ARRAY_SIZE);  
+        int sum = 0;  
+        for (i, 0, MAX_ARRAY_SIZE) {  
+            if (i < arr.length) {  
+                sum = sum + arr[i];  
+            }  
+        }  
+        return(sum);  
+    }  
+  
+    function main() {  
+        int[] x;  
+        x.push(1);  
+        x.push(2);  
+        x.push(3);  
+        (int total) = sumArray(x);  
+        require(total == 6);  
+    }  
+}
+How it works:
+• MAX_ARRAY_SIZE is a compile-time constant that bounds the loop — required for deterministic execution given the 201 operation limit
+
+• Arrays are implemented through stack manipulation on byte vectors, not as native types
+
+• sumArray accepts an integer array and returns an integer. The require() call validates the array fits within bounds
+
+• The for loop uses the constant upper bound, compiling to IF/ELSE/ENDIF patterns
+
+• return(sum) is a SilverScript language feature that compiles to stack manipulation
+
+• main() demonstrates array construction with push(), function invocation, and result verification
+
+This pattern applies to on-chain aggregation, batch validation, and any contract needing to process collections of values.
+
+Signature Verification with checkSig
+Authorization in SilverScript centers on checkSig(sig, pubkey). This compiles to OP_CHECKSIG (0xac) or OP_CHECKSIGECDSA (0xab) opcodes that verify a cryptographic signature was produced by the holder of the corresponding private key. Combined with require(), it enforces ownership:
+
+require(checkSig(s, owner_pk));
+This single line ensures that only the legitimate owner can execute the contract function. It is the building block for vaults, escrows, and multi-signature schemes.
+
+Building Vaults & DeFi Primitives
+By combining these patterns, developers can construct DeFi primitives directly on Kaspa's L1:
+
+• Vaults — Time-locked or signature-gated UTXOs that restrict when and how funds can be spent
+
+• Escrow — Contracts requiring multiple signatures to release funds
+
+• Token management — Split, merge, and transfer native assets with on-chain logic
+
+• Conditional payments — Release funds only when specific conditions (signatures, amounts, counters) are met
+
+All of these execute natively on L1 with Kaspa's sub-second confirmation times and proof-of-work security.
+
+Key Takeaway
+SilverScript's contract patterns — signature-gated splits, bounded array processing, and yield-based output generation — provide the fundamental building blocks for DeFi and asset management directly on Kaspa's base layer. Each pattern leverages the UTXO model for parallel, independent contract execution, compiling to existing script engine opcodes without requiring new primitives.
+
+BUILDING ON SILVERSCRIPT:
+replace:
+Testnet-12 is the first Kaspa testnet with the expanded script engine opcodes that Silverscript requires.
+with:
+Testnet-12 is the first Kaspa testnet where SilverScript is deployed for testing. SilverScript leverages KIP-10 transaction introspection opcodes to provide covenant functionality.
