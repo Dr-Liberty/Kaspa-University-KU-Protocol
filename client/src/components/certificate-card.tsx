@@ -1,15 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import type { Certificate } from "@shared/schema";
-import { Download, ExternalLink, Loader2, Sparkles, Wallet, CheckCircle2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "@/lib/wallet-context";
-import { useQueryClient } from "@tanstack/react-query";
-import { UserSignedMint } from "./user-signed-mint";
-import { useWhitelistStatus } from "@/hooks/use-whitelist";
 
 function generateCertificateSvgString(
   recipientAddress: string,
@@ -117,10 +110,10 @@ function generateCertificateSvgString(
   
   <line x1="80" y1="500" x2="720" y2="500" stroke="#10b981" stroke-width="0.5" opacity="0.3"/>
   
-  <text x="400" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">Possession of this NFT does not guarantee the owner completed the courses or passed the quizzes.</text>
+  <text x="400" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">Quiz completion verified via KU Protocol on-chain quiz proof.</text>
   <text x="400" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#10b981" font-weight="bold">Please check the KU Explorer on KaspaUniversity.com for verification</text>
   
-  <text x="400" y="575" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">KRC-721 NFT Certificate | Kaspa University Collection</text>
+  <text x="400" y="575" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#4b5563">Certificate of Completion | Kaspa University</text>
 </svg>`;
 }
 
@@ -254,14 +247,14 @@ function CertificateSVG({
       <line x1="80" y1="500" x2="720" y2="500" stroke="#10b981" strokeWidth="0.5" opacity="0.3"/>
       
       <text x="400" y="522" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#9ca3af">
-        Possession of this NFT does not guarantee the owner completed the courses or passed the quizzes.
+        Quiz completion verified via KU Protocol on-chain quiz proof.
       </text>
       <text x="400" y="540" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fill="#10b981" fontWeight="bold">
         Please check the KU Explorer on KaspaUniversity.com for verification
       </text>
       
       <text x="400" y="575" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#4b5563">
-        KRC-721 NFT Certificate | Kaspa University Collection
+        Certificate of Completion | Kaspa University
       </text>
     </svg>
   );
@@ -274,24 +267,6 @@ interface CertificateCardProps {
 
 export function CertificateCard({ certificate, showActions = true }: CertificateCardProps) {
   const { toast } = useToast();
-  const { isDemoMode } = useWallet();
-  const queryClient = useQueryClient();
-  const [showMintDialog, setShowMintDialog] = useState(false);
-  const { data: whitelistStatus } = useWhitelistStatus();
-
-  const nftStatus = certificate.nftStatus || (certificate.nftTxHash ? "claimed" : "pending");
-  const isPending = nftStatus === "pending";
-  const isMinting = nftStatus === "minting";
-  const isClaimed = nftStatus === "claimed";
-  
-  const isWhitelisted = whitelistStatus?.isWhitelisted;
-  const mintPrice = isWhitelisted ? "~20.5 KAS" : "~20,000 KAS";
-
-  useEffect(() => {
-    if (isMinting) {
-      setShowMintDialog(true);
-    }
-  }, [isMinting]);
 
   const handleDownload = () => {
     const svgString = generateCertificateSvgString(
@@ -325,131 +300,20 @@ export function CertificateCard({ certificate, showActions = true }: Certificate
             score={certificate.score || 100}
             issuedAt={certificate.issuedAt}
           />
-
-          {isClaimed && (
-            <div className="absolute right-2 top-2">
-              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                KRC-721 NFT
-              </Badge>
-            </div>
-          )}
-          
-          {isPending && (
-            <div className="absolute right-2 top-2">
-              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                Mint NFT
-              </Badge>
-            </div>
-          )}
-          
-          {isMinting && (
-            <div className="absolute right-2 top-2">
-              <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm text-amber-500">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Minting...
-              </Badge>
-            </div>
-          )}
         </div>
 
         {showActions && (
-          <div className="flex flex-col gap-2 border-t border-border/50 p-3">
-            {(isPending || isMinting) && (
-              <div className="space-y-2">
-                <Dialog open={showMintDialog} onOpenChange={setShowMintDialog}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className="w-full gap-2"
-                      disabled={isDemoMode || (!isWhitelisted && !isDemoMode)}
-                      data-testid={`button-mint-${certificate.id}`}
-                    >
-                      {isMinting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Resume Minting
-                        </>
-                      ) : isWhitelisted ? (
-                        <>
-                          <Wallet className="h-4 w-4" />
-                          Mint NFT ({mintPrice})
-                        </>
-                      ) : (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Whitelist Pending ({mintPrice})
-                        </>
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <UserSignedMint 
-                      certificate={certificate}
-                      onClose={() => setShowMintDialog(false)}
-                      onSuccess={() => {
-                        // Don't close the parent dialog - let the success dialog in UserSignedMint stay open
-                        // The user will close it manually with the "Done" button
-                        queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
-                      }}
-                    />
-                  </DialogContent>
-                </Dialog>
-                {isDemoMode ? (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Connect a real Kaspa wallet to mint your NFT
-                  </p>
-                ) : isMinting ? (
-                  <p className="text-xs text-center text-amber-500">
-                    Continue your in-progress mint
-                  </p>
-                ) : isWhitelisted ? (
-                  <div className="flex items-center justify-center gap-1 text-xs text-primary">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>Whitelisted for discounted minting</span>
-                  </div>
-                ) : (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Whitelist pending - this happens automatically after course completion
-                  </p>
-                )}
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={handleDownload}
-                  data-testid={`button-download-${certificate.id}`}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span className="text-xs">Download</span>
-                </Button>
-              </div>
-              {isClaimed && certificate.nftTxHash && certificate.nftTxHash.length > 10 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-primary"
-                  asChild
-                  data-testid={`button-view-${certificate.id}`}
-                >
-                  <a
-                    href={certificate.recipientAddress.startsWith("kaspatest:") 
-                      ? `https://testnet-10.krc721.stream` 
-                      : `https://explorer.kaspa.org/txs/${certificate.nftTxHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="text-xs">{certificate.recipientAddress.startsWith("kaspatest:") ? "View NFT" : "View on Chain"}</span>
-                  </a>
-                </Button>
-              )}
-            </div>
+          <div className="flex items-center gap-2 border-t border-border/50 p-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleDownload}
+              data-testid={`button-download-${certificate.id}`}
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="text-xs">Download</span>
+            </Button>
           </div>
         )}
       </CardContent>

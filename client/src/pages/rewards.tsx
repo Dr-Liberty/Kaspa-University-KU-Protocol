@@ -117,7 +117,7 @@ export default function Rewards() {
             Connect your wallet to view and claim your earned KAS rewards.
           </p>
           <Button
-            onClick={connect}
+            onClick={() => connect()}
             disabled={isConnecting}
             className="mt-6 gap-2"
             size="lg"
