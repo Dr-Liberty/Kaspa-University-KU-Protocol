@@ -132,9 +132,9 @@ export default function Landing() {
       tagline: "Achievement Proofs",
       icon: GraduationCap,
       color: "from-primary to-primary/70",
-      format: "ku:1:quiz:{data}",
-      description: "Records quiz completions on-chain. Each passing score generates a verifiable proof transaction.",
-      features: ["Quiz result verification", "Score attestation", "Reward eligibility"],
+      format: "ku:1:quiz:{data}:{blockAnchors}",
+      description: "Records quiz completions on-chain with block-anchored time proofs. Each passing score generates a verifiable proof transaction.",
+      features: ["Block-anchored proofs", "Score attestation", "Reward eligibility"],
       github: "https://github.com/Dr-Liberty/Kaspa-university-KU-Protocol",
     },
     {
@@ -166,8 +166,8 @@ export default function Landing() {
       icon: FileText,
       color: "from-violet-500 to-violet-500/70",
       format: "pragma silverscript ^0.1.0;",
-      description: "Kaspa's first high-level smart contract language. Enables DeFi, vaults, and native asset management directly on L1.",
-      features: ["UTXO local state", "Loops & arrays", "Testnet-12 live"],
+      description: "High-level smart contract language making Kaspa's existing L1 capabilities accessible. Currently experimental on Testnet-12.",
+      features: ["KIP-10 introspection", "Existing opcodes", "Testnet-12 only"],
       github: "https://github.com/kaspanet/silverscript/",
     },
   ];
@@ -549,8 +549,8 @@ export default function Landing() {
               The Protocol Stack
             </h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              These protocols power Kaspa University. Each handles a specific aspect of decentralized education, 
-              from achievements to public discussion to credentials and L1 programmability.
+              Three live protocols power Kaspa University today, with Silverscript coming soon to add L1 programmability. 
+              Each handles a specific aspect of decentralized education.
             </p>
           </div>
 
@@ -575,7 +575,7 @@ export default function Landing() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-semibold">{protocol.name}</h3>
                       {protocol.id === "silverscript" && (
-                        <Badge variant="outline" className="text-[10px] border-violet-500/50 text-violet-400">Coming Soon</Badge>
+                        <Badge variant="outline" className="text-[10px] border-violet-500/50 text-violet-400" data-testid="badge-silverscript-coming-soon">Coming Soon</Badge>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">{protocol.tagline}</span>
@@ -664,11 +664,11 @@ export default function Landing() {
               <h3 className="mb-3 text-xl font-semibold">What is KU Protocol?</h3>
               <p className="text-muted-foreground mb-4">
                 KU Protocol is our custom on-chain data format for recording educational achievements on Kaspa L1. 
-                Every quiz completion generates a unique payload that is embedded in a real blockchain transaction.
+                Every quiz completion generates a block-anchored payload embedded in a real blockchain transaction, creating a verifiable time window using DAG blueScore.
               </p>
               <div className="rounded-lg bg-muted/50 p-3 font-mono text-xs break-all">
                 <span className="text-primary">ku:1:quiz:</span>
-                <span className="text-muted-foreground">wallet:courseId:lessonId:score:maxScore:timestamp:contentHash</span>
+                <span className="text-muted-foreground">wallet:courseId:lessonId:score:maxScore:timestamp:contentHash:startBlockHash:startBlueScore:endBlockHash:endBlueScore</span>
               </div>
             </div>
 
@@ -680,19 +680,23 @@ export default function Landing() {
               <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">1</span>
-                  <span>Quiz answers are hashed and signed by your wallet</span>
+                  <span>DAG tip block is captured when you start the quiz (start anchor)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">2</span>
-                  <span>A proof transaction with embedded KU payload is sent to Kaspa L1</span>
+                  <span>Quiz answers are hashed and signed by your wallet</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">3</span>
-                  <span>Your reward (0.1 KAS) becomes claimable on-chain</span>
+                  <span>End block is captured at submission, creating a verifiable time window</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">4</span>
-                  <span>Anyone can verify your achievement using the blockchain explorer</span>
+                  <span>A block-anchored proof transaction is sent to Kaspa L1 and 0.1 KAS becomes claimable</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">5</span>
+                  <span>Anyone can verify your achievement and time window using the blockchain explorer</span>
                 </li>
               </ul>
             </div>
@@ -726,22 +730,22 @@ export default function Landing() {
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Silverscript: The Future of Kaspa University</h3>
-                <span className="text-xs text-muted-foreground">Powered by Kaspa's new L1 smart contract engine</span>
+                <h3 className="text-xl font-semibold">Silverscript: Future Vision</h3>
+                <span className="text-xs text-muted-foreground">Experimental on Testnet-12 — not yet live on mainnet</span>
               </div>
             </div>
             <p className="text-muted-foreground mb-4">
-              Silverscript is Kaspa's first high-level smart contract language, enabling DeFi, vaults, and native asset management directly on L1.
-              As it matures from testnet to mainnet, Kaspa University will leverage Silverscript to make education truly trustless:
+              Silverscript makes Kaspa's existing L1 smart contract capabilities accessible through a high-level language.
+              As it matures from testnet to mainnet, Kaspa University could leverage Silverscript to make education more trustless:
             </p>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-xl border border-border/50 bg-card/50 p-4">
                 <p className="font-medium text-sm mb-1">Trustless Reward Escrow</p>
-                <p className="text-xs text-muted-foreground">Smart contract vaults that release KAS rewards automatically when valid KU Protocol proofs are verified on-chain</p>
+                <p className="text-xs text-muted-foreground">Covenant-based vaults that release KAS rewards automatically when valid KU Protocol proofs are verified on-chain</p>
               </div>
               <div className="rounded-xl border border-border/50 bg-card/50 p-4">
                 <p className="font-medium text-sm mb-1">On-Chain Diploma Gating</p>
-                <p className="text-xs text-muted-foreground">Silverscript contracts verify course completion proofs and gate KRC-721 diploma minting without server trust</p>
+                <p className="text-xs text-muted-foreground">Silverscript contracts could verify course completion proofs and gate KRC-721 diploma minting without server trust</p>
               </div>
               <div className="rounded-xl border border-border/50 bg-card/50 p-4">
                 <p className="font-medium text-sm mb-1">Programmable Fee Splits</p>

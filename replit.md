@@ -7,7 +7,7 @@ Kaspa University is a Learn-to-Earn educational platform built on the Kaspa L1 b
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui) and a Node.js with Express backend. It features wallet-based authentication via KasWare, direct Kaspa blockchain integration for KAS rewards, on-chain Q&A (KU Protocol), and KRC-721 NFT certificates. Data is managed with Drizzle ORM for PostgreSQL (currently in-memory), with Zod for schema validation. Security includes anti-Sybil protection, rate limiting, VPN detection, and UTXO management. Asynchronous blockchain operations are handled by a job queue, and performance is optimized with TTL caches.
+Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui) and a Node.js with Express backend. It features wallet-based authentication via KasWare/Kastle/Kasanova, direct Kaspa blockchain integration for KAS rewards, on-chain Q&A (K Protocol), block-anchored quiz proofs (KU Protocol), and KRC-721 NFT certificates. Data is managed with Drizzle ORM for PostgreSQL, with Zod for schema validation. Security includes anti-Sybil protection, rate limiting, VPN detection, and UTXO management. Asynchronous blockchain operations are handled by a job queue, and performance is optimized with TTL caches.
 
 ### UI/UX Decisions
 - **Frontend**: React with TypeScript (Vite).
@@ -24,7 +24,7 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - **Blockchain Integration**: Kaspa WASM module (rusty-kaspa v1.0.1) for transaction signing and `kaspa-rpc-client` for network operations, utilizing PNN Resolver for RPC connections and an optional archival node fallback for historical data.
 - **KRC-721 Diploma NFT**: Single collection (KUDIPLOMA, 10,000 max supply). Eligibility requires completion of all courses. Minting is user-signed via whitelisting (0 KAS royalty for graduates + ~10 KAS PoW fee). The blockchain indexer is the authoritative source for NFT status.
 - **K Protocol (Public Comments)**: On-chain public comments for lesson Q&A (`k:1:post`, `k:1:reply`).
-- **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`).
+- **KU Protocol**: Kaspa University-specific format for on-chain quiz completion proofs (`ku:1:quiz`) with block-anchored time windows (start/end DAG blueScore). Verified transactions persisted to PostgreSQL via storage layer.
 - **Security**: SIWK challenge-response authentication, anti-Sybil measures (quiz cooldowns, min completion times, daily reward caps, multi-wallet/IP detection), rate limiting, and VPN detection. UTXO management uses mutex-based locking.
 - **Performance**: Job queue for async operations, in-memory TTL caching.
 - **Cryptography**: Schnorr verification (`@kluster/kaspa-signature`), SHA-256 for quiz answer integrity.
@@ -36,27 +36,25 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - Added mobile-responsive lesson navigation (horizontal dots on mobile, sidebar on desktop)
 - Improved analytics grid responsiveness on tablet/mobile
 - Polished README for hackathon judging
-- Added Silverscript course (Course 4) - Kaspa's first L1 smart contract language
-- Updated landing page with Silverscript as 4th protocol and future vision roadmap section
+- Added Silverscript course (Course 4) with peer-reviewed content (KIP-10 introspection, existing opcodes, compiler abstractions)
+- Silverscript shown as "Coming Soon" in protocol stack (not live on mainnet); removed from hero protocol count
+- Updated landing page future vision section to reflect experimental status
 - "Learn without a wallet" now navigates directly to courses page in demo mode
 - Changed diploma minting requirement from 16 courses to all courses
-- Generated Silverscript course thumbnail
-- Added vProgs course (5 lessons) based on official Kaspa Research yellow paper — positioned before Silverscript
-- Generated vProgs course thumbnail
-- Updated Silverscript course to cross-reference vProgs course
+- Added vProgs course (4 lessons) based on official Kaspa Research yellow paper
 - Updated course counts to 25 courses / 105 lessons
-- Removed vProgs lesson 5 (Programmability Roadmap) — too many assumptions
 - Added Kasanova Wallet as third wallet partner (alongside KasWare and Kastle)
 - Kasanova uses KasWare-compatible window.kasware API; detected via window.kasanova namespace
 - Airbridge link (kasanova.app/dapp?url=...) for mobile browser users to open inside Kasanova app
 - Implemented block-anchored quiz proofs: KU Protocol now embeds start/end BlockDAG tip (hash + blueScore) into on-chain quiz payloads for verifiable time windows (anti-cheat)
-- Added `/api/kaspa/dag-tip` endpoint for fetching current DAG tip block info
+- Added `/api/kaspa/dag-tip` endpoint with `anchoringAvailable` flag; client only attempts anchoring when flag is true
 - Updated `createQuizPayload` and `parseKUPayload` to handle block anchor fields (backward-compatible with "none" defaults)
-- Client fetches DAG tip when quiz loads, sends startBlockHash/startBlueScore with submission; server fetches endBlock at submission time
-- Added `VerifiedTransaction` interface and verified transaction log to KU Indexer for admin panel
-- Added batch verification method (`batchVerifyProofs`) for active blockchain scanning (inspired by minKasWasm Intelligence Layer)
-- Added admin endpoints: `/api/admin/verified-transactions` and `/api/admin/batch-verify`
+- Verified transactions persisted to PostgreSQL via storage layer (survives server restarts)
+- KU Indexer connected to storage on startup via `kuIndexer.setStorage(storage)`
+- Added admin endpoints: `/api/admin/verified-transactions` and `/api/admin/batch-verify` (async DB queries)
 - Explorer UI shows "Block-Anchored" badge and DAG blueScore range on transactions with block anchors
+- Updated KU Protocol section on landing page to show block-anchored format and 5-step flow
+- Silverscript course content peer-reviewed: clarified existing opcode usage, KIP-10 introspection, removed vProgs cross-references, updated code examples to use bytes() instead of OpNum2Bin
 
 ## External Dependencies
 - **Database**: PostgreSQL.
