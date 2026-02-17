@@ -46,6 +46,9 @@ Kaspa University uses a React with TypeScript frontend (Tailwind CSS, shadcn/ui)
 - Updated Silverscript course to cross-reference vProgs course
 - Updated course counts to 25 courses / 105 lessons
 - Removed vProgs lesson 5 (Programmability Roadmap) — too many assumptions
+- Added Kasanova Wallet as third wallet partner (alongside KasWare and Kastle)
+- Kasanova uses KasWare-compatible window.kasware API; detected via window.kasanova namespace
+- Airbridge link (kasanova.app/dapp?url=...) for mobile browser users to open inside Kasanova app
 
 ## External Dependencies
 - **Database**: PostgreSQL.

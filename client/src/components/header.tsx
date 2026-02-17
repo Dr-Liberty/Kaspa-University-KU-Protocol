@@ -81,7 +81,7 @@ export function Header() {
                       </span>
                       {walletType && (
                         <Badge variant="outline" className="ml-1 px-1.5 py-0 text-[10px]">
-                          {walletType === "kasware" ? "KasWare" : "Kastle"}
+                          {walletType === "kasanova" ? "Kasanova" : walletType === "kasware" ? "KasWare" : "Kastle"}
                         </Badge>
                       )}
                     </div>

@@ -22,6 +22,10 @@ interface KaswareUtxo {
 
 declare global {
   interface Window {
+    kasanova?: {
+      version?: string;
+      kasware?: any;
+    };
     kasware?: {
       requestAccounts: () => Promise<string[]>;
       getAccounts: () => Promise<string[]>;
@@ -70,9 +74,10 @@ interface WalletContextType {
   isConnecting: boolean;
   isDemoMode: boolean;
   isAuthenticated: boolean;
-  walletType: "kasware" | "kastle" | "mock" | null;
+  walletType: "kasware" | "kastle" | "kasanova" | "mock" | null;
   isWalletInstalled: boolean;
   isKastleInstalled: boolean;
+  isKasanovaDetected: boolean;
   connect: (preferredType?: "kasware" | "kastle") => Promise<void>;
   disconnect: () => void;
   enterDemoMode: () => void;
@@ -111,9 +116,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
-  const [walletType, setWalletType] = useState<"kasware" | "kastle" | "mock" | null>(null);
+  const [walletType, setWalletType] = useState<"kasware" | "kastle" | "kasanova" | "mock" | null>(null);
   const [isWalletInstalled, setIsWalletInstalled] = useState(false);
   const [isKastleInstalled, setIsKastleInstalled] = useState(false);
+  const [isKasanovaDetected, setIsKasanovaDetected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,8 +127,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       try {
         const kaswareInstalled = typeof window !== "undefined" && !!window.kasware;
         setIsWalletInstalled(kaswareInstalled);
+
+        const kasanovaDetected = typeof window !== "undefined" && !!window.kasanova;
+        setIsKasanovaDetected(kasanovaDetected);
+        if (kasanovaDetected) {
+          console.log("[Wallet] Kasanova dApp browser detected");
+        }
         
-        // Use a safe wrapper for Kastle check
         let kastleInstalled = false;
         try {
           kastleInstalled = await Promise.race([
@@ -139,8 +150,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
     
     checkWalletInstalled();
+
+    const onKasanovaReady = () => {
+      setIsKasanovaDetected(true);
+      setIsWalletInstalled(!!window.kasware);
+      console.log("[Wallet] Kasanova ready event fired");
+    };
+    window.addEventListener("kasanova:ready", onKasanovaReady);
+
     const timer = setTimeout(checkWalletInstalled, 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("kasanova:ready", onKasanovaReady);
+    };
   }, []);
 
   useEffect(() => {
@@ -200,7 +222,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         };
         setWallet(newWallet);
         setWalletAddress(accounts[0]);
-        setWalletType("kasware");
+        setWalletType(window.kasanova ? "kasanova" : "kasware");
       }
       queryClient.invalidateQueries();
     };
@@ -238,7 +260,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           
           setWallet(restoredWallet);
           setWalletAddress(accounts[0]);
-          setWalletType("kasware");
+          setWalletType(window.kasanova ? "kasanova" : "kasware");
           setIsAuthenticated(true);
           
           console.log(`[Wallet] Auto-restored connection: ${accounts[0].slice(0, 15)}...`);
@@ -298,7 +320,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             const walletAddr = accounts[0];
             const networkId = await window.kasware.getNetwork();
             const networkName = getNetworkName(networkId);
-            await authenticateWallet(walletAddr, networkName, "kasware");
+            const detectedType = window.kasanova ? "kasanova" : "kasware";
+            await authenticateWallet(walletAddr, networkName, detectedType);
             return true;
           }
         }
@@ -338,7 +361,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
 
       if (!connected) {
-        setConnectionError("No Kaspa wallet detected. Please install KasWare or Kastle wallet.");
+        setConnectionError("No Kaspa wallet detected. Please install KasWare, Kastle, or open this page in Kasanova.");
       }
     } catch (error: any) {
       console.error("[Auth] Connection failed:", error);
@@ -348,7 +371,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const authenticateWallet = async (walletAddr: string, networkName: KaspaNetwork, type: "kasware" | "kastle") => {
+  const authenticateWallet = async (walletAddr: string, networkName: KaspaNetwork, type: "kasware" | "kastle" | "kasanova") => {
     try {
       console.log(`[SIWK] Requesting challenge for ${walletAddr.slice(0, 15)}...`);
       const challengeRes = await fetch("/api/auth/siwk/challenge", {
@@ -364,10 +387,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const { fields, message } = await challengeRes.json();
       let signature: string;
 
-      if (type === "kasware") {
+      if (type === "kasware" || type === "kasanova") {
         signature = await window.kasware!.signMessage(message, { type: "schnorr" });
       } else {
-        // Kastle signMessage implementation
         signature = await kastle.signMessage(message);
       }
       
@@ -408,7 +430,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         headers: { "x-auth-token": localStorage.getItem("kaspa-university-auth-token") || "" },
       }).catch(() => {});
       
-      if (walletType === "kasware" && window.kasware) {
+      if ((walletType === "kasware" || walletType === "kasanova") && window.kasware) {
         await window.kasware.disconnect(window.location.origin);
       }
     } catch (error) {
@@ -452,7 +474,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
 
     if (!window.kasware) {
-      throw new Error("KasWare wallet not installed");
+      throw new Error("Kaspa wallet not available");
     }
     
     if (typeof window.kasware.sendKaspa !== "function") {
@@ -506,11 +528,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     
     if (walletType === "kastle") {
-      throw new Error("KRC-721 minting not yet supported via Kastle SDK. Please use KasWare.");
+      throw new Error("KRC-721 minting not yet supported via Kastle SDK. Please use KasWare or Kasanova.");
     }
 
     if (!window.kasware) {
-      throw new Error("KasWare wallet not installed");
+      throw new Error("Kaspa wallet not available");
     }
     
     console.log("[Wallet] Starting KRC-721 mint");
@@ -836,6 +858,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         walletType,
         isWalletInstalled,
+        isKastleInstalled,
+        isKasanovaDetected,
         connect, 
         disconnect, 
         enterDemoMode, 
