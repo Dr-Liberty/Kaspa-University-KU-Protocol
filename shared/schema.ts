@@ -359,6 +359,26 @@ export type KPublicComment = z.infer<typeof kPublicCommentSchema>;
 export const insertKPublicCommentSchema = kPublicCommentSchema.omit({ id: true, createdAt: true, votes: true });
 export type InsertKPublicComment = z.infer<typeof insertKPublicCommentSchema>;
 
+// Verified transaction schema (persistent log of blockchain-verified KU Protocol transactions)
+export const verifiedTransactionSchema = z.object({
+  id: z.string(),
+  txHash: z.string(),
+  protocol: z.string(),
+  type: z.string(),
+  walletAddress: z.string(),
+  courseId: z.string().optional(),
+  lessonId: z.string().optional(),
+  score: z.number().optional(),
+  blockAnchored: z.boolean().default(false),
+  startBlueScore: z.number().optional(),
+  endBlueScore: z.number().optional(),
+  verifiedAt: z.date(),
+});
+
+export type VerifiedTransaction = z.infer<typeof verifiedTransactionSchema>;
+export const insertVerifiedTransactionSchema = verifiedTransactionSchema.omit({ id: true, verifiedAt: true });
+export type InsertVerifiedTransaction = z.infer<typeof insertVerifiedTransactionSchema>;
+
 // On-chain quiz proof schema (fallback storage for pruned blockchain data)
 export const onChainQuizProofSchema = z.object({
   id: z.string(),

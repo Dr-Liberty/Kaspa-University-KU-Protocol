@@ -92,6 +92,8 @@ export async function registerRoutes(
   // kasiaIndexer.setStorage(storage);
   // await kasiaIndexer.start();
   
+  kuIndexer.setStorage(storage);
+  
   // Apply security middleware globally for API routes
   app.use("/api", securityMiddleware);
   app.use("/api", generalRateLimiter);
@@ -690,13 +692,13 @@ export async function registerRoutes(
     try {
       const kaspaService = await getKaspaService();
       const tip = await kaspaService.getDagTipBlock();
-      if (tip) {
-        res.json(tip);
+      if (tip && tip.blockHash !== "none") {
+        res.json({ ...tip, anchoringAvailable: true });
       } else {
-        res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now() });
+        res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now(), anchoringAvailable: false });
       }
     } catch (error: any) {
-      res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now() });
+      res.json({ blockHash: "none", blueScore: 0, timestamp: Date.now(), anchoringAvailable: false });
     }
   });
 
@@ -3462,12 +3464,12 @@ export async function registerRoutes(
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
-      const transactions = kuIndexer.getVerifiedTransactions(limit, offset);
-      res.json({
-        transactions,
-        total: kuIndexer.getVerifiedCount(),
-        blockAnchored: kuIndexer.getBlockAnchoredCount(),
-      });
+      const [transactions, total, blockAnchored] = await Promise.all([
+        kuIndexer.getVerifiedTransactions(limit, offset),
+        kuIndexer.getVerifiedCount(),
+        kuIndexer.getBlockAnchoredCount(),
+      ]);
+      res.json({ transactions, total, blockAnchored });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeError(error) });
     }

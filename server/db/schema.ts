@@ -262,6 +262,22 @@ export const privateMessages = pgTable("private_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Verified transactions - persistent log of blockchain-verified KU Protocol transactions
+export const verifiedTransactions = pgTable("verified_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  txHash: text("tx_hash").notNull().unique(),
+  protocol: text("protocol").notNull(),
+  type: text("type").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  courseId: text("course_id"),
+  lessonId: text("lesson_id"),
+  score: integer("score"),
+  blockAnchored: boolean("block_anchored").default(false).notNull(),
+  startBlueScore: integer("start_blue_score"),
+  endBlueScore: integer("end_blue_score"),
+  verifiedAt: timestamp("verified_at").defaultNow().notNull(),
+});
+
 // K Protocol public comments - indexed for ecosystem discovery
 export const kPublicComments = pgTable("k_public_comments", {
   id: uuid("id").primaryKey().defaultRandom(),

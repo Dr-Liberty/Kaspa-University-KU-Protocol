@@ -24,6 +24,8 @@ import {
   hexToString,
   QuizPayload,
 } from "./ku-protocol";
+import type { IStorage } from "./storage";
+import type { InsertVerifiedTransaction } from "@shared/schema";
 
 export interface IndexedQuizProof {
   id: string;
@@ -83,6 +85,7 @@ export interface OnChainStats {
 class KUIndexer {
   private quizProofs: Map<string, IndexedQuizProof> = new Map();
   private verifiedTxLog: VerifiedTransaction[] = [];
+  private storageRef: IStorage | null = null;
   private isRunning = false;
   private stats: OnChainStats = {
     totalQuizProofs: 0,
@@ -95,6 +98,11 @@ class KUIndexer {
 
   constructor() {
     console.log("[KU Indexer] Initialized on-chain educational achievement indexer");
+  }
+
+  setStorage(storage: IStorage): void {
+    this.storageRef = storage;
+    console.log("[KU Indexer] Storage layer connected for verified transaction persistence");
   }
 
   /**
@@ -302,25 +310,47 @@ class KUIndexer {
   }
 
   /**
-   * Get the verified transaction log for admin panel
+   * Get the verified transaction log for admin panel (reads from DB when available)
    */
-  getVerifiedTransactions(limit = 50, offset = 0): VerifiedTransaction[] {
+  async getVerifiedTransactions(limit = 50, offset = 0): Promise<VerifiedTransaction[]> {
+    if (this.storageRef) {
+      const dbTxs = await this.storageRef.getVerifiedTransactions(limit, offset);
+      return dbTxs.map(t => ({
+        txHash: t.txHash,
+        protocol: t.protocol,
+        type: t.type,
+        walletAddress: t.walletAddress,
+        courseId: t.courseId ?? undefined,
+        lessonId: t.lessonId ?? undefined,
+        score: t.score ?? undefined,
+        verifiedAt: t.verifiedAt,
+        blockAnchored: t.blockAnchored,
+        startBlueScore: t.startBlueScore ?? undefined,
+        endBlueScore: t.endBlueScore ?? undefined,
+      }));
+    }
     return this.verifiedTxLog
       .sort((a, b) => b.verifiedAt.getTime() - a.verifiedAt.getTime())
       .slice(offset, offset + limit);
   }
 
   /**
-   * Get verified transaction count
+   * Get verified transaction count (reads from DB when available)
    */
-  getVerifiedCount(): number {
+  async getVerifiedCount(): Promise<number> {
+    if (this.storageRef) {
+      return this.storageRef.getVerifiedTransactionCount();
+    }
     return this.verifiedTxLog.length;
   }
 
   /**
-   * Get block-anchored transaction count
+   * Get block-anchored transaction count (reads from DB when available)
    */
-  getBlockAnchoredCount(): number {
+  async getBlockAnchoredCount(): Promise<number> {
+    if (this.storageRef) {
+      return this.storageRef.getBlockAnchoredCount();
+    }
     return this.verifiedTxLog.filter(t => t.blockAnchored).length;
   }
 
@@ -361,13 +391,13 @@ class KUIndexer {
   }
 
   /**
-   * Add a verified proof to the persistent transaction log
+   * Add a verified proof to the persistent transaction log (DB + in-memory cache)
    */
   private addToVerifiedLog(proof: IndexedQuizProof): void {
     const isAnchored = !!proof.startBlockHash && proof.startBlockHash !== "none" && 
                        !!proof.endBlockHash && proof.endBlockHash !== "none";
     
-    this.verifiedTxLog.push({
+    const entry: VerifiedTransaction = {
       txHash: proof.txHash,
       protocol: "ku",
       type: "quiz",
@@ -379,10 +409,29 @@ class KUIndexer {
       blockAnchored: isAnchored,
       startBlueScore: proof.startBlueScore,
       endBlueScore: proof.endBlueScore,
-    });
+    };
     
+    this.verifiedTxLog.push(entry);
     if (this.verifiedTxLog.length > 1000) {
       this.verifiedTxLog = this.verifiedTxLog.slice(-500);
+    }
+    
+    if (this.storageRef) {
+      const insertData: InsertVerifiedTransaction = {
+        txHash: entry.txHash,
+        protocol: entry.protocol,
+        type: entry.type,
+        walletAddress: entry.walletAddress,
+        courseId: entry.courseId,
+        lessonId: entry.lessonId,
+        score: entry.score,
+        blockAnchored: entry.blockAnchored,
+        startBlueScore: entry.startBlueScore,
+        endBlueScore: entry.endBlueScore,
+      };
+      this.storageRef.saveVerifiedTransaction(insertData).catch(err => {
+        console.error("[KU Indexer] Failed to persist verified transaction:", err.message);
+      });
     }
   }
 

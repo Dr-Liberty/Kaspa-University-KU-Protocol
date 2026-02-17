@@ -16,6 +16,8 @@ import type {
   InsertMintReservation,
   OnChainQuizProof,
   InsertOnChainQuizProof,
+  VerifiedTransaction,
+  InsertVerifiedTransaction,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { courses as seedCourses, lessons as seedLessons, quizQuestions as seedQuizQuestions } from "./seed-data";
@@ -102,6 +104,12 @@ export interface IStorage {
   saveOnChainQuizProof(proof: InsertOnChainQuizProof): Promise<OnChainQuizProof>;
   getOnChainQuizProofs(limit?: number): Promise<OnChainQuizProof[]>;
   getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined>;
+  
+  // Verified transaction log (persistent, survives restarts)
+  saveVerifiedTransaction(tx: InsertVerifiedTransaction): Promise<VerifiedTransaction>;
+  getVerifiedTransactions(limit?: number, offset?: number): Promise<VerifiedTransaction[]>;
+  getVerifiedTransactionCount(): Promise<number>;
+  getBlockAnchoredCount(): Promise<number>;
   
   // Whitelist methods for discounted minting
   setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined>;
@@ -746,6 +754,38 @@ export class MemStorage implements IStorage {
   async getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined> {
     return Array.from(this.onChainQuizProofs.values())
       .find(p => p.txHash === txHash);
+  }
+
+  // Verified transaction log (in-memory for MemStorage)
+  private verifiedTransactionsCache: Map<string, VerifiedTransaction> = new Map();
+
+  async saveVerifiedTransaction(tx: InsertVerifiedTransaction): Promise<VerifiedTransaction> {
+    const existing = Array.from(this.verifiedTransactionsCache.values())
+      .find(v => v.txHash === tx.txHash);
+    if (existing) return existing;
+    
+    const newTx: VerifiedTransaction = {
+      id: randomUUID(),
+      ...tx,
+      verifiedAt: new Date(),
+    };
+    this.verifiedTransactionsCache.set(newTx.id, newTx);
+    return newTx;
+  }
+
+  async getVerifiedTransactions(limit: number = 50, offset: number = 0): Promise<VerifiedTransaction[]> {
+    return Array.from(this.verifiedTransactionsCache.values())
+      .sort((a, b) => b.verifiedAt.getTime() - a.verifiedAt.getTime())
+      .slice(offset, offset + limit);
+  }
+
+  async getVerifiedTransactionCount(): Promise<number> {
+    return this.verifiedTransactionsCache.size;
+  }
+
+  async getBlockAnchoredCount(): Promise<number> {
+    return Array.from(this.verifiedTransactionsCache.values())
+      .filter(t => t.blockAnchored).length;
   }
 
   async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {

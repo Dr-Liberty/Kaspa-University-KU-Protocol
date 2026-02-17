@@ -53,7 +53,7 @@ function QuizSection({
       fetch("/api/kaspa/dag-tip")
         .then(r => r.json())
         .then(tip => {
-          if (tip?.blockHash && tip.blockHash !== "none") {
+          if (tip?.anchoringAvailable && tip.blockHash !== "none") {
             setStartBlock({ blockHash: tip.blockHash, blueScore: tip.blueScore });
           }
         })

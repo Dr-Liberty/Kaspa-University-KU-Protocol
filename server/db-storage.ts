@@ -16,6 +16,8 @@ import type {
   InsertMintReservation,
   OnChainQuizProof,
   InsertOnChainQuizProof,
+  VerifiedTransaction,
+  InsertVerifiedTransaction,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
@@ -879,6 +881,57 @@ export class DbStorage implements IStorage {
   async getOnChainQuizProofByTxHash(txHash: string): Promise<OnChainQuizProof | undefined> {
     return Array.from(this.onChainQuizProofsCache.values())
       .find(p => p.txHash === txHash);
+  }
+
+  async saveVerifiedTransaction(tx: InsertVerifiedTransaction): Promise<VerifiedTransaction> {
+    try {
+      const result = await db.insert(schema.verifiedTransactions)
+        .values({
+          txHash: tx.txHash,
+          protocol: tx.protocol,
+          type: tx.type,
+          walletAddress: tx.walletAddress,
+          courseId: tx.courseId || null,
+          lessonId: tx.lessonId || null,
+          score: tx.score ?? null,
+          blockAnchored: tx.blockAnchored ?? false,
+          startBlueScore: tx.startBlueScore ?? null,
+          endBlueScore: tx.endBlueScore ?? null,
+        })
+        .returning();
+      return result[0] as VerifiedTransaction;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        const existing = await db.select()
+          .from(schema.verifiedTransactions)
+          .where(eq(schema.verifiedTransactions.txHash, tx.txHash))
+          .limit(1);
+        return existing[0] as VerifiedTransaction;
+      }
+      throw error;
+    }
+  }
+
+  async getVerifiedTransactions(limit: number = 50, offset: number = 0): Promise<VerifiedTransaction[]> {
+    const result = await db.select()
+      .from(schema.verifiedTransactions)
+      .orderBy(desc(schema.verifiedTransactions.verifiedAt))
+      .limit(limit)
+      .offset(offset);
+    return result as VerifiedTransaction[];
+  }
+
+  async getVerifiedTransactionCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(schema.verifiedTransactions);
+    return Number(result[0]?.count || 0);
+  }
+
+  async getBlockAnchoredCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(schema.verifiedTransactions)
+      .where(eq(schema.verifiedTransactions.blockAnchored, true));
+    return Number(result[0]?.count || 0);
   }
 
   async setUserWhitelisted(userId: string, txHash: string): Promise<User | undefined> {
